@@ -8,6 +8,8 @@
     "build": "rollup -c",
     "watch": "rollup -c --watch",
     "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "screenshot": "node scripts/screenshot.js",
     "screenshot:update": "npm run build && npm run screenshot"
   },
@@ -26,10 +28,13 @@
     "@rollup/plugin-node-resolve": "^16.0.0",
     "@rollup/plugin-terser": "^0.4.0",
     "@types/dompurify": "^3.0.5",
+    "@vitest/browser": "^4.0.18",
+    "jsdom": "^28.1.0",
     "playwright": "^1.58.2",
     "rollup": "^4.0.0",
     "rollup-plugin-typescript2": "^0.36.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "custom-card-helpers": "^1.9.0",

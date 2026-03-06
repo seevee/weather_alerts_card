@@ -1,0 +1,36 @@
+name: Bug Report
+description: Report a problem with the NWS Alerts Card
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Card Version
+      description: e.g. 1.8.0
+    validations:
+      required: true
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant Version
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Card Configuration
+      description: Your card YAML (redact zone codes if desired)
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Browser Console Logs
+      description: Any relevant errors from the browser console
+      render: text
