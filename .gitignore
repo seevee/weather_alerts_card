@@ -33,3 +33,6 @@ Thumbs.db
 *~
 .vscode/
 .idea/
+
+# env
+.envrc
