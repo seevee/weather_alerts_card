@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.9.0-alpha.1] - 2026-03-06
+
+### Added
+
+- Multi-provider support via adapter pattern — the card now works with weather alert sensors beyond NWS
+- Australian Bureau of Meteorology (BoM) provider for the [bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology) integration
+- `provider` config option to select alert provider: `'nws'`, `'bom'`, or omit for auto-detection
+- Provider selector dropdown in the visual configuration editor
+- Phase lifecycle badges for BoM warnings (New, Updated, Renewed, Upgraded, Downgraded, Final)
+- Weather icons for BoM-specific event types (sheep/grazier, surf/marine/coastal, cyclone)
+
+### Changed
+
+- Card internals refactored to consume a normalized `WeatherAlert` type instead of raw NWS attributes — no user-facing behavior change for existing NWS configurations
+- Certainty badge is now conditionally rendered (hidden for providers that lack certainty data)
+- Source link label adapts to provider ("Open NWS Source" / "Open BoM Source")
+- "No active NWS alerts" empty state message changed to "No active alerts"
+- "NWS Alerts sensor is unavailable" message changed to "Alert sensor is unavailable"
+
 ## [v1.8.0] - 2026-02-20
 
 ### Changed
@@ -102,6 +121,7 @@ All notable changes to this project will be documented in this file.
 - Card picker integration
 - Shadow DOM with full HA theme support
 
+[v1.9.0-alpha.1]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0-alpha.1
 [v1.8.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.8.0
 [v1.7.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.7.0
 [v1.6.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.6.0

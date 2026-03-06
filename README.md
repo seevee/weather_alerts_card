@@ -1,6 +1,6 @@
 # NWS Alerts Card
 
-A custom Home Assistant Lovelace card for displaying NWS (National Weather Service) weather alerts with severity indicators, progress bars, and expandable details.
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (National Weather Service, US) and BoM (Bureau of Meteorology, Australia).
 
 **Default layout** — severity colors, expanded details
 
@@ -16,10 +16,12 @@ A custom Home Assistant Lovelace card for displaying NWS (National Weather Servi
 
 ## Features
 
+- Multi-provider support — works with NWS (US) and BoM (Australia) alert sensors, with auto-detection
 - Severity-based color coding with animated borders for extreme/severe alerts
 - Optional NWS official hazard-map colors keyed by event type
 - Progress bars showing elapsed/remaining time for each alert with relative ("in 2h 30m") and absolute timestamps in the HA user's configured timezone
-- Expandable details with description, instructions, and NWS source link — HTML content is sanitized before rendering
+- Expandable details with description, instructions, and source link — HTML content is sanitized before rendering
+- Phase lifecycle badges for BoM warnings (New, Updated, Renewed, etc.)
 - Compact layout — collapsed single-row view that expands on tap
 - Zone-based alert filtering
 - Configurable sort order (default, onset time, or severity)
@@ -29,7 +31,10 @@ A custom Home Assistant Lovelace card for displaying NWS (National Weather Servi
 
 ## Prerequisites
 
-- [NWS Alerts integration](https://github.com/finity69x2/nws_alerts) v6.1+
+One of the following alert integrations:
+
+- **NWS (US)**: [NWS Alerts integration](https://github.com/finity69x2/nws_alerts) v6.1+
+- **BoM (Australia)**: [Bureau of Meteorology integration](https://github.com/bremor/bureau_of_meteorology)
 
 ## Installation
 
@@ -51,9 +56,10 @@ A custom Home Assistant Lovelace card for displaying NWS (National Weather Servi
 
 | Option       | Type     | Required | Default      | Description                        |
 |--------------|----------|----------|--------------|------------------------------------|
-| `entity`     | string   | yes      | —            | Entity ID (e.g. `sensor.nws_alerts_alerts`) |
+| `entity`     | string   | yes      | —            | Entity ID (e.g. `sensor.nws_alerts_alerts` or `sensor.sydney_warnings`) |
+| `provider`   | string   | no       | auto-detect  | Alert provider: `'nws'`, `'bom'`, or omit to auto-detect from entity attributes |
 | `title`      | string   | no       | —            | Card header title                  |
-| `zones`      | string[] | no       | —            | Filter alerts to specific NWS zone codes (omit to show all configured zones) |
+| `zones`      | string[] | no       | —            | Filter alerts to specific zone codes (NWS only; omit to show all configured zones) |
 | `sortOrder`  | string   | no       | `'default'`  | Sort alerts: `'default'` (integration order), `'onset'` (soonest first), `'severity'` (most severe first) |
 | `colorTheme` | string   | no       | `'severity'` | Color scheme: `'severity'` (HA theme colors by severity bracket) or `'nws'` (NWS official hazard-map colors by event type) |
 | `animations` | boolean  | no       | —            | `true`: always animate; `false`: never animate; omit to respect the OS `prefers-reduced-motion` accessibility setting |
@@ -88,9 +94,26 @@ layout: compact
 sortOrder: severity
 ```
 
-## NWS Alerts Integration Setup
+### Australian BoM warnings
 
-This card requires the [NWS Alerts](https://github.com/finity69x2/nws_alerts) custom integration to provide the `sensor.nws_alerts_alerts` entity.
+```yaml
+type: custom:nws-alerts-card
+entity: sensor.sydney_warnings
+```
+
+The provider is auto-detected from entity attributes. To set it explicitly:
+
+```yaml
+type: custom:nws-alerts-card
+entity: sensor.sydney_warnings
+provider: bom
+```
+
+## Integration Setup
+
+### NWS Alerts (United States)
+
+This card works with the [NWS Alerts](https://github.com/finity69x2/nws_alerts) custom integration to provide the `sensor.nws_alerts_alerts` entity.
 
 1. Install via HACS: **Integrations** → **Explore & Download Repositories** → search "NWS Alerts"
 2. Restart Home Assistant
@@ -98,6 +121,10 @@ This card requires the [NWS Alerts](https://github.com/finity69x2/nws_alerts) cu
 4. Enter your zone/county codes (find yours at [alerts.weather.gov](https://alerts.weather.gov/))
 
 > **Note**: Zone codes must be comma-delimited with **no spaces** (e.g. `COC059,COZ039,COZ239`). Adding spaces after commas causes the integration to silently return no alerts.
+
+### Bureau of Meteorology (Australia)
+
+This card works with the [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) custom integration. Enable the warnings sensor during integration setup to get a `sensor.{location}_warnings` entity.
 
 ## Development
 
