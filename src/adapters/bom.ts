@@ -29,9 +29,14 @@ function bomTitle(warning: BomWarning): string {
 }
 
 function bomUrl(warning: BomWarning): string {
-  const state = (warning.state || '').toLowerCase();
-  if (state) return `https://www.bom.gov.au/${state}/warnings/`;
-  return 'https://www.bom.gov.au/australia/warnings/';
+  // Direct link: https://www.bom.gov.au/warning/{type-hyphenated}/{product_code}
+  // Product code is the id with the area_id prefix stripped (e.g. NSW_FL049_IDN36503 → IDN36503)
+  if (warning.area_id && warning.id.startsWith(warning.area_id + '_')) {
+    const productCode = warning.id.slice(warning.area_id.length + 1);
+    const typePath = warning.type.replace(/_/g, '-');
+    return `https://www.bom.gov.au/warning/${typePath}/${productCode}`;
+  }
+  return 'https://www.bom.gov.au/weather-and-climate/warnings-and-alerts';
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -90,7 +95,7 @@ export class BomAdapter implements AlertAdapter {
       url: bomUrl(w),
       headline: w.short_title || title,
       areaDesc: w.state || '',
-      zones: [],        // BoM warnings are location-based (geohash), no zone codes
+      zones: w.area_id ? [w.area_id.toUpperCase()] : [],
       provider: 'bom',
       phase: bomPhaseLabel(w.phase),
     };

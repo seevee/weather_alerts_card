@@ -34,7 +34,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 One of the following alert integrations:
 
 - **NWS (US)**: [NWS Alerts integration](https://github.com/finity69x2/nws_alerts) v6.1+
-- **BoM (Australia)**: [Bureau of Meteorology integration](https://github.com/bremor/bureau_of_meteorology)
+- **BoM (Australia)**: [Bureau of Meteorology integration](https://github.com/bremor/bureau_of_meteorology) or [HA BoM Australia](https://github.com/safepay/ha_bom_australia)
 
 ## Installation
 
@@ -59,7 +59,7 @@ One of the following alert integrations:
 | `entity`     | string   | yes      | —            | Entity ID (e.g. `sensor.nws_alerts_alerts` or `sensor.sydney_warnings`) |
 | `provider`   | string   | no       | auto-detect  | Alert provider: `'nws'`, `'bom'`, or omit to auto-detect from entity attributes |
 | `title`      | string   | no       | —            | Card header title                  |
-| `zones`      | string[] | no       | —            | Filter alerts to specific zone codes (NWS only; omit to show all configured zones) |
+| `zones`      | string[] | no       | —            | Filter alerts to specific zone codes (NWS zone/county codes or BoM `area_id` values; omit to show all) |
 | `sortOrder`  | string   | no       | `'default'`  | Sort alerts: `'default'` (integration order), `'onset'` (soonest first), `'severity'` (most severe first) |
 | `colorTheme` | string   | no       | `'severity'` | Color scheme: `'severity'` (HA theme colors by severity bracket) or `'nws'` (NWS official hazard-map colors by event type) |
 | `animations` | boolean  | no       | —            | `true`: always animate; `false`: never animate; omit to respect the OS `prefers-reduced-motion` accessibility setting |
@@ -124,7 +124,12 @@ This card works with the [NWS Alerts](https://github.com/finity69x2/nws_alerts) 
 
 ### Bureau of Meteorology (Australia)
 
-This card works with the [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) custom integration. Enable the warnings sensor during integration setup to get a `sensor.{location}_warnings` entity.
+This card works with either BoM integration:
+
+- [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) — the original integration
+- [HA BoM Australia](https://github.com/safepay/ha_bom_australia) — an upgraded fork with additional binary sensors per warning type
+
+Both expose the same `sensor.{location}_warnings` entity with identical warning data. Enable the warnings sensor during integration setup. Zone filtering is supported using BoM `area_id` values (e.g. `NSW_FL049`).
 
 ## Development
 

@@ -151,7 +151,7 @@ export class NwsAlertsCardEditor extends LitElement {
         <ha-textfield
           .label=${'Zones (optional)'}
           .value=${zonesStr}
-          .helper=${'Comma-separated zone codes, e.g. COC059, COZ039'}
+          .helper=${'Comma-separated zone codes, e.g. COC059, COZ039 (NWS) or NSW_FL049 (BoM)'}
           .helperPersistent=${true}
           @change=${this._zonesChanged}
         ></ha-textfield>

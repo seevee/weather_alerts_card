@@ -84,6 +84,7 @@ export interface NwsAlert {
 // Raw BoM warning shape from the bureau_of_meteorology integration
 export interface BomWarning {
   id: string;
+  area_id?: string;         // e.g. "NSW_FL049" — geographic zone identifier (ha_bom_australia)
   type: string;             // e.g. "severe_thunderstorm_warning", "flood_warning"
   title: string;            // Full warning title
   short_title: string;      // Abbreviated title

@@ -36,7 +36,7 @@ Always run `npm run lint` and `npm run test` before committing.
 - The card uses an **adapter pattern** to support multiple alert providers. Each adapter converts raw entity attributes into a normalized `WeatherAlert[]` array.
 - Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'`) or auto-detected from entity attributes.
 - **NWS adapter**: reads `attributes.Alerts` array (NWS Alerts integration v6.1+). Zones extracted from `AffectedZones` URLs and `Geocode.UGC`.
-- **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent).
+- **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology or ha_bom_australia integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent). Maps `area_id` to `zones` for zone-based filtering.
 - The card UI only consumes normalized `WeatherAlert` objects — never raw provider data.
 - Severity levels map to CSS classes: `severity-extreme`, `severity-severe`, `severity-moderate`, `severity-minor`, `severity-unknown`, each with `--color` and `--color-rgb` custom properties.
 - Progress bars use inverted fill logic: the filled portion represents remaining time, positioned from the elapsed percentage.

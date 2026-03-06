@@ -5,6 +5,7 @@ import type { BomWarning } from '../../src/types';
 function makeBomAttributes(warnings: Partial<BomWarning>[] = []): Record<string, unknown> {
   const defaults: BomWarning = {
     id: 'NSW_IDN12345',
+    area_id: 'NSW_ME001',
     type: 'severe_thunderstorm_warning',
     title: 'Severe Thunderstorm Warning for Metropolitan',
     short_title: 'Severe Thunderstorm',
@@ -132,10 +133,20 @@ describe('BomAdapter', () => {
       expect(alerts[0].id).toBe('active');
     });
 
-    it('constructs BoM state-specific URL', () => {
-      const attrs = makeBomAttributes([{ state: 'NSW' }]);
+    it('constructs direct warning URL from area_id and type', () => {
+      const attrs = makeBomAttributes([{
+        id: 'NSW_FL049_IDN36503',
+        area_id: 'NSW_FL049',
+        type: 'flood_watch',
+      }]);
       const alerts = adapter.parseAlerts(attrs);
-      expect(alerts[0].url).toBe('https://www.bom.gov.au/nsw/warnings/');
+      expect(alerts[0].url).toBe('https://www.bom.gov.au/warning/flood-watch/IDN36503');
+    });
+
+    it('falls back to warnings landing page when area_id is absent', () => {
+      const attrs = makeBomAttributes([{ area_id: undefined, state: 'NSW' }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].url).toBe('https://www.bom.gov.au/weather-and-climate/warnings-and-alerts');
     });
 
     it('handles missing expiry_time', () => {
@@ -146,6 +157,18 @@ describe('BomAdapter', () => {
 
     it('returns empty array for missing warnings attribute', () => {
       expect(adapter.parseAlerts({})).toEqual([]);
+    });
+
+    it('maps area_id to uppercase zones array', () => {
+      const attrs = makeBomAttributes([{ area_id: 'NSW_FL049' }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).toEqual(['NSW_FL049']);
+    });
+
+    it('produces empty zones when area_id is absent', () => {
+      const attrs = makeBomAttributes([{ area_id: undefined }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).toEqual([]);
     });
 
     it('uses title fallback chain', () => {
