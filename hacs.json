@@ -1,6 +1,5 @@
 {
   "name": "NWS Alerts Card",
   "render_readme": true,
-  "filename": "nws-alerts-card.js",
-  "country": "US"
+  "filename": "nws-alerts-card.js"
 }

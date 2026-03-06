@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.9.0-alpha.2] - 2026-03-06
+
+### Fixed
+
+- Removed `country: US` restriction from HACS manifest so the card is discoverable globally (not just for US-based HA instances)
+
 ## [v1.9.0-alpha.1] - 2026-03-06
 
 ### Added
@@ -121,6 +127,7 @@ All notable changes to this project will be documented in this file.
 - Card picker integration
 - Shadow DOM with full HA theme support
 
+[v1.9.0-alpha.2]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0-alpha.2
 [v1.9.0-alpha.1]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0-alpha.1
 [v1.8.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.8.0
 [v1.7.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.7.0
