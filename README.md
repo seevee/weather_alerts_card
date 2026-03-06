@@ -2,10 +2,17 @@
 
 A custom Home Assistant Lovelace card for displaying NWS (National Weather Service) weather alerts with severity indicators, progress bars, and expandable details.
 
-| | Light | Dark |
-|:---|:---:|:---:|
-| **Default Layout** | ![Expanded details, severity colors, light mode](img/severity-light-details.png) | ![Expanded details, severity colors, dark mode](img/severity-dark-details.png) |
-| **Compact layout** — NWS colors | ![Compact layout, NWS colors, light mode](img/nws-light-compact.png) | ![Compact layout, NWS colors, dark mode](img/nws-dark-compact.png) |
+**Default layout** — severity colors, expanded details
+
+| Light | Dark |
+|:---:|:---:|
+| ![Light mode](img/severity-light-details.png) | ![Dark mode](img/severity-dark-details.png) |
+
+**Compact layout** — NWS official colors
+
+| Light | Dark |
+|:---:|:---:|
+| ![Light mode](img/nws-light-compact.png) | ![Dark mode](img/nws-dark-compact.png) |
 
 ## Features
 
