@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { NwsAlert, AlertProgress } from './types';
+import { WeatherAlert, AlertProgress } from './types';
 
 const ALERT_HTML_TAGS = ['a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul'];
 
@@ -31,6 +31,9 @@ const WEATHER_ICONS: [readonly string[], string][] = [
   [['heat'], 'mdi:weather-sunny-alert'],
   [['fog'], 'mdi:weather-fog'],
   [['hurricane', 'tropical'], 'mdi:weather-hurricane'],
+  [['sheep', 'grazier'], 'mdi:weather-windy-variant'],
+  [['surf', 'marine', 'coastal'], 'mdi:waves'],
+  [['cyclone'], 'mdi:weather-hurricane'],
 ];
 
 export function getWeatherIcon(event: string): string {
@@ -112,26 +115,25 @@ export function getNwsEventColor(event: string): { color: string; rgb: string; t
   return { color: '#808080', rgb: '128, 128, 128', textColor: getBadgeTextColor('#808080') };
 }
 
-function parseTimestamp(raw: string | undefined | null): number {
+export function parseTimestamp(raw: string | undefined | null): number {
   if (!raw || raw === 'None' || raw.trim() === '') return 0;
   const d = new Date(raw.trim());
   return isNaN(d.getTime()) ? 0 : d.getTime() / 1000;
 }
 
-export function computeAlertProgress(alert: NwsAlert): AlertProgress {
+export function computeAlertProgress(alert: WeatherAlert): AlertProgress {
   const nowTs = Date.now() / 1000;
 
-  const sentTs = parseTimestamp(alert.Sent);
+  const sentTs = alert.sentTs;
   const onsetTsDefault = sentTs > 0 ? sentTs : nowTs;
-  let onsetTs = parseTimestamp(alert.Onset);
+  let onsetTs = alert.onsetTs;
   if (onsetTs === 0) onsetTs = onsetTsDefault;
 
-  const endsRaw = alert.Ends || alert.Expires || '';
   const endsTsDefault = onsetTs + 3600;
-  let endsTs = parseTimestamp(endsRaw);
+  let endsTs = alert.endsTs;
   if (endsTs === 0) endsTs = endsTsDefault;
 
-  const hasEndTime = !!(alert.Ends || alert.Expires);
+  const hasEndTime = alert.endsTs > 0;
   const isActive = nowTs >= onsetTs;
 
   let lowTs: number, highTs: number, progressTs: number, phaseText: string;
@@ -288,42 +290,21 @@ const SEVERITY_RANK: Record<string, number> = {
   extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
 };
 
-function parseOnsetForSort(alert: NwsAlert): number {
-  if (!alert.Onset || alert.Onset === 'None' || alert.Onset.trim() === '') return Infinity;
-  const d = new Date(alert.Onset.trim());
-  return isNaN(d.getTime()) ? Infinity : d.getTime();
-}
-
-export function sortAlerts(alerts: NwsAlert[], order: string): NwsAlert[] {
+export function sortAlerts(alerts: WeatherAlert[], order: string): WeatherAlert[] {
   if (order === 'onset') {
-    return [...alerts].sort((a, b) => parseOnsetForSort(a) - parseOnsetForSort(b));
+    return [...alerts].sort((a, b) => (a.onsetTs || Infinity) - (b.onsetTs || Infinity));
   }
   if (order === 'severity') {
     return [...alerts].sort((a, b) => {
-      const diff = (SEVERITY_RANK[normalizeSeverity(a.Severity)] ?? 4)
-                 - (SEVERITY_RANK[normalizeSeverity(b.Severity)] ?? 4);
+      const diff = (SEVERITY_RANK[a.severity] ?? 4)
+                 - (SEVERITY_RANK[b.severity] ?? 4);
       if (diff !== 0) return diff;
-      return parseOnsetForSort(a) - parseOnsetForSort(b);
+      return (a.onsetTs || Infinity) - (b.onsetTs || Infinity);
     });
   }
   return alerts;
 }
 
-export function extractZoneCode(url: string): string {
-  const parts = url.split('/');
-  return parts[parts.length - 1].toUpperCase();
-}
-
-export function alertMatchesZones(alert: NwsAlert, zones: Set<string>): boolean {
-  if (alert.AffectedZones) {
-    for (const z of alert.AffectedZones) {
-      if (zones.has(extractZoneCode(z))) return true;
-    }
-  }
-  if (alert.Geocode?.UGC) {
-    for (const code of alert.Geocode.UGC) {
-      if (zones.has(code.toUpperCase())) return true;
-    }
-  }
-  return false;
+export function alertMatchesZones(alert: WeatherAlert, zones: Set<string>): boolean {
+  return alert.zones.some(z => zones.has(z.toUpperCase()));
 }

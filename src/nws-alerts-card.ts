@@ -1,7 +1,7 @@
 import { LitElement, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { HomeAssistant, NwsAlertsCardConfig, NwsAlert, AlertProgress } from './types';
+import { HomeAssistant, NwsAlertsCardConfig, WeatherAlert, AlertProgress } from './types';
 import {
   getWeatherIcon,
   getCertaintyIcon,
@@ -9,14 +9,19 @@ import {
   formatProgressTimestamp,
   formatLocalTimestamp,
   formatRelativeTime,
-  normalizeSeverity,
   sortAlerts,
   alertMatchesZones,
   getNwsEventColor,
   sanitizeAlertHtml,
 } from './utils';
+import { getAdapter } from './adapters';
 import { cardStyles } from './styles';
 import './nws-alerts-card-editor';
+
+const PROVIDER_LABELS: Record<string, string> = {
+  nws: 'NWS',
+  bom: 'BoM',
+};
 
 @customElement('nws-alerts-card')
 export class NwsAlertsCard extends LitElement {
@@ -60,19 +65,20 @@ export class NwsAlertsCard extends LitElement {
     return { entity: 'sensor.nws_alerts_alerts' };
   }
 
-  private _getAlerts(): NwsAlert[] {
+  private _getAlerts(): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
     const entity = this.hass.states[this._config.entity];
     if (!entity) return [];
-    const alerts = (entity.attributes['Alerts'] as NwsAlert[] | undefined) || [];
 
-    let filtered = alerts;
+    const adapter = getAdapter(this._config.provider, entity.attributes);
+    let alerts = adapter.parseAlerts(entity.attributes);
+
     if (this._config.zones && this._config.zones.length > 0) {
       const zoneSet = new Set(this._config.zones.map(z => z.toUpperCase()));
-      filtered = alerts.filter(a => alertMatchesZones(a, zoneSet));
+      alerts = alerts.filter(a => alertMatchesZones(a, zoneSet));
     }
 
-    return sortAlerts(filtered, this._config.sortOrder || 'default');
+    return sortAlerts(alerts, this._config.sortOrder || 'default');
   }
 
   private get _locale() {
@@ -87,9 +93,9 @@ export class NwsAlertsCard extends LitElement {
   private get _isCompact(): boolean { return this._config?.layout === 'compact'; }
   private get _colorTheme(): 'severity' | 'nws' { return this._config?.colorTheme || 'severity'; }
 
-  private _alertColorStyle(event: string): string {
-    if (this._colorTheme !== 'nws') return '';
-    const { color, rgb, textColor } = getNwsEventColor(event);
+  private _alertColorStyle(alert: WeatherAlert): string {
+    if (this._colorTheme !== 'nws' || alert.provider !== 'nws') return '';
+    const { color, rgb, textColor } = getNwsEventColor(alert.event);
     return `--color: ${color}; --color-rgb: ${rgb}; --badge-text: ${textColor};`;
   }
   private _normalizeText(text: string | undefined): string {
@@ -100,6 +106,11 @@ export class NwsAlertsCard extends LitElement {
     const next = new Map(this._expandedAlerts);
     next.set(alertId, !next.get(alertId));
     this._expandedAlerts = next;
+  }
+
+  private _sourceLinkLabel(alert: WeatherAlert): string {
+    const label = PROVIDER_LABELS[alert.provider] || 'Alert';
+    return `Open ${label} Source`;
   }
 
   protected render(): TemplateResult {
@@ -122,7 +133,7 @@ export class NwsAlertsCard extends LitElement {
         <ha-card .header=${this._config.title || ''}>
           <div class="sensor-unavailable">
             <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-            NWS Alerts sensor is ${stateVal}.
+            Alert sensor is ${stateVal}.
           </div>
         </ha-card>
       `;
@@ -145,17 +156,16 @@ export class NwsAlertsCard extends LitElement {
     return html`
       <div class="no-alerts">
         <ha-icon icon="mdi:weather-sunny"></ha-icon><br>
-        No active NWS alerts.
+        No active alerts.
       </div>
     `;
   }
 
-  private _renderAlert(alert: NwsAlert): TemplateResult {
-    const severity = normalizeSeverity(alert.Severity);
-    const className = `severity-${severity}`;
+  private _renderAlert(alert: WeatherAlert): TemplateResult {
+    const className = `severity-${alert.severity}`;
     const progress = computeAlertProgress(alert);
     const phaseClass = progress.phaseText.toLowerCase();
-    const expanded = this._expandedAlerts.get(alert.ID) || false;
+    const expanded = this._expandedAlerts.get(alert.id) || false;
 
     if (this._isCompact) {
       return this._renderCompactAlert(alert, className, phaseClass, progress, expanded);
@@ -165,19 +175,19 @@ export class NwsAlertsCard extends LitElement {
   }
 
   private _renderCompactAlert(
-    alert: NwsAlert, className: string, phaseClass: string,
+    alert: WeatherAlert, className: string, phaseClass: string,
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
     return html`
-      <div class="alert-card ${className} ${phaseClass}" style=${this._alertColorStyle(alert.Event)}>
+      <div class="alert-card ${className} ${phaseClass}" style=${this._alertColorStyle(alert)}>
         <div
           class="alert-header-row compact-row"
-          @click=${() => this._toggleDetails(alert.ID)}
+          @click=${() => this._toggleDetails(alert.id)}
         >
           <div class="icon-box">
-            <ha-icon icon=${getWeatherIcon(alert.Event)}></ha-icon>
+            <ha-icon icon=${getWeatherIcon(alert.event)}></ha-icon>
           </div>
-          <span class="alert-title">${alert.Event || 'Unknown'}</span>
+          <span class="alert-title">${alert.event}</span>
           <ha-icon
             icon="mdi:chevron-down"
             class="compact-chevron ${expanded ? 'expanded' : ''}"
@@ -188,10 +198,7 @@ export class NwsAlertsCard extends LitElement {
     `;
   }
 
-  private _renderExpandedContent(alert: NwsAlert, progress: AlertProgress): TemplateResult {
-    const desc = this._normalizeText(alert.Description);
-    const instr = this._normalizeText(alert.Instruction);
-
+  private _renderExpandedContent(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     return html`
       <div class="alert-expanded">
         <div class="badges-row" style="padding: 0 12px 8px;">
@@ -203,15 +210,15 @@ export class NwsAlertsCard extends LitElement {
         <div class="alert-details-section">
           <div
             class="details-summary"
-            @click=${() => this._toggleDetails(alert.ID + '_details')}
+            @click=${() => this._toggleDetails(alert.id + '_details')}
           >
             <span>Read Details</span>
             <ha-icon
               icon="mdi:chevron-down"
-              class="chevron ${this._expandedAlerts.get(alert.ID + '_details') ? 'expanded' : ''}"
+              class="chevron ${this._expandedAlerts.get(alert.id + '_details') ? 'expanded' : ''}"
             ></ha-icon>
           </div>
-          ${this._expandedAlerts.get(alert.ID + '_details')
+          ${this._expandedAlerts.get(alert.id + '_details')
         ? this._renderDetailsContent(alert, progress)
         : nothing}
         </div>
@@ -220,18 +227,18 @@ export class NwsAlertsCard extends LitElement {
   }
 
   private _renderFullAlert(
-    alert: NwsAlert, className: string, phaseClass: string,
+    alert: WeatherAlert, className: string, phaseClass: string,
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
     return html`
-      <div class="alert-card ${className} ${phaseClass}" style=${this._alertColorStyle(alert.Event)}>
+      <div class="alert-card ${className} ${phaseClass}" style=${this._alertColorStyle(alert)}>
         <div class="alert-header-row">
           <div class="icon-box">
-            <ha-icon icon=${getWeatherIcon(alert.Event)}></ha-icon>
+            <ha-icon icon=${getWeatherIcon(alert.event)}></ha-icon>
           </div>
           <div class="info-box">
             <div class="title-row">
-              <span class="alert-title">${alert.Event || 'Unknown'}</span>
+              <span class="alert-title">${alert.event}</span>
             </div>
             <div class="badges-row">
               ${this._renderBadgesRow(alert, progress)}
@@ -244,7 +251,7 @@ export class NwsAlertsCard extends LitElement {
         <div class="alert-details-section">
           <div
             class="details-summary"
-            @click=${() => this._toggleDetails(alert.ID)}
+            @click=${() => this._toggleDetails(alert.id)}
           >
             <span>Read Details</span>
             <ha-icon
@@ -258,16 +265,21 @@ export class NwsAlertsCard extends LitElement {
     `;
   }
 
-  private _renderBadgesRow(alert: NwsAlert, progress: AlertProgress): TemplateResult {
+  private _renderBadgesRow(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     return html`
-      <span class="badge severity-badge">${alert.Severity}</span>
-      <span class="badge certainty-badge">
-        <ha-icon
-          icon=${getCertaintyIcon(alert.Certainty)}
-          style="--mdc-icon-size: 14px; width: 14px; height: 14px;"
-        ></ha-icon>
-        ${alert.Certainty}
-      </span>
+      <span class="badge severity-badge">${alert.severity}</span>
+      ${alert.certainty ? html`
+        <span class="badge certainty-badge">
+          <ha-icon
+            icon=${getCertaintyIcon(alert.certainty)}
+            style="--mdc-icon-size: 14px; width: 14px; height: 14px;"
+          ></ha-icon>
+          ${alert.certainty}
+        </span>
+      ` : nothing}
+      ${alert.phase ? html`
+        <span class="badge phase-badge">${alert.phase}</span>
+      ` : nothing}
       ${progress.isActive
         ? html`<span class="badge active-badge">Active</span>`
         : html`<span class="badge prep-badge">In Prep</span>`}
@@ -284,9 +296,9 @@ export class NwsAlertsCard extends LitElement {
     `;
   }
 
-  private _renderDetailsContent(alert: NwsAlert, progress: AlertProgress): TemplateResult {
-    const desc = this._normalizeText(alert.Description);
-    const instr = this._normalizeText(alert.Instruction);
+  private _renderDetailsContent(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
+    const desc = this._normalizeText(alert.description);
+    const instr = this._normalizeText(alert.instruction);
 
     return html`
       <div class="details-content">
@@ -312,17 +324,19 @@ export class NwsAlertsCard extends LitElement {
         ${this._renderTextBlock('Description', desc)}
         ${this._renderTextBlock('Instructions', instr)}
 
-        <div class="footer-link">
-          <a href=${alert.URL || '#'} target="_blank" rel="noopener noreferrer">
-            Open NWS Source
-            <ha-icon icon="mdi:open-in-new" style="width:14px;"></ha-icon>
-          </a>
-        </div>
+        ${alert.url ? html`
+          <div class="footer-link">
+            <a href=${alert.url} target="_blank" rel="noopener noreferrer">
+              ${this._sourceLinkLabel(alert)}
+              <ha-icon icon="mdi:open-in-new" style="width:14px;"></ha-icon>
+            </a>
+          </div>
+        ` : nothing}
       </div>
     `;
   }
 
-  private _renderProgressSection(alert: NwsAlert, progress: AlertProgress): TemplateResult {
+  private _renderProgressSection(_alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     const { isActive, progressPct, hasEndTime, onsetTs, endsTs, nowTs } = progress;
 
     const noAnim = !this._animationsEnabled;
@@ -366,7 +380,7 @@ w.customCards = w.customCards || [];
 w.customCards.push({
   type: 'nws-alerts-card',
   name: 'NWS Alerts Card',
-  description: 'A card for displaying NWS weather alerts with severity indicators, progress bars, and expandable details.',
+  description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US) and BoM (Australia).',
 });
 
 declare global {

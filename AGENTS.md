@@ -4,7 +4,7 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-A standalone custom Home Assistant Lovelace card for displaying NWS (National Weather Service) weather alerts. Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
+A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US) and BoM (Bureau of Meteorology, Australia). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
 
 ## Build Commands
 
@@ -22,30 +22,40 @@ Always run `npm run lint` and `npm run test` before committing.
 
 | File | Purpose |
 |------|---------|
-| `src/nws-alerts-card.ts` | Main LitElement card class. Implements HA card contract: `setConfig()`, `hass` property, `getCardSize()`, `getStubConfig()`, `window.customCards` registration. Wraps output in `<ha-card>`. |
-| `src/types.ts` | TypeScript interfaces: `NwsAlertsCardConfig`, `NwsAlert` (matches NWS Alerts integration v6.1 attributes), `AlertProgress`. |
-| `src/utils.ts` | Pure functions ported from v1.yml Jinja2 macros: icon mapping (`getWeatherIcon`, `getCertaintyIcon`), timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering (`alertMatchesZones`). |
+| `src/nws-alerts-card.ts` | Main LitElement card class. Implements HA card contract: `setConfig()`, `hass` property, `getCardSize()`, `getStubConfig()`, `window.customCards` registration. Wraps output in `<ha-card>`. Consumes normalized `WeatherAlert` objects. |
+| `src/types.ts` | TypeScript interfaces: `WeatherAlert` (normalized, provider-agnostic), `NwsAlertsCardConfig`, `AlertAdapter`, `NwsAlert` (raw NWS shape), `BomWarning` (raw BoM shape), `AlertProgress`. |
+| `src/adapters/index.ts` | Adapter registry with auto-detection. Exports `getAdapter(provider, attributes)`. |
+| `src/adapters/nws.ts` | NWS adapter: parses `attributes.Alerts` → `WeatherAlert[]`. |
+| `src/adapters/bom.ts` | BoM adapter: parses `attributes.warnings` → `WeatherAlert[]`. Filters cancelled warnings, maps severity from `type` + `warning_group_type`. |
+| `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
 | `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + terser → single `dist/nws-alerts-card.js`. |
 
 ## Key Patterns
 
-- The card reads from `sensor.nws_alerts_alerts` entity (configurable via `config.entity`) and its `Alerts` attribute array.
-- Each alert has fields: `ID`, `Event`, `Severity`, `Certainty`, `Urgency`, `Sent`, `Onset`, `Ends`, `Expires`, `Description`, `Instruction`, `URL`, `Headline`, `AreaDesc`, `AffectedZones`, `Geocode`.
+- The card uses an **adapter pattern** to support multiple alert providers. Each adapter converts raw entity attributes into a normalized `WeatherAlert[]` array.
+- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'`) or auto-detected from entity attributes.
+- **NWS adapter**: reads `attributes.Alerts` array (NWS Alerts integration v6.1+). Zones extracted from `AffectedZones` URLs and `Geocode.UGC`.
+- **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent).
+- The card UI only consumes normalized `WeatherAlert` objects — never raw provider data.
 - Severity levels map to CSS classes: `severity-extreme`, `severity-severe`, `severity-moderate`, `severity-minor`, `severity-unknown`, each with `--color` and `--color-rgb` custom properties.
 - Progress bars use inverted fill logic: the filled portion represents remaining time, positioned from the elapsed percentage.
-- Details toggle uses `@state() _expandedAlerts: Map<string, boolean>` keyed by alert `ID` — avoids the DOM re-render collapse problem that native `<details>` elements have with HA's state update cycle.
-- Zone filtering checks both `AffectedZones` (full API URLs — trailing segment extracted) and `Geocode.UGC` (bare zone codes).
+- Details toggle uses `@state() _expandedAlerts: Map<string, boolean>` keyed by alert `id` — avoids the DOM re-render collapse problem that native `<details>` elements have with HA's state update cycle.
+- Zone filtering matches against the normalized `zones` array on each `WeatherAlert` (uppercase codes).
 - HA theme variables (`--primary-text-color`, `--card-background-color`, etc.) pass through Shadow DOM via CSS custom properties.
 
 ## Config Schema
 
 ```typescript
 interface NwsAlertsCardConfig {
-  entity: string;        // required — e.g. "sensor.nws_alerts_alerts"
-  title?: string;        // optional card header
-  zones?: string[];      // optional zone filter — e.g. ["COC059", "COZ039"]
-  animations?: boolean;  // optional — undefined: respects prefers-reduced-motion; true: always animate; false: never animate
+  entity: string;              // required — e.g. "sensor.nws_alerts_alerts"
+  title?: string;              // optional card header
+  zones?: string[];            // optional zone filter — e.g. ["COC059", "COZ039"]
+  animations?: boolean;        // optional — undefined: respects prefers-reduced-motion; true: always animate; false: never animate
+  provider?: AlertProvider;    // 'nws' | 'bom' — undefined: auto-detect from entity attributes
+  sortOrder?: 'default' | 'onset' | 'severity';
+  layout?: 'default' | 'compact';
+  colorTheme?: 'severity' | 'nws';
 }
 ```
 

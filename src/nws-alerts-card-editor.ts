@@ -39,6 +39,18 @@ export class NwsAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _providerChanged(ev: CustomEvent): void {
+    const value = (ev.target as HTMLSelectElement).value as string;
+    if (value === (this._config.provider || 'auto')) return;
+    const newConfig = { ...this._config };
+    if (value === 'auto') {
+      delete newConfig.provider;
+    } else {
+      newConfig.provider = value as 'nws' | 'bom';
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _animationsChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const animations = target.checked;
@@ -122,6 +134,19 @@ export class NwsAlertsCardEditor extends LitElement {
           .value=${this._config.title || ''}
           @change=${this._titleChanged}
         ></ha-textfield>
+
+        <ha-select
+          .label=${'Alert provider'}
+          .value=${this._config.provider || 'auto'}
+          @selected=${this._providerChanged}
+          @closed=${(ev: Event) => ev.stopPropagation()}
+          fixedMenuPosition
+          naturalMenuWidth
+        >
+          <ha-list-item value="auto">Auto-detect</ha-list-item>
+          <ha-list-item value="nws">NWS (United States)</ha-list-item>
+          <ha-list-item value="bom">BoM (Australia)</ha-list-item>
+        </ha-select>
 
         <ha-textfield
           .label=${'Zones (optional)'}

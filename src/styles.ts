@@ -148,6 +148,11 @@ export const cardStyles = css`
     border: 1px solid var(--divider-color);
     font-style: italic;
   }
+  .phase-badge {
+    background: var(--secondary-background-color);
+    color: var(--secondary-text-color);
+    border: 1px solid var(--divider-color);
+  }
 
   /* --- PROGRESS --- */
   .progress-section {

@@ -6,30 +6,30 @@ import {
   computeAlertProgress,
   normalizeSeverity,
   sortAlerts,
-  extractZoneCode,
   alertMatchesZones,
   formatRelativeTime,
+  parseTimestamp,
 } from '../src/utils';
-import type { NwsAlert } from '../src/types';
+import type { WeatherAlert } from '../src/types';
 
-function makeAlert(overrides: Partial<NwsAlert> = {}): NwsAlert {
+function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
   return {
-    ID: 'test-1',
-    Event: 'Test Alert',
-    Severity: 'Moderate',
-    Certainty: 'Likely',
-    Urgency: 'Immediate',
-    Sent: '2026-03-06T10:00:00-07:00',
-    Onset: '2026-03-06T12:00:00-07:00',
-    Ends: '2026-03-06T18:00:00-07:00',
-    Expires: '',
-    Description: 'Test description',
-    Instruction: 'Test instruction',
-    URL: 'https://alerts.weather.gov/test',
-    Headline: 'Test Headline',
-    AreaDesc: 'Test Area',
-    AffectedZones: ['https://api.weather.gov/zones/forecast/COZ039'],
-    Geocode: { UGC: ['COZ039'], SAME: ['008059'] },
+    id: 'test-1',
+    event: 'Test Alert',
+    severity: 'moderate',
+    certainty: 'Likely',
+    urgency: 'Immediate',
+    sentTs: parseTimestamp('2026-03-06T10:00:00-07:00'),
+    onsetTs: parseTimestamp('2026-03-06T12:00:00-07:00'),
+    endsTs: parseTimestamp('2026-03-06T18:00:00-07:00'),
+    description: 'Test description',
+    instruction: 'Test instruction',
+    url: 'https://alerts.weather.gov/test',
+    headline: 'Test Headline',
+    areaDesc: 'Test Area',
+    zones: ['COZ039'],
+    provider: 'nws',
+    phase: '',
     ...overrides,
   };
 }
@@ -49,6 +49,10 @@ describe('getWeatherIcon', () => {
 
   it('returns default icon for unknown events', () => {
     expect(getWeatherIcon('Unknown Event')).toBe('mdi:alert-circle-outline');
+  });
+
+  it('returns wave icon for marine/surf events', () => {
+    expect(getWeatherIcon('Hazardous Surf Warning')).toBe('mdi:waves');
   });
 });
 
@@ -112,8 +116,8 @@ describe('normalizeSeverity', () => {
 describe('computeAlertProgress', () => {
   it('returns active when now is past onset', () => {
     const alert = makeAlert({
-      Onset: new Date(Date.now() - 3600_000).toISOString(),
-      Ends: new Date(Date.now() + 3600_000).toISOString(),
+      onsetTs: Date.now() / 1000 - 3600,
+      endsTs: Date.now() / 1000 + 3600,
     });
     const progress = computeAlertProgress(alert);
     expect(progress.isActive).toBe(true);
@@ -124,25 +128,24 @@ describe('computeAlertProgress', () => {
 
   it('returns preparation when now is before onset', () => {
     const alert = makeAlert({
-      Onset: new Date(Date.now() + 7200_000).toISOString(),
-      Ends: new Date(Date.now() + 14400_000).toISOString(),
+      onsetTs: Date.now() / 1000 + 7200,
+      endsTs: Date.now() / 1000 + 14400,
     });
     const progress = computeAlertProgress(alert);
     expect(progress.isActive).toBe(false);
     expect(progress.phaseText).toBe('Preparation');
   });
 
-  it('handles missing Ends by falling back to Expires', () => {
+  it('handles present endsTs', () => {
     const alert = makeAlert({
-      Ends: '',
-      Expires: new Date(Date.now() + 3600_000).toISOString(),
+      endsTs: Date.now() / 1000 + 3600,
     });
     const progress = computeAlertProgress(alert);
     expect(progress.hasEndTime).toBe(true);
   });
 
   it('handles no end time', () => {
-    const alert = makeAlert({ Ends: '', Expires: '' });
+    const alert = makeAlert({ endsTs: 0 });
     const progress = computeAlertProgress(alert);
     expect(progress.hasEndTime).toBe(false);
   });
@@ -150,62 +153,72 @@ describe('computeAlertProgress', () => {
 
 describe('sortAlerts', () => {
   it('sorts by onset time', () => {
-    const early = makeAlert({ ID: 'early', Onset: '2026-03-06T10:00:00Z' });
-    const late = makeAlert({ ID: 'late', Onset: '2026-03-06T14:00:00Z' });
+    const early = makeAlert({ id: 'early', onsetTs: parseTimestamp('2026-03-06T10:00:00Z') });
+    const late = makeAlert({ id: 'late', onsetTs: parseTimestamp('2026-03-06T14:00:00Z') });
     const sorted = sortAlerts([late, early], 'onset');
-    expect(sorted[0].ID).toBe('early');
-    expect(sorted[1].ID).toBe('late');
+    expect(sorted[0].id).toBe('early');
+    expect(sorted[1].id).toBe('late');
   });
 
   it('sorts by severity', () => {
-    const minor = makeAlert({ ID: 'minor', Severity: 'Minor' });
-    const extreme = makeAlert({ ID: 'extreme', Severity: 'Extreme' });
+    const minor = makeAlert({ id: 'minor', severity: 'minor' });
+    const extreme = makeAlert({ id: 'extreme', severity: 'extreme' });
     const sorted = sortAlerts([minor, extreme], 'severity');
-    expect(sorted[0].ID).toBe('extreme');
-    expect(sorted[1].ID).toBe('minor');
+    expect(sorted[0].id).toBe('extreme');
+    expect(sorted[1].id).toBe('minor');
   });
 
   it('returns original order for default', () => {
-    const a = makeAlert({ ID: 'a' });
-    const b = makeAlert({ ID: 'b' });
+    const a = makeAlert({ id: 'a' });
+    const b = makeAlert({ id: 'b' });
     const sorted = sortAlerts([a, b], 'default');
-    expect(sorted[0].ID).toBe('a');
-  });
-});
-
-describe('extractZoneCode', () => {
-  it('extracts zone code from NWS API URL', () => {
-    expect(extractZoneCode('https://api.weather.gov/zones/forecast/COZ039')).toBe('COZ039');
-  });
-
-  it('uppercases the result', () => {
-    expect(extractZoneCode('https://api.weather.gov/zones/forecast/coz039')).toBe('COZ039');
+    expect(sorted[0].id).toBe('a');
   });
 });
 
 describe('alertMatchesZones', () => {
-  it('matches via AffectedZones', () => {
-    const alert = makeAlert({
-      AffectedZones: ['https://api.weather.gov/zones/forecast/COZ039'],
-      Geocode: {},
-    });
+  it('matches when alert has matching zone', () => {
+    const alert = makeAlert({ zones: ['COZ039'] });
     expect(alertMatchesZones(alert, new Set(['COZ039']))).toBe(true);
   });
 
-  it('matches via Geocode.UGC', () => {
-    const alert = makeAlert({
-      AffectedZones: [],
-      Geocode: { UGC: ['COC059'] },
-    });
-    expect(alertMatchesZones(alert, new Set(['COC059']))).toBe(true);
+  it('matches case-insensitively', () => {
+    const alert = makeAlert({ zones: ['coz039'] });
+    expect(alertMatchesZones(alert, new Set(['COZ039']))).toBe(true);
   });
 
   it('returns false when no match', () => {
-    const alert = makeAlert({
-      AffectedZones: ['https://api.weather.gov/zones/forecast/COZ039'],
-      Geocode: { UGC: ['COZ039'] },
-    });
+    const alert = makeAlert({ zones: ['COZ039'] });
     expect(alertMatchesZones(alert, new Set(['NYZ001']))).toBe(false);
+  });
+
+  it('returns false for empty zones', () => {
+    const alert = makeAlert({ zones: [] });
+    expect(alertMatchesZones(alert, new Set(['COZ039']))).toBe(false);
+  });
+});
+
+describe('parseTimestamp', () => {
+  it('parses ISO 8601 timestamps', () => {
+    const ts = parseTimestamp('2026-03-06T12:00:00Z');
+    expect(ts).toBeGreaterThan(0);
+  });
+
+  it('returns 0 for None', () => {
+    expect(parseTimestamp('None')).toBe(0);
+  });
+
+  it('returns 0 for empty string', () => {
+    expect(parseTimestamp('')).toBe(0);
+  });
+
+  it('returns 0 for undefined', () => {
+    expect(parseTimestamp(undefined)).toBe(0);
+  });
+
+  it('parses timestamps with timezone offsets', () => {
+    const ts = parseTimestamp('2026-03-06T14:30:00+10:00');
+    expect(ts).toBeGreaterThan(0);
   });
 });
 
