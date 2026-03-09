@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.9.1] - 2026-03-09
+
+### Fixed
+
+- Visual configuration editor options not clickable — `closed` events from internal dropdowns were propagating up and closing the HA editor dialog
+
 ## [v1.9.0] - 2026-03-09
 
 ### Added
@@ -124,6 +130,7 @@ All notable changes to this project will be documented in this file.
 - Card picker integration
 - Shadow DOM with full HA theme support
 
+[v1.9.1]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.1
 [v1.9.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0
 [v1.8.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.8.0
 [v1.7.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.7.0
