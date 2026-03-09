@@ -2,34 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v1.9.0-alpha.3] - 2026-03-06
-
-### Added
-
-- Support for the [ha_bom_australia](https://github.com/safepay/ha_bom_australia) integration (same warning data as bureau_of_meteorology — works out of the box)
-- Zone filtering for BoM warnings using `area_id` values (e.g. `NSW_FL049`)
-- Direct links to individual BoM warning pages instead of the generic state warnings list
-
-### Changed
-
-- BoM fallback URL updated to the warnings landing page (`bom.gov.au/weather-and-climate/warnings-and-alerts`)
-
-## [v1.9.0-alpha.2] - 2026-03-06
-
-### Fixed
-
-- Removed `country: US` restriction from HACS manifest so the card is discoverable globally (not just for US-based HA instances)
-
-## [v1.9.0-alpha.1] - 2026-03-06
+## [v1.9.0] - 2026-03-09
 
 ### Added
 
 - Multi-provider support via adapter pattern — the card now works with weather alert sensors beyond NWS
-- Australian Bureau of Meteorology (BoM) provider for the [bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology) integration
+- Australian Bureau of Meteorology (BoM) provider for the [bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology) and [ha_bom_australia](https://github.com/safepay/ha_bom_australia) integrations
 - `provider` config option to select alert provider: `'nws'`, `'bom'`, or omit for auto-detection
 - Provider selector dropdown in the visual configuration editor
+- Zone filtering for BoM warnings using `area_id` values (e.g. `NSW_FL049`)
 - Phase lifecycle badges for BoM warnings (New, Updated, Renewed, Upgraded, Downgraded, Final)
 - Weather icons for BoM-specific event types (sheep/grazier, surf/marine/coastal, cyclone)
+- Direct links to individual BoM warning pages
 
 ### Changed
 
@@ -38,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Source link label adapts to provider ("Open NWS Source" / "Open BoM Source")
 - "No active NWS alerts" empty state message changed to "No active alerts"
 - "NWS Alerts sensor is unavailable" message changed to "Alert sensor is unavailable"
+- Removed `country: US` restriction from HACS manifest so the card is discoverable globally
 
 ## [v1.8.0] - 2026-02-20
 
@@ -139,9 +124,7 @@ All notable changes to this project will be documented in this file.
 - Card picker integration
 - Shadow DOM with full HA theme support
 
-[v1.9.0-alpha.3]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0-alpha.3
-[v1.9.0-alpha.2]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0-alpha.2
-[v1.9.0-alpha.1]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0-alpha.1
+[v1.9.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.0
 [v1.8.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.8.0
 [v1.7.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.7.0
 [v1.6.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.6.0
