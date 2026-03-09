@@ -6,13 +6,13 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 | Light | Dark |
 |:---:|:---:|
-| ![Light mode](img/severity-light-details.png) | ![Dark mode](img/severity-dark-details.png) |
+| ![Light mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/severity-light-details.png) | ![Dark mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/severity-dark-details.png) |
 
 **Compact layout** — NWS official colors
 
 | Light | Dark |
 |:---:|:---:|
-| ![Light mode](img/nws-light-compact.png) | ![Dark mode](img/nws-dark-compact.png) |
+| ![Light mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/nws-light-compact.png) | ![Dark mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/nws-dark-compact.png) |
 
 ## Features
 
