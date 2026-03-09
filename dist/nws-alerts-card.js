@@ -410,7 +410,7 @@ const le=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
     margin-bottom: 10px;
   }
 `;let jt=class extends se{setConfig(e){this._config=e}_fireConfigChanged(e){this._config=e;const t=new CustomEvent("config-changed",{detail:{config:e},bubbles:!0,composed:!0});this.dispatchEvent(t)}_entityChanged(e){const t=e.detail.value;t!==this._config.entity&&this._fireConfigChanged({...this._config,entity:t})}_titleChanged(e){const t=e.target.value;if(t===(this._config.title||""))return;const r={...this._config};t?r.title=t:delete r.title,this._fireConfigChanged(r)}_providerChanged(e){const t=e.target.value;if(t===(this._config.provider||"auto"))return;const r={...this._config};"auto"===t?delete r.provider:r.provider=t,this._fireConfigChanged(r)}_animationsChanged(e){const t=e.target.checked;if(t===(!1!==this._config.animations))return;const r={...this._config};t?delete r.animations:r.animations=!1,this._fireConfigChanged(r)}_layoutChanged(e){const t=e.target.checked;if(t===("compact"===this._config.layout))return;const r={...this._config};t?r.layout="compact":delete r.layout,this._fireConfigChanged(r)}_zonesChanged(e){const t=e.target.value,r={...this._config};t.trim()?r.zones=t.split(",").map(e=>e.trim()).filter(Boolean):delete r.zones,this._fireConfigChanged(r)}_sortOrderChanged(e){const t=e.target.value;if(t===(this._config.sortOrder||"default"))return;const r={...this._config};"default"===t?delete r.sortOrder:r.sortOrder=t,this._fireConfigChanged(r)}_colorThemeChanged(e){const t=e.target.value;if(t===(this._config.colorTheme||"severity"))return;const r={...this._config};"severity"===t?delete r.colorTheme:r.colorTheme=t,this._fireConfigChanged(r)}render(){if(!this.hass||!this._config)return B``;const e=this._config.zones?this._config.zones.join(", "):"";return B`
-      <div class="editor">
+      <div class="editor" @closed=${e=>e.stopPropagation()}>
         <ha-selector
           .hass=${this.hass}
           .selector=${{entity:{domain:"sensor"}}}
@@ -430,7 +430,6 @@ const le=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
           .label=${"Alert provider"}
           .value=${this._config.provider||"auto"}
           @selected=${this._providerChanged}
-          @closed=${e=>e.stopPropagation()}
           fixedMenuPosition
           naturalMenuWidth
         >
@@ -451,7 +450,6 @@ const le=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
           .label=${"Sort order"}
           .value=${this._config.sortOrder||"default"}
           @selected=${this._sortOrderChanged}
-          @closed=${e=>e.stopPropagation()}
           fixedMenuPosition
           naturalMenuWidth
         >
@@ -464,7 +462,6 @@ const le=e=>(t,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(e,t)}
           .label=${"Color theme"}
           .value=${this._config.colorTheme||"severity"}
           @selected=${this._colorThemeChanged}
-          @closed=${e=>e.stopPropagation()}
           fixedMenuPosition
           naturalMenuWidth
         >

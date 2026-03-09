@@ -119,7 +119,7 @@ export class NwsAlertsCardEditor extends LitElement {
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
 
     return html`
-      <div class="editor">
+      <div class="editor" @closed=${(ev: Event) => ev.stopPropagation()}>
         <ha-selector
           .hass=${this.hass}
           .selector=${{ entity: { domain: 'sensor' } }}
@@ -139,7 +139,6 @@ export class NwsAlertsCardEditor extends LitElement {
           .label=${'Alert provider'}
           .value=${this._config.provider || 'auto'}
           @selected=${this._providerChanged}
-          @closed=${(ev: Event) => ev.stopPropagation()}
           fixedMenuPosition
           naturalMenuWidth
         >
@@ -160,7 +159,6 @@ export class NwsAlertsCardEditor extends LitElement {
           .label=${'Sort order'}
           .value=${this._config.sortOrder || 'default'}
           @selected=${this._sortOrderChanged}
-          @closed=${(ev: Event) => ev.stopPropagation()}
           fixedMenuPosition
           naturalMenuWidth
         >
@@ -173,7 +171,6 @@ export class NwsAlertsCardEditor extends LitElement {
           .label=${'Color theme'}
           .value=${this._config.colorTheme || 'severity'}
           @selected=${this._colorThemeChanged}
-          @closed=${(ev: Event) => ev.stopPropagation()}
           fixedMenuPosition
           naturalMenuWidth
         >
