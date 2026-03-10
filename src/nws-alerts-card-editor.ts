@@ -40,7 +40,7 @@ export class NwsAlertsCardEditor extends LitElement {
   }
 
   private _providerChanged(ev: CustomEvent): void {
-    const value = (ev.target as HTMLSelectElement).value as string;
+    const value = ev.detail.value as string;
     if (value === (this._config.provider || 'auto')) return;
     const newConfig = { ...this._config };
     if (value === 'auto') {
@@ -90,7 +90,7 @@ export class NwsAlertsCardEditor extends LitElement {
   }
 
   private _sortOrderChanged(ev: CustomEvent): void {
-    const value = (ev.target as HTMLSelectElement).value as 'default' | 'onset' | 'severity';
+    const value = ev.detail.value as 'default' | 'onset' | 'severity';
     if (value === (this._config.sortOrder || 'default')) return;
     const newConfig = { ...this._config };
     if (value === 'default') {
@@ -102,7 +102,7 @@ export class NwsAlertsCardEditor extends LitElement {
   }
 
   private _colorThemeChanged(ev: CustomEvent): void {
-    const value = (ev.target as HTMLSelectElement).value as 'severity' | 'nws';
+    const value = ev.detail.value as 'severity' | 'nws';
     if (value === (this._config.colorTheme || 'severity')) return;
     const newConfig = { ...this._config };
     if (value === 'severity') {
@@ -119,7 +119,7 @@ export class NwsAlertsCardEditor extends LitElement {
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
 
     return html`
-      <div class="editor" @closed=${(ev: Event) => ev.stopPropagation()}>
+      <div class="editor">
         <ha-selector
           .hass=${this.hass}
           .selector=${{ entity: { domain: 'sensor' } }}
@@ -139,12 +139,10 @@ export class NwsAlertsCardEditor extends LitElement {
           .label=${'Alert provider'}
           .value=${this._config.provider || 'auto'}
           @selected=${this._providerChanged}
-          fixedMenuPosition
-          naturalMenuWidth
         >
-          <ha-list-item value="auto">Auto-detect</ha-list-item>
-          <ha-list-item value="nws">NWS (United States)</ha-list-item>
-          <ha-list-item value="bom">BoM (Australia)</ha-list-item>
+          <ha-dropdown-item value="auto">Auto-detect</ha-dropdown-item>
+          <ha-dropdown-item value="nws">NWS (United States)</ha-dropdown-item>
+          <ha-dropdown-item value="bom">BoM (Australia)</ha-dropdown-item>
         </ha-select>
 
         <ha-textfield
@@ -159,23 +157,19 @@ export class NwsAlertsCardEditor extends LitElement {
           .label=${'Sort order'}
           .value=${this._config.sortOrder || 'default'}
           @selected=${this._sortOrderChanged}
-          fixedMenuPosition
-          naturalMenuWidth
         >
-          <ha-list-item value="default">Default</ha-list-item>
-          <ha-list-item value="onset">Onset time</ha-list-item>
-          <ha-list-item value="severity">Severity</ha-list-item>
+          <ha-dropdown-item value="default">Default</ha-dropdown-item>
+          <ha-dropdown-item value="onset">Onset time</ha-dropdown-item>
+          <ha-dropdown-item value="severity">Severity</ha-dropdown-item>
         </ha-select>
 
         <ha-select
           .label=${'Color theme'}
           .value=${this._config.colorTheme || 'severity'}
           @selected=${this._colorThemeChanged}
-          fixedMenuPosition
-          naturalMenuWidth
         >
-          <ha-list-item value="severity">Severity-based</ha-list-item>
-          <ha-list-item value="nws">NWS Official</ha-list-item>
+          <ha-dropdown-item value="severity">Severity-based</ha-dropdown-item>
+          <ha-dropdown-item value="nws">NWS Official</ha-dropdown-item>
         </ha-select>
 
         <ha-formfield .label=${'Enable animations'}>

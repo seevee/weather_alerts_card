@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Visual configuration editor options not clickable — `closed` events from internal dropdowns were propagating up and closing the HA editor dialog
+- Visual configuration editor dropdowns not selectable on HA 2026.02+ — migrate `ha-select` usage from removed MWC components (`ha-list-item`, `fixedMenuPosition`) to WebAwesome (`ha-dropdown-item`, `ev.detail.value`)
 
 ## [v1.9.0] - 2026-03-09
 
