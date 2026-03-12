@@ -78,6 +78,14 @@ export class NwsAlertsCard extends LitElement {
       alerts = alerts.filter(a => alertMatchesZones(a, zoneSet));
     }
 
+    if (this._config.minSeverity) {
+      const severityRank = {
+        extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
+      };
+      const threshold = severityRank[this._config.minSeverity] ?? 4;
+      alerts = alerts.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
+    }
+
     return sortAlerts(alerts, this._config.sortOrder || 'default');
   }
 

@@ -24,6 +24,7 @@ export interface NwsAlertsCardConfig {
   entity: string;
   title?: string;
   zones?: string[];
+  minSeverity?: AlertSeverity;
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
   layout?: 'default' | 'compact';

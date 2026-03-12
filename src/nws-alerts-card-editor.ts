@@ -1,6 +1,6 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, NwsAlertsCardConfig } from './types';
+import { HomeAssistant, NwsAlertsCardConfig, AlertSeverity } from './types';
 
 @customElement('nws-alerts-card-editor')
 export class NwsAlertsCardEditor extends LitElement {
@@ -113,6 +113,18 @@ export class NwsAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _minSeverityChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as AlertSeverity | '';
+    if (value === (this._config.minSeverity || '')) return;
+    const newConfig = { ...this._config };
+    if (value) {
+      newConfig.minSeverity = value as AlertSeverity;
+    } else {
+      delete newConfig.minSeverity;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   protected render(): TemplateResult {
     if (!this.hass || !this._config) return html``;
 
@@ -170,6 +182,18 @@ export class NwsAlertsCardEditor extends LitElement {
         >
           <ha-dropdown-item value="severity">Severity-based</ha-dropdown-item>
           <ha-dropdown-item value="nws">NWS Official</ha-dropdown-item>
+        </ha-select>
+
+        <ha-select
+          .label=${'Minimum severity'}
+          .value=${this._config.minSeverity || ''}
+          @selected=${this._minSeverityChanged}
+        >
+          <ha-dropdown-item value="">All severities</ha-dropdown-item>
+          <ha-dropdown-item value="minor">Minor or higher</ha-dropdown-item>
+          <ha-dropdown-item value="moderate">Moderate or higher</ha-dropdown-item>
+          <ha-dropdown-item value="severe">Severe or higher</ha-dropdown-item>
+          <ha-dropdown-item value="extreme">Extreme only</ha-dropdown-item>
         </ha-select>
 
         <ha-formfield .label=${'Enable animations'}>
