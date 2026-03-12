@@ -101,12 +101,52 @@ The card needs the `sensor.nws_alerts_alerts` entity which comes from the [NWS A
 
    **Important**: zone codes must be comma-delimited with **no spaces** (e.g. `COC059,COZ039,COZ239`). Adding spaces after commas (e.g. `COC059, COZ039`) causes the integration to silently return no alerts. Find your zone codes at https://alerts.weather.gov/.
 
+## Agent Rules
+
+These rules apply to all autonomous agent skills (`/explore`, `/plan`, `/implement`, `/fix`, `/review`).
+
+### Before editing
+- Read every file before referencing or modifying it
+- Read `AGENTS.md` for project context and conventions
+- Do not invent architecture that doesn't exist in the repository
+
+### Modifying code
+- Only modify files identified as in-scope for the task
+- Never introduce unrelated refactors or fix pre-existing issues outside changed files
+- Do not change public interfaces without user confirmation
+- Follow dependency order: types → utilities → core logic → UI → configuration → docs
+
+### Verification
+- Run `npm run build && npm run lint && npm test` before presenting results
+- Build must pass; fix any new lint errors or test failures introduced
+
+### Git discipline
+- Never auto-commit, push, or open PRs — defer to the user or `/commit-push-pr`
+- Commit format: `type(scope): description` (types: feat, fix, docs, refactor, test, chore)
+- Branch format: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`
+
+### Output
+- Present results directly to the user
+- Do not save artifacts to disk unless the skill specifies it or the user requests it
+
+### Skills Reference
+All agent skills are defined in `.claude/commands/`. When modifying a skill, also update this documentation to reflect changes:
+- `/explore` — repository discovery and context reports
+- `/plan` — implementation plans (saves to `plans/<slug>.md`)
+- `/implement` — code implementation from an approved plan
+- `/fix` — lightweight bug fixes (skips full plan cycle)
+- `/review` — code review with confidence-based filtering
+- `/release` — automated release workflow
+
 ## Workflow
 
 - `main` is protected: all changes go through PRs with required status checks (build, lint, test, HACS validation).
 - Only squash merges are allowed — one commit per PR on `main`.
 - Feature branches: `feat/<name>`, `fix/<name>`, `chore/<name>`, etc.
-- Use the `/release` skill to perform releases (creates a release branch, PR, tag, and GitHub Release).
+- Use the `/release` skill to perform releases (creates a release branch, PR, tag, and GitHub Release)
+- New release workflow with deterministic releases:
+  - Prereleases (alpha/beta/rc) auto-promote to GA versions when no new commits exist
+  - Dry-run mode uses `origin/main` as base; actual releases validate strict conditions
 
 ## HACS Distribution
 
