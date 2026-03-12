@@ -129,6 +129,15 @@ These rules apply to all autonomous agent skills (`/explore`, `/plan`, `/impleme
 - Present results directly to the user
 - Do not save artifacts to disk unless the skill specifies it or the user requests it
 
+### Skills Reference
+All agent skills are defined in `.claude/commands/`. When modifying a skill, also update this documentation to reflect changes:
+- `/explore` — repository discovery and context reports
+- `/plan` — implementation plans (saves to `plans/<slug>.md`)
+- `/implement` — code implementation from an approved plan
+- `/fix` — lightweight bug fixes (skips full plan cycle)
+- `/review` — code review with confidence-based filtering
+- `/release` — automated release workflow
+
 ## Workflow
 
 - `main` is protected: all changes go through PRs with required status checks (build, lint, test, HACS validation).
