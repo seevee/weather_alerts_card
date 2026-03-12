@@ -30,49 +30,88 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
 echo "Release pipeline starting"
+echo "Current branch: $CURRENT_BRANCH"
 echo "Dry run: $DRY_RUN"
 echo "Prerelease: ${PRERELEASE:-none}"
 
-# -------------------------
-# Preflight
-# -------------------------
-
-if [ "$(git rev-parse --abbrev-ref HEAD)" != "main" ]; then
-  echo "Must run from main"
-  exit 1
-fi
-
 git fetch origin
+git fetch --tags origin
 
-if ! git diff --quiet; then
-  echo "Working tree not clean"
-  exit 1
+# -------------------------
+# Strict checks ONLY for real releases
+# -------------------------
+
+if [ "$DRY_RUN" = false ]; then
+  BASE_REF="HEAD"
+
+  if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "Releases must be run from main"
+    exit 1
+  fi
+
+  git fetch origin
+
+  if ! git diff --quiet; then
+    echo "Working tree not clean"
+    exit 1
+  fi
+
+  if ! git diff --quiet main origin/main; then
+    echo "Local main not synced with origin/main"
+    exit 1
+  fi
+
+  npm run lint
+  npm run test
+
+else
+  BASE_REF="origin/main"
 fi
-
-if ! git diff --quiet main origin/main; then
-  echo "Local main not synced with origin/main"
-  exit 1
-fi
-
-npm run lint
-npm run test
 
 # -------------------------
 # Determine bump
 # -------------------------
 
 if [ -z "$BUMP" ]; then
-  BUMP=$(npx conventional-recommended-bump -p angular | jq -r '.releaseType')
+  BUMP=$(git log $(git describe --tags --abbrev=0 "$BASE_REF").."$BASE_REF" \
+        --pretty=%s \
+        | npx conventional-recommended-bump -p angular \
+        | grep -Eo 'major|minor|patch' \
+        | head -n1)
 fi
 
 CURRENT=$(node -p "require('./package.json').version")
+
+LATEST_TAG=$(git describe --tags --abbrev=0 "$BASE_REF" 2>/dev/null || echo "")
+
+PROMOTE=false
+BASE_FROM_PRERELEASE=""
+
+if [[ "$LATEST_TAG" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-(alpha|beta|rc)\.[0-9]+$ ]]; then
+
+  BASE_FROM_PRERELEASE="${BASH_REMATCH[1]}"
+
+  COMMITS_AFTER=$(git rev-list "$LATEST_TAG"..$BASE_REF --count)
+
+  if [ "$COMMITS_AFTER" -eq 0 ]; then
+    PROMOTE=true
+  fi
+
+fi
 
 # -------------------------
 # Compute version
 # -------------------------
 
-if [ -n "$PRERELEASE" ]; then
+if [ "$PROMOTE" = true ]; then
+
+  VERSION="$BASE_FROM_PRERELEASE"
+  echo "Promoting prerelease $LATEST_TAG → v$VERSION"
+
+elif [ -n "$PRERELEASE" ]; then
 
   BASE=$(npx semver "$CURRENT" -i "$BUMP")
 
@@ -91,8 +130,6 @@ fi
 echo "Current version: $CURRENT"
 echo "Next version: $VERSION"
 
-BRANCH="release/v$VERSION"
-
 # -------------------------
 # Dry-run preview
 # -------------------------
@@ -100,19 +137,25 @@ BRANCH="release/v$VERSION"
 if [ "$DRY_RUN" = true ]; then
 
   echo ""
-  echo "---- CHANGELOG PREVIEW ----"
+  echo "---- SIMULATED RELEASE FROM origin/main ----"
 
-  git cliff \
+  npx git-cliff \
     --config .cliff.toml \
     --tag "v$VERSION" \
     --unreleased \
-    --strip header
+    --strip header \
+    "$BASE_REF"
 
-  echo "---------------------------"
+  echo ""
+  echo "Next tag: v$VERSION"
+  echo "Branch would be: release/v$VERSION"
   echo "Dry run complete"
+
   exit 0
 
 fi
+
+BRANCH="release/v$VERSION"
 
 # -------------------------
 # Create branch
@@ -130,7 +173,7 @@ npm version "$VERSION" --no-git-tag-version
 # Generate changelog
 # -------------------------
 
-git cliff --config .cliff.toml --tag "v$VERSION" --output CHANGELOG.md
+npx git-cliff --config .cliff.toml --tag "v$VERSION" --output CHANGELOG.md
 
 git add CHANGELOG.md package.json package-lock.json
 
@@ -150,7 +193,7 @@ git push -u origin "$BRANCH"
 # Create PR
 # -------------------------
 
-NOTES=$(git cliff \
+NOTES=$(npx git-cliff \
   --config .cliff.toml \
   --tag "v$VERSION" \
   --unreleased \
