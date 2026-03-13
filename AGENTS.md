@@ -22,8 +22,9 @@ Always run `npm run lint` and `npm run test` before committing.
 
 | File | Purpose |
 |------|---------|
-| `src/nws-alerts-card.ts` | Main LitElement card class. Implements HA card contract: `setConfig()`, `hass` property, `getCardSize()`, `getStubConfig()`, `window.customCards` registration. Wraps output in `<ha-card>`. Consumes normalized `WeatherAlert` objects. |
-| `src/types.ts` | TypeScript interfaces: `WeatherAlert` (normalized, provider-agnostic), `NwsAlertsCardConfig`, `AlertAdapter`, `NwsAlert` (raw NWS shape), `BomWarning` (raw BoM shape), `AlertProgress`. |
+| `src/weather-alerts-card.ts` | Main LitElement card class. Implements HA card contract: `setConfig()`, `hass` property, `getCardSize()`, `getStubConfig()`, `window.customCards` registration. Wraps output in `<ha-card>`. Consumes normalized `WeatherAlert` objects. Registers deprecated `<nws-alerts-card>` shim for v1 backwards compatibility (removed in v3). |
+| `src/weather-alerts-card-editor.ts` | Visual configuration editor. Registers deprecated `<nws-alerts-card-editor>` shim (removed in v3). |
+| `src/types.ts` | TypeScript interfaces: `WeatherAlert` (normalized, provider-agnostic), `WeatherAlertsCardConfig`, `AlertAdapter`, `NwsAlert` (raw NWS shape), `BomWarning` (raw BoM shape), `AlertProgress`. |
 | `src/adapters/index.ts` | Adapter registry with auto-detection. Exports `getAdapter(provider, attributes)`. |
 | `src/adapters/nws.ts` | NWS adapter: parses `attributes.Alerts` → `WeatherAlert[]`. |
 | `src/adapters/bom.ts` | BoM adapter: parses `attributes.warnings` → `WeatherAlert[]`. Filters cancelled warnings, maps severity from `type` + `warning_group_type`. |
@@ -45,16 +46,17 @@ Always run `npm run lint` and `npm run test` before committing.
 - Details toggle uses `@state() _expandedAlerts: Map<string, boolean>` keyed by alert `id` — avoids the DOM re-render collapse problem that native `<details>` elements have with HA's state update cycle.
 - Zone filtering matches against the normalized `zones` array on each `WeatherAlert` (uppercase codes).
 - HA theme variables (`--primary-text-color`, `--card-background-color`, etc.) pass through Shadow DOM via CSS custom properties.
+- **Deprecated element names**: `<nws-alerts-card>` and `<nws-alerts-card-editor>` are registered as thin shims that extend the primary classes. The card shim logs a deprecation console warning. Both will be removed in v3.
 
 ## Config Schema
 
 ```typescript
-interface NwsAlertsCardConfig {
+interface WeatherAlertsCardConfig {
   entity: string;              // required — e.g. "sensor.nws_alerts_alerts"
   title?: string;              // optional card header
   zones?: string[];            // optional zone filter — e.g. ["COC059", "COZ039"]
   animations?: boolean;        // optional — undefined: respects prefers-reduced-motion; true: always animate; false: never animate
-  provider?: AlertProvider;    // 'nws' | 'bom' — undefined: auto-detect from entity attributes
+  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' — undefined: auto-detect from entity attributes
   sortOrder?: 'default' | 'onset' | 'severity';
   layout?: 'default' | 'compact';
   colorTheme?: 'severity' | 'nws';
@@ -80,9 +82,9 @@ After the HA onboarding flow:
 2. **Add card resource**: Settings → Dashboards → three-dot menu → Resources → Add Resource:
    - URL: `/local/nws-alerts-card.js`
    - Type: JavaScript Module
-3. **Add card to a dashboard**: Overview → pencil icon → Add Card → search "NWS Alerts Card" or use Manual card with:
+3. **Add card to a dashboard**: Overview → pencil icon → Add Card → search "Weather Alerts Card" or use Manual card with:
    ```yaml
-   type: custom:nws-alerts-card
+   type: custom:weather-alerts-card
    entity: sensor.nws_alerts_alerts
    ```
 
@@ -153,7 +155,7 @@ All agent skills are defined in `.claude/commands/`. When modifying a skill, als
 ## HACS Distribution
 
 - `hacs.json` — HACS manifest (name, filename).
-- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/nws-alerts-card.js` to the release.
+- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/nws-alerts-card.js` and `dist/nws-alerts-card.js` (backwards-compatible copy) to the release.
 - To release, use the `/release` skill or follow its steps manually:
   1. Create `release/vX.Y.Z` branch from `main`.
   2. Update `CHANGELOG.md`, bump version in `package.json`, run `npm run build`.

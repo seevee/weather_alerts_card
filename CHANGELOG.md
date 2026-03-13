@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.0.0] - Unreleased
+
+### Changed
+
+- **Renamed** from "NWS Alerts Card" to "Weather Alerts Card" to reflect multi-provider support
+- Custom element `<weather-alerts-card>` is the new primary name; `<nws-alerts-card>` is deprecated (logs a console warning, removed in v3)
+- Editor element `<weather-alerts-card-editor>` is the new primary name; `<nws-alerts-card-editor>` is deprecated (removed in v3)
+- Card picker shows "Weather Alerts Card" (primary) and "NWS Alerts Card (Deprecated)"
+- HACS distribution filename changed to `weather-alerts-card.js` (old `nws-alerts-card.js` still attached to releases for backwards compatibility)
+- TypeScript type `NwsAlertsCardConfig` renamed to `WeatherAlertsCardConfig` (old name kept as type alias)
+- Package name changed to `weather-alerts-card`
+
+### Migration
+
+Your existing dashboards will continue to work. The old `custom:nws-alerts-card` element name is still supported but deprecated. To migrate:
+
+1. Update your dashboard YAML: change `type: custom:nws-alerts-card` to `type: custom:weather-alerts-card`
+2. Update your resource URL: change `/local/nws-alerts-card.js` to `/local/weather-alerts-card.js`
+3. The old names will be removed in v3.
+
 ## [v1.10.0] - 2026-03-11
 
 ### Added
@@ -146,6 +166,7 @@ All notable changes to this project will be documented in this file.
 - Card picker integration
 - Shadow DOM with full HA theme support
 
+[v2.0.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v2.0.0
 [v1.10.0]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.10.0
 [v1.9.2]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.2
 [v1.9.1]: https://github.com/seevee/nws_alerts_card/releases/tag/v1.9.1

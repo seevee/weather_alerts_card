@@ -1,7 +1,7 @@
 {
-  "name": "nws-alerts-card",
+  "name": "weather-alerts-card",
   "version": "1.10.0",
-  "description": "A custom Home Assistant Lovelace card for displaying NWS weather alerts",
+  "description": "A custom Home Assistant Lovelace card for displaying weather alerts",
   "main": "dist/nws-alerts-card.js",
   "module": "dist/nws-alerts-card.js",
   "scripts": {
@@ -17,6 +17,8 @@
     "home-assistant",
     "lovelace",
     "nws",
+    "bom",
+    "meteoalarm",
     "weather",
     "alerts"
   ],

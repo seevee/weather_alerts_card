@@ -18,6 +18,10 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      - name: Create copy under new name for manual installs
+        run: cp dist/nws-alerts-card.js dist/weather-alerts-card.js
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/nws-alerts-card.js
+          files: |
+            dist/nws-alerts-card.js
+            dist/weather-alerts-card.js

@@ -1,4 +1,4 @@
-# NWS Alerts Card
+# Weather Alerts Card
 
 A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).
 
@@ -32,7 +32,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 ## Quick Start
 
 1. Install the [NWS Alerts](https://github.com/finity69x2/nws_alerts) integration (US), [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) integration (Australia), or [MeteoAlarm](https://www.home-assistant.io/integrations/meteoalarm/) integration (Europe, built-in)
-2. Install this card via HACS: search "NWS Alerts Card"
+2. Install this card via HACS: search "Weather Alerts Card"
 3. Add to your dashboard and select your alert entity
 
 ## Configuration
@@ -53,13 +53,13 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 **Basic**
 ```yaml
-type: custom:nws-alerts-card
+type: custom:weather-alerts-card
 entity: sensor.nws_alerts_alerts
 ```
 
 **With title and zone filtering**
 ```yaml
-type: custom:nws-alerts-card
+type: custom:weather-alerts-card
 entity: sensor.nws_alerts_alerts
 title: Weather Alerts
 zones:
@@ -69,7 +69,7 @@ zones:
 
 **NWS official colors, compact, sorted by severity**
 ```yaml
-type: custom:nws-alerts-card
+type: custom:weather-alerts-card
 entity: sensor.nws_alerts_alerts
 colorTheme: nws
 layout: compact
@@ -78,13 +78,13 @@ sortOrder: severity
 
 **European MeteoAlarm warnings**
 ```yaml
-type: custom:nws-alerts-card
+type: custom:weather-alerts-card
 entity: binary_sensor.meteoalarm
 ```
 
 **Australian BoM warnings**
 ```yaml
-type: custom:nws-alerts-card
+type: custom:weather-alerts-card
 entity: sensor.sydney_warnings
 provider: bom
 ```
@@ -92,13 +92,13 @@ provider: bom
 ## Installation
 
 ### HACS (recommended)
-1. Open HACS → Search "NWS Alerts Card" → Install
+1. Open HACS → Search "Weather Alerts Card" → Install
 2. Refresh your browser
 
 ### Manual
-1. Download `nws-alerts-card.js` from the [latest release](../../releases/latest)
-2. Copy to `config/www/nws-alerts-card.js`
-3. Add as resource: **Settings → Dashboards → Resources** → URL: `/local/nws-alerts-card.js`, Type: JavaScript Module
+1. Download `weather-alerts-card.js` from the [latest release](../../releases/latest)
+2. Copy to `config/www/weather-alerts-card.js`
+3. Add as resource: **Settings → Dashboards → Resources** → URL: `/local/weather-alerts-card.js`, Type: JavaScript Module
 
 ### MeteoAlarm (Europe)
 
@@ -109,11 +109,19 @@ The [MeteoAlarm integration](https://www.home-assistant.io/integrations/meteoala
 
 > **Note**: The MeteoAlarm integration only reports one alert at a time per entity. If your region has multiple concurrent alerts, only the first one is shown. This is a limitation of the upstream library, not the card.
 
+## Migrating from v1.x
+
+The card was renamed from "NWS Alerts Card" to "Weather Alerts Card" in v2.0 to reflect multi-provider support. **Your existing dashboards will continue to work.** The old `custom:nws-alerts-card` element name is still supported but deprecated. To migrate:
+
+1. Update your dashboard YAML: change `type: custom:nws-alerts-card` to `type: custom:weather-alerts-card`
+2. Update your resource URL (Settings → Dashboards → Resources): change `/local/nws-alerts-card.js` to `/local/weather-alerts-card.js`
+3. The old names will be removed in v3.
+
 ## Development
 
 ```bash
 npm install
-npm run build     # bundle → dist/nws-alerts-card.js
+npm run build     # bundle → dist/weather-alerts-card.js
 npm run watch     # bundle with file watching
 npm run lint      # TypeScript type-check
 ```

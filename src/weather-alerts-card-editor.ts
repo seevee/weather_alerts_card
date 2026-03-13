@@ -1,16 +1,16 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, NwsAlertsCardConfig, AlertSeverity } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity } from './types';
 
-@customElement('nws-alerts-card-editor')
-export class NwsAlertsCardEditor extends LitElement {
+@customElement('weather-alerts-card-editor')
+export class WeatherAlertsCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @state() private _config!: NwsAlertsCardConfig;
-  public setConfig(config: NwsAlertsCardConfig): void {
+  @state() private _config!: WeatherAlertsCardConfig;
+  public setConfig(config: WeatherAlertsCardConfig): void {
     this._config = config;
   }
 
-  private _fireConfigChanged(newConfig: NwsAlertsCardConfig): void {
+  private _fireConfigChanged(newConfig: WeatherAlertsCardConfig): void {
     this._config = newConfig;
     const event = new CustomEvent('config-changed', {
       detail: { config: newConfig },
@@ -224,8 +224,13 @@ export class NwsAlertsCardEditor extends LitElement {
   `;
 }
 
+// Deprecated shim — removed in v3.0.0
+class DeprecatedNwsAlertsCardEditor extends WeatherAlertsCardEditor {}
+customElements.define('nws-alerts-card-editor', DeprecatedNwsAlertsCardEditor);
+
 declare global {
   interface HTMLElementTagNameMap {
-    'nws-alerts-card-editor': NwsAlertsCardEditor;
+    'weather-alerts-card-editor': WeatherAlertsCardEditor;
+    'nws-alerts-card-editor': DeprecatedNwsAlertsCardEditor;
   }
 }

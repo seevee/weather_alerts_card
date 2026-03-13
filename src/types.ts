@@ -19,7 +19,7 @@ export interface HassEntity {
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
 export type AlertProvider = 'nws' | 'bom' | 'meteoalarm';
 
-export interface NwsAlertsCardConfig {
+export interface WeatherAlertsCardConfig {
   type: string;
   entity: string;
   title?: string;
@@ -95,6 +95,9 @@ export interface BomWarning {
   expiry_time: string;      // ISO 8601 timestamp
   phase: string;            // "new", "update", "renewal", "downgrade", "upgrade", "final", "cancelled"
 }
+
+/** @deprecated Use WeatherAlertsCardConfig instead. Removed in v3. */
+export type NwsAlertsCardConfig = WeatherAlertsCardConfig;
 
 export interface AlertProgress {
   isActive: boolean;

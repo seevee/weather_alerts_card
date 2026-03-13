@@ -1,7 +1,7 @@
 import { LitElement, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { HomeAssistant, NwsAlertsCardConfig, WeatherAlert, AlertProgress } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress } from './types';
 import {
   getWeatherIcon,
   getCertaintyIcon,
@@ -16,7 +16,7 @@ import {
 } from './utils';
 import { getAdapter } from './adapters';
 import { cardStyles } from './styles';
-import './nws-alerts-card-editor';
+import './weather-alerts-card-editor';
 
 const PROVIDER_LABELS: Record<string, string> = {
   nws: 'NWS',
@@ -24,12 +24,12 @@ const PROVIDER_LABELS: Record<string, string> = {
   meteoalarm: 'MeteoAlarm',
 };
 
-@customElement('nws-alerts-card')
-export class NwsAlertsCard extends LitElement {
+@customElement('weather-alerts-card')
+export class WeatherAlertsCard extends LitElement {
   static styles = cardStyles;
 
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @state() private _config!: NwsAlertsCardConfig;
+  @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
 
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -45,7 +45,7 @@ export class NwsAlertsCard extends LitElement {
     this._motionQuery.removeEventListener('change', this._onMotionChange);
   }
 
-  public setConfig(config: NwsAlertsCardConfig): void {
+  public setConfig(config: WeatherAlertsCardConfig): void {
     if (!config.entity) {
       throw new Error('You need to define an entity');
     }
@@ -59,7 +59,7 @@ export class NwsAlertsCard extends LitElement {
   }
 
   public static getConfigElement(): HTMLElement {
-    return document.createElement('nws-alerts-card-editor');
+    return document.createElement('weather-alerts-card-editor');
   }
 
   public static getStubConfig(): Record<string, unknown> {
@@ -382,18 +382,36 @@ export class NwsAlertsCard extends LitElement {
   }
 }
 
+// Deprecated shim — removed in v3.0.0
+class DeprecatedNwsAlertsCard extends WeatherAlertsCard {
+  connectedCallback() {
+    super.connectedCallback();
+    console.warn(
+      'nws-alerts-card is deprecated and will be removed in v3.0. ' +
+      'Update your dashboard YAML to use "custom:weather-alerts-card".',
+    );
+  }
+}
+customElements.define('nws-alerts-card', DeprecatedNwsAlertsCard);
+
 // Register with HA card picker
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const w = window as any;
 w.customCards = w.customCards || [];
 w.customCards.push({
-  type: 'nws-alerts-card',
-  name: 'NWS Alerts Card',
+  type: 'weather-alerts-card',
+  name: 'Weather Alerts Card',
   description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).',
+});
+w.customCards.push({
+  type: 'nws-alerts-card',
+  name: 'NWS Alerts Card (Deprecated)',
+  description: 'Deprecated — use "Weather Alerts Card" instead. Will be removed in v3.0.',
 });
 
 declare global {
   interface HTMLElementTagNameMap {
-    'nws-alerts-card': NwsAlertsCard;
+    'weather-alerts-card': WeatherAlertsCard;
+    'nws-alerts-card': DeprecatedNwsAlertsCard;
   }
 }

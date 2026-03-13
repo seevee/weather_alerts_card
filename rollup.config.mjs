@@ -4,7 +4,7 @@ import typescript from 'rollup-plugin-typescript2';
 import terser from '@rollup/plugin-terser';
 
 export default {
-  input: 'src/nws-alerts-card.ts',
+  input: 'src/weather-alerts-card.ts',
   output: {
     file: 'dist/nws-alerts-card.js',
     format: 'es',
