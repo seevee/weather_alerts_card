@@ -46,7 +46,7 @@ export class NwsAlertsCardEditor extends LitElement {
     if (value === 'auto') {
       delete newConfig.provider;
     } else {
-      newConfig.provider = value as 'nws' | 'bom';
+      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm';
     }
     this._fireConfigChanged(newConfig);
   }
@@ -134,7 +134,7 @@ export class NwsAlertsCardEditor extends LitElement {
       <div class="editor">
         <ha-selector
           .hass=${this.hass}
-          .selector=${{ entity: { domain: 'sensor' } }}
+          .selector=${{ entity: { domain: ['sensor', 'binary_sensor'] } }}
           .value=${this._config.entity}
           .label=${'Entity (required)'}
           .required=${true}
@@ -155,6 +155,7 @@ export class NwsAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="auto">Auto-detect</ha-dropdown-item>
           <ha-dropdown-item value="nws">NWS (United States)</ha-dropdown-item>
           <ha-dropdown-item value="bom">BoM (Australia)</ha-dropdown-item>
+          <ha-dropdown-item value="meteoalarm">MeteoAlarm (Europe)</ha-dropdown-item>
         </ha-select>
 
         <ha-textfield

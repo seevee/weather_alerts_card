@@ -26,6 +26,21 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('bom');
   });
 
+  it('returns MeteoAlarm adapter for explicit meteoalarm provider', () => {
+    const adapter = getAdapter('meteoalarm', {});
+    expect(adapter.provider).toBe('meteoalarm');
+  });
+
+  it('auto-detects MeteoAlarm from attribution', () => {
+    const adapter = getAdapter(undefined, {
+      attribution: 'Information provided by MeteoAlarm',
+      awareness_level: '3; orange; Severe',
+      awareness_type: '1; Wind',
+      event: 'Wind warning',
+    });
+    expect(adapter.provider).toBe('meteoalarm');
+  });
+
   it('defaults to NWS when attributes are ambiguous', () => {
     const adapter = getAdapter(undefined, {});
     expect(adapter.provider).toBe('nws');

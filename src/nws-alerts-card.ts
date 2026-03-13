@@ -21,6 +21,7 @@ import './nws-alerts-card-editor';
 const PROVIDER_LABELS: Record<string, string> = {
   nws: 'NWS',
   bom: 'BoM',
+  meteoalarm: 'MeteoAlarm',
 };
 
 @customElement('nws-alerts-card')
@@ -388,7 +389,7 @@ w.customCards = w.customCards || [];
 w.customCards.push({
   type: 'nws-alerts-card',
   name: 'NWS Alerts Card',
-  description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US) and BoM (Australia).',
+  description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).',
 });
 
 declare global {

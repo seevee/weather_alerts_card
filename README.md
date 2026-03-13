@@ -1,6 +1,6 @@
 # NWS Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US) and BoM (Australia).
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).
 
 ## Screenshots
 
@@ -18,7 +18,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 ## Features
 
-- **Multi-provider** — NWS (US) and BoM (Australia) with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), and MeteoAlarm (Europe) with auto-detection
 - **Severity colors** — HA theme colors or NWS official hazard-map colors by event type
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Expandable details** — sanitized description, instructions, and source link
@@ -31,7 +31,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 ## Quick Start
 
-1. Install the [NWS Alerts](https://github.com/finity69x2/nws_alerts) integration (US) or [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) integration (Australia)
+1. Install the [NWS Alerts](https://github.com/finity69x2/nws_alerts) integration (US), [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) integration (Australia), or [MeteoAlarm](https://www.home-assistant.io/integrations/meteoalarm/) integration (Europe, built-in)
 2. Install this card via HACS: search "NWS Alerts Card"
 3. Add to your dashboard and select your alert entity
 
@@ -39,8 +39,8 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `entity` | string | — | Alert sensor entity (e.g., `sensor.nws_alerts_alerts` or `sensor.sydney_warnings`) |
-| `provider` | string | auto | `'nws'`, `'bom'`, or omit for auto-detect |
+| `entity` | string | — | Alert sensor entity (e.g., `sensor.nws_alerts_alerts`, `sensor.sydney_warnings`, or `binary_sensor.meteoalarm`) |
+| `provider` | string | auto | `'nws'`, `'bom'`, `'meteoalarm'`, or omit for auto-detect |
 | `title` | string | — | Card header title |
 | `zones` | string[] | — | Zone codes to filter (NWS zones or BoM `area_id`) |
 | `sortOrder` | string | `'default'` | `'default'`, `'onset'`, `'severity'` |
@@ -76,6 +76,12 @@ layout: compact
 sortOrder: severity
 ```
 
+**European MeteoAlarm warnings**
+```yaml
+type: custom:nws-alerts-card
+entity: binary_sensor.meteoalarm
+```
+
 **Australian BoM warnings**
 ```yaml
 type: custom:nws-alerts-card
@@ -93,6 +99,15 @@ provider: bom
 1. Download `nws-alerts-card.js` from the [latest release](../../releases/latest)
 2. Copy to `config/www/nws-alerts-card.js`
 3. Add as resource: **Settings → Dashboards → Resources** → URL: `/local/nws-alerts-card.js`, Type: JavaScript Module
+
+### MeteoAlarm (Europe)
+
+The [MeteoAlarm integration](https://www.home-assistant.io/integrations/meteoalarm/) is built into Home Assistant. It creates a `binary_sensor.meteoalarm` entity that exposes a single active weather alert per configured province.
+
+1. **Settings → Devices & Services → Add Integration** → search "MeteoAlarm"
+2. Select your country and province
+
+> **Note**: The MeteoAlarm integration only reports one alert at a time per entity. If your region has multiple concurrent alerts, only the first one is shown. This is a limitation of the upstream library, not the card.
 
 ## Development
 
