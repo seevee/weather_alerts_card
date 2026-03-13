@@ -19,3 +19,8 @@ lovelace:
   resources:
     - url: /local/nws-alerts-card.js
       type: module
+
+binary_sensor:
+  - platform: meteoalarm
+    country: "netherlands"
+    province: "Texel"

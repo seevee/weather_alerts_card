@@ -15,6 +15,7 @@ plans/
 analysis/
 
 # Home Assistant dev container state
+config/.cache/
 config/.storage/
 config/deps/
 config/tts/
