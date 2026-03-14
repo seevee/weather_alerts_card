@@ -21,7 +21,7 @@ const {
   mdiSnowflake, mdiLandslide, mdiWeatherWindy, mdiFire, mdiWeatherSunnyAlert,
   mdiWeatherFog, mdiWeatherHurricane, mdiAlertCircleOutline, mdiWeatherSunny,
   mdiChevronDown, mdiOpenInNew, mdiCheckDecagram, mdiEyeCheck,
-  mdiHelpCircleOutline, mdiBullseyeArrow,
+  mdiHelpCircleOutline, mdiBullseyeArrow, mdiMapMarker,
 } = require('@mdi/js');
 
 const MDI_ICONS = {
@@ -44,6 +44,7 @@ const MDI_ICONS = {
   'mdi:eye-check': mdiEyeCheck,
   'mdi:help-circle-outline': mdiHelpCircleOutline,
   'mdi:bullseye-arrow': mdiBullseyeArrow,
+  'mdi:map-marker': mdiMapMarker,
 };
 
 // ---- Static file server ----

@@ -42,7 +42,7 @@ export const ALERTS = [
     Ends: iso(4 * H),
     Expires: iso(4 * H),
     Headline: 'High Wind Warning issued until 7:00 PM MDT',
-    AreaDesc: 'Northern Colorado Front Range and Foothills',
+    AreaDesc: 'Larimer County Below 6000 Feet/Northwest Weld County; Boulder And Jefferson Counties Below 6000 Feet/West Broomfield County; North Douglas County Below 6000 Feet',
     Description: 'Southwest winds 45 to 55 mph with gusts up to 75 mph expected through this evening.\n\nLocations impacted include Fort Collins, Loveland, Estes Park, and Red Feather Lakes.',
     Instruction: 'Winds this strong can make driving difficult, especially for high profile vehicles. Secure outdoor objects. Use extra caution near trees and power lines.',
     URL: 'https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.screenshot-2',
