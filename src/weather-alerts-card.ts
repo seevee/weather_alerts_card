@@ -18,6 +18,15 @@ import { getAdapter } from './adapters';
 import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
 
+/* eslint-disable no-console */
+const CARD_VERSION = '2.0.0-alpha.1';
+console.info(
+  `%c  WEATHER-ALERTS-CARD  %c  Version ${CARD_VERSION}  `,
+  'color: white; background: #555; font-weight: bold;',
+  'color: white; background: #007acc; font-weight: bold;',
+);
+/* eslint-enable no-console */
+
 const PROVIDER_LABELS: Record<string, string> = {
   nws: 'NWS',
   bom: 'BoM',
