@@ -11,7 +11,7 @@ git tag "$TAG"
 git push origin "$TAG"
 
 NOTES=$(npx git-cliff \
-  --config .cliff.toml \
+  --config cliff.toml \
   --tag "$TAG" \
   --strip header)
 

@@ -1,11 +1,18 @@
 # Changelog
 
+## 2.0.0-alpha.2 — 2026-03-14
+
 ### Added
 - Add styled console log with card name and version at load time (#30) (c406500…)
 
 ### Fixed
 - Use npx to run git-cliff in publish script (dcefd1e…)
 - Remove extra blank lines between changelog entries (#29) (4cdabe2…)
+
+### Maintenance
+- Release v2.0.0-alpha.2 (#31) (a97466f…)
+
+## 2.0.0-alpha.1 — 2026-03-14
 
 ### Added
 - Add MeteoAlarm (Europe) adapter (#11) (6046982…)
@@ -21,11 +28,15 @@
 - Add meteoalarm configuration to dev container (#24) (2065f8e…)
 - Release v2.0.0-alpha.1 (#28) (462ba83…)
 
+## 1.10.0 — 2026-03-12
+
 ### Added
 - Add minimum severity filter configuration (#20) (068b51b…)
 
 ### Maintenance
 - Release v1.10.0 (#21) (f95e06e…)
+
+## 1.9.2 — 2026-03-10
 
 ### Fixed
 - Stop closed event propagation at editor container level (#15) (8cb7a1e…)
@@ -35,11 +46,15 @@
 - Release v1.9.1 (#16) (6f780f7…)
 - Release v1.9.2 (#18) (ffc8133…)
 
+## 1.9.0 — 2026-03-09
+
 ### Fixed
 - Use absolute URLs for README images so they display in HACS (#9) (a8007af…)
 
 ### Maintenance
 - Release v1.9.0 (#10) (b9c7345…)
+
+## 1.9.0-alpha.3 — 2026-03-06
 
 ### Added
 - Support ha_bom_australia integration with area_id zone filtering (#7) (36f3d30…)
@@ -47,8 +62,12 @@
 ### Maintenance
 - Release v1.9.0-alpha.3 (#8) (590fd6b…)
 
+## 1.9.0-alpha.2 — 2026-03-06
+
 ### Maintenance
 - Release v1.9.0-alpha.2 (#6) (d63da7f…)
+
+## 1.9.0-alpha.1 — 2026-03-06
 
 ### Added
 - Add automated screenshot utility for README images (65ffbd3…)
@@ -63,6 +82,8 @@
 - Update release skill for branch-protected workflow (#3) (84d5c0f…)
 - Release v1.9.0-alpha.1 (#5) (176e0bd…)
 
+## 1.8.0 — 2026-02-20
+
 ### Added
 - Fix WCAG color contrast for severity and active badges (18bfd9d…)
 - Use luminance-based badge text for NWS theme, media-query for severity (478cf49…)
@@ -71,6 +92,8 @@
 - Update release skill gh release create flags (9b505d6…)
 - Remove obsolete docker compose version key (067c9af…)
 - Release v1.8.0 (49b7a4b…)
+
+## 1.7.0 — 2026-02-20
 
 ### Added
 - Sanitize alert HTML with DOMPurify before rendering (0addb50…)
@@ -84,17 +107,23 @@
 - Add claude configuration (37787ab…)
 - Release v1.7.0 (f2e1a91…)
 
+## 1.6.0 — 2026-02-19
+
 ### Documentation
 - Document colorTheme, compact layout, sort order, and visual editor (3e74a9b…)
 
 ### Maintenance
 - Release v1.6.0 (af441a6…)
 
+## 1.5.0 — 2026-02-19
+
 ### Added
 - Add colorTheme config option for NWS official event colors (08ccf8c…)
 
 ### Maintenance
 - Release v1.5.0 (e9ce2d6…)
+
+## 1.4.1 — 2026-02-19
 
 ### Changed
 - Reduce repetition across utils, card, and styles (58c0b02…)
@@ -105,11 +134,17 @@
 ### Maintenance
 - Release v1.4.1 (6c0aeee…)
 
+## 1.4.0 — 2026-02-17
+
 ### Maintenance
 - Release v1.4.0 (85e104d…)
 
+## 1.3.1 — 2026-02-17
+
 ### Maintenance
 - Release v1.3.1 (61ae002…)
+
+## 1.3.0 — 2026-02-17
 
 ### Documentation
 - Add CHANGELOG.md and document release flow (2b0b60f…)
@@ -117,6 +152,8 @@
 
 ### Maintenance
 - Release v1.3.0 (0e40447…)
+
+## 1.2.0 — 2026-02-17
 
 ### Added
 - Add animations config toggle (2887e21…)
@@ -128,11 +165,17 @@
 - Update documentation images (ea48078…)
 - Bump version to 1.2.0 (af900e2…)
 
+## 1.1.1 — 2026-02-16
+
 ### Fixed
 - Respect HA date format setting (d8ef57a…)
 
+## 1.1.0 — 2026-02-16
+
 ### Fixed
 - Vertically center badge text and respect HA time format (bbdaf9a…)
+
+## 1.0.0 — 2026-02-16
 
 ### Added
 - Add visual configuration editor (1e34682…)
@@ -143,8 +186,12 @@
 ### Maintenance
 - Remove old dist files (d0e3c5d…)
 
+## 0.0.2 — 2026-02-16
+
 ### Fixed
 - Add dist folder, add hacs country code (9773073…)
+
+## 0.0.1 — 2026-02-15
 
 ### Added
 - Add initial project structure and files (4bac721…)

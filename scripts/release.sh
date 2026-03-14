@@ -140,7 +140,7 @@ if [ "$DRY_RUN" = true ]; then
   echo "---- SIMULATED RELEASE FROM origin/main ----"
 
   npx git-cliff \
-    --config .cliff.toml \
+    --config cliff.toml \
     --tag "v$VERSION" \
     --unreleased \
     --strip header \
@@ -173,7 +173,7 @@ npm version "$VERSION" --no-git-tag-version
 # Generate changelog
 # -------------------------
 
-npx git-cliff --config .cliff.toml --tag "v$VERSION" --output CHANGELOG.md
+npx git-cliff --config cliff.toml --tag "v$VERSION" --output CHANGELOG.md
 
 git add CHANGELOG.md package.json package-lock.json
 
@@ -194,7 +194,7 @@ git push -u origin "$BRANCH"
 # -------------------------
 
 NOTES=$(npx git-cliff \
-  --config .cliff.toml \
+  --config cliff.toml \
   --tag "v$VERSION" \
   --unreleased \
   --strip header)
