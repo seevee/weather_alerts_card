@@ -104,5 +104,53 @@ describe('NwsAdapter', () => {
     it('returns empty array for missing Alerts attribute', () => {
       expect(adapter.parseAlerts({})).toEqual([]);
     });
+
+    describe('nws_alerts integration compatibility (optional fields)', () => {
+      it('falls back to AreasAffected when AreaDesc is absent', () => {
+        const attrs = makeNwsAttributes([{
+          AreaDesc: undefined,
+          AreasAffected: 'Denver County; Adams County',
+        }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].areaDesc).toBe('Denver County; Adams County');
+      });
+
+      it('prefers AreaDesc over AreasAffected when both are present', () => {
+        const attrs = makeNwsAttributes([{
+          AreaDesc: 'Denver County',
+          AreasAffected: 'Denver County; Adams County',
+        }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].areaDesc).toBe('Denver County');
+      });
+
+      it('returns empty areaDesc when both AreaDesc and AreasAffected are absent', () => {
+        const attrs = makeNwsAttributes([{
+          AreaDesc: undefined,
+          AreasAffected: undefined,
+        }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].areaDesc).toBe('');
+      });
+
+      it('handles missing Certainty and Urgency', () => {
+        const attrs = makeNwsAttributes([{
+          Certainty: undefined,
+          Urgency: undefined,
+        }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].certainty).toBe('');
+        expect(alerts[0].urgency).toBe('');
+      });
+
+      it('returns empty zones when AffectedZones and Geocode are absent', () => {
+        const attrs = makeNwsAttributes([{
+          AffectedZones: undefined,
+          Geocode: undefined,
+        }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].zones).toEqual([]);
+      });
+    });
   });
 });
