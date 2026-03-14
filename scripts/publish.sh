@@ -10,7 +10,7 @@ git pull origin main
 git tag "$TAG"
 git push origin "$TAG"
 
-NOTES=$(git cliff \
+NOTES=$(npx git-cliff \
   --config .cliff.toml \
   --tag "$TAG" \
   --strip header)
