@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [v2.0.0] - Unreleased
 
+### Fixed
+
+- Align `NwsAlert` type with actual `nws_alerts` integration field names — the integration provides `AreasAffected` (not `AreaDesc`) and omits `AffectedZones`, `Geocode`, and `Urgency`; these fields are now optional with proper fallbacks
+
 ### Changed
 
 - **Renamed** from "NWS Alerts Card" to "Weather Alerts Card" to reflect multi-provider support
