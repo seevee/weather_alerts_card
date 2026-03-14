@@ -242,3 +242,4 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(now + 172800, now)).toBe('in 2d');
   });
 });
+

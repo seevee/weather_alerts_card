@@ -210,6 +210,12 @@ export class WeatherAlertsCard extends LitElement {
   private _renderExpandedContent(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     return html`
       <div class="alert-expanded">
+        ${alert.areaDesc ? html`
+          <div class="area-desc" title=${alert.areaDesc}>
+            <ha-icon icon="mdi:map-marker"></ha-icon>
+            <span class="area-desc-text">${alert.areaDesc}</span>
+          </div>
+        ` : nothing}
         <div class="badges-row" style="padding: 0 12px 8px;">
           ${this._renderBadgesRow(alert, progress)}
         </div>
@@ -249,6 +255,12 @@ export class WeatherAlertsCard extends LitElement {
             <div class="title-row">
               <span class="alert-title">${alert.event}</span>
             </div>
+            ${alert.areaDesc ? html`
+              <div class="area-desc" title=${alert.areaDesc}>
+                <ha-icon icon="mdi:map-marker"></ha-icon>
+                <span class="area-desc-text">${alert.areaDesc}</span>
+              </div>
+            ` : nothing}
             <div class="badges-row">
               ${this._renderBadgesRow(alert, progress)}
             </div>
@@ -328,6 +340,12 @@ export class WeatherAlertsCard extends LitElement {
         ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs)}</span>`
         : nothing}
           </div>
+          ${alert.areaDesc ? html`
+            <div class="meta-item" style="grid-column: 1 / -1;">
+              <span class="meta-label">Area</span>
+              <span class="meta-value">${alert.areaDesc}</span>
+            </div>
+          ` : nothing}
         </div>
 
         ${this._renderTextBlock('Description', desc)}

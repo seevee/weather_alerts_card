@@ -308,3 +308,4 @@ export function sortAlerts(alerts: WeatherAlert[], order: string): WeatherAlert[
 export function alertMatchesZones(alert: WeatherAlert, zones: Set<string>): boolean {
   return alert.zones.some(z => zones.has(z.toUpperCase()));
 }
+

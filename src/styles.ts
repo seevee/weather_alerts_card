@@ -99,12 +99,44 @@ export const cardStyles = css`
 
   .info-box { flex-grow: 1; }
 
-  .title-row { margin-bottom: 6px; }
+  .title-row { margin-bottom: 4px; }
   .alert-title {
     font-size: 1.15rem;
     font-weight: 600;
     line-height: 1.2;
     color: var(--primary-text-color);
+  }
+
+  .area-desc {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--secondary-text-color);
+    margin-bottom: 6px;
+    max-width: 100%;
+    opacity: 0.85;
+  }
+  .area-desc ha-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    --mdc-icon-size: 13px;
+    width: 13px;
+    height: 13px;
+    opacity: 0.7;
+  }
+  .area-desc-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Compact expanded area-desc gets consistent inner padding */
+  .compact .alert-expanded .area-desc {
+    padding: 4px 12px 0;
+    margin-bottom: 4px;
   }
 
   .badges-row {

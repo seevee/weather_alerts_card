@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [v2.0.0] - Unreleased
 
+### Added
+
+- Display affected area below alert title — long NWS county lists are truncated to first 2 areas with "+N more" suffix; full area shown in expanded details
+
 ### Fixed
 
 - Align `NwsAlert` type with actual `nws_alerts` integration field names — the integration provides `AreasAffected` (not `AreaDesc`) and omits `AffectedZones`, `Geocode`, and `Urgency`; these fields are now optional with proper fallbacks
