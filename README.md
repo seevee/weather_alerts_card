@@ -102,10 +102,7 @@ provider: bom
 
 ### MeteoAlarm (Europe)
 
-The [MeteoAlarm integration](https://www.home-assistant.io/integrations/meteoalarm/) is built into Home Assistant. It creates a `binary_sensor.meteoalarm` entity that exposes a single active weather alert per configured province.
-
-1. **Settings → Devices & Services → Add Integration** → search "MeteoAlarm"
-2. Select your country and province
+The [MeteoAlarm integration](https://www.home-assistant.io/integrations/meteoalarm/) is built into Home Assistant. It creates a `binary_sensor.meteoalarm` entity that exposes a single active weather alert per configured province. You will need to configure this in `configuration.yml`.
 
 > **Note**: The MeteoAlarm integration only reports one alert at a time per entity. If your region has multiple concurrent alerts, only the first one is shown. This is a limitation of the upstream library, not the card.
 

@@ -60,12 +60,14 @@ export interface AlertAdapter {
 }
 
 // Raw NWS alert shape from the nws_alerts integration (v6.1+)
+// The integration uses AreasAffected (not AreaDesc) and does not include
+// AffectedZones, Geocode, or Urgency — all are optional for resilience.
 export interface NwsAlert {
   ID: string;
   Event: string;
   Severity: string;
-  Certainty: string;
-  Urgency: string;
+  Certainty?: string;
+  Urgency?: string;
   Sent: string;
   Onset: string;
   Ends: string;
@@ -74,9 +76,10 @@ export interface NwsAlert {
   Instruction: string;
   URL: string;
   Headline: string;
-  AreaDesc: string;
-  AffectedZones: string[];
-  Geocode: {
+  AreaDesc?: string;          // REST sensor / future integration versions
+  AreasAffected?: string;     // nws_alerts integration (v5+)
+  AffectedZones?: string[];   // REST sensor / future integration versions
+  Geocode?: {
     UGC?: string[];
     SAME?: string[];
   };
