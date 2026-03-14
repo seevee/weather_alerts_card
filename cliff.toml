@@ -4,11 +4,11 @@ header = """
 """
 
 body = """
-{% for group, commits in commits | group_by(attribute="group") %}
+{%- for group, commits in commits | group_by(attribute="group") %}
 ### {{ group }}
-{% for commit in commits %}
+{% for commit in commits -%}
 - {{ commit.message | upper_first }} ({{ commit.id | truncate(length=7) }})
-{% endfor %}
+{% endfor -%}
 {% endfor %}
 """
 
