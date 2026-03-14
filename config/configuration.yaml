@@ -17,7 +17,7 @@ http:
 
 lovelace:
   resources:
-    - url: /local/nws-alerts-card.js
+    - url: /local/weather-alerts-card.js
       type: module
 
 binary_sensor:

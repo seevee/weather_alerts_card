@@ -6,7 +6,7 @@ import terser from '@rollup/plugin-terser';
 export default {
   input: 'src/weather-alerts-card.ts',
   output: {
-    file: 'dist/nws-alerts-card.js',
+    file: 'dist/weather-alerts-card.js',
     format: 'es',
   },
   plugins: [

@@ -3,14 +3,14 @@ services:
     build:
       context: ..
       dockerfile: .docker/Dockerfile
-    container_name: nws-alerts-card-ha
+    container_name: weather-alerts-card-ha
     restart: unless-stopped
     network_mode: bridge
     ports:
       - "8123:8123"
     volumes:
       - ../config:/config
-      - ../dist/nws-alerts-card.js:/config/www/nws-alerts-card.js:ro
+      - ../dist/weather-alerts-card.js:/config/www/weather-alerts-card.js:ro
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=UTC

@@ -1,4 +1,4 @@
-# Build output (dist/nws-alerts-card.js is committed for HACS compatibility)
+# Build output (dist/weather-alerts-card.js is committed for HACS compatibility)
 
 # Dependencies
 node_modules/

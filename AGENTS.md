@@ -9,7 +9,7 @@ A standalone custom Home Assistant Lovelace card for displaying weather alerts f
 ## Build Commands
 
 ```bash
-npm run build     # Rollup bundle → dist/nws-alerts-card.js (single ES module, ~31KB minified)
+npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~31KB minified)
 npm run watch     # Rollup in watch mode
 npm run lint      # TypeScript type-check (tsc --noEmit)
 npm run test      # Vitest unit tests (jsdom environment)
@@ -31,7 +31,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/meteoalarm.ts` | MeteoAlarm adapter: parses flat `binary_sensor` attributes → single-element `WeatherAlert[]`. Maps `awareness_level` to severity. |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
-| `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + terser → single `dist/nws-alerts-card.js`. |
+| `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + terser → single `dist/weather-alerts-card.js`. |
 
 ## Key Patterns
 
@@ -72,7 +72,7 @@ npm run build
 docker compose -f .docker/docker-compose.yml up
 ```
 
-Home Assistant runs at http://localhost:8123. The built JS is volume-mounted read-only at `/config/www/nws-alerts-card.js`. Rebuild on the host and hard-refresh the browser to see changes.
+Home Assistant runs at http://localhost:8123. The built JS is volume-mounted read-only at `/config/www/weather-alerts-card.js`. Rebuild on the host and hard-refresh the browser to see changes.
 
 ### First-time dev container setup
 
@@ -80,7 +80,7 @@ After the HA onboarding flow:
 
 1. **Enable advanced mode**: click your user avatar (bottom-left) → toggle Advanced Mode on.
 2. **Add card resource**: Settings → Dashboards → three-dot menu → Resources → Add Resource:
-   - URL: `/local/nws-alerts-card.js`
+   - URL: `/local/weather-alerts-card.js`
    - Type: JavaScript Module
 3. **Add card to a dashboard**: Overview → pencil icon → Add Card → search "Weather Alerts Card" or use Manual card with:
    ```yaml
@@ -155,7 +155,7 @@ All agent skills are defined in `.claude/commands/`. When modifying a skill, als
 ## HACS Distribution
 
 - `hacs.json` — HACS manifest (name, filename).
-- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/nws-alerts-card.js` and `dist/nws-alerts-card.js` (backwards-compatible copy) to the release.
+- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` and `dist/weather-alerts-card.js` (backwards-compatible copy) to the release.
 - To release, use the `/release` skill or follow its steps manually:
   1. Create `release/vX.Y.Z` branch from `main`.
   2. Update `CHANGELOG.md`, bump version in `package.json`, run `npm run build`.

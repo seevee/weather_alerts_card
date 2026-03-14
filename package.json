@@ -2,8 +2,8 @@
   "name": "weather-alerts-card",
   "version": "1.10.0",
   "description": "A custom Home Assistant Lovelace card for displaying weather alerts",
-  "main": "dist/nws-alerts-card.js",
-  "module": "dist/nws-alerts-card.js",
+  "main": "dist/weather-alerts-card.js",
+  "module": "dist/weather-alerts-card.js",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c --watch",
