@@ -131,6 +131,17 @@ echo "Current version: $CURRENT"
 echo "Next version: $VERSION"
 
 # -------------------------
+# Determine cliff flags for note generation
+# GA releases ignore prerelease tags to collapse alpha/beta/rc into one section
+# -------------------------
+
+CLIFF_FLAGS=()
+
+if [[ ! "$VERSION" =~ -(alpha|beta|rc)\. ]]; then
+  CLIFF_FLAGS+=(--tag-pattern "^v[0-9]+\.[0-9]+\.[0-9]+$")
+fi
+
+# -------------------------
 # Dry-run preview
 # -------------------------
 
@@ -142,6 +153,7 @@ if [ "$DRY_RUN" = true ]; then
   npx git-cliff \
     --config cliff.toml \
     --tag "v$VERSION" \
+    "${CLIFF_FLAGS[@]}" \
     --unreleased \
     --strip header \
     "$BASE_REF"
@@ -173,7 +185,7 @@ npm version "$VERSION" --no-git-tag-version
 # Generate changelog
 # -------------------------
 
-npx git-cliff --config cliff.toml --tag "v$VERSION" --output CHANGELOG.md
+npx git-cliff --config cliff.toml --tag "v$VERSION" "${CLIFF_FLAGS[@]}" --output CHANGELOG.md
 
 git add CHANGELOG.md package.json package-lock.json
 
@@ -196,6 +208,7 @@ git push -u origin "$BRANCH"
 NOTES=$(npx git-cliff \
   --config cliff.toml \
   --tag "v$VERSION" \
+  "${CLIFF_FLAGS[@]}" \
   --unreleased \
   --strip header)
 
