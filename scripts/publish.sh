@@ -32,10 +32,7 @@ else
     --strip header)
 fi
 
-MIGRATION_NOTICE="
----
-
-## Migrating from v1.x
+MIGRATION_NOTICE="## Migrating from v1.x
 
 The card was renamed from **NWS Alerts Card** to **Weather Alerts Card** to reflect multi-provider support. Your existing dashboards will continue to work — the old element name is supported but deprecated.
 
@@ -44,10 +41,13 @@ The card was renamed from **NWS Alerts Card** to **Weather Alerts Card** to refl
    - **HACS users:** HACS updates the resource path automatically — no action needed.
    - **Manual install:** In Settings → Dashboards → Resources, change \`/local/nws-alerts-card.js\` to \`/local/weather-alerts-card.js\`
 3. The old names will be removed in v3.
+
+---
 "
 
 if [ "$PRERELEASE" = false ]; then
-  NOTES="$NOTES$MIGRATION_NOTICE"
+  NOTES="$MIGRATION_NOTICE
+$NOTES"
 fi
 
 gh release create "$TAG" \
