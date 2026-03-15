@@ -152,6 +152,43 @@ const PORT = 3742;
     await page.locator(`#${cardId}`).locator('xpath=..').screenshot({ path: resolve(ROOT, out), type: 'png' });
   }
 
+  // ---- Hero images (light + dark) ----
+  // Two clean screenshots — README uses <picture> + prefers-color-scheme
+  // so each viewer sees the version matching their OS theme.
+  const HERO_VARIANTS = [
+    { theme: 'theme-light', label: 'hero light', out: 'img/hero-light.png' },
+    { theme: 'theme-dark',  label: 'hero dark ', out: 'img/hero-dark.png' },
+  ];
+  if (!themeFilter.length || themeFilter.includes('hero')) {
+    // Hero needs a wider viewport for the horizontal banner
+    await page.setViewportSize({ width: 1100, height: 900 });
+
+    const heroURL = `http://127.0.0.1:${PORT}/scripts/screenshot-hero.html`;
+
+    for (const { theme, label, out } of HERO_VARIANTS) {
+      console.log(`  ${label}            → ${out}`);
+
+      await page.goto(heroURL);
+
+      // Wait for both card instances to render
+      await page.waitForFunction(() => {
+        const ids = ['card-severity', 'card-nws'];
+        return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
+      }, { timeout: 10000 });
+
+      // Apply theme class to the canvas
+      await page.evaluate(cls => document.getElementById('hero-canvas').classList.add(cls), theme);
+
+      // Disable animations
+      await page.addStyleTag({
+        content: '*, *::before, *::after { animation: none !important; transition: none !important; }',
+      });
+      await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+
+      await page.locator('#hero-canvas').screenshot({ path: resolve(ROOT, out), type: 'png' });
+    }
+  }
+
   await browser.close();
   server.close();
   console.log('\nDone. Screenshots written to img/');

@@ -2,19 +2,10 @@
 
 A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).
 
-## Screenshots
-
-**Default layout** — severity colors, expanded details
-
-| Light | Dark |
-|:---:|:---:|
-| ![Light mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/severity-light-details.png) | ![Dark mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/severity-dark-details.png) |
-
-**Compact layout** — NWS official colors
-
-| Light | Dark |
-|:---:|:---:|
-| ![Light mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/nws-light-compact.png) | ![Dark mode](https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/nws-dark-compact.png) |
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="img/hero-light.png">
+  <img src="img/hero-dark.png" alt="Weather Alerts Card — default and compact layouts">
+</picture>
 
 ## Features
 

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NWS Alerts Card – Hero Screenshot</title>
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ---- */
+    .theme-light {
+      --primary-text-color: #212121;
+      --secondary-text-color: #727272;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: #e5e5e5;
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.12);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 33, 33, 33;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      --hero-bg: #f0f0f0;
+      --hero-label-color: rgba(0, 0, 0, 0.45);
+    }
+    .theme-dark {
+      --primary-text-color: #e1e1e1;
+      --secondary-text-color: #9b9b9b;
+      --primary-background-color: #111111;
+      --secondary-background-color: #202020;
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(225, 225, 225, 0.12);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 225, 225, 225;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.5),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.4),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+      --hero-bg: #0d1117;
+      --hero-label-color: rgba(255, 255, 255, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    /* ---- Hero canvas: horizontal banner ---- */
+    .hero-canvas {
+      background: var(--hero-bg);
+      padding: 36px 32px 28px;
+      display: flex;
+      gap: 28px;
+      width: 1060px;
+    }
+
+    /* Each showcase column */
+    .showcase {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Section label ---- */
+    .section-label {
+      color: var(--hero-label-color);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ---- Card container ---- */
+    .card-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .card-inner {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- The screenshot script adds .theme-light or .theme-dark before capture -->
+  <div class="hero-canvas" id="hero-canvas">
+
+    <!-- Severity theme: default layout -->
+    <div class="showcase">
+      <div class="section-label">Default &middot; Severity Colors</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-severity"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- NWS theme: compact layout -->
+    <div class="showcase">
+      <div class="section-label">Compact &middot; NWS Colors</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-nws"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+    import { ALERTS } from '/scripts/screenshot-fixtures.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {}
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+            }
+          </style>
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock hass object ----
+    const MOCK_HASS = {
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      states: {
+        'sensor.nws_alerts_alerts': {
+          state: String(ALERTS.length),
+          attributes: { Alerts: ALERTS },
+        },
+      },
+    };
+
+    // ---- Wire up cards ----
+    const severity = document.getElementById('card-severity');
+    severity.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'severity' });
+    severity.hass = MOCK_HASS;
+
+    const nws = document.getElementById('card-nws');
+    nws.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
+    nws.hass = MOCK_HASS;
+  </script>
+</body>
+</html>
