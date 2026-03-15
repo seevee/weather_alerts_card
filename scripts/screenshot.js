@@ -96,6 +96,11 @@ const SCENARIOS = themeFilter.length
   ? ALL_SCENARIOS.filter(s => themeFilter.some(t => s.cardId.startsWith(`card-${t}`)))
   : ALL_SCENARIOS;
 
+// Fixed timestamp anchor — must match SCREENSHOT_NOW in screenshot-fixtures.js.
+// Injected into the browser so Date.now() returns a stable value and all
+// rendered timestamps / progress bars are deterministic across runs.
+const SCREENSHOT_NOW = Date.UTC(2025, 5, 15, 20, 0, 0);
+
 const PORT = 3742;
 
 (async () => {
@@ -113,6 +118,9 @@ const PORT = 3742;
 
   // Inject MDI icon map before any page script runs (persists across navigations)
   await page.addInitScript(icons => { window.__MDI_ICONS__ = icons; }, MDI_ICONS);
+
+  // Freeze Date.now() so rendered timestamps and progress bars are deterministic
+  await page.addInitScript(now => { Date.now = () => now; }, SCREENSHOT_NOW);
 
   const URL = `http://127.0.0.1:${PORT}/scripts/screenshot-harness.html`;
 

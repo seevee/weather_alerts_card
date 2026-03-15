@@ -239,6 +239,13 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(now + 5400, now)).toBe('in 1h 30m');
   });
 
+  it('does not produce 60m at minute/hour boundaries', () => {
+    // 3599s = 59m 59s — should be "59m", not "60m"
+    expect(formatRelativeTime(now + 3599, now)).toBe('in 59m');
+    // 7199s = 1h 59m 59s — should be "1h 59m", not "1h 60m"
+    expect(formatRelativeTime(now + 7199, now)).toBe('in 1h 59m');
+  });
+
   it('returns days for long durations', () => {
     expect(formatRelativeTime(now + 172800, now)).toBe('in 2d');
   });

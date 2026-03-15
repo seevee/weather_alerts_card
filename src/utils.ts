@@ -267,16 +267,16 @@ export function formatRelativeTime(ts: number, nowTs: number = Date.now() / 1000
 
   if (abs < 60) return past ? 'just now' : 'in <1m';
   if (abs < 3600) {
-    const m = Math.round(abs / 60);
+    const m = Math.floor(abs / 60);
     return past ? `${m}m ago` : `in ${m}m`;
   }
   if (abs < 86400) {
     const h = Math.floor(abs / 3600);
-    const m = Math.round((abs % 3600) / 60);
+    const m = Math.floor((abs % 3600) / 60);
     const dur = m > 0 ? `${h}h ${m}m` : `${h}h`;
     return past ? `${dur} ago` : `in ${dur}`;
   }
-  const d = Math.round(abs / 86400);
+  const d = Math.floor(abs / 86400);
   return past ? `${d}d ago` : `in ${d}d`;
 }
 

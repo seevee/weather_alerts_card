@@ -1,7 +1,12 @@
-// Mock NwsAlert data with timestamps relative to now so progress bars always
-// show a realistic in-progress state regardless of when the script runs.
+// Mock NwsAlert data with FIXED timestamps so screenshots are deterministic
+// across runs (no diff noise from changing times).
+//
+// The "now" anchor is 2025-06-15T20:00:00Z.  The screenshot script injects
+// a Date.now override to match, so progress bars render consistently.
 
-const now = Date.now();
+export const SCREENSHOT_NOW = Date.UTC(2025, 5, 15, 20, 0, 0); // months are 0-indexed
+
+const now = SCREENSHOT_NOW;
 const H = 3600 * 1000;
 
 function iso(offsetMs) {
@@ -23,9 +28,9 @@ export const ALERTS = [
     Urgency: 'Immediate',
     Sent: iso(-2 * H),
     Onset: iso(-2 * H),
-    Ends: iso(1 * H),
-    Expires: iso(1 * H),
-    Headline: 'Tornado Warning issued for Larimer County until 3:00 PM MDT',
+    Ends: iso(1.5 * H),
+    Expires: iso(1.5 * H),
+    Headline: 'Tornado Warning issued for Larimer County until 3:30 PM MDT',
     AreaDesc: 'Larimer; Boulder',
     Description: 'At 1:00 PM MDT, a confirmed tornado was located near Fort Collins, moving northeast at 35 mph.\n\nHazard: Damaging tornado.\n\nSource: Law enforcement.\n\nImpact: Flying debris will be dangerous to those caught without shelter. Mobile homes will be damaged or destroyed.',
     Instruction: 'TAKE COVER NOW! Move to a basement or an interior room on the lowest floor of a sturdy building. Avoid windows. If you are outdoors, in a mobile home, or in a vehicle, move to the closest substantial shelter and protect yourself from flying debris.',
@@ -94,7 +99,7 @@ export const ALERTS = [
     Certainty: 'Possible',
     Urgency: 'Future',
     Sent: iso(-0.5 * H),
-    Onset: iso(2 * H),
+    Onset: iso(2.25 * H),
     Ends: iso(10 * H),
     Expires: iso(10 * H),
     Headline: 'Winter Storm Watch issued from this evening through tomorrow morning',
