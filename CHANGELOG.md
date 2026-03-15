@@ -1,32 +1,50 @@
 # Changelog
 
-## Unreleased
+## 2.1.0-alpha.1 — 2026-03-15
 
 ### Added
-- Deduplicate alerts sharing the same event, severity, and time window across zones (#34)
+- Deduplicate alerts across zones (#37) (4332648…)
+
+### Fixed
+- Put migration notice before changelog in release notes (0ed28bd…)
 
 ## 2.0.0 — 2026-03-15
 
-### Added
-- Add MeteoAlarm (Europe) adapter (#11) (6046982…)
-- Rename to "Weather Alerts Card" for multi-provider support (#25) (d302d15…)
-- Display affected area description on alert cards (#27) (89adc5e…)
-- Add styled console log with card name and version at load time (#30) (c406500…)
-
 ### Fixed
-- Remove push trigger from validate workflow to prevent duplicate runs (#23) (48fe454…)
-- Align NwsAlert type with nws_alerts integration fields (#26) (832cbee…)
-- Use npx to run git-cliff in publish script (dcefd1e…)
-- Remove extra blank lines between changelog entries (#29) (4cdabe2…)
 - Add version headers to changelog and fix cliff config path (#32) (58e19e1…)
 - Scope release notes to correct version range (#33) (bb30959…)
 - Add migration notice to GA release notes and clarify HACS resource path (#35) (3687b1c…)
 
 ### Maintenance
+- Release v2.0.0 (#36) (fdd0c16…)
+
+## 2.0.0-alpha.2 — 2026-03-14
+
+### Added
+- Add styled console log with card name and version at load time (#30) (c406500…)
+
+### Fixed
+- Use npx to run git-cliff in publish script (dcefd1e…)
+- Remove extra blank lines between changelog entries (#29) (4cdabe2…)
+
+### Maintenance
+- Release v2.0.0-alpha.2 (#31) (a97466f…)
+
+## 2.0.0-alpha.1 — 2026-03-14
+
+### Added
+- Add MeteoAlarm (Europe) adapter (#11) (6046982…)
+- Rename to "Weather Alerts Card" for multi-provider support (#25) (d302d15…)
+- Display affected area description on alert cards (#27) (89adc5e…)
+
+### Fixed
+- Remove push trigger from validate workflow to prevent duplicate runs (#23) (48fe454…)
+- Align NwsAlert type with nws_alerts integration fields (#26) (832cbee…)
+
+### Maintenance
 - Streamline agent skills and dev workflow (#22) (f6fbc20…)
 - Add meteoalarm configuration to dev container (#24) (2065f8e…)
 - Release v2.0.0-alpha.1 (#28) (462ba83…)
-- Release v2.0.0-alpha.2 (#31) (a97466f…)
 
 ## 1.10.0 — 2026-03-12
 
@@ -48,25 +66,39 @@
 
 ## 1.9.0 — 2026-03-09
 
+### Fixed
+- Use absolute URLs for README images so they display in HACS (#9) (a8007af…)
+
+### Maintenance
+- Release v1.9.0 (#10) (b9c7345…)
+
+## 1.9.0-alpha.3 — 2026-03-06
+
+### Added
+- Support ha_bom_australia integration with area_id zone filtering (#7) (36f3d30…)
+
+### Maintenance
+- Release v1.9.0-alpha.3 (#8) (590fd6b…)
+
+## 1.9.0-alpha.2 — 2026-03-06
+
+### Maintenance
+- Release v1.9.0-alpha.2 (#6) (d63da7f…)
+
+## 1.9.0-alpha.1 — 2026-03-06
+
 ### Added
 - Add automated screenshot utility for README images (65ffbd3…)
 - Add multi-provider adapter pattern with BoM support (#1) (#4) (320fd0f…)
-- Support ha_bom_australia integration with area_id zone filtering (#7) (36f3d30…)
 
 ### Documentation
 - Readme img udates, repo janitorial duties (412b879…)
 - Update README for official HACS procedure (126196b…)
 
-### Fixed
-- Use absolute URLs for README images so they display in HACS (#9) (a8007af…)
-
 ### Maintenance
 - CI hardening, repo hygiene, and test scaffolding (#2) (bc1a46c…)
 - Update release skill for branch-protected workflow (#3) (84d5c0f…)
 - Release v1.9.0-alpha.1 (#5) (176e0bd…)
-- Release v1.9.0-alpha.2 (#6) (d63da7f…)
-- Release v1.9.0-alpha.3 (#8) (590fd6b…)
-- Release v1.9.0 (#10) (b9c7345…)
 
 ## 1.8.0 — 2026-02-20
 
