@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" width="1200" height="500">
+  <style>
+    /* Default to Light Mode */
+    .light { display: block; }
+    .dark { display: none; }
+
+    /* Switch to Dark Mode based on System/HA Theme */
+    @media (prefers-color-scheme: dark) {
+      .light { display: none; }
+      .dark { display: block; }
+    }
+  </style>
+  <image class="light" href="https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/hero-light.png" width="1200" height="500" />
+  <image class="dark" href="https://raw.githubusercontent.com/seevee/nws_alerts_card/main/img/hero-dark.png" width="1200" height="500" />
+</svg>
