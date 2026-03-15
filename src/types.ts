@@ -30,6 +30,7 @@ export interface WeatherAlertsCardConfig {
   layout?: 'default' | 'compact';
   colorTheme?: 'severity' | 'nws';
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes
+  deduplicate?: boolean;     // undefined/true: dedup on; false: dedup off
 }
 
 // Normalized alert consumed by the card UI — provider-agnostic
@@ -50,6 +51,7 @@ export interface WeatherAlert {
   zones: string[];         // Normalized zone codes for filtering (uppercase)
   provider: AlertProvider;
   phase: string;           // Lifecycle phase, e.g. "New", "Update", "Final" (empty if N/A)
+  mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
 }
 
 // Adapter contract: converts raw entity attributes → WeatherAlert[]

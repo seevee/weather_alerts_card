@@ -309,3 +309,38 @@ export function alertMatchesZones(alert: WeatherAlert, zones: Set<string>): bool
   return alert.zones.some(z => zones.has(z.toUpperCase()));
 }
 
+export function deduplicateAlerts(alerts: WeatherAlert[]): WeatherAlert[] {
+  const groups = new Map<string, WeatherAlert[]>();
+  const order: string[] = [];
+
+  for (const alert of alerts) {
+    const key = `${alert.event}\0${alert.severity}\0${alert.onsetTs}\0${alert.endsTs}\0${alert.provider}`;
+    const group = groups.get(key);
+    if (group) {
+      group.push(alert);
+    } else {
+      groups.set(key, [alert]);
+      order.push(key);
+    }
+  }
+
+  return order.map(key => {
+    const group = groups.get(key)!;
+    if (group.length === 1) return group[0];
+
+    const representative = { ...group[0] };
+    const zoneSet = new Set<string>();
+    const areaDescs = new Set<string>();
+
+    for (const alert of group) {
+      for (const z of alert.zones) zoneSet.add(z.toUpperCase());
+      if (alert.areaDesc) areaDescs.add(alert.areaDesc);
+    }
+
+    representative.zones = [...zoneSet];
+    representative.areaDesc = [...areaDescs].join('; ');
+    representative.mergedCount = group.length;
+    return representative;
+  });
+}
+

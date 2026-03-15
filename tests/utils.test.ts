@@ -7,6 +7,7 @@ import {
   normalizeSeverity,
   sortAlerts,
   alertMatchesZones,
+  deduplicateAlerts,
   formatRelativeTime,
   parseTimestamp,
 } from '../src/utils';
@@ -240,6 +241,104 @@ describe('formatRelativeTime', () => {
 
   it('returns days for long durations', () => {
     expect(formatRelativeTime(now + 172800, now)).toBe('in 2d');
+  });
+});
+
+describe('deduplicateAlerts', () => {
+  it('returns empty array for empty input', () => {
+    expect(deduplicateAlerts([])).toEqual([]);
+  });
+
+  it('returns single alert unchanged', () => {
+    const alert = makeAlert();
+    const result = deduplicateAlerts([alert]);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('test-1');
+  });
+
+  it('does not merge alerts with different events', () => {
+    const a = makeAlert({ id: 'a', event: 'Tornado Warning' });
+    const b = makeAlert({ id: 'b', event: 'Flood Warning' });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(2);
+  });
+
+  it('does not merge alerts with different onsetTs', () => {
+    const a = makeAlert({ id: 'a', onsetTs: 1000 });
+    const b = makeAlert({ id: 'b', onsetTs: 2000 });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(2);
+  });
+
+  it('does not merge alerts with different severity', () => {
+    const a = makeAlert({ id: 'a', severity: 'severe' });
+    const b = makeAlert({ id: 'b', severity: 'moderate' });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(2);
+  });
+
+  it('merges two alerts with same key', () => {
+    const a = makeAlert({ id: 'a', zones: ['COZ039'], areaDesc: 'Zone A' });
+    const b = makeAlert({ id: 'b', zones: ['COZ040'], areaDesc: 'Zone B' });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('a');
+    expect(result[0].zones).toContain('COZ039');
+    expect(result[0].zones).toContain('COZ040');
+    expect(result[0].areaDesc).toBe('Zone A; Zone B');
+    expect(result[0].mergedCount).toBe(2);
+  });
+
+  it('merges three alerts with same key', () => {
+    const a = makeAlert({ id: 'a', zones: ['Z1'], areaDesc: 'Area 1' });
+    const b = makeAlert({ id: 'b', zones: ['Z2'], areaDesc: 'Area 2' });
+    const c = makeAlert({ id: 'c', zones: ['Z3'], areaDesc: 'Area 3' });
+    const result = deduplicateAlerts([a, b, c]);
+    expect(result).toHaveLength(1);
+    expect(result[0].zones).toHaveLength(3);
+    expect(result[0].areaDesc).toBe('Area 1; Area 2; Area 3');
+    expect(result[0].mergedCount).toBe(3);
+  });
+
+  it('deduplicates zones across merged alerts', () => {
+    const a = makeAlert({ id: 'a', zones: ['COZ039', 'COZ040'] });
+    const b = makeAlert({ id: 'b', zones: ['coz039', 'COZ041'] });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(1);
+    expect(result[0].zones).toHaveLength(3);
+  });
+
+  it('deduplicates identical areaDesc values', () => {
+    const a = makeAlert({ id: 'a', areaDesc: 'Same Area' });
+    const b = makeAlert({ id: 'b', areaDesc: 'Same Area' });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(1);
+    expect(result[0].areaDesc).toBe('Same Area');
+  });
+
+  it('sets mergedCount when zones are empty', () => {
+    const a = makeAlert({ id: 'a', zones: [], areaDesc: 'Area A' });
+    const b = makeAlert({ id: 'b', zones: [], areaDesc: 'Area B' });
+    const result = deduplicateAlerts([a, b]);
+    expect(result).toHaveLength(1);
+    expect(result[0].mergedCount).toBe(2);
+    expect(result[0].zones).toHaveLength(0);
+  });
+
+  it('does not set mergedCount for non-merged alerts', () => {
+    const a = makeAlert();
+    const result = deduplicateAlerts([a]);
+    expect(result[0].mergedCount).toBeUndefined();
+  });
+
+  it('preserves first-occurrence order', () => {
+    const tornado = makeAlert({ id: 't', event: 'Tornado Warning', zones: ['Z1'] });
+    const flood1 = makeAlert({ id: 'f1', event: 'Flood Warning', zones: ['Z1'] });
+    const flood2 = makeAlert({ id: 'f2', event: 'Flood Warning', zones: ['Z2'] });
+    const result = deduplicateAlerts([tornado, flood1, flood2]);
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe('t');
+    expect(result[1].id).toBe('f1');
   });
 });
 

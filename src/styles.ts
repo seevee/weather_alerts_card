@@ -185,6 +185,15 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
     border: 1px solid var(--divider-color);
   }
+  .zones-badge {
+    background: transparent;
+    color: var(--secondary-text-color);
+    border: none;
+    padding: 2px 0;
+    font-weight: 400;
+  }
+  .zones-badge::before { content: '('; opacity: 0.5; }
+  .zones-badge::after { content: ')'; opacity: 0.5; }
 
   /* --- PROGRESS --- */
   .progress-section {

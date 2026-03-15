@@ -11,6 +11,7 @@ import {
   formatRelativeTime,
   sortAlerts,
   alertMatchesZones,
+  deduplicateAlerts,
   getNwsEventColor,
   sanitizeAlertHtml,
 } from './utils';
@@ -82,6 +83,10 @@ export class WeatherAlertsCard extends LitElement {
 
     const adapter = getAdapter(this._config.provider, entity.attributes);
     let alerts = adapter.parseAlerts(entity.attributes);
+
+    if (this._config.deduplicate !== false) {
+      alerts = deduplicateAlerts(alerts);
+    }
 
     if (this._config.zones && this._config.zones.length > 0) {
       const zoneSet = new Set(this._config.zones.map(z => z.toUpperCase()));
@@ -313,6 +318,9 @@ export class WeatherAlertsCard extends LitElement {
       ${progress.isActive
         ? html`<span class="badge active-badge">Active</span>`
         : html`<span class="badge prep-badge">In Prep</span>`}
+      ${alert.mergedCount && alert.mergedCount > 1
+        ? html`<span class="badge zones-badge">${alert.mergedCount} zones</span>`
+        : nothing}
     `;
   }
 

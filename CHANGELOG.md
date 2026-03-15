@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Deduplicate alerts sharing the same event, severity, and time window across zones (#34)
+
 ## 2.0.0 — 2026-03-15
 
 ### Added

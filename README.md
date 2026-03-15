@@ -46,6 +46,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 | `sortOrder` | string | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | string | — | `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
 | `colorTheme` | string | `'severity'` | `'severity'` or `'nws'` |
+| `deduplicate` | boolean | `true` | Collapse alerts sharing event, severity, and time window into one card |
 | `animations` | boolean | system | `true`, `false`, or respect `prefers-reduced-motion` |
 | `layout` | string | `'default'` | `'default'` or `'compact'` |
 
