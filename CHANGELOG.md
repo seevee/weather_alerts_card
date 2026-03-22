@@ -1,10 +1,18 @@
 # Changelog
 
-## Unreleased
+## 2.2.0 — 2026-03-22
 
 ### Added
-- Add PirateWeather adapter for weather alerts via the PirateWeather HA integration (#44)
-- Display human-readable severity label on badge instead of internal enum value (#45)
+- Display provider-native severity labels on badge (#48) (62763a2…)
+- Add PirateWeather adapter (#44) (#49) (9c5ff83…)
+
+### Fixed
+- Generate release notes before tagging (647bd73…)
+- Use HA dark mode detection for severity badge text color (#51) (fa3a884…)
+
+### Maintenance
+- Add most-alerted-zones lookup script (#47) (6307349…)
+- Stop tracking dist bundle and config dir (#50) (fb89323…)
 
 ## 2.1.0 — 2026-03-15
 
