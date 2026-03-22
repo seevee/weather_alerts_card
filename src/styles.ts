@@ -38,11 +38,12 @@ export const cardStyles = css`
   .severity-minor { --color: var(--info-color); --color-rgb: 33, 150, 243; --badge-text: var(--text-primary-color, white); }
   .severity-unknown { --color: var(--secondary-text-color); --color-rgb: 128, 128, 128; --badge-text: var(--text-primary-color, white); }
 
-  @media (prefers-color-scheme: dark) {
-    .severity-extreme, .severity-severe,
-    .severity-moderate, .severity-minor, .severity-unknown {
-      --badge-text: var(--card-background-color, #1a1a1a);
-    }
+  ha-card.dark-mode .severity-extreme,
+  ha-card.dark-mode .severity-severe,
+  ha-card.dark-mode .severity-moderate,
+  ha-card.dark-mode .severity-minor,
+  ha-card.dark-mode .severity-unknown {
+    --badge-text: var(--card-background-color, #1a1a1a);
   }
 
   /* --- CARD CONTAINER --- */

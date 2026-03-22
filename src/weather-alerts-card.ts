@@ -165,9 +165,10 @@ export class WeatherAlertsCard extends LitElement {
     const alerts = this._getAlerts();
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
+    const darkClass = this.hass.themes?.darkMode ? 'dark-mode' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}">
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass} ${darkClass}">
         ${alerts.length === 0
         ? this._renderNoAlerts()
         : alerts.map(alert => this._renderAlert(alert))}

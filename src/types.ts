@@ -9,6 +9,9 @@ export interface HomeAssistant {
   config?: {
     time_zone?: string;  // IANA tz name, e.g. "America/Denver"
   };
+  themes?: {
+    darkMode?: boolean;
+  };
 }
 
 export interface HassEntity {
