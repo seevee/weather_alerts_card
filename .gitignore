@@ -1,4 +1,5 @@
-# Build output (dist/weather-alerts-card.js is committed for HACS compatibility)
+# Build output (delivered via GitHub Release assets for HACS)
+dist/
 
 # Dependencies
 node_modules/
@@ -17,18 +18,8 @@ analysis/
 # Script caches
 .cache/
 
-# Home Assistant dev container state
-config/.cache/
-config/.storage/
-config/deps/
-config/tts/
-config/.HA_VERSION
-config/home-assistant.log*
-config/home-assistant_v2.db*
-config/blueprints/
-config/custom_components/
-config/.ha_run.lock
-config/www
+# Home Assistant dev environment
+config/
 
 # OS
 .DS_Store
