@@ -118,8 +118,8 @@ export class WeatherAlertsCard extends LitElement {
 
   private _alertColorStyle(alert: WeatherAlert): string {
     if (this._colorTheme !== 'nws' || alert.provider !== 'nws') return '';
-    const { color, rgb, textColor } = getNwsEventColor(alert.event);
-    return `--color: ${color}; --color-rgb: ${rgb}; --badge-text: ${textColor};`;
+    const { color, rgb } = getNwsEventColor(alert.event);
+    return `--color: ${color}; --color-rgb: ${rgb};`;
   }
   private _normalizeText(text: string | undefined): string {
     return (text || '').replace(/\n{2,}/g, '\n\n').trim();

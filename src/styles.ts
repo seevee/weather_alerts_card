@@ -33,17 +33,10 @@ export const cardStyles = css`
 
   /* --- COLOR MAPPING --- */
   .severity-extreme,
-  .severity-severe { --color: var(--error-color); --color-rgb: 244, 67, 54; --badge-text: var(--text-primary-color, white); }
-  .severity-moderate { --color: var(--warning-color); --color-rgb: 255, 152, 0; --badge-text: var(--text-primary-color, white); }
-  .severity-minor { --color: var(--info-color); --color-rgb: 33, 150, 243; --badge-text: var(--text-primary-color, white); }
-  .severity-unknown { --color: var(--secondary-text-color); --color-rgb: 128, 128, 128; --badge-text: var(--text-primary-color, white); }
-
-  @media (prefers-color-scheme: dark) {
-    .severity-extreme, .severity-severe,
-    .severity-moderate, .severity-minor, .severity-unknown {
-      --badge-text: var(--card-background-color, #1a1a1a);
-    }
-  }
+  .severity-severe { --color: var(--error-color); --color-rgb: 244, 67, 54; }
+  .severity-moderate { --color: var(--warning-color); --color-rgb: 255, 152, 0; }
+  .severity-minor { --color: var(--info-color); --color-rgb: 33, 150, 243; }
+  .severity-unknown { --color: var(--secondary-text-color); --color-rgb: 128, 128, 128; }
 
   /* --- CARD CONTAINER --- */
   .alert-card {
@@ -160,7 +153,7 @@ export const cardStyles = css`
 
   .severity-badge {
     background: var(--color);
-    color: var(--badge-text, var(--text-primary-color, white));
+    color: var(--card-background-color, white);
     font-weight: 700;
   }
   .certainty-badge {
