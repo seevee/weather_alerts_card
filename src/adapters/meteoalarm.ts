@@ -13,6 +13,13 @@ function awarenessLevelToSeverity(awarenessLevel: string | undefined): AlertSeve
   return undefined;
 }
 
+// Extract human-readable label from awareness_level third segment (e.g. "Severe" from "3; orange; Severe")
+function awarenessLevelLabel(awarenessLevel: string | undefined): string {
+  if (!awarenessLevel || typeof awarenessLevel !== 'string') return '';
+  const parts = awarenessLevel.split(';');
+  return parts.length >= 3 ? parts[2].trim() : '';
+}
+
 // MeteoAlarm awareness_type format: "1; Wind"
 // Extract the human-readable type name after the semicolon
 function awarenessTypeLabel(awarenessType: string | undefined): string {
@@ -46,6 +53,11 @@ export class MeteoAlarmAdapter implements AlertAdapter {
     const severity = awarenessLevelToSeverity(awarenessLevel)
       || normalizeSeverity(str(attributes['severity'])) as AlertSeverity;
 
+    // Label cascade: awareness_level third segment → raw severity attr → title-cased enum
+    const severityLabel = awarenessLevelLabel(awarenessLevel)
+      || str(attributes['severity'])
+      || severity.charAt(0).toUpperCase() + severity.slice(1);
+
     const onsetTs = parseTimestamp(str(attributes['onset']) || str(attributes['effective']));
     const endsTs = parseTimestamp(str(attributes['expires']));
     const sentTs = parseTimestamp(str(attributes['effective']));
@@ -57,6 +69,7 @@ export class MeteoAlarmAdapter implements AlertAdapter {
       id: `meteoalarm_${eventName}_${onsetTs}`,
       event: eventName,
       severity,
+      severityLabel,
       certainty: str(attributes['certainty']),
       urgency: str(attributes['urgency']),
       sentTs,

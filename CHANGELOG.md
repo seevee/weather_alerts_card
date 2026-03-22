@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Display human-readable severity label on badge instead of internal enum value (#45)
+
 ## 2.1.0 — 2026-03-15
 
 ### Added

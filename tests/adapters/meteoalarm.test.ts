@@ -77,6 +77,7 @@ describe('MeteoAlarmAdapter', () => {
         awareness_level: '4; red; Extreme',
       }));
       expect(alerts[0].severity).toBe('extreme');
+      expect(alerts[0].severityLabel).toBe('Extreme');
     });
 
     it('maps awareness_level 3 to severe', () => {
@@ -84,6 +85,7 @@ describe('MeteoAlarmAdapter', () => {
         awareness_level: '3; orange; Severe',
       }));
       expect(alerts[0].severity).toBe('severe');
+      expect(alerts[0].severityLabel).toBe('Severe');
     });
 
     it('maps awareness_level 2 to moderate', () => {
@@ -91,6 +93,7 @@ describe('MeteoAlarmAdapter', () => {
         awareness_level: '2; yellow; Moderate',
       }));
       expect(alerts[0].severity).toBe('moderate');
+      expect(alerts[0].severityLabel).toBe('Moderate');
     });
 
     it('maps awareness_level 1 to minor', () => {
@@ -98,22 +101,25 @@ describe('MeteoAlarmAdapter', () => {
         awareness_level: '1; green; Minor',
       }));
       expect(alerts[0].severity).toBe('minor');
+      expect(alerts[0].severityLabel).toBe('Minor');
     });
 
-    it('falls back to severity attribute when awareness_level is missing', () => {
+    it('falls back to severity attribute for label when awareness_level is missing', () => {
       const alerts = adapter.parseAlerts(makeMeteoAlarmAttributes({
         awareness_level: undefined,
         severity: 'Moderate',
       }));
       expect(alerts[0].severity).toBe('moderate');
+      expect(alerts[0].severityLabel).toBe('Moderate');
     });
 
-    it('returns unknown severity when both awareness_level and severity are missing', () => {
+    it('falls back to title-cased enum when both awareness_level and severity are missing', () => {
       const alerts = adapter.parseAlerts(makeMeteoAlarmAttributes({
         awareness_level: undefined,
         severity: undefined,
       }));
       expect(alerts[0].severity).toBe('unknown');
+      expect(alerts[0].severityLabel).toBe('Unknown');
     });
 
     it('parses ISO timestamps correctly', () => {

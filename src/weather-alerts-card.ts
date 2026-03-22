@@ -302,7 +302,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderBadgesRow(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     return html`
-      <span class="badge severity-badge">${alert.severity}</span>
+      <span class="badge severity-badge">${alert.severityLabel}</span>
       ${alert.certainty ? html`
         <span class="badge certainty-badge">
           <ha-icon

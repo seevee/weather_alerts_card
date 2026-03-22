@@ -75,17 +75,24 @@ describe('BomAdapter', () => {
       ]);
       const alerts = adapter.parseAlerts(attrs);
       expect(alerts[0].severity).toBe('severe');     // "Major" in title
+      expect(alerts[0].severityLabel).toBe('Major');
       expect(alerts[1].severity).toBe('minor');      // "Minor" in title
+      expect(alerts[1].severityLabel).toBe('Minor');
       expect(alerts[2].severity).toBe('moderate');   // "Moderate" in title
+      expect(alerts[2].severityLabel).toBe('Moderate');
       expect(alerts[3].severity).toBe('severe');     // "Severe" in title
+      expect(alerts[3].severityLabel).toBe('Severe');
       expect(alerts[4].severity).toBe('minor');      // "Minor" in title
+      expect(alerts[4].severityLabel).toBe('Minor');
     });
 
     it('maps severity from title for tropical cyclone', () => {
       const attrs = makeBomAttributes([
         { id: '1', title: 'Tropical Cyclone Warning for Cairns' },
       ]);
-      expect(adapter.parseAlerts(attrs)[0].severity).toBe('extreme');
+      const a = adapter.parseAlerts(attrs)[0];
+      expect(a.severity).toBe('extreme');
+      expect(a.severityLabel).toBe('Extreme');
     });
 
     it('falls back to type when title has no severity keyword', () => {
@@ -95,7 +102,9 @@ describe('BomAdapter', () => {
       ]);
       const alerts = adapter.parseAlerts(attrs);
       expect(alerts[0].severity).toBe('moderate');   // no keyword in title, major group fallback
+      expect(alerts[0].severityLabel).toBe('Major'); // title-cased warning_group_type
       expect(alerts[1].severity).toBe('minor');      // no keyword in title, minor group fallback
+      expect(alerts[1].severityLabel).toBe('Minor'); // title-cased warning_group_type
     });
 
     it('falls back to type field for severity when title is empty', () => {

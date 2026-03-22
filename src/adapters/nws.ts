@@ -40,10 +40,14 @@ export class NwsAdapter implements AlertAdapter {
   }
 
   private _normalize(a: NwsAlert): WeatherAlert {
+    const severity = normalizeSeverity(a.Severity) as AlertSeverity;
     return {
       id: a.ID,
       event: a.Event || 'Unknown',
-      severity: normalizeSeverity(a.Severity) as AlertSeverity,
+      severity,
+      severityLabel: a.Severity && normalizeSeverity(a.Severity) !== 'unknown'
+        ? a.Severity
+        : severity.charAt(0).toUpperCase() + severity.slice(1),
       certainty: a.Certainty || '',
       urgency: a.Urgency || '',
       sentTs: parseTimestamp(a.Sent),

@@ -1,27 +1,31 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, BomWarning, WeatherAlert } from '../types';
 import { parseTimestamp } from '../utils';
 
-// Parse severity from the title first (most specific), then type, then warning_group_type.
+// Parse severity and human-readable label from the title first (most specific),
+// then type, then warning_group_type.
 // BoM titles embed severity: "Major Flood Warning", "Minor Flood Warning",
 // "Moderate Flood Warning", "Severe Thunderstorm Warning", etc.
-function bomSeverity(title: string, type: string, groupType: string): AlertSeverity {
+function bomSeverityAndLabel(title: string, type: string, groupType: string): { severity: AlertSeverity; label: string } {
   const t = title.toLowerCase();
 
   // Title-based — most reliable since BoM embeds severity in the warning name
-  if (t.includes('extreme') || t.includes('tropical cyclone')) return 'extreme';
-  if (t.includes('severe')) return 'severe';
-  if (t.includes('major')) return 'severe';
-  if (t.includes('moderate')) return 'moderate';
-  if (t.includes('minor') || t.includes('initial')) return 'minor';
+  if (t.includes('extreme') || t.includes('tropical cyclone')) {
+    return { severity: 'extreme', label: t.includes('extreme') ? 'Extreme' : 'Extreme' };
+  }
+  if (t.includes('severe')) return { severity: 'severe', label: 'Severe' };
+  if (t.includes('major')) return { severity: 'severe', label: 'Major' };
+  if (t.includes('moderate')) return { severity: 'moderate', label: 'Moderate' };
+  if (t.includes('minor') || t.includes('initial')) return { severity: 'minor', label: 'Minor' };
 
   // Fall back to type field
   const ty = type.toLowerCase();
-  if (ty.includes('tropical_cyclone')) return 'extreme';
-  if (ty.includes('severe') || ty.includes('fire_weather')) return 'severe';
+  if (ty.includes('tropical_cyclone')) return { severity: 'extreme', label: 'Extreme' };
+  if (ty.includes('severe') || ty.includes('fire_weather')) return { severity: 'severe', label: 'Severe' };
 
   // Fall back to warning_group_type
-  if (groupType === 'major') return 'moderate';
-  return 'minor';
+  const gtLabel = groupType.charAt(0).toUpperCase() + groupType.slice(1);
+  if (groupType === 'major') return { severity: 'moderate', label: gtLabel };
+  return { severity: 'minor', label: gtLabel };
 }
 
 function bomTitle(warning: BomWarning): string {
@@ -81,10 +85,13 @@ export class BomAdapter implements AlertAdapter {
     const expiryTs = parseTimestamp(w.expiry_time);
     const title = bomTitle(w);
 
+    const { severity, label: severityLabel } = bomSeverityAndLabel(title, w.type, w.warning_group_type);
+
     return {
       id: w.id,
       event: title,
-      severity: bomSeverity(title, w.type, w.warning_group_type),
+      severity,
+      severityLabel,
       certainty: '',   // BoM API does not expose CAP certainty
       urgency: '',     // BoM API does not expose CAP urgency
       sentTs: issueTs,

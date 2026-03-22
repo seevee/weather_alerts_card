@@ -38,6 +38,7 @@ export interface WeatherAlert {
   id: string;
   event: string;           // e.g. "Severe Thunderstorm Warning"
   severity: AlertSeverity;
+  severityLabel: string;   // Human-readable severity label from provider (e.g. "Moderate", "Major")
   certainty: string;       // e.g. "Likely", "Observed" — empty string if provider lacks this
   urgency: string;         // e.g. "Immediate" — empty string if provider lacks this
   sentTs: number;          // Unix seconds — when alert was issued (0 if unknown)

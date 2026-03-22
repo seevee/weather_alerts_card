@@ -63,8 +63,29 @@ describe('NwsAdapter', () => {
       expect(a.id).toBe('test-1');
       expect(a.event).toBe('Tornado Warning');
       expect(a.severity).toBe('extreme');
+      expect(a.severityLabel).toBe('Extreme');
       expect(a.provider).toBe('nws');
       expect(a.phase).toBe('');
+    });
+
+    it('preserves original Severity casing in severityLabel', () => {
+      const attrs = makeNwsAttributes([{ Severity: 'Moderate' }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].severityLabel).toBe('Moderate');
+    });
+
+    it('falls back to title-cased enum when Severity is invalid', () => {
+      const attrs = makeNwsAttributes([{ Severity: 'bogus' }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].severity).toBe('unknown');
+      expect(alerts[0].severityLabel).toBe('Unknown');
+    });
+
+    it('falls back to title-cased enum when Severity is empty', () => {
+      const attrs = makeNwsAttributes([{ Severity: '' }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].severity).toBe('unknown');
+      expect(alerts[0].severityLabel).toBe('Unknown');
     });
 
     it('collects zones from AffectedZones and Geocode.UGC', () => {
