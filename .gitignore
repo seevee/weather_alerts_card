@@ -14,6 +14,9 @@ tsconfig.tsbuildinfo
 plans/
 analysis/
 
+# Script caches
+.cache/
+
 # Home Assistant dev container state
 config/.cache/
 config/.storage/
