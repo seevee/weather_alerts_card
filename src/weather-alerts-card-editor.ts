@@ -127,6 +127,18 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _timezoneChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as 'server' | 'browser';
+    if (value === (this._config.timezone || 'server')) return;
+    const newConfig = { ...this._config };
+    if (value === 'server') {
+      delete newConfig.timezone;
+    } else {
+      newConfig.timezone = value;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _minSeverityChanged(ev: CustomEvent): void {
     const value = ev.detail.value as AlertSeverity | '';
     if (value === (this._config.minSeverity || '')) return;
@@ -210,6 +222,15 @@ export class WeatherAlertsCardEditor extends LitElement {
         >
           <ha-dropdown-item value="severity">Severity-based</ha-dropdown-item>
           <ha-dropdown-item value="nws">NWS Official</ha-dropdown-item>
+        </ha-select>
+
+        <ha-select
+          .label=${'Timezone'}
+          .value=${this._config.timezone || 'server'}
+          @selected=${this._timezoneChanged}
+        >
+          <ha-dropdown-item value="server">Server (Home Assistant)</ha-dropdown-item>
+          <ha-dropdown-item value="browser">Browser (local device)</ha-dropdown-item>
         </ha-select>
 
         <ha-select

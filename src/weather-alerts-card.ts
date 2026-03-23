@@ -176,7 +176,10 @@ export class WeatherAlertsCard extends LitElement {
     if (!this.hass) {
       return { language: navigator.language || 'en', time_format: 'language' as const, date_format: 'language' as const, timeZone: undefined };
     }
-    return { ...this.hass.locale, timeZone: this.hass.config?.time_zone };
+    const timeZone = this._config?.timezone === 'browser'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : this.hass.config?.time_zone;
+    return { ...this.hass.locale, timeZone };
   }
 
   private get _animationsEnabled(): boolean {
