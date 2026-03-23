@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Show preview with placeholder alerts in card picker and when entity is missing (#43)
+- Smart entity detection in `getStubConfig()` — finds real alert entities when available
+- "Show sample data" toggle in card editor for previewing layout with no active alerts
+
 ## 2.2.0 — 2026-03-22
 
 ### Added

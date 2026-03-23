@@ -21,11 +21,22 @@ done
 LIGHT_B64=$(base64 -w 0 "$LIGHT_PNG")
 DARK_B64=$(base64 -w 0 "$DARK_PNG")
 
-# Read actual dimensions from the PNGs
-read -r WIDTH HEIGHT < <(file "$LIGHT_PNG" | grep -oP '\d+ x \d+' | tr -d ' ' | tr 'x' ' ')
+# Read actual pixel dimensions from the PNGs
+read -r PX_WIDTH PX_HEIGHT < <(file "$LIGHT_PNG" | grep -oP '\d+ x \d+' | tr -d ' ' | tr 'x' ' ')
+
+# Use logical dimensions for the SVG viewBox (half pixel size for 2x DPR images).
+# If PNGs are 1x, this still works — viewBox just matches pixel size.
+VB_WIDTH=$(( PX_WIDTH / 2 ))
+VB_HEIGHT=$(( PX_HEIGHT / 2 ))
+
+# Sanity check: if PNGs are odd-sized or 1x, fall back to pixel dimensions
+if (( VB_WIDTH < 400 )); then
+  VB_WIDTH=$PX_WIDTH
+  VB_HEIGHT=$PX_HEIGHT
+fi
 
 cat > "$OUTPUT" <<EOF
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VB_WIDTH} ${VB_HEIGHT}" width="100%">
   <style>
     .light { display: block; }
     .dark { display: none; }
@@ -34,8 +45,8 @@ cat > "$OUTPUT" <<EOF
       .dark { display: block; }
     }
   </style>
-  <image class="light" href="data:image/png;base64,${LIGHT_B64}" width="${WIDTH}" height="${HEIGHT}" />
-  <image class="dark" href="data:image/png;base64,${DARK_B64}" width="${WIDTH}" height="${HEIGHT}" />
+  <image class="light" href="data:image/png;base64,${LIGHT_B64}" width="${VB_WIDTH}" height="${VB_HEIGHT}" />
+  <image class="dark" href="data:image/png;base64,${DARK_B64}" width="${VB_WIDTH}" height="${VB_HEIGHT}" />
 </svg>
 EOF
 

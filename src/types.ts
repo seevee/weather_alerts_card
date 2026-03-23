@@ -31,6 +31,7 @@ export interface WeatherAlertsCardConfig {
   colorTheme?: 'severity' | 'nws';
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes
   deduplicate?: boolean;     // undefined/true: dedup on; false: dedup off
+  _preview?: boolean;        // transient editor-only key — triggers preview mode in card
 }
 
 // Normalized alert consumed by the card UI — provider-agnostic

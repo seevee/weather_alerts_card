@@ -1,7 +1,7 @@
 import { LitElement, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider } from './types';
 import {
   getWeatherIcon,
   getCertaintyIcon,
@@ -34,6 +34,57 @@ const PROVIDER_LABELS: Record<string, string> = {
   meteoalarm: 'MeteoAlarm',
 };
 
+const STUB_ENTITY_PATTERNS = [
+  /^sensor\..*alert/i,
+  /^sensor\..*warning/i,
+  /^binary_sensor\.meteoalarm/i,
+];
+
+function getPreviewAlerts(): WeatherAlert[] {
+  const now = Date.now() / 1000;
+  const HOUR = 3600;
+  return [
+    {
+      id: 'preview-1',
+      event: 'Sunshine Advisory',
+      severity: 'moderate',
+      severityLabel: 'Moderate',
+      certainty: 'Likely',
+      urgency: 'Expected',
+      sentTs: now - 2 * HOUR,
+      onsetTs: now - 1 * HOUR,
+      endsTs: now + 2 * HOUR,
+      description: 'This is a sample alert demonstrating the card layout. No action required.',
+      instruction: 'Enjoy the weather! This is placeholder data for the card preview.',
+      url: '',
+      headline: 'Sunshine Advisory for Pleasantville',
+      areaDesc: 'Pleasantville, USA',
+      zones: ['SAMPLE01'],
+      provider: 'nws' as AlertProvider,
+      phase: 'Update',
+    },
+    {
+      id: 'preview-2',
+      event: 'Breeze Watch',
+      severity: 'minor',
+      severityLabel: 'Minor',
+      certainty: 'Possible',
+      urgency: 'Future',
+      sentTs: now - 1 * HOUR,
+      onsetTs: now + 1 * HOUR,
+      endsTs: now + 6 * HOUR,
+      description: 'A gentle breeze may arrive later. This is sample data showing an upcoming alert.',
+      instruction: '',
+      url: '',
+      headline: 'Breeze Watch for Sampletown County',
+      areaDesc: 'Sampletown County',
+      zones: ['SAMPLE02'],
+      provider: 'nws' as AlertProvider,
+      phase: '',
+    },
+  ];
+}
+
 @customElement('weather-alerts-card')
 export class WeatherAlertsCard extends LitElement {
   static styles = cardStyles;
@@ -41,6 +92,7 @@ export class WeatherAlertsCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
+  @state() private _forcePreview = false;
 
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
@@ -59,7 +111,9 @@ export class WeatherAlertsCard extends LitElement {
     if (!config.entity) {
       throw new Error('You need to define an entity');
     }
-    this._config = config;
+    const { _preview, ...rest } = config;
+    this._config = rest as WeatherAlertsCardConfig;
+    this._forcePreview = !!_preview;
   }
 
   public getCardSize(): number {
@@ -72,7 +126,13 @@ export class WeatherAlertsCard extends LitElement {
     return document.createElement('weather-alerts-card-editor');
   }
 
-  public static getStubConfig(): Record<string, unknown> {
+  public static getStubConfig(hass?: HomeAssistant): Record<string, unknown> {
+    if (hass) {
+      const entityId = Object.keys(hass.states).find(id =>
+        STUB_ENTITY_PATTERNS.some(pattern => pattern.test(id)),
+      );
+      if (entityId) return { entity: entityId };
+    }
     return { entity: 'sensor.nws_alerts_alerts' };
   }
 
@@ -140,14 +200,10 @@ export class WeatherAlertsCard extends LitElement {
     if (!this._config || !this.hass) return html``;
 
     const entity = this.hass.states[this._config.entity];
-    if (!entity) {
-      return html`
-        <ha-card .header=${this._config.title || ''}>
-          <div class="error">
-            Entity not found: ${this._config.entity}
-          </div>
-        </ha-card>
-      `;
+    const isPreview = !entity || this._forcePreview;
+
+    if (isPreview) {
+      return this._renderPreview();
     }
 
     const stateVal = entity.state;
@@ -171,6 +227,18 @@ export class WeatherAlertsCard extends LitElement {
         ${alerts.length === 0
         ? this._renderNoAlerts()
         : alerts.map(alert => this._renderAlert(alert))}
+      </ha-card>
+    `;
+  }
+
+  private _renderPreview(): TemplateResult {
+    const alerts = getPreviewAlerts();
+    const layoutClass = this._isCompact ? 'compact' : '';
+
+    return html`
+      <ha-card .header=${this._config.title || ''} class="no-animations ${layoutClass}">
+        <div class="preview-label">Preview</div>
+        ${alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
     `;
   }

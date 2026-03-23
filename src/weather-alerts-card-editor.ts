@@ -6,6 +6,7 @@ import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity } from './types';
 export class WeatherAlertsCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
+  @state() private _showPreview = false;
   public setConfig(config: WeatherAlertsCardConfig): void {
     this._config = config;
   }
@@ -138,6 +139,18 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _previewChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    this._showPreview = target.checked;
+    const newConfig = { ...this._config };
+    if (this._showPreview) {
+      newConfig._preview = true;
+    } else {
+      delete newConfig._preview;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   protected render(): TemplateResult {
     if (!this.hass || !this._config) return html``;
 
@@ -231,6 +244,16 @@ export class WeatherAlertsCardEditor extends LitElement {
             @change=${this._layoutChanged}
           ></ha-switch>
         </ha-formfield>
+
+        <div class="preview-tools">
+          <ha-formfield .label=${'Show sample data'}>
+            <ha-switch
+              .checked=${this._showPreview}
+              @change=${this._previewChanged}
+            ></ha-switch>
+          </ha-formfield>
+          <div class="preview-hint">Preview card layout with placeholder alerts</div>
+        </div>
       </div>
     `;
   }
@@ -241,6 +264,18 @@ export class WeatherAlertsCardEditor extends LitElement {
       flex-direction: column;
       gap: 16px;
       padding: 16px 0;
+    }
+    .preview-tools {
+      border-top: 1px solid var(--divider-color);
+      padding-top: 16px;
+      margin-top: 4px;
+    }
+    .preview-hint {
+      font-size: 0.8rem;
+      color: var(--secondary-text-color);
+      padding-left: 48px;
+      margin-top: 4px;
+      opacity: 0.7;
     }
   `;
 }

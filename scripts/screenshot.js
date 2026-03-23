@@ -160,52 +160,62 @@ const PORT = 3742;
     await page.locator(`#${cardId}`).locator('xpath=..').screenshot({ path: resolve(ROOT, out), type: 'png' });
   }
 
-  // ---- Hero images (light + dark) ----
+  // ---- Hero images (light + dark) at 2x DPR for retina sharpness ----
   // Two clean screenshots — README uses <picture> + prefers-color-scheme
   // so each viewer sees the version matching their OS theme.
+  // Captured at 2x device pixel ratio (2120x1740 pixels) while the hero
+  // canvas stays at 1060x870 CSS pixels — browser downscales for sharpness.
   const HERO_VARIANTS = [
     { theme: 'theme-light', label: 'hero light', out: 'img/hero-light.png' },
     { theme: 'theme-dark',  label: 'hero dark ', out: 'img/hero-dark.png' },
   ];
   if (!themeFilter.length || themeFilter.includes('hero')) {
-    // Hero needs a wider viewport for the horizontal banner
-    await page.setViewportSize({ width: 1100, height: 900 });
+    // Close the 1x context and create a 2x one for hero captures
+    await context.close();
+    const heroContext = await browser.newContext({
+      viewport: { width: 1100, height: 900 },
+      deviceScaleFactor: 2,
+    });
+    const heroPage = await heroContext.newPage();
+    await heroPage.addInitScript(icons => { window.__MDI_ICONS__ = icons; }, MDI_ICONS);
+    await heroPage.addInitScript(now => { Date.now = () => now; }, SCREENSHOT_NOW);
 
     const heroURL = `http://127.0.0.1:${PORT}/scripts/screenshot-hero.html`;
 
     for (const { theme, label, out } of HERO_VARIANTS) {
       console.log(`  ${label}            → ${out}`);
 
-      await page.goto(heroURL);
+      await heroPage.goto(heroURL);
 
       // Wait for both card instances to render
-      await page.waitForFunction(() => {
+      await heroPage.waitForFunction(() => {
         const ids = ['card-severity', 'card-nws'];
         return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
       }, { timeout: 10000 });
 
       // Apply theme class to the canvas
-      await page.evaluate(cls => document.getElementById('hero-canvas').classList.add(cls), theme);
+      await heroPage.evaluate(cls => document.getElementById('hero-canvas').classList.add(cls), theme);
 
       // Disable animations
-      await page.addStyleTag({
+      await heroPage.addStyleTag({
         content: '*, *::before, *::after { animation: none !important; transition: none !important; }',
       });
-      await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      await heroPage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
 
-      // Expand the last compact alert (Winter Storm Watch) so the hero image
+      // Expand the last compact alert (Snowflake Watch) so the hero image
       // showcases the expanded details view and balances the vertical height.
-      await page.locator('#card-nws .compact-row').last().click();
-      await page.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
-      await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      await heroPage.locator('#card-nws .compact-row').last().click();
+      await heroPage.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
+      await heroPage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
 
       // Also expand its "Read Details" section to show the full description
-      await page.locator('#card-nws .details-summary').last().click();
-      await page.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
-      await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      await heroPage.locator('#card-nws .details-summary').last().click();
+      await heroPage.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
+      await heroPage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
 
-      await page.locator('#hero-canvas').screenshot({ path: resolve(ROOT, out), type: 'png' });
+      await heroPage.locator('#hero-canvas').screenshot({ path: resolve(ROOT, out), type: 'png' });
     }
+    await heroContext.close();
   }
 
   await browser.close();

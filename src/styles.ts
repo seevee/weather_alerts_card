@@ -386,6 +386,16 @@ export const cardStyles = css`
     transition: none !important;
   }
 
+  /* --- PREVIEW LABEL --- */
+  .preview-label {
+    text-align: center;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--secondary-text-color);
+    padding: 8px 16px 0;
+    opacity: 0.7;
+  }
+
   /* --- EMPTY STATE --- */
   .no-alerts {
     padding: 20px;
