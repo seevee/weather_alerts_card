@@ -128,10 +128,18 @@ export class WeatherAlertsCard extends LitElement {
 
   public static getStubConfig(hass?: HomeAssistant): Record<string, unknown> {
     if (hass) {
-      const entityId = Object.keys(hass.states).find(id =>
+      // Find all matching alert entities, prefer one with active alerts
+      const matches = Object.keys(hass.states).filter(id =>
         STUB_ENTITY_PATTERNS.some(pattern => pattern.test(id)),
       );
-      if (entityId) return { entity: entityId };
+      const withAlerts = matches.find(id => {
+        const s = hass.states[id];
+        // sensor: state is alert count; binary_sensor: 'on' means active
+        return (s.state !== '0' && s.state !== 'off' && s.state !== 'unknown' && s.state !== 'unavailable');
+      });
+      if (withAlerts) return { entity: withAlerts };
+      // No entity has active alerts → fall through to hardcoded default
+      // so the placeholder preview shows instead of "No active alerts"
     }
     return { entity: 'sensor.nws_alerts_alerts' };
   }
