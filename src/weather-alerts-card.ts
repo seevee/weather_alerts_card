@@ -511,6 +511,7 @@ w.customCards = w.customCards || [];
 w.customCards.push({
   type: 'weather-alerts-card',
   name: 'Weather Alerts Card',
+  preview: true,
   description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).',
 });
 w.customCards.push({
