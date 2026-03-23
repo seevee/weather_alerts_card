@@ -189,14 +189,6 @@ npx git-cliff --config cliff.toml --tag "v$VERSION" "${CLIFF_FLAGS[@]}" --output
 
 git add CHANGELOG.md package.json package-lock.json
 
-# -------------------------
-# Build
-# -------------------------
-
-npm run build
-
-git add dist
-
 git commit -m "chore: release v$VERSION"
 
 git push -u origin "$BRANCH"

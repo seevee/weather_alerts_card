@@ -34,8 +34,11 @@ fi
 git tag "$TAG"
 git push origin "$TAG"
 
-MIGRATION_NOTICE="<details>
-<summary>Migrating from v1.x</summary>
+MIGRATION_NOTICE="
+---
+
+<details>
+<summary><strong>Migrating from v1.x</strong></summary>
 
 The card was renamed from **NWS Alerts Card** to **Weather Alerts Card** to reflect multi-provider support. Your existing dashboards will continue to work — the old element name is supported but deprecated.
 
@@ -45,14 +48,11 @@ The card was renamed from **NWS Alerts Card** to **Weather Alerts Card** to refl
    - **Manual install:** In Settings → Dashboards → Resources, change \`/local/nws-alerts-card.js\` to \`/local/weather-alerts-card.js\`
 3. The old names will be removed in v3.
 
-</details>
-
----
-"
+</details>"
 
 if [ "$PRERELEASE" = false ]; then
-  NOTES="$MIGRATION_NOTICE
-$NOTES"
+  NOTES="$NOTES
+$MIGRATION_NOTICE"
 fi
 
 gh release create "$TAG" \
