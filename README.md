@@ -106,44 +106,14 @@ entity: sensor.pirateweather_alerts
 
 ## Supported Providers
 
-<details>
-<summary><strong>NWS (United States)</strong></summary>
+The card auto-detects the provider from entity attributes. Any integration that produces a compatible data shape will work.
 
-Install the [NWS Alerts](https://github.com/finity69x2/nws_alerts) integration. The card auto-detects NWS entities from `attributes.Alerts`.
-
-</details>
-
-<details>
-<summary><strong>Bureau of Meteorology (Australia)</strong></summary>
-
-Install the [Bureau of Meteorology](https://github.com/bremor/bureau_of_meteorology) integration. The card auto-detects BoM entities from `attributes.warnings`.
-
-</details>
-
-<details>
-<summary><strong>MeteoAlarm (Europe)</strong></summary>
-
-The [MeteoAlarm integration](https://www.home-assistant.io/integrations/meteoalarm/) is built into Home Assistant. It creates a `binary_sensor.meteoalarm` entity that exposes a single active weather alert per configured province. You will need to configure this in `configuration.yml`.
-
-> **Note**: The MeteoAlarm integration only reports one alert at a time per entity. If your region has multiple concurrent alerts, only the first one is shown. This is a limitation of the upstream library, not the card.
-
-</details>
-
-<details>
-<summary><strong>PirateWeather</strong></summary>
-
-The [PirateWeather HA integration](https://github.com/Pirate-Weather/pirate-weather-ha) provides weather alerts as sensor entity attributes. To get the alerts entity:
-
-1. Add the PirateWeather integration (Settings → Integrations → Add Integration → Pirate Weather)
-2. Under **PW Platform**, check **Sensor**
-3. Under **Monitored Conditions**, check **Alerts**
-4. Restart Home Assistant — `sensor.pirateweather_alerts` will appear
-
-The card auto-detects PirateWeather entities from the `attribution` attribute, or you can set `provider: pirateweather` explicitly.
-
-> **Note**: PirateWeather alerts are sourced from WMO CAP feeds. Alert text may use WMO terminology rather than local language.
-
-</details>
+| Provider | Region | Tested integrations |
+|----------|--------|---------------------|
+| NWS | US | [finity69x2/nws_alerts](https://github.com/finity69x2/nws_alerts) |
+| BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
+| MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
+| PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 
 ## Development
 
