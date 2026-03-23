@@ -46,7 +46,7 @@ function getPreviewAlerts(): WeatherAlert[] {
   return [
     {
       id: 'preview-1',
-      event: 'Sunshine Advisory',
+      event: 'Sunshine Heat Advisory',
       severity: 'moderate',
       severityLabel: 'Moderate',
       certainty: 'Likely',
@@ -57,7 +57,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       description: 'This is a sample alert demonstrating the card layout. No action required.',
       instruction: 'Enjoy the weather! This is placeholder data for the card preview.',
       url: '',
-      headline: 'Sunshine Advisory for Pleasantville',
+      headline: 'Sunshine Heat Advisory for Pleasantville',
       areaDesc: 'Pleasantville, USA',
       zones: ['SAMPLE01'],
       provider: 'nws' as AlertProvider,
@@ -65,7 +65,7 @@ function getPreviewAlerts(): WeatherAlert[] {
     },
     {
       id: 'preview-2',
-      event: 'Breeze Watch',
+      event: 'Gentle Wind Watch',
       severity: 'minor',
       severityLabel: 'Minor',
       certainty: 'Possible',
@@ -76,7 +76,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       description: 'A gentle breeze may arrive later. This is sample data showing an upcoming alert.',
       instruction: '',
       url: '',
-      headline: 'Breeze Watch for Sampletown County',
+      headline: 'Gentle Wind Watch for Sampletown County',
       areaDesc: 'Sampletown County',
       zones: ['SAMPLE02'],
       provider: 'nws' as AlertProvider,
