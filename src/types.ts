@@ -24,6 +24,7 @@ export interface WeatherAlertsCardConfig {
   entity: string;
   title?: string;
   zones?: string[];
+  eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
   minSeverity?: AlertSeverity;
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
@@ -52,6 +53,7 @@ export interface WeatherAlert {
   headline: string;        // Short title
   areaDesc: string;        // Affected area description
   zones: string[];         // Normalized zone codes for filtering (uppercase)
+  eventCode: string;       // Standardized event code, e.g. "SVR", "TOR" (empty if unavailable)
   provider: AlertProvider;
   phase: string;           // Lifecycle phase, e.g. "New", "Update", "Final" (empty if N/A)
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
@@ -73,6 +75,7 @@ export interface NwsAlert {
   Severity: string;
   Certainty?: string;
   Urgency?: string;
+  NWSCode?: string;          // NWS PPS event code, e.g. "TOW", "SVW" (v6.6+)
   Sent: string;
   Onset: string;
   Ends: string;

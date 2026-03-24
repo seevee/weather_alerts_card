@@ -73,6 +73,7 @@ export class PirateWeatherAdapter implements AlertAdapter {
       headline: title,
       areaDesc,
       zones: [],
+      eventCode: '',
       provider: 'pirateweather',
       phase: '',
     };

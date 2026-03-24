@@ -178,6 +178,14 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
     border: 1px solid var(--divider-color);
   }
+  .event-code-badge {
+    background: var(--secondary-background-color);
+    color: var(--secondary-text-color);
+    border: 1px solid var(--divider-color);
+    font-family: monospace;
+    text-transform: none;
+    letter-spacing: 1px;
+  }
   .zones-badge {
     background: transparent;
     color: var(--secondary-text-color);

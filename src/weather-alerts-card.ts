@@ -60,6 +60,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       headline: 'Sunshine Heat Advisory for Pleasantville',
       areaDesc: 'Pleasantville, USA',
       zones: ['SAMPLE01'],
+      eventCode: 'HTA',
       provider: 'nws' as AlertProvider,
       phase: 'Update',
     },
@@ -79,6 +80,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       headline: 'Gentle Wind Watch for Sampletown County',
       areaDesc: 'Sampletown County',
       zones: ['SAMPLE02'],
+      eventCode: 'WIA',
       provider: 'nws' as AlertProvider,
       phase: '',
     },
@@ -159,6 +161,11 @@ export class WeatherAlertsCard extends LitElement {
     if (this._config.zones && this._config.zones.length > 0) {
       const zoneSet = new Set(this._config.zones.map(z => z.toUpperCase()));
       alerts = alerts.filter(a => alertMatchesZones(a, zoneSet));
+    }
+
+    if (this._config.eventCodes && this._config.eventCodes.length > 0) {
+      const codeSet = new Set(this._config.eventCodes.map(c => c.toUpperCase()));
+      alerts = alerts.filter(a => a.eventCode && codeSet.has(a.eventCode.toUpperCase()));
     }
 
     if (this._config.minSeverity) {
@@ -404,6 +411,9 @@ export class WeatherAlertsCard extends LitElement {
       ${progress.isActive
         ? html`<span class="badge active-badge">Active</span>`
         : html`<span class="badge prep-badge">In Prep</span>`}
+      ${alert.eventCode ? html`
+        <span class="badge event-code-badge">${alert.eventCode}</span>
+      ` : nothing}
       ${alert.mergedCount && alert.mergedCount > 1
         ? html`<span class="badge zones-badge">${alert.mergedCount} zones</span>`
         : nothing}

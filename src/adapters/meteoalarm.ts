@@ -81,6 +81,7 @@ export class MeteoAlarmAdapter implements AlertAdapter {
       headline: headline || eventName,
       areaDesc: str(attributes['senderName']),
       zones: [],
+      eventCode: '',
       provider: 'meteoalarm',
       phase: '',
     }];

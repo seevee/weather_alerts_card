@@ -103,6 +103,7 @@ export class BomAdapter implements AlertAdapter {
       headline: w.short_title || title,
       areaDesc: w.state || '',
       zones: w.area_id ? [w.area_id.toUpperCase()] : [],
+      eventCode: '',
       provider: 'bom',
       phase: bomPhaseLabel(w.phase),
     };

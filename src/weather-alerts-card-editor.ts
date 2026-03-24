@@ -103,6 +103,18 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _eventCodesChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const raw = target.value;
+    const newConfig = { ...this._config };
+    if (raw.trim()) {
+      newConfig.eventCodes = raw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+    } else {
+      delete newConfig.eventCodes;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _sortOrderChanged(ev: CustomEvent): void {
     const value = ev.detail.value as 'default' | 'onset' | 'severity';
     if (value === (this._config.sortOrder || 'default')) return;
@@ -167,6 +179,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (!this.hass || !this._config) return html``;
 
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
+    const eventCodesStr = this._config.eventCodes ? this._config.eventCodes.join(', ') : '';
 
     return html`
       <div class="editor">
@@ -203,6 +216,14 @@ export class WeatherAlertsCardEditor extends LitElement {
           .helper=${'Comma-separated zone codes, e.g. COC059, COZ039 (NWS) or NSW_FL049 (BoM)'}
           .helperPersistent=${true}
           @change=${this._zonesChanged}
+        ></ha-textfield>
+
+        <ha-textfield
+          .label=${'Event codes (optional)'}
+          .value=${eventCodesStr}
+          .helper=${'Comma-separated NWS event codes, e.g. TOW, SVW, FFW'}
+          .helperPersistent=${true}
+          @change=${this._eventCodesChanged}
         ></ha-textfield>
 
         <ha-select

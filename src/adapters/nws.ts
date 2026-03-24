@@ -59,6 +59,7 @@ export class NwsAdapter implements AlertAdapter {
       headline: a.Headline || '',
       areaDesc: a.AreaDesc || a.AreasAffected || '',
       zones: collectZones(a),
+      eventCode: a.NWSCode || '',
       provider: 'nws',
       phase: '',
     };

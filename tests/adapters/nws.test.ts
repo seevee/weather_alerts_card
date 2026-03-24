@@ -164,6 +164,18 @@ describe('NwsAdapter', () => {
         expect(alerts[0].urgency).toBe('');
       });
 
+      it('passes through NWSCode as eventCode (v6.6+)', () => {
+        const attrs = makeNwsAttributes([{ NWSCode: 'TOW' }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].eventCode).toBe('TOW');
+      });
+
+      it('returns empty eventCode when NWSCode is absent (pre-v6.6)', () => {
+        const attrs = makeNwsAttributes([{ NWSCode: undefined }]);
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].eventCode).toBe('');
+      });
+
       it('returns empty zones when AffectedZones and Geocode are absent', () => {
         const attrs = makeNwsAttributes([{
           AffectedZones: undefined,
