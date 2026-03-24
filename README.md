@@ -44,6 +44,8 @@ Open HACS → Search "Weather Alerts Card" → Install → Refresh your browser
 - **`sortOrder`** — `'default'`, `'onset'`, `'severity'`
 - **`minSeverity`** — `'minor'`, `'moderate'`, `'severe'`, `'extreme'`
 - **`colorTheme`** — `'severity'` (default) or `'nws'`
+- **`eventCodes`** — NWS event codes to include, e.g. `['SVR', 'TOR']` — omit for all events
+- **`timezone`** — `'server'` (default) or `'browser'` to use the client's local timezone
 - **`deduplicate`** — Collapse matching alerts into one card (default: `true`)
 - **`animations`** — `true`, `false`, or respect `prefers-reduced-motion` (default: system)
 - **`layout`** — `'default'` or `'compact'`
@@ -74,6 +76,16 @@ entity: sensor.nws_alerts_alerts
 colorTheme: nws
 layout: compact
 sortOrder: severity
+```
+
+**NWS filtered to specific event types, browser timezone**
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+eventCodes:
+  - TOR
+  - SVR
+timezone: browser
 ```
 
 **European MeteoAlarm warnings**
