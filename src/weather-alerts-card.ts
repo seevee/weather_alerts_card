@@ -499,19 +499,19 @@ export class WeatherAlertsCard extends LitElement {
       <div class="progress-section">
         <div class="progress-labels">
           <div class="label-left">
-            <span class="label-sub">${isActive ? t('progress.start', lang) : t('progress.now', lang)}</span><br>
-            ${formatProgressTimestamp(isActive ? onsetTs : nowTs, this._locale, lang)}
+            <span class="label-sub">${isActive ? t('progress.start', lang) : t('progress.now', lang)}</span>
+            <span>${formatProgressTimestamp(isActive ? onsetTs : nowTs, this._locale, lang)}</span>
           </div>
           <div class="label-center">
             ${!hasEndTime
         ? html`<span class="label-sub">${t('progress.ongoing', lang)}</span>`
         : isActive
-          ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><br>${formatDuration(endsTs, nowTs)}`
-          : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><br>${formatDuration(onsetTs, nowTs)}`}
+          ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
+          : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><span>${formatDuration(onsetTs, nowTs)}</span>`}
           </div>
           <div class="label-right">
-            <span class="label-sub">${t('progress.end', lang)}</span><br>
-            ${hasEndTime ? formatProgressTimestamp(endsTs, this._locale, lang) : t('progress.tbd', lang)}
+            <span class="label-sub">${t('progress.end', lang)}</span>
+            <span>${hasEndTime ? formatProgressTimestamp(endsTs, this._locale, lang) : t('progress.tbd', lang)}</span>
           </div>
         </div>
         <div class="progress-track">

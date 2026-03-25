@@ -206,10 +206,16 @@ export const cardStyles = css`
   .progress-labels {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: stretch;
     font-size: 0.85rem;
     color: var(--primary-text-color);
     margin-bottom: 6px;
+  }
+
+  .label-left, .label-center, .label-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
 
   .label-sub {
