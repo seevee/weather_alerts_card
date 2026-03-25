@@ -16,6 +16,7 @@ import {
   sanitizeAlertHtml,
 } from './utils';
 import { getAdapter } from './adapters';
+import { t } from './localize';
 import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
 
@@ -189,6 +190,10 @@ export class WeatherAlertsCard extends LitElement {
     return { ...this.hass.locale, timeZone };
   }
 
+  private get _lang(): string {
+    return this.hass?.locale?.language || 'en';
+  }
+
   private get _animationsEnabled(): boolean {
     if (this._config?.animations === true) return true;
     if (this._config?.animations === false) return false;
@@ -214,7 +219,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _sourceLinkLabel(alert: WeatherAlert): string {
     const label = PROVIDER_LABELS[alert.provider] || 'Alert';
-    return `Open ${label} Source`;
+    return t('card.open_source', this._lang, { provider: label });
   }
 
   protected render(): TemplateResult {
@@ -237,7 +242,7 @@ export class WeatherAlertsCard extends LitElement {
         <ha-card .header=${this._config.title || ''}>
           <div class="sensor-unavailable">
             <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-            Alert sensor is ${stateVal}.
+            ${t('card.sensor_unavailable', this._lang, { state: stateVal })}
           </div>
         </ha-card>
       `;
@@ -262,7 +267,7 @@ export class WeatherAlertsCard extends LitElement {
 
     return html`
       <ha-card .header=${this._config.title || ''} class="no-animations ${layoutClass}">
-        <div class="preview-label">Preview</div>
+        <div class="preview-label">${t('card.preview', this._lang)}</div>
         ${alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
     `;
@@ -272,7 +277,7 @@ export class WeatherAlertsCard extends LitElement {
     return html`
       <div class="no-alerts">
         <ha-icon icon="mdi:weather-sunny"></ha-icon><br>
-        No active alerts.
+        ${t('card.no_alerts', this._lang)}
       </div>
     `;
   }
@@ -334,7 +339,7 @@ export class WeatherAlertsCard extends LitElement {
             class="details-summary"
             @click=${() => this._toggleDetails(alert.id + '_details')}
           >
-            <span>Read Details</span>
+            <span>${t('card.read_details', this._lang)}</span>
             <ha-icon
               icon="mdi:chevron-down"
               class="chevron ${this._expandedAlerts.get(alert.id + '_details') ? 'expanded' : ''}"
@@ -381,7 +386,7 @@ export class WeatherAlertsCard extends LitElement {
             class="details-summary"
             @click=${() => this._toggleDetails(alert.id)}
           >
-            <span>Read Details</span>
+            <span>${t('card.read_details', this._lang)}</span>
             <ha-icon
               icon="mdi:chevron-down"
               class="chevron ${expanded ? 'expanded' : ''}"
@@ -409,13 +414,16 @@ export class WeatherAlertsCard extends LitElement {
         <span class="badge phase-badge">${alert.phase}</span>
       ` : nothing}
       ${progress.isActive
-        ? html`<span class="badge active-badge">Active</span>`
-        : html`<span class="badge prep-badge">In Prep</span>`}
+        ? html`<span class="badge active-badge">${t('card.active', this._lang)}</span>`
+        : html`<span class="badge prep-badge">${t('card.in_prep', this._lang)}</span>`}
       ${alert.eventCode ? html`
         <span class="badge event-code-badge">${alert.eventCode}</span>
       ` : nothing}
       ${alert.mergedCount && alert.mergedCount > 1
-        ? html`<span class="badge zones-badge">${alert.mergedCount} zones</span>`
+        ? html`<span class="badge zones-badge">${t(
+            alert.mergedCount === 1 ? 'card.zone_count_singular' : 'card.zones_count',
+            this._lang, { count: alert.mergedCount },
+          )}</span>`
         : nothing}
     `;
   }
@@ -434,35 +442,37 @@ export class WeatherAlertsCard extends LitElement {
     const desc = this._normalizeText(alert.description);
     const instr = this._normalizeText(alert.instruction);
 
+    const lang = this._lang;
+
     return html`
       <div class="details-content">
         <div class="meta-grid">
           <div class="meta-item">
-            <span class="meta-label">Issued</span>
-            <span class="meta-value">${formatLocalTimestamp(progress.sentTs, this._locale)}</span>
+            <span class="meta-label">${t('detail.issued', lang)}</span>
+            <span class="meta-value">${formatLocalTimestamp(progress.sentTs, this._locale, lang)}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">Onset</span>
-            <span class="meta-value">${formatLocalTimestamp(progress.onsetTs, this._locale)}</span>
-            <span class="meta-relative">${formatRelativeTime(progress.onsetTs, progress.nowTs)}</span>
+            <span class="meta-label">${t('detail.onset', lang)}</span>
+            <span class="meta-value">${formatLocalTimestamp(progress.onsetTs, this._locale, lang)}</span>
+            <span class="meta-relative">${formatRelativeTime(progress.onsetTs, progress.nowTs, lang)}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">Expires</span>
-            <span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale)}</span>
+            <span class="meta-label">${t('detail.expires', lang)}</span>
+            <span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
             ${progress.hasEndTime
-        ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs)}</span>`
+        ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
         : nothing}
           </div>
           ${alert.areaDesc ? html`
             <div class="meta-item" style="grid-column: 1 / -1;">
-              <span class="meta-label">Area</span>
+              <span class="meta-label">${t('detail.area', lang)}</span>
               <span class="meta-value">${alert.areaDesc}</span>
             </div>
           ` : nothing}
         </div>
 
-        ${this._renderTextBlock('Description', desc)}
-        ${this._renderTextBlock('Instructions', instr)}
+        ${this._renderTextBlock(t('detail.description', lang), desc)}
+        ${this._renderTextBlock(t('detail.instructions', lang), instr)}
 
         ${alert.url ? html`
           <div class="footer-link">
@@ -478,6 +488,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderProgressSection(_alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     const { isActive, progressPct, hasEndTime, onsetTs, endsTs, nowTs } = progress;
+    const lang = this._lang;
 
     const noAnim = !this._animationsEnabled;
     const fillStyle = isActive && !hasEndTime
@@ -490,19 +501,19 @@ export class WeatherAlertsCard extends LitElement {
       <div class="progress-section">
         <div class="progress-labels">
           <div class="label-left">
-            <span class="label-sub">${isActive ? 'Start' : 'Now'}</span><br>
-            ${formatProgressTimestamp(isActive ? onsetTs : nowTs, this._locale)}
+            <span class="label-sub">${isActive ? t('progress.start', lang) : t('progress.now', lang)}</span><br>
+            ${formatProgressTimestamp(isActive ? onsetTs : nowTs, this._locale, lang)}
           </div>
           <div class="label-center">
             ${!hasEndTime
-        ? html`<span style="color: var(--color);"><b>Ongoing</b></span>`
+        ? html`<span style="color: var(--color);"><b>${t('progress.ongoing', lang)}</b></span>`
         : isActive
-          ? html`expires <b>${formatRelativeTime(endsTs, nowTs)}</b>`
-          : html`starts <b>${formatRelativeTime(onsetTs, nowTs)}</b>`}
+          ? html`${t('progress.expires_in', lang, { time: '' })}<b>${formatRelativeTime(endsTs, nowTs, lang)}</b>`
+          : html`${t('progress.starts_in', lang, { time: '' })}<b>${formatRelativeTime(onsetTs, nowTs, lang)}</b>`}
           </div>
           <div class="label-right">
-            <span class="label-sub">End</span><br>
-            ${hasEndTime ? formatProgressTimestamp(endsTs, this._locale) : 'TBD'}
+            <span class="label-sub">${t('progress.end', lang)}</span><br>
+            ${hasEndTime ? formatProgressTimestamp(endsTs, this._locale, lang) : t('progress.tbd', lang)}
           </div>
         </div>
         <div class="progress-track">

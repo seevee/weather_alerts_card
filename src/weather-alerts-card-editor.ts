@@ -1,12 +1,17 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity } from './types';
+import { t } from './localize';
 
 @customElement('weather-alerts-card-editor')
 export class WeatherAlertsCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _showPreview = false;
+  private get _lang(): string {
+    return this.hass?.locale?.language || 'en';
+  }
+
   public setConfig(config: WeatherAlertsCardConfig): void {
     this._config = config;
   }
@@ -178,6 +183,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   protected render(): TemplateResult {
     if (!this.hass || !this._config) return html``;
 
+    const lang = this._lang;
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
     const eventCodesStr = this._config.eventCodes ? this._config.eventCodes.join(', ') : '';
 
@@ -187,100 +193,100 @@ export class WeatherAlertsCardEditor extends LitElement {
           .hass=${this.hass}
           .selector=${{ entity: { domain: ['sensor', 'binary_sensor'] } }}
           .value=${this._config.entity}
-          .label=${'Entity (required)'}
+          .label=${t('editor.entity', lang)}
           .required=${true}
           @value-changed=${this._entityChanged}
         ></ha-selector>
 
         <ha-textfield
-          .label=${'Title (optional)'}
+          .label=${t('editor.title', lang)}
           .value=${this._config.title || ''}
           @change=${this._titleChanged}
         ></ha-textfield>
 
         <ha-select
-          .label=${'Alert provider'}
+          .label=${t('editor.provider', lang)}
           .value=${this._config.provider || 'auto'}
           @selected=${this._providerChanged}
         >
-          <ha-dropdown-item value="auto">Auto-detect</ha-dropdown-item>
-          <ha-dropdown-item value="nws">NWS (United States)</ha-dropdown-item>
-          <ha-dropdown-item value="bom">BoM (Australia)</ha-dropdown-item>
-          <ha-dropdown-item value="meteoalarm">MeteoAlarm (Europe)</ha-dropdown-item>
-          <ha-dropdown-item value="pirateweather">PirateWeather</ha-dropdown-item>
+          <ha-dropdown-item value="auto">${t('editor.provider_auto', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="nws">${t('editor.provider_nws', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="bom">${t('editor.provider_bom', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-textfield
-          .label=${'Zones (optional)'}
+          .label=${t('editor.zones', lang)}
           .value=${zonesStr}
-          .helper=${'Comma-separated zone codes, e.g. COC059, COZ039 (NWS) or NSW_FL049 (BoM)'}
+          .helper=${t('editor.zones_helper', lang)}
           .helperPersistent=${true}
           @change=${this._zonesChanged}
         ></ha-textfield>
 
         <ha-textfield
-          .label=${'Event codes (optional)'}
+          .label=${t('editor.event_codes', lang)}
           .value=${eventCodesStr}
-          .helper=${'Comma-separated NWS event codes, e.g. TOW, SVW, FFW'}
+          .helper=${t('editor.event_codes_helper', lang)}
           .helperPersistent=${true}
           @change=${this._eventCodesChanged}
         ></ha-textfield>
 
         <ha-select
-          .label=${'Sort order'}
+          .label=${t('editor.sort_order', lang)}
           .value=${this._config.sortOrder || 'default'}
           @selected=${this._sortOrderChanged}
         >
-          <ha-dropdown-item value="default">Default</ha-dropdown-item>
-          <ha-dropdown-item value="onset">Onset time</ha-dropdown-item>
-          <ha-dropdown-item value="severity">Severity</ha-dropdown-item>
+          <ha-dropdown-item value="default">${t('editor.sort_default', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="onset">${t('editor.sort_onset', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="severity">${t('editor.sort_severity', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-select
-          .label=${'Color theme'}
+          .label=${t('editor.color_theme', lang)}
           .value=${this._config.colorTheme || 'severity'}
           @selected=${this._colorThemeChanged}
         >
-          <ha-dropdown-item value="severity">Severity-based</ha-dropdown-item>
-          <ha-dropdown-item value="nws">NWS Official</ha-dropdown-item>
+          <ha-dropdown-item value="severity">${t('editor.color_severity', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="nws">${t('editor.color_nws', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-select
-          .label=${'Timezone'}
+          .label=${t('editor.timezone', lang)}
           .value=${this._config.timezone || 'server'}
           @selected=${this._timezoneChanged}
         >
-          <ha-dropdown-item value="server">Server (Home Assistant)</ha-dropdown-item>
-          <ha-dropdown-item value="browser">Browser (local device)</ha-dropdown-item>
+          <ha-dropdown-item value="server">${t('editor.tz_server', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="browser">${t('editor.tz_browser', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-select
-          .label=${'Minimum severity'}
+          .label=${t('editor.min_severity', lang)}
           .value=${this._config.minSeverity || ''}
           @selected=${this._minSeverityChanged}
         >
-          <ha-dropdown-item value="">All severities</ha-dropdown-item>
-          <ha-dropdown-item value="minor">Minor or higher</ha-dropdown-item>
-          <ha-dropdown-item value="moderate">Moderate or higher</ha-dropdown-item>
-          <ha-dropdown-item value="severe">Severe or higher</ha-dropdown-item>
-          <ha-dropdown-item value="extreme">Extreme only</ha-dropdown-item>
+          <ha-dropdown-item value="">${t('editor.severity_all', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="minor">${t('editor.severity_minor', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="moderate">${t('editor.severity_moderate', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="severe">${t('editor.severity_severe', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="extreme">${t('editor.severity_extreme', lang)}</ha-dropdown-item>
         </ha-select>
 
-        <ha-formfield .label=${'Enable animations'}>
+        <ha-formfield .label=${t('editor.animations', lang)}>
           <ha-switch
             .checked=${this._config.animations !== false}
             @change=${this._animationsChanged}
           ></ha-switch>
         </ha-formfield>
 
-        <ha-formfield .label=${'Deduplicate alerts'}>
+        <ha-formfield .label=${t('editor.deduplicate', lang)}>
           <ha-switch
             .checked=${this._config.deduplicate !== false}
             @change=${this._deduplicateChanged}
           ></ha-switch>
         </ha-formfield>
 
-        <ha-formfield .label=${'Compact layout'}>
+        <ha-formfield .label=${t('editor.compact', lang)}>
           <ha-switch
             .checked=${this._config.layout === 'compact'}
             @change=${this._layoutChanged}
@@ -288,13 +294,13 @@ export class WeatherAlertsCardEditor extends LitElement {
         </ha-formfield>
 
         <div class="preview-tools">
-          <ha-formfield .label=${'Show sample data'}>
+          <ha-formfield .label=${t('editor.show_preview', lang)}>
             <ha-switch
               .checked=${this._showPreview}
               @change=${this._previewChanged}
             ></ha-switch>
           </ha-formfield>
-          <div class="preview-hint">Preview card layout with placeholder alerts</div>
+          <div class="preview-hint">${t('editor.preview_hint', lang)}</div>
         </div>
       </div>
     `;

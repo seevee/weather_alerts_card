@@ -321,6 +321,22 @@ describe('formatRelativeTime', () => {
   it('returns days for long durations', () => {
     expect(formatRelativeTime(now + 172800, now)).toBe('in 2d');
   });
+
+  it('returns French relative time', () => {
+    expect(formatRelativeTime(now - 30, now, 'fr')).toBe("a l'instant");
+    expect(formatRelativeTime(now + 300, now, 'fr')).toBe('dans 5m');
+    expect(formatRelativeTime(now - 300, now, 'fr')).toBe('il y a 5m');
+    expect(formatRelativeTime(now + 5400, now, 'fr')).toBe('dans 1h 30m');
+    expect(formatRelativeTime(now + 172800, now, 'fr')).toBe('dans 2j');
+  });
+
+  it('returns Spanish relative time', () => {
+    expect(formatRelativeTime(now - 30, now, 'es')).toBe('ahora mismo');
+    expect(formatRelativeTime(now + 300, now, 'es')).toBe('en 5m');
+    expect(formatRelativeTime(now - 300, now, 'es')).toBe('hace 5m');
+    expect(formatRelativeTime(now + 5400, now, 'es')).toBe('en 1h 30m');
+    expect(formatRelativeTime(now + 172800, now, 'es')).toBe('en 2d');
+  });
 });
 
 describe('deduplicateAlerts', () => {

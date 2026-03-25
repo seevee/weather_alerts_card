@@ -15,6 +15,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 - **Zone filtering** — show only alerts for specific zones
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display
+- **Localized UI** — English, French, and Spanish; auto-detected from Home Assistant locale
 - **Visual config** — no YAML editing required
 
 ## Quick Start

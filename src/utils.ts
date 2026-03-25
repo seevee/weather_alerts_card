@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify';
 import { WeatherAlert, AlertProgress } from './types';
+import { t } from './localize';
 
 const ALERT_HTML_TAGS = ['a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul'];
 
@@ -260,8 +261,8 @@ function formatTime(d: Date, locale: HaLocale | undefined, hour: '2-digit' | 'nu
   return d.toLocaleTimeString(fmt.locale, opts);
 }
 
-export function formatProgressTimestamp(ts: number, locale?: HaLocale): string {
-  if (ts <= 0) return 'N/A';
+export function formatProgressTimestamp(ts: number, locale?: HaLocale, lang = 'en'): string {
+  if (ts <= 0) return t('progress.na', lang);
   const d = new Date(ts * 1000);
   const now = new Date();
   const tzAbbr = getTzAbbr(d, locale);
@@ -271,8 +272,8 @@ export function formatProgressTimestamp(ts: number, locale?: HaLocale): string {
   return `${timeWithTz} (${formatDate(d, locale)})`;
 }
 
-export function formatLocalTimestamp(ts: number, locale?: HaLocale): string {
-  if (ts <= 100) return 'N/A';
+export function formatLocalTimestamp(ts: number, locale?: HaLocale, lang = 'en'): string {
+  if (ts <= 100) return t('progress.na', lang);
   const d = new Date(ts * 1000);
   const tzAbbr = getTzAbbr(d, locale);
   const time = formatTime(d, locale, 'numeric');
@@ -280,24 +281,24 @@ export function formatLocalTimestamp(ts: number, locale?: HaLocale): string {
   return `${formatDate(d, locale)}, ${timeStr}`;
 }
 
-export function formatRelativeTime(ts: number, nowTs: number = Date.now() / 1000): string {
+export function formatRelativeTime(ts: number, nowTs: number = Date.now() / 1000, lang = 'en'): string {
   const diff = ts - nowTs;
   const abs = Math.abs(diff);
   const past = diff < 0;
 
-  if (abs < 60) return past ? 'just now' : 'in <1m';
+  if (abs < 60) return past ? t('time.just_now', lang) : t('time.in_less_than_1m', lang);
   if (abs < 3600) {
     const m = Math.floor(abs / 60);
-    return past ? `${m}m ago` : `in ${m}m`;
+    return past ? t('time.minutes_ago', lang, { m }) : t('time.in_minutes', lang, { m });
   }
   if (abs < 86400) {
     const h = Math.floor(abs / 3600);
     const m = Math.floor((abs % 3600) / 60);
     const dur = m > 0 ? `${h}h ${m}m` : `${h}h`;
-    return past ? `${dur} ago` : `in ${dur}`;
+    return past ? t('time.hours_ago', lang, { dur }) : t('time.in_hours', lang, { dur });
   }
   const d = Math.floor(abs / 86400);
-  return past ? `${d}d ago` : `in ${d}d`;
+  return past ? t('time.days_ago', lang, { d }) : t('time.in_days', lang, { d });
 }
 
 export function normalizeSeverity(severity: string | undefined): string {
