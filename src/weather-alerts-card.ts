@@ -9,6 +9,7 @@ import {
   formatProgressTimestamp,
   formatLocalTimestamp,
   formatRelativeTime,
+  formatDuration,
   sortAlerts,
   alertMatchesZones,
   deduplicateAlerts,
@@ -413,9 +414,6 @@ export class WeatherAlertsCard extends LitElement {
       ${alert.phase ? html`
         <span class="badge phase-badge">${alert.phase}</span>
       ` : nothing}
-      ${progress.isActive
-        ? html`<span class="badge active-badge">${t('card.active', this._lang)}</span>`
-        : html`<span class="badge prep-badge">${t('card.in_prep', this._lang)}</span>`}
       ${alert.eventCode ? html`
         <span class="badge event-code-badge">${alert.eventCode}</span>
       ` : nothing}
@@ -506,10 +504,10 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           <div class="label-center">
             ${!hasEndTime
-        ? html`<span style="color: var(--color);"><b>${t('progress.ongoing', lang)}</b></span>`
+        ? html`<span class="label-sub">${t('progress.ongoing', lang)}</span>`
         : isActive
-          ? html`${t('progress.expires_in', lang, { time: '' })}<b>${formatRelativeTime(endsTs, nowTs, lang)}</b>`
-          : html`${t('progress.starts_in', lang, { time: '' })}<b>${formatRelativeTime(onsetTs, nowTs, lang)}</b>`}
+          ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><br>${formatDuration(endsTs, nowTs)}`
+          : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><br>${formatDuration(onsetTs, nowTs)}`}
           </div>
           <div class="label-right">
             <span class="label-sub">${t('progress.end', lang)}</span><br>

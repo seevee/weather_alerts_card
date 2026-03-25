@@ -87,6 +87,22 @@ export const cardStyles = css`
     height: 44px;
     border-radius: 50%;
     flex-shrink: 0;
+    box-sizing: border-box;
+    border: 2px solid transparent;
+    transition: border 0.2s, background 0.2s, color 0.2s;
+  }
+
+  /* Temporal state: active — icon "lights up" with solid ring */
+  .active .icon-box {
+    border-color: var(--color);
+    background: rgba(var(--color-rgb), 0.12);
+  }
+
+  /* Temporal state: preparation — icon dims, dashed ring */
+  .preparation .icon-box {
+    border: 2px dashed var(--divider-color);
+    background: var(--secondary-background-color);
+    color: var(--secondary-text-color);
   }
   .icon-box ha-icon { --mdc-icon-size: 26px; }
 
@@ -161,18 +177,6 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
     border: 1px solid var(--divider-color);
   }
-  .active-badge {
-    background: rgba(var(--color-rgb), 0.12);
-    color: var(--primary-text-color);
-    font-weight: 700;
-    border: 1px solid rgba(var(--color-rgb), 0.4);
-  }
-  .prep-badge {
-    background: var(--primary-background-color);
-    color: var(--secondary-text-color);
-    border: 1px solid var(--divider-color);
-    font-style: italic;
-  }
   .phase-badge {
     background: var(--secondary-background-color);
     color: var(--secondary-text-color);
@@ -216,8 +220,10 @@ export const cardStyles = css`
     text-transform: uppercase;
   }
   .label-center {
+    text-align: center;
     font-weight: bold;
     color: var(--color);
+    white-space: nowrap;
   }
   .label-right { text-align: right; }
 

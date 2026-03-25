@@ -301,6 +301,22 @@ export function formatRelativeTime(ts: number, nowTs: number = Date.now() / 1000
   return past ? t('time.days_ago', lang, { d }) : t('time.in_days', lang, { d });
 }
 
+export function formatDuration(ts: number, nowTs: number = Date.now() / 1000): string {
+  const abs = Math.abs(ts - nowTs);
+  if (abs < 60) return '<1m';
+  if (abs < 3600) {
+    const m = Math.floor(abs / 60);
+    return `${m}m`;
+  }
+  if (abs < 86400) {
+    const h = Math.floor(abs / 3600);
+    const m = Math.floor((abs % 3600) / 60);
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+  const d = Math.floor(abs / 86400);
+  return `${d}d`;
+}
+
 export function normalizeSeverity(severity: string | undefined): string {
   const s = (severity || '').toLowerCase().replace(/\s/g, '');
   if (['extreme', 'severe', 'moderate', 'minor'].includes(s)) return s;

@@ -27,6 +27,8 @@ const en: TranslationMap = {
   'progress.ongoing': 'Ongoing',
   'progress.expires_in': 'expires {time}',
   'progress.starts_in': 'starts {time}',
+  'progress.expires_in_label': 'Expires in',
+  'progress.starts_in_label': 'Starts in',
   'progress.tbd': 'TBD',
   'progress.na': 'N/A',
 
@@ -103,6 +105,8 @@ const fr: TranslationMap = {
   'progress.ongoing': 'En cours',
   'progress.expires_in': 'expire {time}',
   'progress.starts_in': 'commence {time}',
+  'progress.expires_in_label': 'Expire dans',
+  'progress.starts_in_label': 'Commence dans',
   'progress.tbd': 'Ind.',
   'progress.na': 'N/D',
 
@@ -179,6 +183,8 @@ const es: TranslationMap = {
   'progress.ongoing': 'En curso',
   'progress.expires_in': 'expira {time}',
   'progress.starts_in': 'comienza {time}',
+  'progress.expires_in_label': 'Expira en',
+  'progress.starts_in_label': 'Comienza en',
   'progress.tbd': 'Pend.',
   'progress.na': 'N/D',
 
