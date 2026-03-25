@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.0-alpha.2 — 2026-03-25
+
+### Added
+- Icon-box temporal state + progress label hierarchy (#63) (5bb4650…)
+
+### Fixed
+- Make publish script idempotent for safe re-runs (#64) (c5816a8…)
+
 ## 2.4.0-alpha.1 — 2026-03-25
 
 ### Added
