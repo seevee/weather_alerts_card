@@ -54,6 +54,7 @@ Then click the Download button, and click Reload when prompted.
 - **`headline`** — Filter redundant headlines (default: `true`). When `true`, suppresses headlines that repeat the event name or add only boilerplate. Set to `false` to show all headlines verbatim.
 - **`deduplicate`** — Collapse matching alerts into one card (default: `true`)
 - **`animations`** — `true`, `false`, or respect `prefers-reduced-motion` (default: system)
+- **`showSourceLink`** — Show the "Open Source" link in alert details (default: `true`). Set to `false` for kiosk/tablet deployments where navigation should be prevented.
 - **`layout`** — `'default'` or `'compact'`
 
 <details>

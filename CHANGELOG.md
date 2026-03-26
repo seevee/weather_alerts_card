@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Add `showSourceLink` config option to hide source links for kiosk deployments (#75)
+
 ## 2.5.0-alpha.1 — 2026-03-26
 
 ### Added

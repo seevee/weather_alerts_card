@@ -491,7 +491,7 @@ export class WeatherAlertsCard extends LitElement {
         ${this._renderTextBlock(t('detail.description', lang), desc)}
         ${this._renderTextBlock(t('detail.instructions', lang), instr)}
 
-        ${alert.url ? html`
+        ${alert.url && this._config?.showSourceLink !== false ? html`
           <div class="footer-link">
             <a href=${alert.url} target="_blank" rel="noopener noreferrer">
               ${this._sourceLinkLabel(alert)}
