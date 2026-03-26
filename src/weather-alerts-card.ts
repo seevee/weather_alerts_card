@@ -408,7 +408,7 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderHeadline(alert: WeatherAlert): TemplateResult | typeof nothing {
-    const smart = this._config?.headline !== false;
+    const smart = (this._config?.deduplicateHeadlines ?? this._config?.headline) !== false;
     const text = getDisplayHeadline(alert, smart);
     if (!text) return nothing;
     return html`

@@ -70,15 +70,17 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  private _headlineChanged(ev: Event): void {
+  private _deduplicateHeadlinesChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
-    const headline = target.checked;
-    if (headline === (this._config.headline !== false)) return;
+    const dedup = target.checked;
+    const current = (this._config.deduplicateHeadlines ?? this._config.headline) !== false;
+    if (dedup === current) return;
     const newConfig = { ...this._config };
-    if (headline) {
-      delete newConfig.headline;
+    delete newConfig.headline; // drop deprecated key
+    if (dedup) {
+      delete newConfig.deduplicateHeadlines;
     } else {
-      newConfig.headline = false;
+      newConfig.deduplicateHeadlines = false;
     }
     this._fireConfigChanged(newConfig);
   }
@@ -333,10 +335,10 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
-        <ha-formfield .label=${t('editor.headline', lang)}>
+        <ha-formfield .label=${t('editor.deduplicate_headlines', lang)}>
           <ha-switch
-            .checked=${this._config.headline !== false}
-            @change=${this._headlineChanged}
+            .checked=${(this._config.deduplicateHeadlines ?? this._config.headline) !== false}
+            @change=${this._deduplicateHeadlinesChanged}
           ></ha-switch>
         </ha-formfield>
 

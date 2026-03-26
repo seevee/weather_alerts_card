@@ -51,7 +51,7 @@ Then click the Download button, and click Reload when prompted.
 - **`eventCodes`** — NWS event codes to include, e.g. `['SVR', 'TOR']` — omit for all events
 - **`excludeEventCodes`** — NWS event codes to hide, e.g. `['SCY', 'SCW']`
 - **`timezone`** — `'server'` (default) or `'browser'` to use the client's local timezone
-- **`headline`** — Filter redundant headlines (default: `true`). When `true`, suppresses headlines that repeat the event name or add only boilerplate. Set to `false` to show all headlines verbatim.
+- **`deduplicateHeadlines`** — Deduplicate headlines (default: `true`). When `true`, suppresses headlines that repeat the event name or add only boilerplate. Set to `false` to show all headlines verbatim.
 - **`deduplicate`** — Collapse matching alerts into one card (default: `true`)
 - **`animations`** — `true`, `false`, or respect `prefers-reduced-motion` (default: system)
 - **`showSourceLink`** — Show the "Open Source" link in alert details (default: `true`). Set to `false` for kiosk/tablet deployments where navigation should be prevented.
