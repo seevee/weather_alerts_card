@@ -170,6 +170,11 @@ export class WeatherAlertsCard extends LitElement {
       alerts = alerts.filter(a => a.eventCode && codeSet.has(a.eventCode.toUpperCase()));
     }
 
+    if (this._config.excludeEventCodes && this._config.excludeEventCodes.length > 0) {
+      const excludeSet = new Set(this._config.excludeEventCodes.map(c => c.toUpperCase()));
+      alerts = alerts.filter(a => !a.eventCode || !excludeSet.has(a.eventCode.toUpperCase()));
+    }
+
     if (this._config.minSeverity) {
       const severityRank = {
         extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,

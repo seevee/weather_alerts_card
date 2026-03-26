@@ -120,6 +120,18 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _excludeEventCodesChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const raw = target.value;
+    const newConfig = { ...this._config };
+    if (raw.trim()) {
+      newConfig.excludeEventCodes = raw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+    } else {
+      delete newConfig.excludeEventCodes;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _sortOrderChanged(ev: CustomEvent): void {
     const value = ev.detail.value as 'default' | 'onset' | 'severity';
     if (value === (this._config.sortOrder || 'default')) return;
@@ -186,6 +198,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     const lang = this._lang;
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
     const eventCodesStr = this._config.eventCodes ? this._config.eventCodes.join(', ') : '';
+    const excludeEventCodesStr = this._config.excludeEventCodes ? this._config.excludeEventCodes.join(', ') : '';
 
     return html`
       <div class="editor">
@@ -230,6 +243,14 @@ export class WeatherAlertsCardEditor extends LitElement {
           .helper=${t('editor.event_codes_helper', lang)}
           .helperPersistent=${true}
           @change=${this._eventCodesChanged}
+        ></ha-textfield>
+
+        <ha-textfield
+          .label=${t('editor.exclude_event_codes', lang)}
+          .value=${excludeEventCodesStr}
+          .helper=${t('editor.exclude_event_codes_helper', lang)}
+          .helperPersistent=${true}
+          @change=${this._excludeEventCodesChanged}
         ></ha-textfield>
 
         <ha-select
