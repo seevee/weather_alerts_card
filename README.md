@@ -28,7 +28,9 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 ### HACS (recommended)
 
-Open HACS → Search "Weather Alerts Card" → Install → Refresh your browser
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=seevee&repository=weather_alerts_card)
+
+Then click the Download button, and click Reload when prompted.
 
 ### Manual
 
