@@ -15,6 +15,7 @@ import {
   deduplicateAlerts,
   getNwsEventColor,
   sanitizeAlertHtml,
+  getDisplayHeadline,
 } from './utils';
 import { getAdapter } from './adapters';
 import { t } from './localize';
@@ -328,6 +329,7 @@ export class WeatherAlertsCard extends LitElement {
   private _renderExpandedContent(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     return html`
       <div class="alert-expanded">
+        ${this._renderHeadline(alert)}
         ${alert.areaDesc ? html`
           <div class="area-desc" title=${alert.areaDesc}>
             <ha-icon icon="mdi:map-marker"></ha-icon>
@@ -373,6 +375,7 @@ export class WeatherAlertsCard extends LitElement {
             <div class="title-row">
               <span class="alert-title">${alert.event}</span>
             </div>
+            ${this._renderHeadline(alert)}
             ${alert.areaDesc ? html`
               <div class="area-desc" title=${alert.areaDesc}>
                 <ha-icon icon="mdi:map-marker"></ha-icon>
@@ -400,6 +403,17 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           ${expanded ? this._renderDetailsContent(alert, progress) : nothing}
         </div>
+      </div>
+    `;
+  }
+
+  private _renderHeadline(alert: WeatherAlert): TemplateResult | typeof nothing {
+    const smart = this._config?.headline !== false;
+    const text = getDisplayHeadline(alert, smart);
+    if (!text) return nothing;
+    return html`
+      <div class="alert-headline" title=${alert.headline}>
+        ${text}
       </div>
     `;
   }

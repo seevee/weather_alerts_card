@@ -10,6 +10,7 @@ import {
   deduplicateAlerts,
   formatRelativeTime,
   parseTimestamp,
+  getDisplayHeadline,
 } from '../src/utils';
 import type { WeatherAlert } from '../src/types';
 
@@ -434,6 +435,65 @@ describe('deduplicateAlerts', () => {
     expect(result).toHaveLength(2);
     expect(result[0].id).toBe('t');
     expect(result[1].id).toBe('f1');
+  });
+});
+
+describe('getDisplayHeadline', () => {
+  it('returns empty string when headline is empty', () => {
+    expect(getDisplayHeadline(makeAlert({ headline: '' }))).toBe('');
+    expect(getDisplayHeadline(makeAlert({ headline: '' }), false)).toBe('');
+  });
+
+  it('smart: filters headline that matches event name', () => {
+    expect(getDisplayHeadline(makeAlert({ event: 'Flood Warning', headline: 'Flood Warning' }))).toBe('');
+  });
+
+  it('smart: filters NWS boilerplate (headline starts with event name)', () => {
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Flood Warning',
+      headline: 'Flood Warning issued March 25 at 1:45PM CDT by NWS Chicago',
+    }))).toBe('');
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Flood Warning',
+      headline: 'FLOOD WARNING REMAINS IN EFFECT UNTIL WEDNESDAY, APRIL 01',
+    }))).toBe('');
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Small Craft Advisory',
+      headline: 'SMALL CRAFT ADVISORY THROUGH LATE TONIGHT',
+    }))).toBe('');
+  });
+
+  it('smart: filters BoM reverse redundancy (event starts with headline)', () => {
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Flood Warning for Bokhara River',
+      headline: 'Flood Warning',
+    }))).toBe('');
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Sheep Graziers Warning for Upper Western forecast district',
+      headline: 'Sheep Graziers Warning',
+    }))).toBe('');
+  });
+
+  it('smart: shows genuinely additive headlines verbatim', () => {
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Special Weather Statement',
+      headline: 'INCREASED THREAT FOR GRASS AND BRUSH FIRE SPREAD THIS AFTERNOON',
+    }))).toBe('INCREASED THREAT FOR GRASS AND BRUSH FIRE SPREAD THIS AFTERNOON');
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Moderate Wind warning',
+      headline: 'Wind - Warnings for Texel - The Netherlands',
+    }))).toBe('Wind - Warnings for Texel - The Netherlands');
+  });
+
+  it('raw: shows all headlines verbatim regardless of overlap', () => {
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Flood Warning',
+      headline: 'FLOOD WARNING REMAINS IN EFFECT UNTIL WEDNESDAY, APRIL 01',
+    }), false)).toBe('FLOOD WARNING REMAINS IN EFFECT UNTIL WEDNESDAY, APRIL 01');
+    expect(getDisplayHeadline(makeAlert({
+      event: 'Flood Warning for Bokhara River',
+      headline: 'Flood Warning',
+    }), false)).toBe('Flood Warning');
   });
 });
 

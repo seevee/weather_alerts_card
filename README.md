@@ -9,6 +9,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 - **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), and PirateWeather with auto-detection
 - **Severity colors** — HA theme colors or NWS official hazard-map colors by event type
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
+- **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts that expand on tap
@@ -48,7 +49,9 @@ Then click the Download button, and click Reload when prompted.
 - **`minSeverity`** — `'minor'`, `'moderate'`, `'severe'`, `'extreme'`
 - **`colorTheme`** — `'severity'` (default) or `'nws'`
 - **`eventCodes`** — NWS event codes to include, e.g. `['SVR', 'TOR']` — omit for all events
+- **`excludeEventCodes`** — NWS event codes to hide, e.g. `['SCY', 'SCW']`
 - **`timezone`** — `'server'` (default) or `'browser'` to use the client's local timezone
+- **`headline`** — Filter redundant headlines (default: `true`). When `true`, suppresses headlines that repeat the event name or add only boilerplate. Set to `false` to show all headlines verbatim.
 - **`deduplicate`** — Collapse matching alerts into one card (default: `true`)
 - **`animations`** — `true`, `false`, or respect `prefers-reduced-motion` (default: system)
 - **`layout`** — `'default'` or `'compact'`

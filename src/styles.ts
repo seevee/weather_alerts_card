@@ -114,6 +114,13 @@ export const cardStyles = css`
     color: var(--primary-text-color);
   }
 
+  .alert-headline {
+    font-size: 0.8rem;
+    line-height: 1.3;
+    color: var(--secondary-text-color);
+    margin-bottom: 4px;
+  }
+
   .area-desc {
     display: flex;
     align-items: flex-start;
@@ -140,7 +147,11 @@ export const cardStyles = css`
     overflow: hidden;
   }
 
-  /* Compact expanded area-desc gets consistent inner padding */
+  /* Compact expanded headline + area-desc get consistent inner padding */
+  .compact .alert-expanded .alert-headline {
+    padding: 4px 12px 0;
+    margin-bottom: 2px;
+  }
   .compact .alert-expanded .area-desc {
     padding: 4px 12px 0;
     margin-bottom: 4px;

@@ -33,6 +33,7 @@ export interface WeatherAlertsCardConfig {
   colorTheme?: 'severity' | 'nws';
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes
   deduplicate?: boolean;     // undefined/true: dedup on; false: dedup off
+  headline?: boolean;        // undefined/true: smart headline (filter redundant); false: show all verbatim
   timezone?: 'server' | 'browser';  // undefined/'server': HA server tz; 'browser': client tz
   _preview?: boolean;        // transient editor-only key — triggers preview mode in card
 }

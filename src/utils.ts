@@ -317,6 +317,32 @@ export function formatDuration(ts: number, nowTs: number = Date.now() / 1000): s
   return `${d}d`;
 }
 
+/**
+ * Extract a meaningful headline for display. Returns empty string if the
+ * headline doesn't add useful context beyond the event name.
+ *
+ * @param smart - When true (default), filters out redundant headlines:
+ *   - headline starts with event name (NWS boilerplate like "FLOOD WARNING REMAINS IN EFFECT...")
+ *   - event name starts with headline (BoM reverse redundancy like headline="Flood Warning",
+ *     event="Flood Warning for Bokhara River")
+ *   When false, returns all non-empty headlines verbatim.
+ */
+export function getDisplayHeadline(alert: WeatherAlert, smart = true): string {
+  const raw = (alert.headline || '').trim();
+  if (!raw) return '';
+  if (!smart) return raw;
+
+  const hLower = raw.toLowerCase().replace(/[.\s]+$/, '');
+  const eLower = alert.event.toLowerCase();
+
+  // headline starts with event name → NWS boilerplate (timing/status suffix)
+  if (hLower.startsWith(eLower)) return '';
+  // event starts with headline → reverse redundancy (BoM: less-specific headline)
+  if (eLower.startsWith(hLower)) return '';
+
+  return raw;
+}
+
 export function normalizeSeverity(severity: string | undefined): string {
   const s = (severity || '').toLowerCase().replace(/\s/g, '');
   if (['extreme', 'severe', 'moderate', 'minor'].includes(s)) return s;
