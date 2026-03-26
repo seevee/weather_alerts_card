@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2.5.0-alpha.2 — 2026-03-26
 
 ### Added
-- Add `showSourceLink` config option to hide source links for kiosk deployments (#75)
+- Display alert headlines with smart redundancy filtering (#76) (2718014…)
+- Add showSourceLink config option to hide source links (#75) (#77) (7ccad91…)
 
 ## 2.5.0-alpha.1 — 2026-03-26
 
