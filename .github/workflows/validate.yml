@@ -3,6 +3,10 @@ name: Validate
 on:
   push:
     branches: [main]
+    paths: [hacs.json]
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
   schedule:
     - cron: "0 0 * * *"
   workflow_dispatch:
