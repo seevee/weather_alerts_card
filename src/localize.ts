@@ -31,6 +31,9 @@ const en: TranslationMap = {
   'progress.starts_in_label': 'Starts in',
   'progress.tbd': 'TBD',
   'progress.na': 'N/A',
+  'progress.compact_active': 'for {time}',
+  'progress.compact_prep': 'in {time}',
+  'progress.compact_ongoing': 'ongoing',
 
   // Relative time
   'time.just_now': 'just now',
@@ -115,6 +118,9 @@ const fr: TranslationMap = {
   'progress.starts_in_label': 'Commence dans',
   'progress.tbd': 'Ind.',
   'progress.na': 'N/D',
+  'progress.compact_active': 'pour {time}',
+  'progress.compact_prep': 'dans {time}',
+  'progress.compact_ongoing': 'en cours',
 
   // Relative time
   'time.just_now': 'a l\'instant',
@@ -199,6 +205,9 @@ const es: TranslationMap = {
   'progress.starts_in_label': 'Comienza en',
   'progress.tbd': 'Pend.',
   'progress.na': 'N/D',
+  'progress.compact_active': 'por {time}',
+  'progress.compact_prep': 'en {time}',
+  'progress.compact_ongoing': 'en curso',
 
   // Relative time
   'time.just_now': 'ahora mismo',

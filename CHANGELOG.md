@@ -5,6 +5,9 @@
 ### Added
 - Filter editor entity picker to show only entities with compatible alert data (#90)
 - Show warning in editor when selected entity does not match any alert adapter
+- Integrate progress bar into compact layout via bottom border track with inline time labels ("for 4h", "in 2h 15m")
+- Enhance `formatDuration()` to include hours for multi-day durations (e.g. "3d 2h")
+- Capture all screenshots at retina (2x) resolution
 
 ## 2.5.2 — 2026-03-28
 

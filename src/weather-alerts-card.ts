@@ -309,8 +309,17 @@ export class WeatherAlertsCard extends LitElement {
     alert: WeatherAlert, className: string, phaseClass: string,
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
+    const lang = this._lang;
+    const isOngoing = progress.isActive && !progress.hasEndTime;
+    const compactTimeLabel = isOngoing
+      ? t('progress.compact_ongoing', lang)
+      : progress.isActive
+        ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
+        : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
+    const ongoingClass = isOngoing ? 'ongoing' : '';
+    const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     return html`
-      <div class="alert-card ${className} ${phaseClass}" style=${this._alertColorStyle(alert)}>
+      <div class="alert-card ${className} ${phaseClass} ${ongoingClass}" style=${`${this._alertColorStyle(alert)} ${progressStyle}`}>
         <div
           class="alert-header-row compact-row"
           @click=${() => this._toggleDetails(alert.id)}
@@ -319,6 +328,7 @@ export class WeatherAlertsCard extends LitElement {
             <ha-icon icon=${getWeatherIcon(alert.event)}></ha-icon>
           </div>
           <span class="alert-title">${alert.event}</span>
+          <span class="compact-time">${compactTimeLabel}</span>
           <ha-icon
             icon="mdi:chevron-down"
             class="compact-chevron ${expanded ? 'expanded' : ''}"

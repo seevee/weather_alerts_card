@@ -389,6 +389,17 @@ export const cardStyles = css`
   .compact .alert-title {
     font-size: 0.95rem;
     flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .compact-time {
+    font-size: 0.8rem;
+    color: var(--color);
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .compact-chevron {
@@ -406,11 +417,52 @@ export const cardStyles = css`
     border-top: 1px solid var(--divider-color);
   }
 
+  /* Compact progress track (bottom border) */
+  .compact .alert-card::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--secondary-background-color);
+  }
+  .compact .active.alert-card::after {
+    background: linear-gradient(
+      to right,
+      var(--secondary-background-color) 0%,
+      var(--secondary-background-color) var(--progress, 0%),
+      var(--color) var(--progress, 0%),
+      var(--color) 100%
+    );
+  }
+  .compact .preparation.alert-card::after {
+    background:
+      linear-gradient(
+        to right,
+        var(--secondary-background-color) 0%,
+        var(--secondary-background-color) var(--progress, 0%),
+        transparent var(--progress, 0%)
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        rgba(var(--color-rgb), 0.6) 0,
+        rgba(var(--color-rgb), 0.6) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+  }
+  .compact .active.ongoing.alert-card::after {
+    background: rgba(var(--color-rgb), 0.8);
+    animation: ongoing-pulse 5s infinite;
+  }
+
   /* --- NO ANIMATIONS --- */
   .no-animations .alert-card {
     animation: none !important;
   }
-  .no-animations .progress-fill {
+  .no-animations .progress-fill,
+  .no-animations .alert-card::after {
     animation: none !important;
     transition: none !important;
   }
