@@ -3,7 +3,6 @@ name: Validate
 on:
   push:
     branches: [main]
-    paths: [hacs.json]
   workflow_run:
     workflows: [Release]
     types: [completed]
