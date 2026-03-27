@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.1 — 2026-03-27
+
+### Fixed
+- Prevent HACS validate race with release asset upload (#83) (20c377e…)
+- Restore push trigger on all main commits (#84) (58e94f0…)
+
 ## 2.5.0 — 2026-03-26
 
 ### Added
