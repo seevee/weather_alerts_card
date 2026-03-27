@@ -525,7 +525,7 @@ export class WeatherAlertsCard extends LitElement {
       ? noAnim
         ? 'width: 100%; left: 0; opacity: 0.8;'
         : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
-      : `width: ${100 - progressPct}%; left: ${progressPct}%;`;
+      : `left: ${progressPct}%; right: 0;`;
 
     return html`
       <div class="progress-section">
