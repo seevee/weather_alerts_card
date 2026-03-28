@@ -4,7 +4,7 @@
 //          npm run screenshot:update  (rebuilds first)
 //
 // Env: PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH  override Playwright's managed Chromium with a system binary
-//      SCREENSHOT_THEMES  comma-separated subset: severity,nws,meteoalarm  (default: all)
+//      SCREENSHOT_THEMES  comma-separated subset: severity,nws,hero,themes  (default: all)
 
 'use strict';
 
@@ -88,8 +88,6 @@ const ALL_SCENARIOS = [
   { cardId: 'card-severity-open', colorScheme: 'dark', label: 'severity dark  details', out: 'img/severity-dark-details.png', expand: true },
   { cardId: 'card-nws-compact', colorScheme: 'light', label: 'nws     light compact ', out: 'img/nws-light-compact.png' },
   { cardId: 'card-nws-compact', colorScheme: 'dark', label: 'nws     dark  compact ', out: 'img/nws-dark-compact.png' },
-  { cardId: 'card-meteoalarm-details', colorScheme: 'light', label: 'meteoalarm light details', out: 'img/meteoalarm-light-details.png', expand: true },
-  { cardId: 'card-meteoalarm-details', colorScheme: 'dark', label: 'meteoalarm dark  details', out: 'img/meteoalarm-dark-details.png', expand: true },
 ];
 
 // Filter by SCREENSHOT_THEMES env var if set (e.g. "nws" or "severity,nws")
@@ -138,7 +136,7 @@ const PORT = 3742;
 
     // Wait for both card instances to finish their initial Lit render
     await page.waitForFunction(() => {
-      const ids = ['card-severity-open', 'card-nws-compact', 'card-meteoalarm-details'];
+      const ids = ['card-severity-open', 'card-nws-compact'];
       return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
     }, { timeout: 10000 });
 
@@ -162,63 +160,86 @@ const PORT = 3742;
     await page.locator(`#${cardId}`).locator('xpath=..').screenshot({ path: resolve(ROOT, out), type: 'png' });
   }
 
-  // ---- Hero images (light + dark) at 2x DPR for retina sharpness ----
-  // Two clean screenshots — README uses <picture> + prefers-color-scheme
-  // so each viewer sees the version matching their OS theme.
-  // Captured at 2x device pixel ratio (2120x1740 pixels) while the hero
-  // canvas stays at 1060x870 CSS pixels — browser downscales for sharpness.
-  const HERO_VARIANTS = [
-    { theme: 'theme-light', label: 'hero light', out: 'img/hero-light.png' },
-    { theme: 'theme-dark',  label: 'hero dark ', out: 'img/hero-dark.png' },
+  // ---- Composite images (hero + themes) at 2x DPR for retina sharpness ----
+  // Each composite is captured in light and dark variants. The adaptive SVG
+  // encoder combines each pair into a single theme-switching SVG for the README.
+
+  const COMPOSITE_SETS = [
+    {
+      name: 'hero',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-hero.html`,
+      canvasId: 'hero-canvas',
+      cardIds: ['card-severity', 'card-nws'],
+      variants: [
+        { theme: 'theme-light', label: 'hero light  ', out: 'img/hero-light.png' },
+        { theme: 'theme-dark',  label: 'hero dark   ', out: 'img/hero-dark.png' },
+      ],
+      afterRender: async (page) => {
+        // Expand the last compact alert (Snowflake Watch) so the hero image
+        // showcases the expanded details view and balances the vertical height.
+        await page.locator('#card-nws .compact-row').last().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+
+        // Also expand its "Read Details" section to show the full description
+        await page.locator('#card-nws .details-summary').last().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      },
+    },
+    {
+      name: 'themes',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-themes.html`,
+      canvasId: 'themes-canvas',
+      cardIds: ['card-severity', 'card-nws', 'card-meteoalarm'],
+      variants: [
+        { theme: 'theme-light', label: 'themes light', out: 'img/themes-light.png' },
+        { theme: 'theme-dark',  label: 'themes dark ', out: 'img/themes-dark.png' },
+      ],
+    },
   ];
-  if (!themeFilter.length || themeFilter.includes('hero')) {
-    // Close the 1x context and create a 2x one for hero captures
-    await context.close();
-    const heroContext = await browser.newContext({
-      viewport: { width: 1100, height: 900 },
-      deviceScaleFactor: 2,
-    });
-    const heroPage = await heroContext.newPage();
-    await heroPage.addInitScript(icons => { window.__MDI_ICONS__ = icons; }, MDI_ICONS);
-    await heroPage.addInitScript(now => { Date.now = () => now; }, SCREENSHOT_NOW);
 
-    const heroURL = `http://127.0.0.1:${PORT}/scripts/screenshot-hero.html`;
+  // Close the 1x context and create a 2x one for composite captures
+  await context.close();
+  const compositeContext = await browser.newContext({
+    viewport: { width: 1100, height: 900 },
+    deviceScaleFactor: 2,
+  });
+  const compositePage = await compositeContext.newPage();
+  await compositePage.addInitScript(icons => { window.__MDI_ICONS__ = icons; }, MDI_ICONS);
+  await compositePage.addInitScript(now => { Date.now = () => now; }, SCREENSHOT_NOW);
 
-    for (const { theme, label, out } of HERO_VARIANTS) {
-      console.log(`  ${label}            → ${out}`);
+  for (const set of COMPOSITE_SETS) {
+    if (themeFilter.length && !themeFilter.includes(set.name)) continue;
 
-      await heroPage.goto(heroURL);
+    for (const { theme, label, out } of set.variants) {
+      console.log(`  ${label}         → ${out}`);
 
-      // Wait for both card instances to render
-      await heroPage.waitForFunction(() => {
-        const ids = ['card-severity', 'card-nws'];
+      await compositePage.goto(set.url);
+
+      // Wait for all card instances to render
+      await compositePage.waitForFunction(ids => {
         return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
-      }, { timeout: 10000 });
+      }, set.cardIds, { timeout: 10000 });
 
       // Apply theme class to the canvas
-      await heroPage.evaluate(cls => document.getElementById('hero-canvas').classList.add(cls), theme);
+      await compositePage.evaluate(([canvasId, cls]) => document.getElementById(canvasId).classList.add(cls), [set.canvasId, theme]);
 
       // Disable animations
-      await heroPage.addStyleTag({
+      await compositePage.addStyleTag({
         content: '*, *::before, *::after { animation: none !important; transition: none !important; }',
       });
-      await heroPage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      await compositePage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
 
-      // Expand the last compact alert (Snowflake Watch) so the hero image
-      // showcases the expanded details view and balances the vertical height.
-      await heroPage.locator('#card-nws .compact-row').last().click();
-      await heroPage.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
-      await heroPage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      // Run any post-render actions (e.g. expanding alerts)
+      if (set.afterRender) {
+        await set.afterRender(compositePage);
+      }
 
-      // Also expand its "Read Details" section to show the full description
-      await heroPage.locator('#card-nws .details-summary').last().click();
-      await heroPage.evaluate(id => document.getElementById(id).updateComplete, 'card-nws');
-      await heroPage.evaluate(() => new Promise(r => requestAnimationFrame(r)));
-
-      await heroPage.locator('#hero-canvas').screenshot({ path: resolve(ROOT, out), type: 'png' });
+      await compositePage.locator(`#${set.canvasId}`).screenshot({ path: resolve(ROOT, out), type: 'png' });
     }
-    await heroContext.close();
   }
+  await compositeContext.close();
 
   await browser.close();
   server.close();

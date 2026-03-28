@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NWS Alerts Card – Screenshot Harness</title>
+  <title>Weather Alerts Card – Theme Comparison</title>
   <style>
-    /* ---- HA CSS custom properties: light mode (HA default theme) ---- */
-    :root {
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ---- */
+    .theme-light {
       --primary-text-color: #212121;
       --secondary-text-color: #727272;
       --primary-background-color: #fafafa;
@@ -22,10 +22,10 @@
         0px 2px 1px -1px rgba(0, 0, 0, 0.2),
         0px 1px 1px 0px rgba(0, 0, 0, 0.14),
         0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      --themes-bg: #f0f0f0;
+      --themes-label-color: rgba(0, 0, 0, 0.45);
     }
-
-    /* ---- HA CSS custom properties: dark mode ---- */
-    @media (prefers-color-scheme: dark) { :root {
+    .theme-dark {
       --primary-text-color: #e1e1e1;
       --secondary-text-color: #9b9b9b;
       --primary-background-color: #111111;
@@ -41,44 +41,102 @@
         0px 2px 1px -1px rgba(0, 0, 0, 0.5),
         0px 1px 1px 0px rgba(0, 0, 0, 0.4),
         0px 1px 3px 0px rgba(0, 0, 0, 0.3);
-    } }
+      --themes-bg: #0d1117;
+      --themes-label-color: rgba(255, 255, 255, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       margin: 0;
-      padding: 20px;
-      background: var(--primary-background-color);
+      padding: 0;
+      background: transparent;
       font-family: Roboto, "Noto Sans", sans-serif;
-      box-sizing: border-box;
     }
 
-    /* ha-card / ha-icon styles live in their shadow DOMs (see stubs below) */
+    /* ---- Themes canvas: three columns ---- */
+    .themes-canvas {
+      background: var(--themes-bg);
+      padding: 36px 28px 28px;
+      display: flex;
+      gap: 24px;
+      width: 1100px;
+    }
 
-    .card-wrapper { width: 536px; padding: 8px; }
+    /* Each showcase column */
+    .showcase {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Section label ---- */
+    .section-label {
+      color: var(--themes-label-color);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ---- Card container ---- */
+    .card-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .card-inner {
+      width: 100%;
+    }
   </style>
 </head>
 <body>
 
-  <!--
-    Two card instances (Playwright clicks "Read Details" for the details screenshots):
-    1. card-severity-open: default layout, severity colors, all alerts collapsed.
-    2. card-nws-compact: compact layout, NWS event colors, all alerts collapsed.
-  -->
+  <!-- The screenshot script adds .theme-light or .theme-dark before capture -->
+  <div class="themes-canvas" id="themes-canvas">
 
-  <div class="card-wrapper">
-    <nws-alerts-card id="card-severity-open"></nws-alerts-card>
-  </div>
-  <div class="card-wrapper">
-    <nws-alerts-card id="card-nws-compact"></nws-alerts-card>
+    <!-- Severity theme: compact layout -->
+    <div class="showcase">
+      <div class="section-label">Severity</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-severity"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- NWS theme: compact layout -->
+    <div class="showcase">
+      <div class="section-label">NWS Official</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-nws"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- MeteoAlarm theme: compact layout -->
+    <div class="showcase">
+      <div class="section-label">MeteoAlarm</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-meteoalarm"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script type="module">
     import '/dist/weather-alerts-card.js';
-    import { ALERTS } from '/scripts/screenshot-fixtures.js';
+    import { ALERTS_WITH_MINOR } from '/scripts/screenshot-fixtures.js';
 
     // ---- ha-card stub ----
-    // Shadow DOM with <slot> — matches HA's real <ha-card> structure.
     class HaCard extends HTMLElement {
-      set header(v) {} // no-op for screenshots
+      set header(v) {}
       constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -99,9 +157,6 @@
     customElements.define('ha-card', HaCard);
 
     // ---- ha-icon stub ----
-    // Renders MDI SVG paths into SHADOW DOM (not light DOM).  Using
-    // this.innerHTML would corrupt Lit's ChildPart markers because the
-    // added SVG nodes get traversed by Lit's template tree-walker.
     class HaIcon extends HTMLElement {
       static get observedAttributes() { return ['icon']; }
       constructor() {
@@ -131,29 +186,32 @@
     }
     customElements.define('ha-icon', HaIcon);
 
-    // ---- Mock hass object ----
+    // ---- Mock hass — all four alerts for every card ----
     const MOCK_HASS = {
       locale: { language: 'en', time_format: '12', date_format: 'MDY' },
       config: { time_zone: 'America/Denver' },
       states: {
         'sensor.nws_alerts_alerts': {
-          state: String(ALERTS.length),
-          attributes: { Alerts: ALERTS },
+          state: String(ALERTS_WITH_MINOR.length),
+          attributes: { Alerts: ALERTS_WITH_MINOR },
         },
       },
     };
 
-    // ---- Wire up cards ----
+    const ENTITY = 'sensor.nws_alerts_alerts';
 
-    // Default layout, severity colors.
-    const severityOpen = document.getElementById('card-severity-open');
-    severityOpen.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'severity' });
-    severityOpen.hass = MOCK_HASS;
+    // ---- Wire up cards — all compact, different color themes ----
+    const severity = document.getElementById('card-severity');
+    severity.setConfig({ type: 'custom:nws-alerts-card', entity: ENTITY, animations: false, colorTheme: 'severity', layout: 'compact' });
+    severity.hass = MOCK_HASS;
 
-    // Compact layout, NWS colors — all alerts collapsed (shows the space-efficient row UI).
-    const nwsCompact = document.getElementById('card-nws-compact');
-    nwsCompact.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
-    nwsCompact.hass = MOCK_HASS;
+    const nws = document.getElementById('card-nws');
+    nws.setConfig({ type: 'custom:nws-alerts-card', entity: ENTITY, animations: false, colorTheme: 'nws', layout: 'compact' });
+    nws.hass = MOCK_HASS;
+
+    const meteoalarm = document.getElementById('card-meteoalarm');
+    meteoalarm.setConfig({ type: 'custom:nws-alerts-card', entity: ENTITY, animations: false, colorTheme: 'meteoalarm', layout: 'compact' });
+    meteoalarm.hass = MOCK_HASS;
   </script>
 </body>
 </html>

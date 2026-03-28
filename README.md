@@ -21,17 +21,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 ## Themes
 
-### Severity (default)
-
-[![Severity color theme](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/severity-details-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/severity-light-details.png)
-
-### NWS Official
-
-[![NWS color theme, compact layout](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/nws-compact-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/nws-light-compact.png)
-
-### MeteoAlarm Awareness
-
-[![MeteoAlarm color theme](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/meteoalarm-details-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/meteoalarm-light-details.png)
+[![Severity, NWS, and MeteoAlarm color themes](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-light.png)
 
 ## Quick Start
 

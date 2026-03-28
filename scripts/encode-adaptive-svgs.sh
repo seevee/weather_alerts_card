@@ -10,10 +10,8 @@ IMG_DIR="$SCRIPT_DIR/../img"
 
 # Pairs: light-png dark-png output-svg
 PAIRS=(
-  "hero-light.png            hero-dark.png            hero-adaptive.svg"
-  "severity-light-details.png severity-dark-details.png severity-details-adaptive.svg"
-  "nws-light-compact.png     nws-dark-compact.png     nws-compact-adaptive.svg"
-  "meteoalarm-light-details.png meteoalarm-dark-details.png meteoalarm-details-adaptive.svg"
+  "hero-light.png   hero-dark.png   hero-adaptive.svg"
+  "themes-light.png themes-dark.png themes-adaptive.svg"
 )
 
 for pair in "${PAIRS[@]}"; do
