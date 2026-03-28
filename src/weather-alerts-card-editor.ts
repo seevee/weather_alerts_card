@@ -197,10 +197,10 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _minSeverityChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as AlertSeverity | '';
-    if (value === (this._config.minSeverity || '')) return;
+    const value = ev.detail.value as AlertSeverity | 'all';
+    if (value === (this._config.minSeverity || 'all')) return;
     const newConfig = { ...this._config };
-    if (value) {
+    if (value !== 'all') {
       newConfig.minSeverity = value as AlertSeverity;
     } else {
       delete newConfig.minSeverity;
@@ -312,10 +312,10 @@ export class WeatherAlertsCardEditor extends LitElement {
 
         <ha-select
           .label=${t('editor.min_severity', lang)}
-          .value=${this._config.minSeverity || ''}
+          .value=${this._config.minSeverity || 'all'}
           @selected=${this._minSeverityChanged}
         >
-          <ha-dropdown-item value="">${t('editor.severity_all', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="all">${t('editor.severity_all', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="minor">${t('editor.severity_minor', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="moderate">${t('editor.severity_moderate', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="severe">${t('editor.severity_severe', lang)}</ha-dropdown-item>
