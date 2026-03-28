@@ -6,6 +6,18 @@ import { PirateWeatherAdapter } from './pirateweather';
 
 const adapters: AlertAdapter[] = [new NwsAdapter(), new BomAdapter(), new MeteoAlarmAdapter(), new PirateWeatherAdapter()];
 
+/** Name-based heuristic patterns for likely alert entities. */
+export const ENTITY_NAME_PATTERNS: RegExp[] = [
+  /^sensor\..*alerts?$/i,
+  /^sensor\..*warnings?$/i,
+  /^binary_sensor\.meteoalarm/i,
+];
+
+/** Returns true if any adapter recognises the given attributes. */
+export function canHandleAny(attributes: Record<string, unknown>): boolean {
+  return adapters.some(a => a.canHandle(attributes));
+}
+
 export function getAdapter(
   provider: AlertProvider | undefined,
   attributes: Record<string, unknown>,

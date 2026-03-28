@@ -1,6 +1,7 @@
-import { LitElement, html, css, TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity } from './types';
+import { canHandleAny, ENTITY_NAME_PATTERNS } from './adapters';
 import { t } from './localize';
 
 @customElement('weather-alerts-card-editor')
@@ -24,6 +25,40 @@ export class WeatherAlertsCardEditor extends LitElement {
       composed: true,
     });
     this.dispatchEvent(event);
+  }
+
+  private _cachedHass?: HomeAssistant;
+  private _cachedEntityIds?: string[];
+
+  private _getMatchingEntityIds(): string[] {
+    if (this._cachedHass === this.hass && this._cachedEntityIds) return this._cachedEntityIds;
+    this._cachedHass = this.hass;
+    const ids: string[] = [];
+    for (const [id, entity] of Object.entries(this.hass.states)) {
+      if (!id.startsWith('sensor.') && !id.startsWith('binary_sensor.')) continue;
+      if (ENTITY_NAME_PATTERNS.some(p => p.test(id)) || canHandleAny(entity.attributes)) {
+        ids.push(id);
+      }
+    }
+    // Always include the currently configured entity so it remains visible
+    if (this._config?.entity && !ids.includes(this._config.entity)) {
+      ids.push(this._config.entity);
+    }
+    this._cachedEntityIds = ids;
+    return ids;
+  }
+
+  private _isEntityMismatch(): boolean {
+    if (!this._config?.entity) return false;
+    const stateObj = this.hass?.states[this._config.entity];
+    if (!stateObj) return false;
+    if (ENTITY_NAME_PATTERNS.some(p => p.test(this._config.entity))) return false;
+    return !canHandleAny(stateObj.attributes);
+  }
+
+  private _renderEntityWarning(lang: string): TemplateResult | typeof nothing {
+    if (!this._isEntityMismatch()) return nothing;
+    return html`<ha-alert alert-type="warning">${t('editor.entity_warning', lang)}</ha-alert>`;
   }
 
   private _entityChanged(ev: CustomEvent): void {
@@ -232,12 +267,13 @@ export class WeatherAlertsCardEditor extends LitElement {
       <div class="editor">
         <ha-selector
           .hass=${this.hass}
-          .selector=${{ entity: { domain: ['sensor', 'binary_sensor'] } }}
+          .selector=${{ entity: { include_entities: this._getMatchingEntityIds() } }}
           .value=${this._config.entity}
           .label=${t('editor.entity', lang)}
           .required=${true}
           @value-changed=${this._entityChanged}
         ></ha-selector>
+        ${this._renderEntityWarning(lang)}
 
         <ha-textfield
           .label=${t('editor.title', lang)}

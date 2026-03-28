@@ -81,6 +81,7 @@ const en: TranslationMap = {
   'editor.compact': 'Compact layout',
   'editor.show_preview': 'Show sample data',
   'editor.preview_hint': 'Preview card layout with placeholder alerts',
+  'editor.entity_warning': 'Selected entity does not appear to contain weather alert data.',
 };
 
 const fr: TranslationMap = {
@@ -164,6 +165,7 @@ const fr: TranslationMap = {
   'editor.compact': 'Disposition compacte',
   'editor.show_preview': 'Afficher les donnees exemples',
   'editor.preview_hint': 'Apercu de la disposition avec des alertes fictives',
+  'editor.entity_warning': 'L\'entite selectionnee ne semble pas contenir de donnees d\'alerte meteo.',
 };
 
 const es: TranslationMap = {
@@ -247,6 +249,7 @@ const es: TranslationMap = {
   'editor.compact': 'Disposicion compacta',
   'editor.show_preview': 'Mostrar datos de ejemplo',
   'editor.preview_hint': 'Vista previa con alertas de ejemplo',
+  'editor.entity_warning': 'La entidad seleccionada no parece contener datos de alerta meteorologica.',
 };
 
 const translations: Record<string, TranslationMap> = { en, fr, es };
