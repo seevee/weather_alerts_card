@@ -328,7 +328,8 @@ export function formatDuration(ts: number, nowTs: number = Date.now() / 1000): s
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   }
   const d = Math.floor(abs / 86400);
-  return `${d}d`;
+  const h = Math.floor((abs % 86400) / 3600);
+  return h > 0 ? `${d}d ${h}h` : `${d}d`;
 }
 
 /**

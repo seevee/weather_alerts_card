@@ -273,10 +273,11 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderPreview(): TemplateResult {
     const alerts = getPreviewAlerts();
+    const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="no-animations ${layoutClass}">
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}">
         <div class="preview-label">${t('card.preview', this._lang)}</div>
         ${alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
@@ -309,8 +310,17 @@ export class WeatherAlertsCard extends LitElement {
     alert: WeatherAlert, className: string, phaseClass: string,
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
+    const lang = this._lang;
+    const isOngoing = progress.isActive && !progress.hasEndTime;
+    const compactTimeLabel = isOngoing
+      ? t('progress.compact_ongoing', lang)
+      : progress.isActive
+        ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
+        : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
+    const ongoingClass = isOngoing ? 'ongoing' : '';
+    const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     return html`
-      <div class="alert-card ${className} ${phaseClass}" style=${this._alertColorStyle(alert)}>
+      <div class="alert-card ${className} ${phaseClass} ${ongoingClass}" style=${`${this._alertColorStyle(alert)} ${progressStyle}`}>
         <div
           class="alert-header-row compact-row"
           @click=${() => this._toggleDetails(alert.id)}
@@ -319,6 +329,7 @@ export class WeatherAlertsCard extends LitElement {
             <ha-icon icon=${getWeatherIcon(alert.event)}></ha-icon>
           </div>
           <span class="alert-title">${alert.event}</span>
+          <span class="compact-time">${compactTimeLabel}</span>
           <ha-icon
             icon="mdi:chevron-down"
             class="compact-chevron ${expanded ? 'expanded' : ''}"
@@ -515,7 +526,7 @@ export class WeatherAlertsCard extends LitElement {
       ? noAnim
         ? 'width: 100%; left: 0; opacity: 0.8;'
         : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
-      : `width: ${100 - progressPct}%; left: ${progressPct}%;`;
+      : `left: ${progressPct}%; right: 0;`;
 
     return html`
       <div class="progress-section">

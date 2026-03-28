@@ -13,6 +13,20 @@ export const cardStyles = css`
     100% { background: rgba(var(--color-rgb), 0.8); }
   }
 
+  @keyframes stripe-march-sm {
+    to { background-position: -12px 0; }
+  }
+
+  @keyframes stripe-march-lg {
+    to { background-position: -24px 0; }
+  }
+
+  @keyframes fill-shimmer {
+    0% { background-position: -50% 0; }
+    60% { background-position: 150% 0; }
+    100% { background-position: 150% 0; }
+  }
+
   :host {
     display: block;
   }
@@ -258,19 +272,27 @@ export const cardStyles = css`
   }
 
   .active .progress-fill {
-    background: linear-gradient(90deg, var(--color) 0%, rgba(var(--color-rgb), 0.6) 100%);
+    background-color: var(--color);
+    background-image: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    animation: fill-shimmer 5s ease-in-out infinite;
   }
 
   .preparation .progress-fill {
     background-color: transparent;
-    background-image: repeating-linear-gradient(
+    background-image: linear-gradient(
       -45deg,
-      var(--color) 0,
-      var(--color) 8px,
-      transparent 8px,
-      transparent 16px
+      var(--color) 25%,
+      transparent 25%,
+      transparent 50%,
+      var(--color) 50%,
+      var(--color) 75%,
+      transparent 75%
     );
+    background-size: 24px 24px;
     opacity: 0.6;
+    animation: stripe-march-lg 6s linear infinite;
   }
 
   /* --- DETAILS (custom toggle, not native <details>) --- */
@@ -365,7 +387,15 @@ export const cardStyles = css`
   }
 
   .compact .alert-card::before {
-    display: none;
+    display: block;
+    top: auto;
+    bottom: 0;
+    left: var(--progress, 0%);
+    right: 0;
+    width: auto;
+    height: 4px;
+    border-radius: 0;
+    z-index: 1;
   }
 
   .compact .alert-header-row.compact-row {
@@ -389,6 +419,17 @@ export const cardStyles = css`
   .compact .alert-title {
     font-size: 0.95rem;
     flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .compact-time {
+    font-size: 0.8rem;
+    color: var(--color);
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .compact-chevron {
@@ -406,13 +447,56 @@ export const cardStyles = css`
     border-top: 1px solid var(--divider-color);
   }
 
+  /* Compact progress track (bottom border) */
+  .compact .alert-card::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--secondary-background-color);
+  }
+  .compact .active.alert-card::before {
+    background-color: var(--color);
+    background-image: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    animation: fill-shimmer 5s ease-in-out infinite;
+  }
+  .compact .preparation.alert-card::before {
+    background-image: linear-gradient(
+      -45deg,
+      rgba(var(--color-rgb), 0.6) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(var(--color-rgb), 0.6) 50%,
+      rgba(var(--color-rgb), 0.6) 75%,
+      transparent 75%
+    );
+    background-size: 12px 12px;
+    background-color: transparent;
+    animation: stripe-march-sm 3s linear infinite;
+  }
+  .compact .active.ongoing.alert-card::before {
+    left: 0;
+    background: rgba(var(--color-rgb), 0.8);
+    animation: ongoing-pulse 5s infinite;
+  }
+
   /* --- NO ANIMATIONS --- */
   .no-animations .alert-card {
     animation: none !important;
   }
-  .no-animations .progress-fill {
+  .no-animations .progress-fill,
+  .no-animations .alert-card::before,
+  .no-animations .alert-card::after {
     animation: none !important;
     transition: none !important;
+  }
+  .no-animations .active .progress-fill,
+  .no-animations.compact .active.alert-card::before {
+    background-position: -33% 0 !important;
   }
 
   /* --- PREVIEW LABEL --- */

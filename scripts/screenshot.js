@@ -113,7 +113,7 @@ const PORT = 3742;
   }
   const browser = await chromium.launch(launchOptions);
 
-  const context = await browser.newContext({ viewport: { width: 600, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 600, height: 900 }, deviceScaleFactor: 2 });
   const page = await context.newPage();
 
   // Inject MDI icon map before any page script runs (persists across navigations)
