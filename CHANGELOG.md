@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Filter editor entity picker to show only entities with compatible alert data (#90)
+- Show warning in editor when selected entity does not match any alert adapter
+
 ## 2.5.2 — 2026-03-28
 
 ### Fixed

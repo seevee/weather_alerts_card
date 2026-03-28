@@ -18,7 +18,7 @@ import {
   sanitizeAlertHtml,
   getDisplayHeadline,
 } from './utils';
-import { getAdapter } from './adapters';
+import { getAdapter, ENTITY_NAME_PATTERNS } from './adapters';
 import { t } from './localize';
 import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
@@ -38,11 +38,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   meteoalarm: 'MeteoAlarm',
 };
 
-const STUB_ENTITY_PATTERNS = [
-  /^sensor\..*alert/i,
-  /^sensor\..*warning/i,
-  /^binary_sensor\.meteoalarm/i,
-];
+// Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS)
 
 function getPreviewAlerts(): WeatherAlert[] {
   const now = Date.now() / 1000;
@@ -136,7 +132,7 @@ export class WeatherAlertsCard extends LitElement {
     if (hass) {
       // Find all matching alert entities, prefer one with active alerts
       const matches = Object.keys(hass.states).filter(id =>
-        STUB_ENTITY_PATTERNS.some(pattern => pattern.test(id)),
+        ENTITY_NAME_PATTERNS.some(pattern => pattern.test(id)),
       );
       const withAlerts = matches.find(id => {
         const s = hass.states[id];
