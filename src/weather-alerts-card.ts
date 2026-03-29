@@ -120,6 +120,7 @@ export class WeatherAlertsCard extends LitElement {
 
   public getCardSize(): number {
     const alerts = this._getAlerts();
+    if (alerts.length === 0 && this._config?.hideNoAlerts) return 0;
     const perAlert = this._isCompact ? 1 : 3;
     return Math.max(1, alerts.length * perAlert);
   }
