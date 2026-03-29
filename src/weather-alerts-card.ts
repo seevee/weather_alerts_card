@@ -205,6 +205,23 @@ export class WeatherAlertsCard extends LitElement {
   }
   private get _isCompact(): boolean { return this._config?.layout === 'compact'; }
   private get _colorTheme(): 'severity' | 'nws' | 'meteoalarm' { return this._config?.colorTheme || 'severity'; }
+  private get _fontScale(): number | undefined {
+    switch (this._config?.fontSize) {
+      case 'small': return 0.85;
+      case 'large': return 1.2;
+      case 'x-large': return 1.4;
+      default: return undefined;
+    }
+  }
+  private get _scaleStyle(): string {
+    const scale = this._fontScale;
+    return scale !== undefined ? `--wac-scale: ${scale}` : '';
+  }
+
+  private _scaledPx(base: number): number {
+    const scale = this._fontScale;
+    return scale !== undefined ? Math.round(base * scale) : base;
+  }
 
   private _alertColorStyle(alert: WeatherAlert): string {
     if (this._colorTheme === 'nws') {
@@ -270,7 +287,7 @@ export class WeatherAlertsCard extends LitElement {
     const layoutClass = this._isCompact ? 'compact' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}">
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" style=${this._scaleStyle}>
         ${alerts.length === 0
         ? this._renderNoAlerts()
         : alerts.map(alert => this._renderAlert(alert))}
@@ -284,7 +301,7 @@ export class WeatherAlertsCard extends LitElement {
     const layoutClass = this._isCompact ? 'compact' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}">
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" style=${this._scaleStyle}>
         <div class="preview-label">${t('card.preview', this._lang)}</div>
         ${alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
@@ -446,7 +463,7 @@ export class WeatherAlertsCard extends LitElement {
         <span class="badge certainty-badge">
           <ha-icon
             icon=${getCertaintyIcon(alert.certainty)}
-            style="--mdc-icon-size: 14px; width: 14px; height: 14px;"
+            style="--mdc-icon-size: ${this._scaledPx(14)}px; width: ${this._scaledPx(14)}px; height: ${this._scaledPx(14)}px;"
           ></ha-icon>
           ${alert.certainty}
         </span>
@@ -516,7 +533,7 @@ export class WeatherAlertsCard extends LitElement {
           <div class="footer-link">
             <a href=${alert.url} target="_blank" rel="noopener noreferrer">
               ${this._sourceLinkLabel(alert)}
-              <ha-icon icon="mdi:open-in-new" style="width:14px;"></ha-icon>
+              <ha-icon icon="mdi:open-in-new" style="width:${this._scaledPx(14)}px;"></ha-icon>
             </a>
           </div>
         ` : nothing}
