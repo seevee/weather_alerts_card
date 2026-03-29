@@ -274,6 +274,18 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _fontSizeChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as string;
+    if (value === (this._config.fontSize || 'default')) return;
+    const newConfig = { ...this._config };
+    if (value === 'default') {
+      delete newConfig.fontSize;
+    } else {
+      newConfig.fontSize = value as 'small' | 'large' | 'x-large';
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _timezoneChanged(ev: CustomEvent): void {
     const value = ev.detail.value as 'server' | 'browser';
     if (value === (this._config.timezone || 'server')) return;
@@ -399,6 +411,17 @@ export class WeatherAlertsCardEditor extends LitElement {
         >
           <ha-dropdown-item value="server">${t('editor.tz_server', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="browser">${t('editor.tz_browser', lang)}</ha-dropdown-item>
+        </ha-select>
+
+        <ha-select
+          .label=${t('editor.font_size', lang)}
+          .value=${this._config.fontSize || 'default'}
+          @selected=${this._fontSizeChanged}
+        >
+          <ha-dropdown-item value="small">${t('editor.font_size_small', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="default">${t('editor.font_size_default', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="large">${t('editor.font_size_large', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="x-large">${t('editor.font_size_x_large', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-select

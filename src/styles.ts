@@ -97,8 +97,8 @@ export const cardStyles = css`
     justify-content: center;
     background: rgba(var(--color-rgb), 0.1);
     color: var(--color);
-    width: 44px;
-    height: 44px;
+    width: calc(44px * var(--wac-scale, 1));
+    height: calc(44px * var(--wac-scale, 1));
     border-radius: 50%;
     flex-shrink: 0;
     box-sizing: border-box;
@@ -116,20 +116,20 @@ export const cardStyles = css`
   .preparation .icon-box {
     border: 2px dashed var(--divider-color);
   }
-  .icon-box ha-icon { --mdc-icon-size: 26px; }
+  .icon-box ha-icon { --mdc-icon-size: calc(26px * var(--wac-scale, 1)); }
 
   .info-box { flex-grow: 1; }
 
   .title-row { margin-bottom: 4px; }
   .alert-title {
-    font-size: 1.15rem;
+    font-size: calc(1.15rem * var(--wac-scale, 1));
     font-weight: 600;
     line-height: 1.2;
     color: var(--primary-text-color);
   }
 
   .alert-headline {
-    font-size: 0.8rem;
+    font-size: calc(0.8rem * var(--wac-scale, 1));
     line-height: 1.3;
     color: var(--secondary-text-color);
     margin-bottom: 4px;
@@ -139,7 +139,7 @@ export const cardStyles = css`
     display: flex;
     align-items: flex-start;
     gap: 4px;
-    font-size: 0.8rem;
+    font-size: calc(0.8rem * var(--wac-scale, 1));
     line-height: 1.4;
     color: var(--secondary-text-color);
     margin-bottom: 6px;
@@ -149,9 +149,9 @@ export const cardStyles = css`
   .area-desc ha-icon {
     flex-shrink: 0;
     margin-top: 1px;
-    --mdc-icon-size: 13px;
-    width: 13px;
-    height: 13px;
+    --mdc-icon-size: calc(13px * var(--wac-scale, 1));
+    width: calc(13px * var(--wac-scale, 1));
+    height: calc(13px * var(--wac-scale, 1));
     opacity: 0.7;
   }
   .area-desc-text {
@@ -182,7 +182,7 @@ export const cardStyles = css`
     align-items: center;
     gap: 4px;
     line-height: 1;
-    font-size: 0.75rem;
+    font-size: calc(0.75rem * var(--wac-scale, 1));
     padding: 2px 8px;
     border-radius: 12px;
     font-weight: 500;
@@ -232,7 +232,7 @@ export const cardStyles = css`
     display: flex;
     justify-content: space-between;
     align-items: stretch;
-    font-size: 0.85rem;
+    font-size: calc(0.85rem * var(--wac-scale, 1));
     color: var(--primary-text-color);
     margin-bottom: 6px;
   }
@@ -244,7 +244,7 @@ export const cardStyles = css`
   }
 
   .label-sub {
-    font-size: 0.7rem;
+    font-size: calc(0.7rem * var(--wac-scale, 1));
     color: var(--secondary-text-color);
     text-transform: uppercase;
   }
@@ -303,7 +303,7 @@ export const cardStyles = css`
 
   .details-summary {
     padding: 10px 16px;
-    font-size: 0.9rem;
+    font-size: calc(0.9rem * var(--wac-scale, 1));
     font-weight: 500;
     color: var(--secondary-text-color);
     cursor: pointer;
@@ -327,7 +327,7 @@ export const cardStyles = css`
 
   .details-content {
     padding: 16px;
-    font-size: 0.9rem;
+    font-size: calc(0.9rem * var(--wac-scale, 1));
   }
 
   /* Details Grid */
@@ -342,7 +342,7 @@ export const cardStyles = css`
 
   .meta-item { display: flex; flex-direction: column; }
   .meta-label {
-    font-size: 0.7rem;
+    font-size: calc(0.7rem * var(--wac-scale, 1));
     color: var(--secondary-text-color);
     text-transform: uppercase;
   }
@@ -351,7 +351,7 @@ export const cardStyles = css`
     color: var(--primary-text-color);
   }
   .meta-relative {
-    font-size: 0.75rem;
+    font-size: calc(0.75rem * var(--wac-scale, 1));
     color: var(--secondary-text-color);
     font-style: italic;
   }
@@ -377,7 +377,7 @@ export const cardStyles = css`
     color: var(--color);
     text-decoration: none;
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: calc(0.85rem * var(--wac-scale, 1));
   }
 
   /* --- COMPACT LAYOUT --- */
@@ -409,15 +409,15 @@ export const cardStyles = css`
   }
 
   .compact .icon-box {
-    width: 32px;
-    height: 32px;
+    width: calc(32px * var(--wac-scale, 1));
+    height: calc(32px * var(--wac-scale, 1));
   }
   .compact .icon-box ha-icon {
-    --mdc-icon-size: 18px;
+    --mdc-icon-size: calc(18px * var(--wac-scale, 1));
   }
 
   .compact .alert-title {
-    font-size: 0.95rem;
+    font-size: calc(0.95rem * var(--wac-scale, 1));
     flex-grow: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -425,7 +425,7 @@ export const cardStyles = css`
   }
 
   .compact-time {
-    font-size: 0.8rem;
+    font-size: calc(0.8rem * var(--wac-scale, 1));
     color: var(--color);
     font-weight: 600;
     white-space: nowrap;
@@ -436,7 +436,7 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
     transition: transform 0.2s;
     flex-shrink: 0;
-    --mdc-icon-size: 20px;
+    --mdc-icon-size: calc(20px * var(--wac-scale, 1));
   }
   .compact-chevron.expanded {
     transform: rotate(180deg);
@@ -502,7 +502,7 @@ export const cardStyles = css`
   /* --- PREVIEW LABEL --- */
   .preview-label {
     text-align: center;
-    font-size: 0.75rem;
+    font-size: calc(0.75rem * var(--wac-scale, 1));
     font-style: italic;
     color: var(--secondary-text-color);
     padding: 8px 16px 0;

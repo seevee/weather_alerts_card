@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Add configurable font size with `fontSize` option (`small`, `default`, `large`, `x-large`) and `--wac-scale` CSS custom property for card-mod users
+
 ## 2.7.0-alpha.2 — 2026-03-29
 
 ### Added
