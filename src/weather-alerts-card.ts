@@ -259,6 +259,13 @@ export class WeatherAlertsCard extends LitElement {
     }
 
     const alerts = this._getAlerts();
+
+    if (alerts.length === 0 && this._config.hideNoAlerts) {
+      this.style.display = 'none';
+      return html``;
+    }
+    this.style.display = '';
+
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
