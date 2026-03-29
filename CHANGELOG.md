@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.7.0-alpha.2 — 2026-03-29
+
+### Added
+- Add Italian translations (#99) (11d3edf…)
+
 ## 2.7.0-alpha.1 — 2026-03-29
 
 ### Added
