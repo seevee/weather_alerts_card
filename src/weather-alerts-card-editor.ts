@@ -64,7 +64,18 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _entityChanged(ev: CustomEvent): void {
     const entity = ev.detail.value as string;
     if (entity === this._config.entity) return;
-    this._fireConfigChanged({ ...this._config, entity });
+    const newConfig: WeatherAlertsCardConfig = { ...this._config, entity };
+    // Update visibility condition entity reference if hideNoAlerts is active
+    if (newConfig.hideNoAlerts) {
+      // Remove old entity condition, then add new one
+      const stripped = this._syncVisibilityCondition(
+        newConfig.visibility,
+        this._config.entity,
+        false,
+      );
+      newConfig.visibility = this._syncVisibilityCondition(stripped, entity, true);
+    }
+    this._fireConfigChanged(newConfig);
   }
 
   private _titleChanged(ev: Event): void {
@@ -150,13 +161,38 @@ export class WeatherAlertsCardEditor extends LitElement {
     const target = ev.target as HTMLInputElement;
     const hide = target.checked;
     if (hide === (this._config.hideNoAlerts === true)) return;
-    const newConfig = { ...this._config };
+    const newConfig: WeatherAlertsCardConfig = { ...this._config };
     if (hide) {
       newConfig.hideNoAlerts = true;
     } else {
       delete newConfig.hideNoAlerts;
     }
+    // Sync HA's native visibility conditions so the dashboard layout
+    // fully removes the card (no residual gap) when there are no alerts.
+    newConfig.visibility = this._syncVisibilityCondition(
+      newConfig.visibility,
+      newConfig.entity,
+      hide,
+    );
     this._fireConfigChanged(newConfig);
+  }
+
+  /**
+   * Add or remove our managed visibility condition.
+   * Preserves any user-defined conditions already present.
+   */
+  private _syncVisibilityCondition(
+    existing: Record<string, unknown>[] | undefined,
+    entity: string,
+    add: boolean,
+  ): Record<string, unknown>[] | undefined {
+    const conditions = (existing || []).filter(
+      c => !(c.condition === 'state' && c.entity === entity && c.state_not === '0'),
+    );
+    if (add) {
+      conditions.push({ condition: 'state', entity, state_not: '0' });
+    }
+    return conditions.length > 0 ? conditions : undefined;
   }
 
   private _layoutChanged(ev: Event): void {

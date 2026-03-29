@@ -40,6 +40,7 @@ export interface WeatherAlertsCardConfig {
   showSourceLink?: boolean;  // undefined/true: show "Open Source" link; false: hide link (kiosk mode)
   timezone?: 'server' | 'browser';  // undefined/'server': HA server tz; 'browser': client tz
   _preview?: boolean;        // transient editor-only key — triggers preview mode in card
+  visibility?: Record<string, unknown>[];  // HA-managed visibility conditions (set via dashboard editor)
 }
 
 // Normalized alert consumed by the card UI — provider-agnostic
