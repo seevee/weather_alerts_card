@@ -259,13 +259,18 @@ export class WeatherAlertsCard extends LitElement {
     }
 
     const alerts = this._getAlerts();
+
+    if (alerts.length === 0 && this._config.hideNoAlerts) {
+      return html``;
+    }
+
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
     return html`
       <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}">
         ${alerts.length === 0
-        ? (this._config.hideNoAlerts ? nothing : this._renderNoAlerts())
+        ? this._renderNoAlerts()
         : alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
     `;
