@@ -1,0 +1,24 @@
+name: PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  conventional-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title follows conventional commits
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          PATTERN='^(feat|fix|perf|refactor|docs|chore|test|ci|build|style|revert)(\(.+\))?!?: .+'
+          if [[ ! "$TITLE" =~ $PATTERN ]]; then
+            echo "::error::PR title must follow conventional commits format: type(scope): description"
+            echo ""
+            echo "Valid types: feat, fix, perf, refactor, docs, chore, test, ci, build, style, revert"
+            echo "Examples:"
+            echo "  feat: add Italian translations"
+            echo "  feat(i18n): add Italian translations"
+            echo "  fix: resolve dark mode rendering issue"
+            exit 1
+          fi

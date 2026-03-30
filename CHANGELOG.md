@@ -10,9 +10,6 @@
 ### Localization
 - Update localization with Italian translations (#99) (11d3edf…)
 
-### Maintenance
-- Support non-conventional commits in changelog generation (0488a49…)
-
 ## 2.6.0 — 2026-03-28
 
 ### Added
