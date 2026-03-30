@@ -10,14 +10,14 @@ body = """
 {%- for group, commits in commits | group_by(attribute="group") %}
 ### {{ group }}
 {% for commit in commits -%}
-- {{ commit.message | split(pat="\n") | first | upper_first }} ({{ commit.id | truncate(length=7) }})
+- {{ commit.message | upper_first }} ({{ commit.id | truncate(length=7) }})
 {% endfor -%}
 {% endfor %}
 """
 
 [git]
 conventional_commits = true
-filter_unconventional = false
+filter_unconventional = true
 tag_pattern = "v[0-9]*"
 
 commit_parsers = [
@@ -27,7 +27,5 @@ commit_parsers = [
   { message = "^refactor", group = "Changed" },
   { message = "^docs", group = "Documentation" },
   { message = "^chore: release", skip = true },
-  { message = "^chore", group = "Maintenance" },
-  { message = "(?i)translation|localization", group = "Localization" },
-  { body = ".*", skip = true }
+  { message = "^chore", group = "Maintenance" }
 ]
