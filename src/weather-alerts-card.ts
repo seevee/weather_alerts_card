@@ -63,6 +63,8 @@ function getPreviewAlerts(): WeatherAlert[] {
       eventCode: 'HTA',
       provider: 'nws' as AlertProvider,
       phase: 'Update',
+      severityInferred: false,
+      certaintyInferred: false,
     },
     {
       id: 'preview-2',
@@ -83,6 +85,8 @@ function getPreviewAlerts(): WeatherAlert[] {
       eventCode: 'WIA',
       provider: 'nws' as AlertProvider,
       phase: '',
+      severityInferred: true,
+      certaintyInferred: false,
     },
   ];
 }
@@ -457,15 +461,21 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderBadgesRow(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
+    const severityText = alert.severityInferred
+      ? t('badge.severity_' + alert.severity, this._lang)
+      : alert.severityLabel;
+    const certText = alert.certaintyInferred
+      ? t('badge.severity_' + alert.certainty.toLowerCase(), this._lang)
+      : alert.certainty;
     return html`
-      <span class="badge severity-badge">${alert.severityLabel}</span>
+      <span class="badge severity-badge${alert.severityInferred ? ' badge-inferred' : ''}">${severityText}</span>
       ${alert.certainty ? html`
-        <span class="badge certainty-badge">
+        <span class="badge certainty-badge${alert.certaintyInferred ? ' badge-inferred' : ''}">
           <ha-icon
             icon=${getCertaintyIcon(alert.certainty)}
             style="--mdc-icon-size: ${this._scaledPx(14)}px; width: ${this._scaledPx(14)}px; height: ${this._scaledPx(14)}px;"
           ></ha-icon>
-          ${alert.certainty}
+          ${certText}
         </span>
       ` : nothing}
       ${alert.phase ? html`

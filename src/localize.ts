@@ -45,6 +45,13 @@ const en: TranslationMap = {
   'time.days_ago': '{d}d ago',
   'time.in_days': 'in {d}d',
 
+  // Badge labels (inferred severity/certainty)
+  'badge.severity_extreme': 'Extreme',
+  'badge.severity_severe': 'Severe',
+  'badge.severity_moderate': 'Moderate',
+  'badge.severity_minor': 'Minor',
+  'badge.severity_unknown': 'Unknown',
+
   // Editor
   'editor.entity': 'Entity (required)',
   'editor.title': 'Title (optional)',
@@ -137,6 +144,13 @@ const fr: TranslationMap = {
   'time.in_hours': 'dans {dur}',
   'time.days_ago': 'il y a {d}j',
   'time.in_days': 'dans {d}j',
+
+  // Badge labels (inferred severity/certainty)
+  'badge.severity_extreme': 'Extrême',
+  'badge.severity_severe': 'Grave',
+  'badge.severity_moderate': 'Modérée',
+  'badge.severity_minor': 'Mineure',
+  'badge.severity_unknown': 'Inconnue',
 
   // Editor
   'editor.entity': 'Entite (requis)',
@@ -231,6 +245,13 @@ const es: TranslationMap = {
   'time.days_ago': 'hace {d}d',
   'time.in_days': 'en {d}d',
 
+  // Badge labels (inferred severity/certainty)
+  'badge.severity_extreme': 'Extrema',
+  'badge.severity_severe': 'Grave',
+  'badge.severity_moderate': 'Moderada',
+  'badge.severity_minor': 'Menor',
+  'badge.severity_unknown': 'Desconocida',
+
   // Editor
   'editor.entity': 'Entidad (requerido)',
   'editor.title': 'Titulo (opcional)',
@@ -323,6 +344,13 @@ const it: TranslationMap = {
   'time.in_hours': 'in {dur}',
   'time.days_ago': '{d}g fa',
   'time.in_days': 'in {d}g',
+
+  // Badge labels (inferred severity/certainty)
+  'badge.severity_extreme': 'Estrema',
+  'badge.severity_severe': 'Grave',
+  'badge.severity_moderate': 'Moderata',
+  'badge.severity_minor': 'Lieve',
+  'badge.severity_unknown': 'Sconosciuta',
 
   // Editor
   'editor.entity': 'Entità (obbligatorio)',

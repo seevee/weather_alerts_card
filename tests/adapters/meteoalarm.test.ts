@@ -70,6 +70,8 @@ describe('MeteoAlarmAdapter', () => {
       expect(a.description).toBe('High risk of forest fires due to extreme heat and dry conditions.');
       expect(a.instruction).toBe('Avoid open fires. Follow local authority guidance.');
       expect(a.areaDesc).toBe('AEMET');
+      expect(a.severityInferred).toBe(false);
+      expect(a.certaintyInferred).toBe(false);
     });
 
     it('maps awareness_level 4 to extreme', () => {
@@ -111,6 +113,7 @@ describe('MeteoAlarmAdapter', () => {
       }));
       expect(alerts[0].severity).toBe('moderate');
       expect(alerts[0].severityLabel).toBe('Moderate');
+      expect(alerts[0].severityInferred).toBe(false);
     });
 
     it('falls back to title-cased enum when both awareness_level and severity are missing', () => {
@@ -120,6 +123,7 @@ describe('MeteoAlarmAdapter', () => {
       }));
       expect(alerts[0].severity).toBe('unknown');
       expect(alerts[0].severityLabel).toBe('Unknown');
+      expect(alerts[0].severityInferred).toBe(true);
     });
 
     it('parses ISO timestamps correctly', () => {

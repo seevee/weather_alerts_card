@@ -213,6 +213,15 @@ export const cardStyles = css`
     text-transform: none;
     letter-spacing: 1px;
   }
+  .badge-inferred {
+    font-style: italic;
+  }
+  .badge-inferred::before {
+    content: '~';
+    opacity: 0.6;
+    margin-right: 1px;
+  }
+
   .zones-badge {
     background: transparent;
     color: var(--secondary-text-color);

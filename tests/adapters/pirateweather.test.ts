@@ -85,6 +85,8 @@ describe('PirateWeatherAdapter', () => {
       expect(a.areaDesc).toBe('Denver County, CO');
       expect(a.url).toBe('https://alerts.weather.gov/cap/wwacapget.php?x=CO123');
       expect(a.headline).toBe('Wind Advisory');
+      expect(a.severityInferred).toBe(false);
+      expect(a.certaintyInferred).toBe(false);
     });
 
     it('parses ISO timestamps correctly', () => {
@@ -159,6 +161,16 @@ describe('PirateWeatherAdapter', () => {
     it('title-cases the severity label', () => {
       const alerts = adapter.parseAlerts(makeSingleAlertAttributes({ severity: 'extreme' }));
       expect(alerts[0].severityLabel).toBe('Extreme');
+    });
+
+    it('marks severity as inferred when raw severity is empty', () => {
+      const alerts = adapter.parseAlerts(makeSingleAlertAttributes({ severity: '' }));
+      expect(alerts[0].severityInferred).toBe(true);
+    });
+
+    it('marks severity as not inferred when raw severity is valid', () => {
+      const alerts = adapter.parseAlerts(makeSingleAlertAttributes({ severity: 'Moderate' }));
+      expect(alerts[0].severityInferred).toBe(false);
     });
   });
 

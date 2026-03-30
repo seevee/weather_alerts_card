@@ -47,6 +47,38 @@ describe('t()', () => {
     expect(t('card.no_alerts', 'FR')).toBe('Aucune alerte active.');
   });
 
+  it('returns badge severity labels in English', () => {
+    expect(t('badge.severity_extreme', 'en')).toBe('Extreme');
+    expect(t('badge.severity_severe', 'en')).toBe('Severe');
+    expect(t('badge.severity_moderate', 'en')).toBe('Moderate');
+    expect(t('badge.severity_minor', 'en')).toBe('Minor');
+    expect(t('badge.severity_unknown', 'en')).toBe('Unknown');
+  });
+
+  it('returns badge severity labels in French', () => {
+    expect(t('badge.severity_extreme', 'fr')).toBe('Extrême');
+    expect(t('badge.severity_severe', 'fr')).toBe('Grave');
+    expect(t('badge.severity_moderate', 'fr')).toBe('Modérée');
+    expect(t('badge.severity_minor', 'fr')).toBe('Mineure');
+    expect(t('badge.severity_unknown', 'fr')).toBe('Inconnue');
+  });
+
+  it('returns badge severity labels in Spanish', () => {
+    expect(t('badge.severity_extreme', 'es')).toBe('Extrema');
+    expect(t('badge.severity_severe', 'es')).toBe('Grave');
+    expect(t('badge.severity_moderate', 'es')).toBe('Moderada');
+    expect(t('badge.severity_minor', 'es')).toBe('Menor');
+    expect(t('badge.severity_unknown', 'es')).toBe('Desconocida');
+  });
+
+  it('returns badge severity labels in Italian', () => {
+    expect(t('badge.severity_extreme', 'it')).toBe('Estrema');
+    expect(t('badge.severity_severe', 'it')).toBe('Grave');
+    expect(t('badge.severity_moderate', 'it')).toBe('Moderata');
+    expect(t('badge.severity_minor', 'it')).toBe('Lieve');
+    expect(t('badge.severity_unknown', 'it')).toBe('Sconosciuta');
+  });
+
   it('all en keys exist in fr', () => {
     // Access translations indirectly through t()
     const enKeys = [
@@ -70,6 +102,8 @@ describe('t()', () => {
       'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
       'editor.animations', 'editor.deduplicate', 'editor.compact',
       'editor.show_preview', 'editor.preview_hint',
+      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
+      'badge.severity_minor', 'badge.severity_unknown',
     ];
 
     for (const key of enKeys) {
@@ -104,6 +138,8 @@ describe('t()', () => {
       'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
       'editor.animations', 'editor.deduplicate', 'editor.compact',
       'editor.show_preview', 'editor.preview_hint',
+      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
+      'badge.severity_minor', 'badge.severity_unknown',
     ];
 
     for (const key of enKeys) {
