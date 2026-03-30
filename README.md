@@ -138,10 +138,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 
 ## Data Fidelity
 
-Severity and certainty badges indicate whether their displayed value came directly from the alert provider's raw data or was inferred by the card's adapter logic.
-
-- **Raw values** are shown verbatim — the provider's original text and casing.
-- **Inferred values** are localized via the card's locale setting and rendered with italic text and a tilde prefix (`~Moderate`) so you can tell at a glance which badges reflect actual provider data.
+Severity and certainty badges are always localized to your configured language. When a value was inferred by the card's adapter logic (rather than provided directly by the alert source), it is rendered with italic text and a tilde prefix (`~Moderate`) so you can tell at a glance which badges reflect actual provider data.
 
 | Provider | Severity | Certainty |
 |----------|----------|-----------|
@@ -149,8 +146,6 @@ Severity and certainty badges indicate whether their displayed value came direct
 | BoM | Inferred (parsed from title/type/group) | Absent |
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
 | PirateWeather | Raw (from `severity` field) | Absent |
-
-**Note:** MeteoAlarm's raw labels may be pre-localized by the upstream HA integration (based on the entity's `language` attribute). If a user configures their MeteoAlarm entity in French, the severity badge will show the French label verbatim. The card's own localization only applies to inferred values.
 
 ## Development
 

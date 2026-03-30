@@ -55,12 +55,28 @@ describe('t()', () => {
     expect(t('badge.severity_unknown', 'en')).toBe('Unknown');
   });
 
+  it('returns badge certainty labels in English', () => {
+    expect(t('badge.certainty_observed', 'en')).toBe('Observed');
+    expect(t('badge.certainty_likely', 'en')).toBe('Likely');
+    expect(t('badge.certainty_possible', 'en')).toBe('Possible');
+    expect(t('badge.certainty_unlikely', 'en')).toBe('Unlikely');
+    expect(t('badge.certainty_unknown', 'en')).toBe('Unknown');
+  });
+
   it('returns badge severity labels in French', () => {
     expect(t('badge.severity_extreme', 'fr')).toBe('Extrême');
     expect(t('badge.severity_severe', 'fr')).toBe('Grave');
     expect(t('badge.severity_moderate', 'fr')).toBe('Modérée');
     expect(t('badge.severity_minor', 'fr')).toBe('Mineure');
     expect(t('badge.severity_unknown', 'fr')).toBe('Inconnue');
+  });
+
+  it('returns badge certainty labels in French', () => {
+    expect(t('badge.certainty_observed', 'fr')).toBe('Observée');
+    expect(t('badge.certainty_likely', 'fr')).toBe('Probable');
+    expect(t('badge.certainty_possible', 'fr')).toBe('Possible');
+    expect(t('badge.certainty_unlikely', 'fr')).toBe('Improbable');
+    expect(t('badge.certainty_unknown', 'fr')).toBe('Inconnue');
   });
 
   it('returns badge severity labels in Spanish', () => {
@@ -71,12 +87,28 @@ describe('t()', () => {
     expect(t('badge.severity_unknown', 'es')).toBe('Desconocida');
   });
 
+  it('returns badge certainty labels in Spanish', () => {
+    expect(t('badge.certainty_observed', 'es')).toBe('Observada');
+    expect(t('badge.certainty_likely', 'es')).toBe('Probable');
+    expect(t('badge.certainty_possible', 'es')).toBe('Posible');
+    expect(t('badge.certainty_unlikely', 'es')).toBe('Improbable');
+    expect(t('badge.certainty_unknown', 'es')).toBe('Desconocida');
+  });
+
   it('returns badge severity labels in Italian', () => {
     expect(t('badge.severity_extreme', 'it')).toBe('Estrema');
     expect(t('badge.severity_severe', 'it')).toBe('Grave');
     expect(t('badge.severity_moderate', 'it')).toBe('Moderata');
     expect(t('badge.severity_minor', 'it')).toBe('Lieve');
     expect(t('badge.severity_unknown', 'it')).toBe('Sconosciuta');
+  });
+
+  it('returns badge certainty labels in Italian', () => {
+    expect(t('badge.certainty_observed', 'it')).toBe('Osservata');
+    expect(t('badge.certainty_likely', 'it')).toBe('Probabile');
+    expect(t('badge.certainty_possible', 'it')).toBe('Possibile');
+    expect(t('badge.certainty_unlikely', 'it')).toBe('Improbabile');
+    expect(t('badge.certainty_unknown', 'it')).toBe('Sconosciuta');
   });
 
   it('all en keys exist in fr', () => {
@@ -104,6 +136,8 @@ describe('t()', () => {
       'editor.show_preview', 'editor.preview_hint',
       'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
       'badge.severity_minor', 'badge.severity_unknown',
+      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
+      'badge.certainty_unlikely', 'badge.certainty_unknown',
     ];
 
     for (const key of enKeys) {
@@ -140,6 +174,8 @@ describe('t()', () => {
       'editor.show_preview', 'editor.preview_hint',
       'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
       'badge.severity_minor', 'badge.severity_unknown',
+      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
+      'badge.certainty_unlikely', 'badge.certainty_unknown',
     ];
 
     for (const key of enKeys) {

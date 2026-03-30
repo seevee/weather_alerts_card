@@ -3,9 +3,9 @@
 ## Unreleased
 
 ### Added
-- Severity and certainty badges now indicate whether their value is raw (from provider) or inferred (synthesized by adapter logic). Inferred values are localized and rendered with italic text and a tilde prefix (`~`).
+- Severity and certainty badges are now fully localized. Inferred values (synthesized by adapter logic) are rendered with italic text and a tilde prefix (`~`) to distinguish them from raw provider data.
 - New `severityInferred` and `certaintyInferred` fields on `WeatherAlert` interface.
-- Badge severity localization keys (`badge.severity_*`) for en, fr, es, it.
+- Badge localization keys (`badge.severity_*`, `badge.certainty_*`) for en, fr, es, it.
 - New `.badge-inferred` CSS class for visual distinction of inferred badges.
 - "Data Fidelity" section in README documenting per-provider raw/inferred/absent fields.
 

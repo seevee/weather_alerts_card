@@ -461,12 +461,10 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderBadgesRow(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
-    const severityText = alert.severityInferred
-      ? t('badge.severity_' + alert.severity, this._lang)
-      : alert.severityLabel;
-    const certText = alert.certaintyInferred
-      ? t('badge.severity_' + alert.certainty.toLowerCase(), this._lang)
-      : alert.certainty;
+    const severityText = t('badge.severity_' + alert.severity, this._lang);
+    const certText = alert.certainty
+      ? t('badge.certainty_' + alert.certainty.toLowerCase(), this._lang)
+      : '';
     return html`
       <span class="badge severity-badge${alert.severityInferred ? ' badge-inferred' : ''}">${severityText}</span>
       ${alert.certainty ? html`
