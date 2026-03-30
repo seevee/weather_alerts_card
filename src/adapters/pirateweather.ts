@@ -76,6 +76,8 @@ export class PirateWeatherAdapter implements AlertAdapter {
       eventCode: '',
       provider: 'pirateweather',
       phase: '',
+      severityInferred: !rawSeverity || normalizeSeverity(rawSeverity) === 'unknown',
+      certaintyInferred: false,
     };
   }
 }

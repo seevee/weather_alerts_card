@@ -62,6 +62,8 @@ export class NwsAdapter implements AlertAdapter {
       eventCode: a.NWSCode || '',
       provider: 'nws',
       phase: '',
+      severityInferred: !a.Severity || normalizeSeverity(a.Severity) === 'unknown',
+      certaintyInferred: false,
     };
   }
 }

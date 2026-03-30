@@ -65,6 +65,9 @@ export class MeteoAlarmAdapter implements AlertAdapter {
     const typeLabel = awarenessTypeLabel(str(attributes['awareness_type']));
     const eventName = event || typeLabel || headline;
 
+    // Severity is raw if awareness_level or raw severity attribute provided a value
+    const severityInferred = !awarenessLevelToSeverity(awarenessLevel) && !str(attributes['severity']);
+
     return [{
       id: `meteoalarm_${eventName}_${onsetTs}`,
       event: eventName,
@@ -84,6 +87,8 @@ export class MeteoAlarmAdapter implements AlertAdapter {
       eventCode: '',
       provider: 'meteoalarm',
       phase: '',
+      severityInferred,
+      certaintyInferred: false,
     }];
   }
 }

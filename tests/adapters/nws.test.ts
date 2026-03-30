@@ -66,6 +66,8 @@ describe('NwsAdapter', () => {
       expect(a.severityLabel).toBe('Extreme');
       expect(a.provider).toBe('nws');
       expect(a.phase).toBe('');
+      expect(a.severityInferred).toBe(false);
+      expect(a.certaintyInferred).toBe(false);
     });
 
     it('preserves original Severity casing in severityLabel', () => {
@@ -79,6 +81,7 @@ describe('NwsAdapter', () => {
       const alerts = adapter.parseAlerts(attrs);
       expect(alerts[0].severity).toBe('unknown');
       expect(alerts[0].severityLabel).toBe('Unknown');
+      expect(alerts[0].severityInferred).toBe(true);
     });
 
     it('falls back to title-cased enum when Severity is empty', () => {
@@ -86,6 +89,7 @@ describe('NwsAdapter', () => {
       const alerts = adapter.parseAlerts(attrs);
       expect(alerts[0].severity).toBe('unknown');
       expect(alerts[0].severityLabel).toBe('Unknown');
+      expect(alerts[0].severityInferred).toBe(true);
     });
 
     it('collects zones from AffectedZones and Geocode.UGC', () => {

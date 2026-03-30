@@ -63,6 +63,8 @@ describe('BomAdapter', () => {
       expect(a.event).toBe('Severe Thunderstorm Warning for Metropolitan');
       expect(a.provider).toBe('bom');
       expect(a.phase).toBe('New');
+      expect(a.severityInferred).toBe(true);
+      expect(a.certaintyInferred).toBe(false);
     });
 
     it('maps severity from title keywords', () => {

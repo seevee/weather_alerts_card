@@ -136,6 +136,17 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 
+## Data Fidelity
+
+Severity and certainty badges are always localized to your configured language. When a value was inferred by the card's adapter logic (rather than provided directly by the alert source), it is rendered with italic text and a tilde prefix (`~Moderate`) so you can tell at a glance which badges reflect actual provider data.
+
+| Provider | Severity | Certainty |
+|----------|----------|-----------|
+| NWS | Raw (from `Severity` field) | Raw (from `Certainty` field) |
+| BoM | Inferred (parsed from title/type/group) | Absent |
+| MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
+| PirateWeather | Raw (from `severity` field) | Absent |
+
 ## Development
 
 ```bash

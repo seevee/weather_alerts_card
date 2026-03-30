@@ -32,6 +32,8 @@ function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
     zones: ['COZ039'],
     provider: 'nws',
     phase: '',
+    severityInferred: false,
+    certaintyInferred: false,
     ...overrides,
   };
 }

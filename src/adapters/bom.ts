@@ -106,6 +106,8 @@ export class BomAdapter implements AlertAdapter {
       eventCode: '',
       provider: 'bom',
       phase: bomPhaseLabel(w.phase),
+      severityInferred: true,
+      certaintyInferred: false,
     };
   }
 }
