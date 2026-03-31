@@ -88,6 +88,28 @@ function getPreviewAlerts(): WeatherAlert[] {
       severityInferred: true,
       certaintyInferred: false,
     },
+    {
+      id: 'preview-3',
+      event: 'Frost Advisory',
+      severity: 'minor',
+      severityLabel: 'Minor',
+      certainty: 'Likely',
+      urgency: 'Expected',
+      sentTs: now - 8 * HOUR,
+      onsetTs: now - 6 * HOUR,
+      endsTs: now - 2 * HOUR,
+      description: 'A light frost occurred overnight. This is sample data showing an expired alert.',
+      instruction: '',
+      url: '',
+      headline: 'Frost Advisory expired for Pleasantville',
+      areaDesc: 'Pleasantville, USA',
+      zones: ['SAMPLE01'],
+      eventCode: 'FRA',
+      provider: 'nws' as AlertProvider,
+      phase: '',
+      severityInferred: false,
+      certaintyInferred: true,
+    },
   ];
 }
 
@@ -183,6 +205,11 @@ export class WeatherAlertsCard extends LitElement {
       };
       const threshold = severityRank[this._config.minSeverity] ?? 4;
       alerts = alerts.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
+    }
+
+    if (this._config.hideExpired) {
+      const nowTs = Date.now() / 1000;
+      alerts = alerts.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
     }
 
     return sortAlerts(alerts, this._config.sortOrder || 'default');
@@ -300,7 +327,11 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderPreview(): TemplateResult {
-    const alerts = getPreviewAlerts();
+    let alerts = getPreviewAlerts();
+    if (this._config.hideExpired) {
+      const nowTs = Date.now() / 1000;
+      alerts = alerts.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
+    }
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
@@ -340,11 +371,13 @@ export class WeatherAlertsCard extends LitElement {
   ): TemplateResult {
     const lang = this._lang;
     const isOngoing = progress.isActive && !progress.hasEndTime;
-    const compactTimeLabel = isOngoing
-      ? t('progress.compact_ongoing', lang)
-      : progress.isActive
-        ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
-        : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
+    const compactTimeLabel = progress.isExpired
+      ? t('progress.compact_expired', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
+      : isOngoing
+        ? t('progress.compact_ongoing', lang)
+        : progress.isActive
+          ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
+          : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
     const ongoingClass = isOngoing ? 'ongoing' : '';
     const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     return html`
@@ -520,7 +553,7 @@ export class WeatherAlertsCard extends LitElement {
             <span class="meta-relative">${formatRelativeTime(progress.onsetTs, progress.nowTs, lang)}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">${t('detail.expires', lang)}</span>
+            <span class="meta-label">${progress.isExpired ? t('progress.expired_label', lang) : t('detail.expires', lang)}</span>
             <span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
             ${progress.hasEndTime
         ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
@@ -554,11 +587,13 @@ export class WeatherAlertsCard extends LitElement {
     const lang = this._lang;
 
     const noAnim = !this._animationsEnabled;
-    const fillStyle = isActive && !hasEndTime
-      ? noAnim
-        ? 'width: 100%; left: 0; opacity: 0.8;'
-        : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
-      : `left: ${progressPct}%; right: 0;`;
+    const fillStyle = progress.isExpired
+      ? 'left: 0; right: 0;'
+      : isActive && !hasEndTime
+        ? noAnim
+          ? 'width: 100%; left: 0; opacity: 0.8;'
+          : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
+        : `left: ${progressPct}%; right: 0;`;
 
     return html`
       <div class="progress-section">
@@ -570,9 +605,11 @@ export class WeatherAlertsCard extends LitElement {
           <div class="label-center">
             ${!hasEndTime
         ? html`<span class="label-sub">${t('progress.ongoing', lang)}</span>`
-        : isActive
-          ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
-          : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><span>${formatDuration(onsetTs, nowTs)}</span>`}
+        : progress.isExpired
+          ? html`<span class="label-sub">${t('progress.expired_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
+          : isActive
+            ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
+            : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><span>${formatDuration(onsetTs, nowTs)}</span>`}
           </div>
           <div class="label-right">
             <span class="label-sub">${t('progress.end', lang)}</span>
