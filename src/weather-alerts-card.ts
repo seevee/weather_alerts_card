@@ -43,31 +43,14 @@ const PROVIDER_LABELS: Record<string, string> = {
 function getPreviewAlerts(): WeatherAlert[] {
   const now = Date.now() / 1000;
   const HOUR = 3600;
+  // Order, severity, and onset are chosen so that each sortOrder
+  // option produces a visibly different arrangement:
+  //   default:  Wind Watch → Heat Advisory → Frost Advisory  (array order)
+  //   severity: Heat Advisory → Wind Watch → Frost Advisory   (moderate first)
+  //   onset:    Frost Advisory → Heat Advisory → Wind Watch    (earliest onset first)
   return [
     {
       id: 'preview-1',
-      event: 'Sunshine Heat Advisory',
-      severity: 'moderate',
-      severityLabel: 'Moderate',
-      certainty: 'Likely',
-      urgency: 'Expected',
-      sentTs: now - 2 * HOUR,
-      onsetTs: now - 1 * HOUR,
-      endsTs: now + 2 * HOUR,
-      description: 'This is a sample alert demonstrating the card layout. No action required.',
-      instruction: 'Enjoy the weather! This is placeholder data for the card preview.',
-      url: '',
-      headline: 'Sunshine Heat Advisory for Pleasantville',
-      areaDesc: 'Pleasantville, USA',
-      zones: ['SAMPLE01'],
-      eventCode: 'HTA',
-      provider: 'nws' as AlertProvider,
-      phase: 'Update',
-      severityInferred: false,
-      certaintyInferred: false,
-    },
-    {
-      id: 'preview-2',
       event: 'Gentle Wind Watch',
       severity: 'minor',
       severityLabel: 'Minor',
@@ -86,6 +69,28 @@ function getPreviewAlerts(): WeatherAlert[] {
       provider: 'nws' as AlertProvider,
       phase: '',
       severityInferred: true,
+      certaintyInferred: false,
+    },
+    {
+      id: 'preview-2',
+      event: 'Sunshine Heat Advisory',
+      severity: 'moderate',
+      severityLabel: 'Moderate',
+      certainty: 'Likely',
+      urgency: 'Expected',
+      sentTs: now - 2 * HOUR,
+      onsetTs: now - 1 * HOUR,
+      endsTs: now + 2 * HOUR,
+      description: 'This is a sample alert demonstrating the card layout. No action required.',
+      instruction: 'Enjoy the weather! This is placeholder data for the card preview.',
+      url: '',
+      headline: 'Sunshine Heat Advisory for Pleasantville',
+      areaDesc: 'Pleasantville, USA',
+      zones: ['SAMPLE01'],
+      eventCode: 'HTA',
+      provider: 'nws' as AlertProvider,
+      phase: 'Update',
+      severityInferred: false,
       certaintyInferred: false,
     },
     {
@@ -178,25 +183,31 @@ export class WeatherAlertsCard extends LitElement {
     if (!entity) return [];
 
     const adapter = getAdapter(this._config.provider, entity.attributes);
-    let alerts = adapter.parseAlerts(entity.attributes);
+    const alerts = adapter.parseAlerts(entity.attributes);
+    return this._filterAndSort(alerts);
+  }
+
+  private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean }): WeatherAlert[] {
+    if (!this._config) return alerts;
+    let result = alerts;
 
     if (this._config.deduplicate !== false) {
-      alerts = deduplicateAlerts(alerts);
+      result = deduplicateAlerts(result);
     }
 
-    if (this._config.zones && this._config.zones.length > 0) {
+    if (!opts?.skipZones && this._config.zones && this._config.zones.length > 0) {
       const zoneSet = new Set(this._config.zones.map(z => z.toUpperCase()));
-      alerts = alerts.filter(a => alertMatchesZones(a, zoneSet));
+      result = result.filter(a => alertMatchesZones(a, zoneSet));
     }
 
     if (this._config.eventCodes && this._config.eventCodes.length > 0) {
       const codeSet = new Set(this._config.eventCodes.map(c => c.toUpperCase()));
-      alerts = alerts.filter(a => a.eventCode && codeSet.has(a.eventCode.toUpperCase()));
+      result = result.filter(a => a.eventCode && codeSet.has(a.eventCode.toUpperCase()));
     }
 
     if (this._config.excludeEventCodes && this._config.excludeEventCodes.length > 0) {
       const excludeSet = new Set(this._config.excludeEventCodes.map(c => c.toUpperCase()));
-      alerts = alerts.filter(a => !a.eventCode || !excludeSet.has(a.eventCode.toUpperCase()));
+      result = result.filter(a => !a.eventCode || !excludeSet.has(a.eventCode.toUpperCase()));
     }
 
     if (this._config.minSeverity) {
@@ -204,15 +215,15 @@ export class WeatherAlertsCard extends LitElement {
         extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
       };
       const threshold = severityRank[this._config.minSeverity] ?? 4;
-      alerts = alerts.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
+      result = result.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
     }
 
     if (this._config.hideExpired) {
       const nowTs = Date.now() / 1000;
-      alerts = alerts.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
+      result = result.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
     }
 
-    return sortAlerts(alerts, this._config.sortOrder || 'default');
+    return sortAlerts(result, this._config.sortOrder || 'default');
   }
 
   private get _locale() {
@@ -327,11 +338,7 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderPreview(): TemplateResult {
-    let alerts = getPreviewAlerts();
-    if (this._config.hideExpired) {
-      const nowTs = Date.now() / 1000;
-      alerts = alerts.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
-    }
+    const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true });
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
