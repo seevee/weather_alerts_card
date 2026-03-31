@@ -31,9 +31,12 @@ const en: TranslationMap = {
   'progress.starts_in_label': 'Starts in',
   'progress.tbd': 'TBD',
   'progress.na': 'N/A',
+  'progress.expired_label': 'Expired',
+  'progress.expired_ago': 'expired {time} ago',
   'progress.compact_active': 'for {time}',
   'progress.compact_prep': 'in {time}',
   'progress.compact_ongoing': 'ongoing',
+  'progress.compact_expired': 'expired {time} ago',
 
   // Relative time
   'time.just_now': 'just now',
@@ -99,6 +102,7 @@ const en: TranslationMap = {
   'editor.font_size_default': 'Default',
   'editor.font_size_large': 'Large',
   'editor.font_size_x_large': 'Extra large',
+  'editor.hide_expired': 'Hide expired alerts',
   'editor.hide_no_alerts': 'Hide card when there are no active alerts',
   'editor.show_preview': 'Show sample data',
   'editor.preview_hint': 'Preview card layout with placeholder alerts',
@@ -136,9 +140,12 @@ const fr: TranslationMap = {
   'progress.starts_in_label': 'Commence dans',
   'progress.tbd': 'Ind.',
   'progress.na': 'N/D',
+  'progress.expired_label': 'Expiré',
+  'progress.expired_ago': 'expiré il y a {time}',
   'progress.compact_active': 'pour {time}',
   'progress.compact_prep': 'dans {time}',
   'progress.compact_ongoing': 'en cours',
+  'progress.compact_expired': 'expiré il y a {time}',
 
   // Relative time
   'time.just_now': 'a l\'instant',
@@ -204,6 +211,7 @@ const fr: TranslationMap = {
   'editor.font_size_default': 'Par défaut',
   'editor.font_size_large': 'Grand',
   'editor.font_size_x_large': 'Très grand',
+  'editor.hide_expired': 'Masquer les alertes expirées',
   'editor.hide_no_alerts': 'Masquer la carte sans alertes',
   'editor.show_preview': 'Afficher les donnees exemples',
   'editor.preview_hint': 'Apercu de la disposition avec des alertes fictives',
@@ -241,9 +249,12 @@ const es: TranslationMap = {
   'progress.starts_in_label': 'Comienza en',
   'progress.tbd': 'Pend.',
   'progress.na': 'N/D',
+  'progress.expired_label': 'Expirada',
+  'progress.expired_ago': 'expiró hace {time}',
   'progress.compact_active': 'por {time}',
   'progress.compact_prep': 'en {time}',
   'progress.compact_ongoing': 'en curso',
+  'progress.compact_expired': 'expiró hace {time}',
 
   // Relative time
   'time.just_now': 'ahora mismo',
@@ -309,6 +320,7 @@ const es: TranslationMap = {
   'editor.font_size_default': 'Predeterminado',
   'editor.font_size_large': 'Grande',
   'editor.font_size_x_large': 'Extra grande',
+  'editor.hide_expired': 'Ocultar alertas expiradas',
   'editor.hide_no_alerts': 'Ocultar tarjeta sin alertas',
   'editor.show_preview': 'Mostrar datos de ejemplo',
   'editor.preview_hint': 'Vista previa con alertas de ejemplo',
@@ -346,9 +358,12 @@ const it: TranslationMap = {
   'progress.starts_in_label': 'Inizia tra',
   'progress.tbd': 'N.D.',
   'progress.na': 'N/D',
+  'progress.expired_label': 'Scaduta',
+  'progress.expired_ago': 'scaduta {time} fa',
   'progress.compact_active': 'per {time}',
   'progress.compact_prep': 'tra {time}',
   'progress.compact_ongoing': 'in corso',
+  'progress.compact_expired': 'scaduta {time} fa',
 
   // Relative time
   'time.just_now': 'proprio ora',
@@ -414,6 +429,7 @@ const it: TranslationMap = {
   'editor.font_size_default': 'Predefinito',
   'editor.font_size_large': 'Grande',
   'editor.font_size_x_large': 'Molto grande',
+  'editor.hide_expired': 'Nascondi allerte scadute',
   'editor.hide_no_alerts': 'Nascondi scheda senza allerte',
   'editor.show_preview': 'Mostra dati di esempio',
   'editor.preview_hint': 'Anteprima del layout con allerte di esempio',

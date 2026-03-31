@@ -43,9 +43,36 @@ const PROVIDER_LABELS: Record<string, string> = {
 function getPreviewAlerts(): WeatherAlert[] {
   const now = Date.now() / 1000;
   const HOUR = 3600;
+  // Order, severity, and onset are chosen so that each sortOrder
+  // option produces a visibly different arrangement:
+  //   default:  Wind Watch → Heat Advisory → Frost Advisory  (array order)
+  //   severity: Heat Advisory → Wind Watch → Frost Advisory   (moderate first)
+  //   onset:    Frost Advisory → Heat Advisory → Wind Watch    (earliest onset first)
   return [
     {
       id: 'preview-1',
+      event: 'Gentle Wind Watch',
+      severity: 'minor',
+      severityLabel: 'Minor',
+      certainty: 'Possible',
+      urgency: 'Future',
+      sentTs: now - 1 * HOUR,
+      onsetTs: now + 1 * HOUR,
+      endsTs: now + 6 * HOUR,
+      description: 'A gentle breeze may arrive later. This is sample data showing an upcoming alert.',
+      instruction: '',
+      url: '',
+      headline: 'Gentle Wind Watch for Sampletown County',
+      areaDesc: 'Sampletown County',
+      zones: ['SAMPLE02'],
+      eventCode: 'WIA',
+      provider: 'nws' as AlertProvider,
+      phase: '',
+      severityInferred: true,
+      certaintyInferred: false,
+    },
+    {
+      id: 'preview-2',
       event: 'Sunshine Heat Advisory',
       severity: 'moderate',
       severityLabel: 'Moderate',
@@ -67,26 +94,26 @@ function getPreviewAlerts(): WeatherAlert[] {
       certaintyInferred: false,
     },
     {
-      id: 'preview-2',
-      event: 'Gentle Wind Watch',
+      id: 'preview-3',
+      event: 'Frost Advisory',
       severity: 'minor',
       severityLabel: 'Minor',
-      certainty: 'Possible',
-      urgency: 'Future',
-      sentTs: now - 1 * HOUR,
-      onsetTs: now + 1 * HOUR,
-      endsTs: now + 6 * HOUR,
-      description: 'A gentle breeze may arrive later. This is sample data showing an upcoming alert.',
+      certainty: 'Likely',
+      urgency: 'Expected',
+      sentTs: now - 8 * HOUR,
+      onsetTs: now - 6 * HOUR,
+      endsTs: now - 2 * HOUR,
+      description: 'A light frost occurred overnight. This is sample data showing an expired alert.',
       instruction: '',
       url: '',
-      headline: 'Gentle Wind Watch for Sampletown County',
-      areaDesc: 'Sampletown County',
-      zones: ['SAMPLE02'],
-      eventCode: 'WIA',
+      headline: 'Frost Advisory expired for Pleasantville',
+      areaDesc: 'Pleasantville, USA',
+      zones: ['SAMPLE01'],
+      eventCode: 'FRA',
       provider: 'nws' as AlertProvider,
       phase: '',
-      severityInferred: true,
-      certaintyInferred: false,
+      severityInferred: false,
+      certaintyInferred: true,
     },
   ];
 }
@@ -156,25 +183,31 @@ export class WeatherAlertsCard extends LitElement {
     if (!entity) return [];
 
     const adapter = getAdapter(this._config.provider, entity.attributes);
-    let alerts = adapter.parseAlerts(entity.attributes);
+    const alerts = adapter.parseAlerts(entity.attributes);
+    return this._filterAndSort(alerts);
+  }
+
+  private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean }): WeatherAlert[] {
+    if (!this._config) return alerts;
+    let result = alerts;
 
     if (this._config.deduplicate !== false) {
-      alerts = deduplicateAlerts(alerts);
+      result = deduplicateAlerts(result);
     }
 
-    if (this._config.zones && this._config.zones.length > 0) {
+    if (!opts?.skipZones && this._config.zones && this._config.zones.length > 0) {
       const zoneSet = new Set(this._config.zones.map(z => z.toUpperCase()));
-      alerts = alerts.filter(a => alertMatchesZones(a, zoneSet));
+      result = result.filter(a => alertMatchesZones(a, zoneSet));
     }
 
     if (this._config.eventCodes && this._config.eventCodes.length > 0) {
       const codeSet = new Set(this._config.eventCodes.map(c => c.toUpperCase()));
-      alerts = alerts.filter(a => a.eventCode && codeSet.has(a.eventCode.toUpperCase()));
+      result = result.filter(a => a.eventCode && codeSet.has(a.eventCode.toUpperCase()));
     }
 
     if (this._config.excludeEventCodes && this._config.excludeEventCodes.length > 0) {
       const excludeSet = new Set(this._config.excludeEventCodes.map(c => c.toUpperCase()));
-      alerts = alerts.filter(a => !a.eventCode || !excludeSet.has(a.eventCode.toUpperCase()));
+      result = result.filter(a => !a.eventCode || !excludeSet.has(a.eventCode.toUpperCase()));
     }
 
     if (this._config.minSeverity) {
@@ -182,10 +215,15 @@ export class WeatherAlertsCard extends LitElement {
         extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
       };
       const threshold = severityRank[this._config.minSeverity] ?? 4;
-      alerts = alerts.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
+      result = result.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
     }
 
-    return sortAlerts(alerts, this._config.sortOrder || 'default');
+    if (this._config.hideExpired) {
+      const nowTs = Date.now() / 1000;
+      result = result.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
+    }
+
+    return sortAlerts(result, this._config.sortOrder || 'default');
   }
 
   private get _locale() {
@@ -300,7 +338,7 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderPreview(): TemplateResult {
-    const alerts = getPreviewAlerts();
+    const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true });
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
@@ -340,11 +378,13 @@ export class WeatherAlertsCard extends LitElement {
   ): TemplateResult {
     const lang = this._lang;
     const isOngoing = progress.isActive && !progress.hasEndTime;
-    const compactTimeLabel = isOngoing
-      ? t('progress.compact_ongoing', lang)
-      : progress.isActive
-        ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
-        : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
+    const compactTimeLabel = progress.isExpired
+      ? t('progress.compact_expired', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
+      : isOngoing
+        ? t('progress.compact_ongoing', lang)
+        : progress.isActive
+          ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
+          : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
     const ongoingClass = isOngoing ? 'ongoing' : '';
     const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     return html`
@@ -520,7 +560,7 @@ export class WeatherAlertsCard extends LitElement {
             <span class="meta-relative">${formatRelativeTime(progress.onsetTs, progress.nowTs, lang)}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">${t('detail.expires', lang)}</span>
+            <span class="meta-label">${progress.isExpired ? t('progress.expired_label', lang) : t('detail.expires', lang)}</span>
             <span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
             ${progress.hasEndTime
         ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
@@ -554,11 +594,13 @@ export class WeatherAlertsCard extends LitElement {
     const lang = this._lang;
 
     const noAnim = !this._animationsEnabled;
-    const fillStyle = isActive && !hasEndTime
-      ? noAnim
-        ? 'width: 100%; left: 0; opacity: 0.8;'
-        : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
-      : `left: ${progressPct}%; right: 0;`;
+    const fillStyle = progress.isExpired
+      ? 'left: 0; right: 0;'
+      : isActive && !hasEndTime
+        ? noAnim
+          ? 'width: 100%; left: 0; opacity: 0.8;'
+          : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
+        : `left: ${progressPct}%; right: 0;`;
 
     return html`
       <div class="progress-section">
@@ -570,9 +612,11 @@ export class WeatherAlertsCard extends LitElement {
           <div class="label-center">
             ${!hasEndTime
         ? html`<span class="label-sub">${t('progress.ongoing', lang)}</span>`
-        : isActive
-          ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
-          : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><span>${formatDuration(onsetTs, nowTs)}</span>`}
+        : progress.isExpired
+          ? html`<span class="label-sub">${t('progress.expired_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
+          : isActive
+            ? html`<span class="label-sub">${t('progress.expires_in_label', lang)}</span><span>${formatDuration(endsTs, nowTs)}</span>`
+            : html`<span class="label-sub">${t('progress.starts_in_label', lang)}</span><span>${formatDuration(onsetTs, nowTs)}</span>`}
           </div>
           <div class="label-right">
             <span class="label-sub">${t('progress.end', lang)}</span>

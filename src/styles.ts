@@ -112,6 +112,15 @@ export const cardStyles = css`
     background: rgba(var(--color-rgb), 0.12);
   }
 
+  /* Temporal state: expired — dimmed */
+  .expired .icon-box {
+    border-color: var(--divider-color);
+    opacity: 0.5;
+  }
+  .expired {
+    opacity: 0.6;
+  }
+
   /* Temporal state: preparation — dashed ring */
   .preparation .icon-box {
     border: 2px dashed var(--divider-color);
@@ -286,6 +295,10 @@ export const cardStyles = css`
     background-size: 40% 100%;
     background-repeat: no-repeat;
     animation: fill-shimmer 5s ease-in-out infinite;
+  }
+
+  .expired .progress-fill {
+    background-color: var(--divider-color);
   }
 
   .preparation .progress-fill {
@@ -472,6 +485,9 @@ export const cardStyles = css`
     background-size: 40% 100%;
     background-repeat: no-repeat;
     animation: fill-shimmer 5s ease-in-out infinite;
+  }
+  .compact .expired.alert-card::before {
+    background-color: var(--divider-color);
   }
   .compact .preparation.alert-card::before {
     background-image: linear-gradient(

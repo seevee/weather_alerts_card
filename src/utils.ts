@@ -170,9 +170,15 @@ export function computeAlertProgress(alert: WeatherAlert): AlertProgress {
 
   const hasEndTime = alert.endsTs > 0;
   const isActive = nowTs >= onsetTs;
+  const isExpired = hasEndTime && nowTs >= endsTs;
 
   let lowTs: number, highTs: number, progressTs: number, phaseText: string;
-  if (isActive) {
+  if (isExpired) {
+    lowTs = onsetTs;
+    highTs = endsTs;
+    progressTs = endsTs;
+    phaseText = 'Expired';
+  } else if (isActive) {
     lowTs = onsetTs;
     highTs = endsTs;
     progressTs = nowTs;
@@ -196,6 +202,7 @@ export function computeAlertProgress(alert: WeatherAlert): AlertProgress {
 
   return {
     isActive,
+    isExpired,
     phaseText,
     progressPct,
     remainingHours,

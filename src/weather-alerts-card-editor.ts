@@ -157,6 +157,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _hideExpiredChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const hide = target.checked;
+    if (hide === (this._config.hideExpired === true)) return;
+    const newConfig: WeatherAlertsCardConfig = { ...this._config };
+    if (hide) {
+      newConfig.hideExpired = true;
+    } else {
+      delete newConfig.hideExpired;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _hideNoAlertsChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const hide = target.checked;
@@ -461,6 +474,13 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-switch
             .checked=${this._config.showSourceLink !== false}
             @change=${this._showSourceLinkChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        <ha-formfield .label=${t('editor.hide_expired', lang)}>
+          <ha-switch
+            .checked=${this._config.hideExpired === true}
+            @change=${this._hideExpiredChanged}
           ></ha-switch>
         </ha-formfield>
 
