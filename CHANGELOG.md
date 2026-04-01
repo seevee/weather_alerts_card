@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Add German (de) localization for all card UI, editor, and badge strings
+
 ## 2.7.1 — 2026-04-01
 
 ### Fixed

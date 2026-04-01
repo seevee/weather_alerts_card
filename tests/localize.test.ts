@@ -15,7 +15,7 @@ describe('t()', () => {
   });
 
   it('falls back to English for unknown language', () => {
-    expect(t('card.no_alerts', 'de')).toBe('No active alerts.');
+    expect(t('card.no_alerts', 'ja')).toBe('No active alerts.');
   });
 
   it('strips region subtag (fr-CA -> fr)', () => {
@@ -111,6 +111,30 @@ describe('t()', () => {
     expect(t('badge.certainty_unknown', 'it')).toBe('Sconosciuta');
   });
 
+  it('returns German string for known key', () => {
+    expect(t('card.no_alerts', 'de')).toBe('Keine aktiven Warnungen.');
+  });
+
+  it('strips region subtag (de-DE -> de)', () => {
+    expect(t('card.no_alerts', 'de-DE')).toBe('Keine aktiven Warnungen.');
+  });
+
+  it('returns badge severity labels in German', () => {
+    expect(t('badge.severity_extreme', 'de')).toBe('Extrem');
+    expect(t('badge.severity_severe', 'de')).toBe('Schwer');
+    expect(t('badge.severity_moderate', 'de')).toBe('Mäßig');
+    expect(t('badge.severity_minor', 'de')).toBe('Gering');
+    expect(t('badge.severity_unknown', 'de')).toBe('Unbekannt');
+  });
+
+  it('returns badge certainty labels in German', () => {
+    expect(t('badge.certainty_observed', 'de')).toBe('Beobachtet');
+    expect(t('badge.certainty_likely', 'de')).toBe('Wahrscheinlich');
+    expect(t('badge.certainty_possible', 'de')).toBe('Möglich');
+    expect(t('badge.certainty_unlikely', 'de')).toBe('Unwahrscheinlich');
+    expect(t('badge.certainty_unknown', 'de')).toBe('Unbekannt');
+  });
+
   it('all en keys exist in fr', () => {
     // Access translations indirectly through t()
     const enKeys = [
@@ -181,6 +205,40 @@ describe('t()', () => {
     for (const key of enKeys) {
       const esValue = t(key, 'es');
       expect(esValue).not.toBe(key, `Missing es translation for: ${key}`);
+    }
+  });
+
+  it('all en keys exist in de', () => {
+    const enKeys = [
+      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.open_source', 'card.active', 'card.in_prep', 'card.zones_count',
+      'card.zone_count_singular',
+      'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
+      'detail.description', 'detail.instructions',
+      'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
+      'progress.expires_in', 'progress.starts_in', 'progress.tbd', 'progress.na',
+      'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
+      'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
+      'editor.entity', 'editor.title', 'editor.provider', 'editor.provider_auto',
+      'editor.provider_nws', 'editor.provider_bom', 'editor.provider_meteoalarm',
+      'editor.provider_pirateweather', 'editor.zones', 'editor.zones_helper',
+      'editor.event_codes', 'editor.event_codes_helper', 'editor.sort_order',
+      'editor.sort_default', 'editor.sort_onset', 'editor.sort_severity',
+      'editor.color_theme', 'editor.color_severity', 'editor.color_nws',
+      'editor.timezone', 'editor.tz_server', 'editor.tz_browser',
+      'editor.min_severity', 'editor.severity_all', 'editor.severity_minor',
+      'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
+      'editor.animations', 'editor.deduplicate', 'editor.compact',
+      'editor.show_preview', 'editor.preview_hint',
+      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
+      'badge.severity_minor', 'badge.severity_unknown',
+      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
+      'badge.certainty_unlikely', 'badge.certainty_unknown',
+    ];
+
+    for (const key of enKeys) {
+      const deValue = t(key, 'de');
+      expect(deValue).not.toBe(key, `Missing de translation for: ${key}`);
     }
   });
 });
