@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fix shimmer animation pop at loop point by extending travel range off-screen
+
 ## 2.7.0 — 2026-03-30
 
 ### Added

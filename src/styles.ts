@@ -22,9 +22,9 @@ export const cardStyles = css`
   }
 
   @keyframes fill-shimmer {
-    0% { background-position: -50% 0; }
-    60% { background-position: 150% 0; }
-    100% { background-position: 150% 0; }
+    0% { background-position: -75% 0; }
+    60% { background-position: 175% 0; }
+    100% { background-position: 175% 0; }
   }
 
   :host {
