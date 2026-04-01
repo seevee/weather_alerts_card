@@ -17,7 +17,7 @@ export interface HassEntity {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd';
 
 export interface WeatherAlertsCardConfig {
   type: string;
@@ -116,6 +116,20 @@ export interface BomWarning {
   issue_time: string;       // ISO 8601 timestamp
   expiry_time: string;      // ISO 8601 timestamp
   phase: string;            // "new", "update", "renewal", "downgrade", "upgrade", "final", "cancelled"
+}
+
+// Raw DWD warning shape from the dwd_weather_warnings integration (nested object at warning_N keys)
+export interface DwdWarning {
+  headline: string;
+  description: string;
+  instruction: string;
+  start_time: string;     // ISO 8601 with timezone
+  end_time: string;       // ISO 8601 with timezone
+  event: string;          // e.g. "WINDBÖEN"
+  event_code: number;     // DWD warning type ID, e.g. 31
+  level: number;          // 0-4 severity level
+  color: string;          // hex color, e.g. "#FFFF00"
+  parameters: Record<string, string>;
 }
 
 /** @deprecated Use WeatherAlertsCardConfig instead. Removed in v3. */

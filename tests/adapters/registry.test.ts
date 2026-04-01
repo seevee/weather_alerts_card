@@ -55,6 +55,29 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('pirateweather');
   });
 
+  it('returns DWD adapter for explicit dwd provider', () => {
+    const adapter = getAdapter('dwd', {});
+    expect(adapter.provider).toBe('dwd');
+  });
+
+  it('auto-detects DWD from warning_count and region_name', () => {
+    const adapter = getAdapter(undefined, {
+      warning_count: 1,
+      region_name: 'Stadt Hamburg',
+      region_id: '813073047',
+      warning_1: {
+        headline: 'Amtliche WARNUNG vor WINDBÖEN',
+        level: 1,
+        color: '#FFFF00',
+        event: 'WINDBÖEN',
+        event_code: 31,
+        start_time: '2026-04-01T08:00:00+02:00',
+        end_time: '2026-04-01T18:00:00+02:00',
+      },
+    });
+    expect(adapter.provider).toBe('dwd');
+  });
+
   it('defaults to NWS when attributes are ambiguous', () => {
     const adapter = getAdapter(undefined, {});
     expect(adapter.provider).toBe('nws');
@@ -111,6 +134,10 @@ describe('ENTITY_NAME_PATTERNS', () => {
   it('does not match unrelated sensors', () => {
     expect(matches('sensor.temperature')).toBe(false);
     expect(matches('sensor.nws_forecast')).toBe(false);
+  });
+
+  it('matches DWD weather warnings entity', () => {
+    expect(matches('sensor.dwd_weather_warnings_hamburg_current')).toBe(true);
   });
 
   it('does not match metadata entities with alert in the middle', () => {

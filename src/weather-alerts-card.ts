@@ -36,6 +36,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   nws: 'NWS',
   bom: 'BoM',
   meteoalarm: 'MeteoAlarm',
+  dwd: 'DWD',
 };
 
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS)

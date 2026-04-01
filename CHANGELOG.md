@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Add DWD (Deutscher Wetterdienst) adapter for German weather warnings via `dwd_weather_warnings` integration
 - Add German (de) localization for all card UI, editor, and badge strings
 
 ## 2.7.1 — 2026-04-01

@@ -1,12 +1,12 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), and PirateWeather.
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), and PirateWeather.
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.png)
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), and PirateWeather with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), and PirateWeather with auto-detection
 - **Color themes** — severity-based (default), NWS official event colors, or MeteoAlarm awareness level colors
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
@@ -48,7 +48,7 @@ Then click the Download button, and click Reload when prompted.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `entity` | *(required)* | Alert sensor entity |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'pirateweather'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'pirateweather'` |
 | `title` | — | Card header title |
 | `zones` | — | Zone codes to filter (NWS zones or BoM `area_id`) |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
@@ -118,6 +118,12 @@ entity: sensor.sydney_warnings
 provider: bom
 ```
 
+**DWD (Germany)**
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.dwd_weather_warnings_hamburg_current
+```
+
 **PirateWeather alerts**
 ```yaml
 type: custom:weather-alerts-card
@@ -135,6 +141,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | NWS | US | [finity69x2/nws_alerts](https://github.com/finity69x2/nws_alerts) |
 | BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
+| DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 
 ## Data Fidelity
@@ -146,6 +153,7 @@ Severity and certainty badges are always localized to your configured language. 
 | NWS | Raw (from `Severity` field) | Raw (from `Certainty` field) |
 | BoM | Inferred (parsed from title/type/group) | Absent |
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
+| DWD | Raw (from integer `level`) | Absent |
 | PirateWeather | Raw (from `severity` field) | Absent |
 
 ## Development

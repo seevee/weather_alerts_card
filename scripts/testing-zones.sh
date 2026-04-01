@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # testing-zones.sh — Find zones with the best cross-section of alert conditions
-# Providers: NWS (US), BoM (Australia), MeteoAlarm (Europe), ECCC (Canada)
+# Providers: NWS (US), BoM (Australia), MeteoAlarm (Europe), ECCC (Canada), DWD (Germany)
 # Optimizes for testing diversity: mixed severities, prep vs active, multiple
 # alerts per zone, contiguous zone clusters with overlapping alerts.
 #
 # Usage: ./scripts/testing-zones.sh [provider ...]
-#   provider: nws, bom, meteoalarm, eccc, wmo (default: all)
+#   provider: nws, bom, meteoalarm, eccc, wmo, dwd (default: all)
 #
 # API requests per provider:
 #   NWS:       1 (alerts/active) + 1-3 zone geometry lookups
@@ -13,6 +13,7 @@
 #   MeteoAlarm: 1 (RSS) + 1 (atom feed)
 #   ECCC:      1 (NAAD atom)
 #   WMO CAP:   1-3 (RSS per source) + 1 (CAP XML)
+#   DWD:       1 (warnings.json)
 #
 # These are public, free government APIs. To avoid abusing them:
 # - Results are cached in .cache/most-alerted-zones/ for 1 hour
@@ -802,10 +803,141 @@ wmo_cap() {
   echo "  WMO source: $source_id ($source_name)"
 }
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
-VALID_PROVIDERS="nws bom meteoalarm eccc wmo"
+# ─── DWD ─────────────────────────────────────────────────────────────────────
+# DWD publishes warnings as JSONP at warnings.json. We strip the wrapper and
+# parse the inner JSON. API requests: 1 (warnings.json)
 
-run_provider() { case "$1" in nws|bom|meteoalarm|eccc) "$1";; wmo) wmo_cap;; esac; }
+dwd() {
+  echo "DWD — Deutscher Wetterdienst (Germany)"
+  echo "  Fetching active warnings..."
+
+  local raw
+  raw=$(cached_fetch "https://www.dwd.de/DWD/warnungen/warnapp/json/warnings.json" "$CACHE_DIR/dwd-warnings.json") || {
+    echo "  FAIL: could not reach dwd.de"; return 1
+  }
+
+  # Strip JSONP wrapper: warnWetter.loadWarnings(...);
+  local json
+  json=$(echo "$raw" | sed 's/^warnWetter\.loadWarnings(//; s/);$//')
+
+  local total
+  total=$(echo "$json" | jq '[.warnings | to_entries[].value[]] | length') || {
+    echo "  FAIL: could not parse DWD JSON"; return 1
+  }
+  echo "  Active warnings: $total"
+
+  if [ "$total" -eq 0 ]; then
+    echo "  No active warnings."
+    return 0
+  fi
+
+  # Per-state diversity analysis
+  local state_analysis
+  state_analysis=$(echo "$json" | jq '
+    [.warnings | to_entries[].value[]] |
+    group_by(.stateShort) | map(
+      . as $arr |
+      {
+        state: $arr[0].stateShort,
+        state_name: $arr[0].state,
+        count: ($arr | length),
+        levels: ([$arr[].level] | unique | sort),
+        events: ([$arr[].event] | unique | sort),
+        score: (
+          ([$arr[].level] | unique | length) * 20
+          + ([$arr[].event] | unique | length) * 10
+          + (if ($arr | length) >= 4 then 30 elif ($arr | length) >= 3 then 20 elif ($arr | length) >= 2 then 10 else 0 end)
+        )
+      }
+    ) | sort_by(-.score, -.count)
+  ')
+
+  # Best testing state
+  local best_state best_state_name best_score best_count best_levels best_events
+  IFS=$'\t' read -r best_state best_state_name best_score best_count best_levels best_events \
+    <<< "$(echo "$state_analysis" | jq -r '.[0] | [.state, .state_name, .score, .count, (.levels|map(tostring)|join(",")), (.events|join(", "))] | @tsv')"
+
+  echo ""
+  echo "  ── Best testing state (score: $best_score) ──"
+  echo ""
+  echo "  state:    $best_state ($best_state_name)"
+  echo "  warnings: $best_count"
+  echo "  levels:   $best_levels"
+  echo "  events:   $best_events"
+
+  echo ""
+  echo "  ── Top states by diversity score ──"
+  echo "$state_analysis" | jq -r '
+    .[0:5] | .[] |
+    "    \(.state)  score=\(.score)  warnings=\(.count)  levels=\(.levels|map(tostring)|join(","))  events=\(.events|join(","))"
+  '
+
+  # Best warncell (region) in the best state — most warnings = most test coverage
+  local best_warncell
+  best_warncell=$(echo "$json" | jq -r --arg st "$best_state" '
+    [.warnings | to_entries[] | {id: .key, warnings: [.value[] | select(.stateShort == $st)]} | select(.warnings | length > 0)] |
+    sort_by(-(
+      (.warnings | [.[].level] | unique | length) * 20
+      + (.warnings | [.[].event] | unique | length) * 10
+      + (.warnings | length)
+    )) | .[0] |
+    "\(.id)\t\(.warnings[0].regionName)\t\(.warnings | length)"
+  ')
+
+  local warncell_id warncell_name warncell_count
+  IFS=$'\t' read -r warncell_id warncell_name warncell_count <<< "$best_warncell"
+
+  echo ""
+  echo "  ── Best testing warncell ──"
+  echo ""
+  echo "  warncell ID:   $warncell_id"
+  echo "  warncell name: $warncell_name"
+  echo "  warnings:      $warncell_count"
+
+  # Sample warnings from best warncell
+  echo ""
+  echo "  ── Sample warnings from $warncell_name ──"
+  echo "$json" | jq -r --arg wid "$warncell_id" '
+    .warnings[$wid] // [] |
+    .[0:6] | .[] |
+    "    [level \(.level)] \(.headline // .event)"
+  '
+
+  # Top warncells in best state
+  echo ""
+  echo "  ── Top warncells in $best_state by warning count ──"
+  echo "$json" | jq -r --arg st "$best_state" '
+    [.warnings | to_entries[] | {id: .key, warnings: [.value[] | select(.stateShort == $st)]} | select(.warnings | length > 0)] |
+    sort_by(-(.warnings | length)) |
+    .[0:5] | .[] |
+    "    \(.id)  \(.warnings[0].regionName)  warnings=\(.warnings | length)"
+  '
+
+  # Condition coverage
+  echo ""
+  echo "  ── Condition coverage ──"
+  echo "$json" | jq -r '
+    [.warnings | to_entries[].value[]] |
+    {
+      total: length,
+      by_level: (group_by(.level) | map({level: .[0].level, count: length}) | sort_by(-.count)),
+      by_event: (group_by(.event) | map({event: .[0].event, count: length}) | sort_by(-.count))
+    } |
+    "  Total active warnings: \(.total)",
+    "  By level:  \(.by_level | map("L\(.level)=\(.count)") | join("  "))",
+    "  By event:  \(.by_event | .[0:8] | map("\(.event)=\(.count)") | join("  "))"
+  '
+
+  echo ""
+  echo "  HA integration: dwd_weather_warnings"
+  echo "  Warncell ID or name: $warncell_id  ($warncell_name)"
+  echo "  Paste either value into the 'Warncell ID or name' field"
+}
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+VALID_PROVIDERS="nws bom meteoalarm eccc wmo dwd"
+
+run_provider() { case "$1" in nws|bom|meteoalarm|eccc) "$1";; wmo) wmo_cap;; dwd) dwd;; esac; }
 
 providers=()
 if [ $# -eq 0 ]; then

@@ -1,16 +1,18 @@
 import { AlertAdapter, AlertProvider } from '../types';
 import { NwsAdapter } from './nws';
 import { BomAdapter } from './bom';
+import { DwdAdapter } from './dwd';
 import { MeteoAlarmAdapter } from './meteoalarm';
 import { PirateWeatherAdapter } from './pirateweather';
 
-const adapters: AlertAdapter[] = [new NwsAdapter(), new BomAdapter(), new MeteoAlarmAdapter(), new PirateWeatherAdapter()];
+const adapters: AlertAdapter[] = [new NwsAdapter(), new BomAdapter(), new DwdAdapter(), new MeteoAlarmAdapter(), new PirateWeatherAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
   /^sensor\..*alerts?$/i,
   /^sensor\..*warnings?$/i,
   /^binary_sensor\.meteoalarm/i,
+  /^sensor\.dwd_weather_warnings/i,
 ];
 
 /** Returns true if any adapter recognises the given attributes. */
