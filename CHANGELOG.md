@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Fix fallback icon for localized MeteoAlarm alerts — use English awareness_type for icon lookup (#114)
+
 ## 2.8.0 — 2026-04-01
 
 ### Added

@@ -187,6 +187,31 @@ describe('getWeatherIcon', () => {
   it('returns fire icon for WALDBRAND (wildfire)', () => {
     expect(getWeatherIcon('WALDBRAND')).toBe('mdi:fire');
   });
+
+  // MeteoAlarm awareness_type labels (English, used via iconHint)
+  it('returns heat icon for "Extreme high temperature"', () => {
+    expect(getWeatherIcon('Extreme high temperature')).toBe('mdi:weather-sunny-alert');
+  });
+
+  it('returns cold icon for "Extreme low temperature"', () => {
+    expect(getWeatherIcon('Extreme low temperature')).toBe('mdi:thermometer-low');
+  });
+
+  it('returns fire icon for "Forest Fire"', () => {
+    expect(getWeatherIcon('Forest Fire')).toBe('mdi:fire');
+  });
+
+  it('returns landslide icon for "Avalanches"', () => {
+    expect(getWeatherIcon('Avalanches')).toBe('mdi:landslide');
+  });
+
+  it('returns waves icon for "Coastal Event"', () => {
+    expect(getWeatherIcon('Coastal Event')).toBe('mdi:waves');
+  });
+
+  it('returns flood icon for "Rain-Flood"', () => {
+    expect(getWeatherIcon('Rain-Flood')).toBe('mdi:home-flood');
+  });
 });
 
 describe('getCertaintyIcon', () => {

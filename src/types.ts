@@ -67,6 +67,7 @@ export interface WeatherAlert {
   phase: string;           // Lifecycle phase, e.g. "New", "Update", "Final" (empty if N/A)
   severityInferred: boolean;  // true if severity was synthesized/inferred, not raw from provider
   certaintyInferred: boolean; // true if certainty was synthesized/inferred, not raw from provider
+  iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
 }
 

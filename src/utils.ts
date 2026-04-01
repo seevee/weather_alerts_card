@@ -34,7 +34,7 @@ const WEATHER_ICONS: [readonly string[], string][] = [
   [['snow', 'blizzard', 'winter', 'schnee', 'schneesturm'], 'mdi:weather-snowy-heavy'],
   [['sleet'], 'mdi:weather-snowy-rainy'],
   [['ice', 'freeze', 'frost', 'glätte', 'glatteis'], 'mdi:snowflake'],
-  [['cold', 'chill', 'kälte'], 'mdi:thermometer-low'],
+  [['cold', 'chill', 'low temperature', 'kälte'], 'mdi:thermometer-low'],
   // Geologic
   [['landslide', 'avalanche', 'lawine'], 'mdi:landslide'],
   [['volcano', 'ashfall', 'vog'], 'mdi:volcano'],
@@ -44,7 +44,7 @@ const WEATHER_ICONS: [readonly string[], string][] = [
   [['air quality', 'air stagnation'], 'mdi:air-filter'],
   // Fire & heat
   [['fire', 'red flag', 'waldbrand'], 'mdi:fire'],
-  [['heat', 'hitze'], 'mdi:weather-sunny-alert'],
+  [['heat', 'high temperature', 'hitze'], 'mdi:weather-sunny-alert'],
   [['drought', 'trockenheit'], 'mdi:water-off'],
   [['fog', 'nebel'], 'mdi:weather-fog'],
   // Wind — "cold"/"chill"/"kälte" must precede "wind" so "Wind Chill" gets thermometer

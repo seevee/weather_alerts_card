@@ -167,6 +167,22 @@ describe('MeteoAlarmAdapter', () => {
       expect(alerts[0].event).toBe('Wind warning for coastal areas');
     });
 
+    it('sets iconHint from awareness_type label', () => {
+      const alerts = adapter.parseAlerts(makeMeteoAlarmAttributes({
+        event: 'Avviso di incendio boschivo',
+        awareness_type: '8; Forest Fire',
+      }));
+      expect(alerts[0].event).toBe('Avviso di incendio boschivo');
+      expect(alerts[0].iconHint).toBe('Forest Fire');
+    });
+
+    it('sets empty iconHint when awareness_type is missing', () => {
+      const alerts = adapter.parseAlerts(makeMeteoAlarmAttributes({
+        awareness_type: undefined,
+      }));
+      expect(alerts[0].iconHint).toBe('');
+    });
+
     it('has empty zones array', () => {
       const alerts = adapter.parseAlerts(makeMeteoAlarmAttributes());
       expect(alerts[0].zones).toEqual([]);

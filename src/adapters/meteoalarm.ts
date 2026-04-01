@@ -86,6 +86,7 @@ export class MeteoAlarmAdapter implements AlertAdapter {
       zones: [],
       eventCode: '',
       provider: 'meteoalarm',
+      iconHint: typeLabel,
       phase: '',
       severityInferred,
       certaintyInferred: false,
