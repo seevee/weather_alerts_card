@@ -1,9 +1,9 @@
 # Changelog
 
-## Unreleased
+## 2.8.1-alpha.1 — 2026-04-01
 
 ### Fixed
-- Fix fallback icon for localized MeteoAlarm alerts — use English awareness_type for icon lookup (#114)
+- Use English awareness_type for MeteoAlarm icon lookup (#115) (33235a0…)
 
 ## 2.8.0 — 2026-04-01
 
@@ -24,21 +24,31 @@
 ## 2.7.0 — 2026-03-30
 
 ### Added
-- Add hideNoAlerts option to suppress empty-state banner (#97) (7f49d58…)
-- Add configurable font size with fontSize option and --wac-scale CSS property (#101) (cdca6bf…)
 - Add severity and certainty data purity indicators (#103) (4ea15ff…)
 
 ### Maintenance
 - Revert cliff.toml to enforce conventional commits via PR titles (74bae4c…)
 
+## 2.7.0-alpha.3 — 2026-03-29
+
+### Added
+- Add configurable font size with fontSize option and --wac-scale CSS property (#101) (cdca6bf…)
+
+## 2.7.0-alpha.1 — 2026-03-29
+
+### Added
+- Add hideNoAlerts option to suppress empty-state banner (#97) (7f49d58…)
+
 ## 2.6.0 — 2026-03-28
+
+### Documentation
+- Refresh README with config table and theme showcase (#95) (daac370…)
+
+## 2.6.0-alpha.1 — 2026-03-28
 
 ### Added
 - Filter entity picker to compatible alert entities (#92) (947f85b…)
 - Integrate progress bar into compact layout (#86) (440fecc…)
-
-### Documentation
-- Refresh README with config table and theme showcase (#95) (daac370…)
 
 ### Maintenance
 - Rework testing-zones script for diversity scoring (#91) (2803344…)
@@ -58,41 +68,67 @@
 ## 2.5.0 — 2026-03-26
 
 ### Added
-- Add excludeEventCodes config option to filter out unwanted alerts (#72) (d4c79c0…)
-- Display alert headlines with smart redundancy filtering (#76) (2718014…)
-- Add showSourceLink config option to hide source links (#75) (#77) (7ccad91…)
 - Rename headline config option to deduplicateHeadlines (#80) (258dc40…)
 - Add MeteoAlarm awareness level color theme (#81) (a01e52d…)
+
+## 2.5.0-alpha.2 — 2026-03-26
+
+### Added
+- Display alert headlines with smart redundancy filtering (#76) (2718014…)
+- Add showSourceLink config option to hide source links (#75) (#77) (7ccad91…)
+
+## 2.5.0-alpha.1 — 2026-03-26
+
+### Added
+- Add excludeEventCodes config option to filter out unwanted alerts (#72) (d4c79c0…)
 
 ## 2.4.0 — 2026-03-26
 
 ### Added
-- Internationalize card UI and editor for en/fr/es (#61) (96dc505…)
-- Icon-box temporal state + progress label hierarchy (#63) (5bb4650…)
 - Add custom notes and new-contributor flags to publish script (#70) (1551b1b…)
 
 ### Documentation
-- Add missing eventCodes and timezone options to README (#60) (ec120ce…)
 - Update installation instructions in README.md (#67) (5db57c1…)
 
 ### Fixed
-- Make publish script idempotent for safe re-runs (#64) (c5816a8…)
 - Add checkout and build steps to HACS validation workflow (#68) (a4f43ff…)
 - Run HACS validation on main push only, not PRs (#69) (6292274…)
+
+## 2.4.0-alpha.2 — 2026-03-25
+
+### Added
+- Icon-box temporal state + progress label hierarchy (#63) (5bb4650…)
+
+### Fixed
+- Make publish script idempotent for safe re-runs (#64) (c5816a8…)
+
+## 2.4.0-alpha.1 — 2026-03-25
+
+### Added
+- Internationalize card UI and editor for en/fr/es (#61) (96dc505…)
+
+### Documentation
+- Add missing eventCodes and timezone options to README (#60) (ec120ce…)
 
 ## 2.3.0 — 2026-03-24
 
 ### Added
-- Show preview with placeholder alerts in card picker (#53) (ab6084e…)
-- Add browser timezone option for traveling users (#55) (8316432…)
 - Add NWS event code support and filtering (#57) (d6b2eb9…)
 - Expand weather icon coverage for more event types (#58) (8894a23…)
 
 ### Fixed
-- Use NWS color-triggering keywords in placeholder alert names (861880c…)
 - Update repo links for rename to weather_alerts_card (e2a2ad0…)
 - Use old repo name in HACS link until default store updates (6b2e975…)
 - Remove HACS button until default store reflects rename (d17bfb4…)
+
+## 2.3.0-alpha.1 — 2026-03-23
+
+### Added
+- Show preview with placeholder alerts in card picker (#53) (ab6084e…)
+- Add browser timezone option for traveling users (#55) (8316432…)
+
+### Fixed
+- Use NWS color-triggering keywords in placeholder alert names (861880c…)
 
 ### Maintenance
 - Regenerate adaptive hero SVG from 2x DPR PNGs (8e97cf5…)
@@ -114,37 +150,53 @@
 
 ## 2.1.0 — 2026-03-15
 
-### Added
-- Deduplicate alerts across zones (#37) (4332648…)
+### Documentation
+- Add adaptive hero svg (54b91a2…)
+- Add adaptive hero svg generator script (68c867d…)
+
+## 2.1.0-alpha.2 — 2026-03-15
 
 ### Documentation
 - Add theme-aware hero images for README (#39) (34246fb…)
 - Expand last compact alert in hero screenshots (#40) (4749946…)
-- Add adaptive hero svg (54b91a2…)
-- Add adaptive hero svg generator script (68c867d…)
-
-### Fixed
-- Put migration notice before changelog in release notes (0ed28bd…)
 
 ### Maintenance
 - Skip release commits from changelog (ea7d32f…)
 
+## 2.1.0-alpha.1 — 2026-03-15
+
+### Added
+- Deduplicate alerts across zones (#37) (4332648…)
+
+### Fixed
+- Put migration notice before changelog in release notes (0ed28bd…)
+
 ## 2.0.0 — 2026-03-15
+
+### Fixed
+- Add version headers to changelog and fix cliff config path (#32) (58e19e1…)
+- Scope release notes to correct version range (#33) (bb30959…)
+- Add migration notice to GA release notes and clarify HACS resource path (#35) (3687b1c…)
+
+## 2.0.0-alpha.2 — 2026-03-14
+
+### Added
+- Add styled console log with card name and version at load time (#30) (c406500…)
+
+### Fixed
+- Use npx to run git-cliff in publish script (dcefd1e…)
+- Remove extra blank lines between changelog entries (#29) (4cdabe2…)
+
+## 2.0.0-alpha.1 — 2026-03-14
 
 ### Added
 - Add MeteoAlarm (Europe) adapter (#11) (6046982…)
 - Rename to "Weather Alerts Card" for multi-provider support (#25) (d302d15…)
 - Display affected area description on alert cards (#27) (89adc5e…)
-- Add styled console log with card name and version at load time (#30) (c406500…)
 
 ### Fixed
 - Remove push trigger from validate workflow to prevent duplicate runs (#23) (48fe454…)
 - Align NwsAlert type with nws_alerts integration fields (#26) (832cbee…)
-- Use npx to run git-cliff in publish script (dcefd1e…)
-- Remove extra blank lines between changelog entries (#29) (4cdabe2…)
-- Add version headers to changelog and fix cliff config path (#32) (58e19e1…)
-- Scope release notes to correct version range (#33) (bb30959…)
-- Add migration notice to GA release notes and clarify HACS resource path (#35) (3687b1c…)
 
 ### Maintenance
 - Streamline agent skills and dev workflow (#22) (f6fbc20…)
@@ -163,17 +215,23 @@
 
 ## 1.9.0 — 2026-03-09
 
+### Fixed
+- Use absolute URLs for README images so they display in HACS (#9) (a8007af…)
+
+## 1.9.0-alpha.3 — 2026-03-06
+
+### Added
+- Support ha_bom_australia integration with area_id zone filtering (#7) (36f3d30…)
+
+## 1.9.0-alpha.1 — 2026-03-06
+
 ### Added
 - Add automated screenshot utility for README images (65ffbd3…)
 - Add multi-provider adapter pattern with BoM support (#1) (#4) (320fd0f…)
-- Support ha_bom_australia integration with area_id zone filtering (#7) (36f3d30…)
 
 ### Documentation
 - Readme img udates, repo janitorial duties (412b879…)
 - Update README for official HACS procedure (126196b…)
-
-### Fixed
-- Use absolute URLs for README images so they display in HACS (#9) (a8007af…)
 
 ### Maintenance
 - CI hardening, repo hygiene, and test scaffolding (#2) (bc1a46c…)
