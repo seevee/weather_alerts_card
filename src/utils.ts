@@ -25,32 +25,32 @@ const WEATHER_ICONS: [readonly string[], string][] = [
   [['tornado'], 'mdi:weather-tornado'],
   [['tsunami'], 'mdi:tsunami'],
   [['hurricane', 'tropical', 'typhoon', 'cyclone'], 'mdi:weather-hurricane'],
-  [['thunderstorm', 't-storm'], 'mdi:weather-lightning'],
-  [['hail'], 'mdi:weather-hail'],
+  [['thunderstorm', 't-storm', 'gewitter'], 'mdi:weather-lightning'],
+  [['hail', 'hagel'], 'mdi:weather-hail'],
   // Flooding & rain
-  [['flood', 'hydrologic', 'storm surge'], 'mdi:home-flood'],
-  [['rain', 'shower', 'precipitation'], 'mdi:weather-pouring'],
+  [['flood', 'hydrologic', 'storm surge', 'hochwasser'], 'mdi:home-flood'],
+  [['rain', 'shower', 'precipitation', 'starkregen', 'dauerregen'], 'mdi:weather-pouring'],
   // Winter weather
-  [['snow', 'blizzard', 'winter'], 'mdi:weather-snowy-heavy'],
+  [['snow', 'blizzard', 'winter', 'schnee', 'schneesturm'], 'mdi:weather-snowy-heavy'],
   [['sleet'], 'mdi:weather-snowy-rainy'],
-  [['ice', 'freeze', 'frost'], 'mdi:snowflake'],
-  [['cold', 'chill'], 'mdi:thermometer-low'],
+  [['ice', 'freeze', 'frost', 'glätte', 'glatteis'], 'mdi:snowflake'],
+  [['cold', 'chill', 'kälte'], 'mdi:thermometer-low'],
   // Geologic
-  [['landslide', 'avalanche'], 'mdi:landslide'],
+  [['landslide', 'avalanche', 'lawine'], 'mdi:landslide'],
   [['volcano', 'ashfall', 'vog'], 'mdi:volcano'],
   // Airborne hazards
   [['dust', 'sand'], 'mdi:weather-dust'],
   [['smoke'], 'mdi:smoke'],
   [['air quality', 'air stagnation'], 'mdi:air-filter'],
   // Fire & heat
-  [['fire', 'red flag'], 'mdi:fire'],
-  [['heat'], 'mdi:weather-sunny-alert'],
-  [['drought'], 'mdi:water-off'],
-  [['fog'], 'mdi:weather-fog'],
-  // Wind — "cold"/"chill" must precede "wind" so "Wind Chill" gets thermometer
+  [['fire', 'red flag', 'waldbrand'], 'mdi:fire'],
+  [['heat', 'hitze'], 'mdi:weather-sunny-alert'],
+  [['drought', 'trockenheit'], 'mdi:water-off'],
+  [['fog', 'nebel'], 'mdi:weather-fog'],
+  // Wind — "cold"/"chill"/"kälte" must precede "wind" so "Wind Chill" gets thermometer
   [['sheep', 'grazier'], 'mdi:weather-windy-variant'],
   [['gale', 'squall'], 'mdi:weather-windy'],
-  [['wind'], 'mdi:weather-windy'],
+  [['wind', 'sturm', 'orkan', 'böen'], 'mdi:weather-windy'],
   // Marine & coastal
   [['small craft'], 'mdi:sail-boat'],
   [['rip current'], 'mdi:wave'],

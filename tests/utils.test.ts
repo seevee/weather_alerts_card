@@ -130,6 +130,63 @@ describe('getWeatherIcon', () => {
   it('returns hurricane icon for cyclone', () => {
     expect(getWeatherIcon('Severe Cyclone Warning')).toBe('mdi:weather-hurricane');
   });
+
+  // DWD German event names
+  it('returns lightning icon for GEWITTER (thunderstorm)', () => {
+    expect(getWeatherIcon('GEWITTER')).toBe('mdi:weather-lightning');
+  });
+
+  it('returns snowflake icon for GLÄTTE (ice/slippery)', () => {
+    expect(getWeatherIcon('GLÄTTE')).toBe('mdi:snowflake');
+  });
+
+  it('returns snowflake icon for GLATTEIS (black ice)', () => {
+    expect(getWeatherIcon('GLATTEIS')).toBe('mdi:snowflake');
+  });
+
+  it('returns wind icon for WINDBÖEN (wind gusts)', () => {
+    expect(getWeatherIcon('WINDBÖEN')).toBe('mdi:weather-windy');
+  });
+
+  it('returns wind icon for STURM (storm)', () => {
+    expect(getWeatherIcon('STURM')).toBe('mdi:weather-windy');
+  });
+
+  it('returns wind icon for ORKAN (hurricane-force wind)', () => {
+    expect(getWeatherIcon('ORKAN')).toBe('mdi:weather-windy');
+  });
+
+  it('returns fog icon for NEBEL (fog)', () => {
+    expect(getWeatherIcon('NEBEL')).toBe('mdi:weather-fog');
+  });
+
+  it('returns heat icon for HITZE (heat)', () => {
+    expect(getWeatherIcon('HITZE')).toBe('mdi:weather-sunny-alert');
+  });
+
+  it('returns snow icon for SCHNEE (snow)', () => {
+    expect(getWeatherIcon('SCHNEE')).toBe('mdi:weather-snowy-heavy');
+  });
+
+  it('returns rain icon for STARKREGEN (heavy rain)', () => {
+    expect(getWeatherIcon('STARKREGEN')).toBe('mdi:weather-pouring');
+  });
+
+  it('returns rain icon for DAUERREGEN (persistent rain)', () => {
+    expect(getWeatherIcon('DAUERREGEN')).toBe('mdi:weather-pouring');
+  });
+
+  it('returns hail icon for HAGEL (hail)', () => {
+    expect(getWeatherIcon('HAGEL')).toBe('mdi:weather-hail');
+  });
+
+  it('returns flood icon for HOCHWASSER (flood)', () => {
+    expect(getWeatherIcon('HOCHWASSER')).toBe('mdi:home-flood');
+  });
+
+  it('returns fire icon for WALDBRAND (wildfire)', () => {
+    expect(getWeatherIcon('WALDBRAND')).toBe('mdi:fire');
+  });
 });
 
 describe('getCertaintyIcon', () => {
