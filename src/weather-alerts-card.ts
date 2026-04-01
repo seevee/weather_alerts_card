@@ -218,7 +218,7 @@ export class WeatherAlertsCard extends LitElement {
       result = result.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
     }
 
-    if (this._config.hideExpired) {
+    if (this._config.hideExpired !== false) {
       const nowTs = Date.now() / 1000;
       result = result.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
     }

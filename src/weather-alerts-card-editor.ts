@@ -160,10 +160,10 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _hideExpiredChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const hide = target.checked;
-    if (hide === (this._config.hideExpired === true)) return;
+    if (hide === (this._config.hideExpired !== false)) return;
     const newConfig: WeatherAlertsCardConfig = { ...this._config };
-    if (hide) {
-      newConfig.hideExpired = true;
+    if (!hide) {
+      newConfig.hideExpired = false;
     } else {
       delete newConfig.hideExpired;
     }
@@ -479,7 +479,7 @@ export class WeatherAlertsCardEditor extends LitElement {
 
         <ha-formfield .label=${t('editor.hide_expired', lang)}>
           <ha-switch
-            .checked=${this._config.hideExpired === true}
+            .checked=${this._config.hideExpired !== false}
             @change=${this._hideExpiredChanged}
           ></ha-switch>
         </ha-formfield>

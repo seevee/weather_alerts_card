@@ -55,11 +55,21 @@ interface WeatherAlertsCardConfig {
   entity: string;              // required — e.g. "sensor.nws_alerts_alerts"
   title?: string;              // optional card header
   zones?: string[];            // optional zone filter — e.g. ["COC059", "COZ039"]
-  animations?: boolean;        // optional — undefined: respects prefers-reduced-motion; true: always animate; false: never animate
-  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' — undefined: auto-detect from entity attributes
+  eventCodes?: string[];       // NWS event codes to include — empty/omitted = all
+  excludeEventCodes?: string[]; // NWS event codes to exclude — empty/omitted = none excluded
+  minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
   sortOrder?: 'default' | 'onset' | 'severity';
+  animations?: boolean;        // undefined: respects prefers-reduced-motion; true/false: force
   layout?: 'default' | 'compact';
-  colorTheme?: 'severity' | 'nws';
+  fontSize?: 'small' | 'default' | 'large' | 'x-large';
+  colorTheme?: 'severity' | 'nws' | 'meteoalarm';
+  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' — undefined: auto-detect
+  deduplicate?: boolean;       // undefined/true: dedup on; false: off
+  deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all
+  hideExpired?: boolean;       // undefined/true: hide expired alerts; false: show them (dimmed)
+  hideNoAlerts?: boolean;      // undefined/false: show "No active alerts" banner; true: hide it
+  showSourceLink?: boolean;    // undefined/true: show "Open Source" link; false: hide (kiosk mode)
+  timezone?: 'server' | 'browser'; // undefined/'server': HA server tz; 'browser': client tz
 }
 ```
 

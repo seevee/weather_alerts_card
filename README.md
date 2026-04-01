@@ -61,6 +61,7 @@ Then click the Download button, and click Reload when prompted.
 | `deduplicate` | `true` | Collapse matching alerts across zones |
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion` |
 | `showSourceLink` | `true` | Show "Open Source" link (`false` for kiosk mode) |
+| `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |
 | `fontSize` | `'default'` | `'small'`, `'default'`, `'large'`, `'x-large'` — scales text and icons |
 | `layout` | `'default'` | `'default'` or `'compact'` |
