@@ -29,7 +29,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/nws.ts` | NWS adapter: parses `attributes.Alerts` → `WeatherAlert[]`. |
 | `src/adapters/bom.ts` | BoM adapter: parses `attributes.warnings` → `WeatherAlert[]`. Filters cancelled warnings, maps severity from `type` + `warning_group_type`. |
 | `src/adapters/meteoalarm.ts` | MeteoAlarm adapter: parses flat `binary_sensor` attributes → single-element `WeatherAlert[]`. Maps `awareness_level` to severity. |
-| `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting. Operates on `WeatherAlert`. |
+| `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
 | `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + terser → single `dist/weather-alerts-card.js`. |
 
@@ -66,6 +66,7 @@ interface WeatherAlertsCardConfig {
   provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' — undefined: auto-detect
   deduplicate?: boolean;       // undefined/true: dedup on; false: off
   deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all
+  reformatText?: boolean;      // undefined/true: strip hard line wraps from alert text; false: preserve raw
   hideExpired?: boolean;       // undefined/true: hide expired alerts; false: show them (dimmed)
   hideNoAlerts?: boolean;      // undefined/false: show "No active alerts" banner; true: hide it
   showSourceLink?: boolean;    // undefined/true: show "Open Source" link; false: hide (kiosk mode)

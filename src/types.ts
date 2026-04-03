@@ -41,6 +41,7 @@ export interface WeatherAlertsCardConfig {
   hideNoAlerts?: boolean;    // undefined/false: show "No active alerts" banner; true: hide it
   showSourceLink?: boolean;  // undefined/true: show "Open Source" link; false: hide link (kiosk mode)
   timezone?: 'server' | 'browser';  // undefined/'server': HA server tz; 'browser': client tz
+  reformatText?: boolean;    // undefined/true: strip hard line wraps from alert text; false: preserve raw formatting
   _preview?: boolean;        // transient editor-only key — triggers preview mode in card
   visibility?: Record<string, unknown>[];  // HA-managed visibility conditions (set via dashboard editor)
 }

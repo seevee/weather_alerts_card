@@ -365,6 +365,19 @@ export function getDisplayHeadline(alert: WeatherAlert, smart = true): string {
   return raw;
 }
 
+/**
+ * Strip hard line wraps (69-char teletype breaks) from NWS-style alert text
+ * while preserving paragraph breaks (double newlines) and bullet structure.
+ */
+export function reflowAlertText(text: string): string {
+  if (!text) return '';
+  return text
+    .split(/\n{2,}/)
+    .map(para => para.replace(/\n/g, ' ').replace(/ {2,}/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 export function normalizeSeverity(severity: string | undefined): string {
   const s = (severity || '').toLowerCase().replace(/\s/g, '');
   if (['extreme', 'severe', 'moderate', 'minor'].includes(s)) return s;

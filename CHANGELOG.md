@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Add `reformatText` option to strip NWS 69-char hard line wraps from alert descriptions and instructions, producing readable flowing paragraphs while preserving paragraph breaks and bullet structure (default: on)
+
 ## 2.8.1 — 2026-04-02
 
 ### Fixed

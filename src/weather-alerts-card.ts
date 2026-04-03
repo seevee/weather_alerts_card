@@ -17,6 +17,7 @@ import {
   getMeteoAlarmColor,
   sanitizeAlertHtml,
   getDisplayHeadline,
+  reflowAlertText,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS } from './adapters';
 import { t } from './localize';
@@ -543,8 +544,13 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderDetailsContent(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
-    const desc = this._normalizeText(alert.description);
-    const instr = this._normalizeText(alert.instruction);
+    const reformat = this._config?.reformatText !== false;
+    let desc = this._normalizeText(alert.description);
+    let instr = this._normalizeText(alert.instruction);
+    if (reformat) {
+      desc = reflowAlertText(desc);
+      instr = reflowAlertText(instr);
+    }
 
     const lang = this._lang;
 
