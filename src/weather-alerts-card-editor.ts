@@ -214,6 +214,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     return conditions.length > 0 ? conditions : undefined;
   }
 
+  private _reformatTextChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const reformat = target.checked;
+    if (reformat === (this._config.reformatText !== false)) return;
+    const newConfig = { ...this._config };
+    if (reformat) {
+      delete newConfig.reformatText;
+    } else {
+      newConfig.reformatText = false;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _layoutChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const compact = target.checked;
@@ -489,6 +502,13 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-switch
             .checked=${this._config.hideNoAlerts === true}
             @change=${this._hideNoAlertsChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        <ha-formfield .label=${t('editor.reformat_text', lang)}>
+          <ha-switch
+            .checked=${this._config.reformatText !== false}
+            @change=${this._reformatTextChanged}
           ></ha-switch>
         </ha-formfield>
 

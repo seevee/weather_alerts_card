@@ -11,6 +11,7 @@ import {
   formatRelativeTime,
   parseTimestamp,
   getDisplayHeadline,
+  reflowAlertText,
 } from '../src/utils';
 import type { WeatherAlert } from '../src/types';
 
@@ -578,6 +579,61 @@ describe('getDisplayHeadline', () => {
       event: 'Flood Warning for Bokhara River',
       headline: 'Flood Warning',
     }), false)).toBe('Flood Warning');
+  });
+});
+
+describe('reflowAlertText', () => {
+  it('joins single newlines within a paragraph', () => {
+    const input = 'The National Weather Service in Denver has issued a\nRed Flag Warning for wind and low relative humidity.';
+    expect(reflowAlertText(input)).toBe(
+      'The National Weather Service in Denver has issued a Red Flag Warning for wind and low relative humidity.',
+    );
+  });
+
+  it('preserves paragraph breaks (double newlines)', () => {
+    const input = 'First paragraph line one\nline two.\n\nSecond paragraph line one\nline two.';
+    expect(reflowAlertText(input)).toBe(
+      'First paragraph line one line two.\n\nSecond paragraph line one line two.',
+    );
+  });
+
+  it('preserves NWS bullet structure separated by blank lines', () => {
+    const input = '* AFFECTED AREA...Fire Weather Zones 238, 239,\n240, 241, 242.\n\n* TIMING...From 8 AM to 7 PM MDT Friday.';
+    expect(reflowAlertText(input)).toBe(
+      '* AFFECTED AREA...Fire Weather Zones 238, 239, 240, 241, 242.\n\n* TIMING...From 8 AM to 7 PM MDT Friday.',
+    );
+  });
+
+  it('collapses multiple spaces after join', () => {
+    const input = 'word   one\n  word two';
+    expect(reflowAlertText(input)).toBe('word one word two');
+  });
+
+  it('returns empty string for empty/whitespace input', () => {
+    expect(reflowAlertText('')).toBe('');
+    expect(reflowAlertText('   ')).toBe('');
+  });
+
+  it('leaves already-clean text unchanged', () => {
+    const input = 'A clean single-line paragraph.\n\nAnother paragraph.';
+    expect(reflowAlertText(input)).toBe(input);
+  });
+
+  it('preserves DWD bullet lists with · markers and indentation', () => {
+    const input = 'Hinweis auf:\n · mögliche Frostschäden\n\nHandlungsempfehlungen:\n · ggf. Frostschutzmaßnahmen ergreifen';
+    expect(reflowAlertText(input)).toBe(
+      'Hinweis auf:\n · mögliche Frostschäden\n\nHandlungsempfehlungen:\n · ggf. Frostschutzmaßnahmen ergreifen',
+    );
+  });
+
+  it('preserves lines after a colon-terminated header', () => {
+    const input = 'Section header:\nsome detail on next line';
+    expect(reflowAlertText(input)).toBe('Section header:\nsome detail on next line');
+  });
+
+  it('preserves dash bullet lists', () => {
+    const input = 'Actions:\n- Stay indoors\n- Close windows';
+    expect(reflowAlertText(input)).toBe('Actions:\n- Stay indoors\n- Close windows');
   });
 });
 

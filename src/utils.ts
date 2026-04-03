@@ -365,6 +365,40 @@ export function getDisplayHeadline(alert: WeatherAlert, smart = true): string {
   return raw;
 }
 
+/**
+ * Strip hard line wraps (69-char teletype breaks) from NWS-style alert text
+ * while preserving paragraph breaks (double newlines) and structured content
+ * (bullet lists with · • - markers, section headers ending with ':').
+ *
+ * NWS uses '* HEADING...' as section bullets with continuation lines — these
+ * are joined. Short-form bullets (· • -) used by DWD/others are kept separate.
+ */
+export function reflowAlertText(text: string): string {
+  if (!text) return '';
+  // Short bullet: line starts with optional whitespace then · • or - (not * which NWS uses for headings)
+  const shortBullet = /^\s*[·•\-]\s/;
+  return text
+    .split(/\n{2,}/)
+    .map(para => {
+      const lines = para.split('\n');
+      const merged: string[] = [];
+      for (const line of lines) {
+        if (merged.length === 0) {
+          merged.push(line.trimStart());
+        } else if (shortBullet.test(line) || merged[merged.length - 1].trimEnd().endsWith(':')) {
+          // Current line is a bullet item, or previous line is a header — keep separate
+          merged.push(line);
+        } else {
+          // Join with previous line (strip hard wrap)
+          merged[merged.length - 1] += ' ' + line.trimStart();
+        }
+      }
+      return merged.map(l => l.replace(/ {2,}/g, ' ')).map(l => l.trimEnd()).filter(Boolean).join('\n');
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 export function normalizeSeverity(severity: string | undefined): string {
   const s = (severity || '').toLowerCase().replace(/\s/g, '');
   if (['extreme', 'severe', 'moderate', 'minor'].includes(s)) return s;
