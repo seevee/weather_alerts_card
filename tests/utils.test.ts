@@ -618,5 +618,22 @@ describe('reflowAlertText', () => {
     const input = 'A clean single-line paragraph.\n\nAnother paragraph.';
     expect(reflowAlertText(input)).toBe(input);
   });
+
+  it('preserves DWD bullet lists with · markers', () => {
+    const input = 'Hinweis auf:\n · mögliche Frostschäden\n\nHandlungsempfehlungen:\n · ggf. Frostschutzmaßnahmen ergreifen';
+    expect(reflowAlertText(input)).toBe(
+      'Hinweis auf:\n· mögliche Frostschäden\n\nHandlungsempfehlungen:\n· ggf. Frostschutzmaßnahmen ergreifen',
+    );
+  });
+
+  it('preserves lines after a colon-terminated header', () => {
+    const input = 'Section header:\nsome detail on next line';
+    expect(reflowAlertText(input)).toBe('Section header:\nsome detail on next line');
+  });
+
+  it('preserves dash bullet lists', () => {
+    const input = 'Actions:\n- Stay indoors\n- Close windows';
+    expect(reflowAlertText(input)).toBe('Actions:\n- Stay indoors\n- Close windows');
+  });
 });
 
