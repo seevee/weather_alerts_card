@@ -619,10 +619,10 @@ describe('reflowAlertText', () => {
     expect(reflowAlertText(input)).toBe(input);
   });
 
-  it('preserves DWD bullet lists with · markers', () => {
+  it('preserves DWD bullet lists with · markers and indentation', () => {
     const input = 'Hinweis auf:\n · mögliche Frostschäden\n\nHandlungsempfehlungen:\n · ggf. Frostschutzmaßnahmen ergreifen';
     expect(reflowAlertText(input)).toBe(
-      'Hinweis auf:\n· mögliche Frostschäden\n\nHandlungsempfehlungen:\n· ggf. Frostschutzmaßnahmen ergreifen',
+      'Hinweis auf:\n · mögliche Frostschäden\n\nHandlungsempfehlungen:\n · ggf. Frostschutzmaßnahmen ergreifen',
     );
   });
 

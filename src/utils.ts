@@ -383,18 +383,17 @@ export function reflowAlertText(text: string): string {
       const lines = para.split('\n');
       const merged: string[] = [];
       for (const line of lines) {
-        const trimmed = line.trimStart();
         if (merged.length === 0) {
-          merged.push(trimmed);
-        } else if (shortBullet.test(trimmed) || merged[merged.length - 1].endsWith(':')) {
+          merged.push(line.trimStart());
+        } else if (shortBullet.test(line) || merged[merged.length - 1].trimEnd().endsWith(':')) {
           // Current line is a bullet item, or previous line is a header — keep separate
-          merged.push(trimmed);
+          merged.push(line);
         } else {
           // Join with previous line (strip hard wrap)
-          merged[merged.length - 1] += ' ' + trimmed;
+          merged[merged.length - 1] += ' ' + line.trimStart();
         }
       }
-      return merged.map(l => l.replace(/ {2,}/g, ' ').trim()).filter(Boolean).join('\n');
+      return merged.map(l => l.replace(/ {2,}/g, ' ')).map(l => l.trimEnd()).filter(Boolean).join('\n');
     })
     .filter(Boolean)
     .join('\n\n');
