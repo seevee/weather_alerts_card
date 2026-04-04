@@ -5,6 +5,11 @@
 ### Added
 - Add `reformatText` option to strip NWS 69-char hard line wraps from alert descriptions and instructions, producing readable flowing paragraphs while preserving paragraph breaks and bullet structure (default: on)
 
+### Changed
+- Make `eventCodes` / `excludeEventCodes` editor helper text and documentation provider-agnostic with NWS and DWD examples
+- Remove 5 dead i18n keys (`card.active`, `card.in_prep`, `progress.expires_in`, `progress.starts_in`, `progress.expired_ago`) from all 5 languages
+- Update AGENTS.md to reflect all 5 providers, correct build size, complete architecture table, and fix release artifact listing
+
 ## 2.8.1 — 2026-04-02
 
 ### Fixed

@@ -54,8 +54,8 @@ Then click the Download button, and click Reload when prompted.
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'` |
-| `eventCodes` | — | NWS event codes to include, e.g. `['SVR', 'TOR']` |
-| `excludeEventCodes` | — | NWS event codes to exclude, e.g. `['SCY']` |
+| `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
+| `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `timezone` | `'server'` | `'server'` or `'browser'` (client's local time) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that repeat the event name |
 | `deduplicate` | `true` | Collapse matching alerts across zones |
