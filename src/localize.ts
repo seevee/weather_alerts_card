@@ -108,6 +108,14 @@ const en: TranslationMap = {
   'editor.show_preview': 'Show sample data',
   'editor.preview_hint': 'Preview card layout with placeholder alerts',
   'editor.entity_warning': 'Selected entity does not appear to contain weather alert data.',
+
+  // Editor section labels
+  'editor.section_entity': 'Entity & Provider',
+  'editor.section_filtering': 'Filtering',
+  'editor.section_appearance': 'Appearance',
+  'editor.section_detail_panel': 'Detail Panel',
+  'editor.section_behavior': 'Behavior',
+  'editor.section_tools': 'Tools',
 };
 
 const fr: TranslationMap = {
@@ -218,6 +226,14 @@ const fr: TranslationMap = {
   'editor.show_preview': 'Afficher les donnees exemples',
   'editor.preview_hint': 'Apercu de la disposition avec des alertes fictives',
   'editor.entity_warning': 'L\'entite selectionnee ne semble pas contenir de donnees d\'alerte meteo.',
+
+  // Editor section labels
+  'editor.section_entity': 'Entite et fournisseur',
+  'editor.section_filtering': 'Filtrage',
+  'editor.section_appearance': 'Apparence',
+  'editor.section_detail_panel': 'Panneau de details',
+  'editor.section_behavior': 'Comportement',
+  'editor.section_tools': 'Outils',
 };
 
 const es: TranslationMap = {
@@ -328,6 +344,14 @@ const es: TranslationMap = {
   'editor.show_preview': 'Mostrar datos de ejemplo',
   'editor.preview_hint': 'Vista previa con alertas de ejemplo',
   'editor.entity_warning': 'La entidad seleccionada no parece contener datos de alerta meteorologica.',
+
+  // Editor section labels
+  'editor.section_entity': 'Entidad y proveedor',
+  'editor.section_filtering': 'Filtrado',
+  'editor.section_appearance': 'Apariencia',
+  'editor.section_detail_panel': 'Panel de detalles',
+  'editor.section_behavior': 'Comportamiento',
+  'editor.section_tools': 'Herramientas',
 };
 
 const it: TranslationMap = {
@@ -438,6 +462,14 @@ const it: TranslationMap = {
   'editor.show_preview': 'Mostra dati di esempio',
   'editor.preview_hint': 'Anteprima del layout con allerte di esempio',
   'editor.entity_warning': 'L\'entità selezionata non sembra contenere dati di allerta meteo.',
+
+  // Editor section labels
+  'editor.section_entity': 'Entità e fornitore',
+  'editor.section_filtering': 'Filtraggio',
+  'editor.section_appearance': 'Aspetto',
+  'editor.section_detail_panel': 'Pannello dettagli',
+  'editor.section_behavior': 'Comportamento',
+  'editor.section_tools': 'Strumenti',
 };
 
 const de: TranslationMap = {
@@ -548,6 +580,14 @@ const de: TranslationMap = {
   'editor.show_preview': 'Beispieldaten anzeigen',
   'editor.preview_hint': 'Kartenlayout mit Beispielwarnungen anzeigen',
   'editor.entity_warning': 'Die ausgewählte Entität scheint keine Wetterwarnungsdaten zu enthalten.',
+
+  // Editor section labels
+  'editor.section_entity': 'Entität und Anbieter',
+  'editor.section_filtering': 'Filterung',
+  'editor.section_appearance': 'Darstellung',
+  'editor.section_detail_panel': 'Detailbereich',
+  'editor.section_behavior': 'Verhalten',
+  'editor.section_tools': 'Werkzeuge',
 };
 
 const translations: Record<string, TranslationMap> = { en, fr, es, it, de };

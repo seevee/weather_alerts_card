@@ -410,6 +410,9 @@ export class WeatherAlertsCardEditor extends LitElement {
 
     return html`
       <div class="editor">
+        <!-- Entity & Provider -->
+        <div class="section-label">${t('editor.section_entity', lang)}</div>
+
         <ha-selector
           .hass=${this.hass}
           .selector=${{ entity: { include_entities: this._getMatchingEntityIds() } }}
@@ -439,6 +442,9 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
         </ha-select>
 
+        <!-- Filtering -->
+        <div class="section-label">${t('editor.section_filtering', lang)}</div>
+
         <ha-textfield
           .label=${t('editor.zones', lang)}
           .value=${zonesStr}
@@ -464,14 +470,26 @@ export class WeatherAlertsCardEditor extends LitElement {
         ></ha-textfield>
 
         <ha-select
-          .label=${t('editor.sort_order', lang)}
-          .value=${this._config.sortOrder || 'default'}
-          @selected=${this._sortOrderChanged}
+          .label=${t('editor.min_severity', lang)}
+          .value=${this._config.minSeverity || 'all'}
+          @selected=${this._minSeverityChanged}
         >
-          <ha-dropdown-item value="default">${t('editor.sort_default', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="onset">${t('editor.sort_onset', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="severity">${t('editor.sort_severity', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="all">${t('editor.severity_all', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="minor">${t('editor.severity_minor', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="moderate">${t('editor.severity_moderate', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="severe">${t('editor.severity_severe', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="extreme">${t('editor.severity_extreme', lang)}</ha-dropdown-item>
         </ha-select>
+
+        <!-- Appearance -->
+        <div class="section-label">${t('editor.section_appearance', lang)}</div>
+
+        <ha-formfield .label=${t('editor.compact', lang)}>
+          <ha-switch
+            .checked=${this._config.layout === 'compact'}
+            @change=${this._layoutChanged}
+          ></ha-switch>
+        </ha-formfield>
 
         <ha-select
           .label=${t('editor.color_theme', lang)}
@@ -481,15 +499,6 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="severity">${t('editor.color_severity', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="nws">${t('editor.color_nws', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoalarm">${t('editor.color_meteoalarm', lang)}</ha-dropdown-item>
-        </ha-select>
-
-        <ha-select
-          .label=${t('editor.timezone', lang)}
-          .value=${this._config.timezone || 'server'}
-          @selected=${this._timezoneChanged}
-        >
-          <ha-dropdown-item value="server">${t('editor.tz_server', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="browser">${t('editor.tz_browser', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-select
@@ -503,18 +512,6 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="x-large">${t('editor.font_size_x_large', lang)}</ha-dropdown-item>
         </ha-select>
 
-        <ha-select
-          .label=${t('editor.min_severity', lang)}
-          .value=${this._config.minSeverity || 'all'}
-          @selected=${this._minSeverityChanged}
-        >
-          <ha-dropdown-item value="all">${t('editor.severity_all', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="minor">${t('editor.severity_minor', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="moderate">${t('editor.severity_moderate', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="severe">${t('editor.severity_severe', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="extreme">${t('editor.severity_extreme', lang)}</ha-dropdown-item>
-        </ha-select>
-
         <ha-formfield .label=${t('editor.animations', lang)}>
           <ha-switch
             .checked=${this._config.animations !== false}
@@ -522,19 +519,15 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
-        <ha-formfield .label=${t('editor.deduplicate', lang)}>
+        <ha-formfield .label=${t('editor.reformat_text', lang)}>
           <ha-switch
-            .checked=${this._config.deduplicate !== false}
-            @change=${this._deduplicateChanged}
+            .checked=${this._config.reformatText !== false}
+            @change=${this._reformatTextChanged}
           ></ha-switch>
         </ha-formfield>
 
-        <ha-formfield .label=${t('editor.deduplicate_headlines', lang)}>
-          <ha-switch
-            .checked=${(this._config.deduplicateHeadlines ?? this._config.headline) !== false}
-            @change=${this._deduplicateHeadlinesChanged}
-          ></ha-switch>
-        </ha-formfield>
+        <!-- Detail Panel -->
+        <div class="section-label">${t('editor.section_detail_panel', lang)}</div>
 
         <ha-formfield .label=${t('editor.show_details', lang)}>
           <ha-switch
@@ -575,6 +568,42 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
+        <!-- Behavior -->
+        <div class="section-label">${t('editor.section_behavior', lang)}</div>
+
+        <ha-select
+          .label=${t('editor.sort_order', lang)}
+          .value=${this._config.sortOrder || 'default'}
+          @selected=${this._sortOrderChanged}
+        >
+          <ha-dropdown-item value="default">${t('editor.sort_default', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="onset">${t('editor.sort_onset', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="severity">${t('editor.sort_severity', lang)}</ha-dropdown-item>
+        </ha-select>
+
+        <ha-select
+          .label=${t('editor.timezone', lang)}
+          .value=${this._config.timezone || 'server'}
+          @selected=${this._timezoneChanged}
+        >
+          <ha-dropdown-item value="server">${t('editor.tz_server', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="browser">${t('editor.tz_browser', lang)}</ha-dropdown-item>
+        </ha-select>
+
+        <ha-formfield .label=${t('editor.deduplicate', lang)}>
+          <ha-switch
+            .checked=${this._config.deduplicate !== false}
+            @change=${this._deduplicateChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        <ha-formfield .label=${t('editor.deduplicate_headlines', lang)}>
+          <ha-switch
+            .checked=${(this._config.deduplicateHeadlines ?? this._config.headline) !== false}
+            @change=${this._deduplicateHeadlinesChanged}
+          ></ha-switch>
+        </ha-formfield>
+
         <ha-formfield .label=${t('editor.hide_expired', lang)}>
           <ha-switch
             .checked=${this._config.hideExpired !== false}
@@ -589,19 +618,8 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
-        <ha-formfield .label=${t('editor.reformat_text', lang)}>
-          <ha-switch
-            .checked=${this._config.reformatText !== false}
-            @change=${this._reformatTextChanged}
-          ></ha-switch>
-        </ha-formfield>
-
-        <ha-formfield .label=${t('editor.compact', lang)}>
-          <ha-switch
-            .checked=${this._config.layout === 'compact'}
-            @change=${this._layoutChanged}
-          ></ha-switch>
-        </ha-formfield>
+        <!-- Tools -->
+        <div class="section-label">${t('editor.section_tools', lang)}</div>
 
         <div class="preview-tools">
           <ha-formfield .label=${t('editor.show_preview', lang)}>
@@ -622,6 +640,16 @@ export class WeatherAlertsCardEditor extends LitElement {
       flex-direction: column;
       gap: 16px;
       padding: 16px 0;
+    }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color);
+      padding-bottom: 4px;
+      margin-top: 8px;
     }
     .preview-tools {
       border-top: 1px solid var(--divider-color);
