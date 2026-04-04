@@ -62,7 +62,7 @@ export const cardStyles = css`
     border: 1px solid var(--divider-color);
     box-shadow: var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1));
     overflow: hidden;
-    transition: all 0.2s ease-in-out;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   }
 
   .alert-card:last-child {
@@ -507,15 +507,6 @@ export const cardStyles = css`
     left: 0;
     background: rgba(var(--color-rgb), 0.8);
     animation: ongoing-pulse 5s infinite;
-  }
-
-  /* --- SUPPRESS TRANSITIONS (editor state restore) --- */
-  .suppress-transitions .alert-card,
-  .suppress-transitions .alert-card *,
-  .suppress-transitions .alert-card::before,
-  .suppress-transitions .alert-card::after {
-    transition: none !important;
-    animation: none !important;
   }
 
   /* --- NO ANIMATIONS --- */
