@@ -124,6 +124,9 @@ function getPreviewAlerts(): WeatherAlert[] {
 export class WeatherAlertsCard extends LitElement {
   static styles = cardStyles;
 
+  /** Editor-preview expanded state, keyed by entity ID. Survives element destruction/recreation. */
+  private static _editorExpandedState: Map<string, Map<string, boolean>> = new Map();
+
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
@@ -140,6 +143,9 @@ export class WeatherAlertsCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this._motionQuery.removeEventListener('change', this._onMotionChange);
+    if (this._config?.entity) {
+      WeatherAlertsCard._editorExpandedState.set(this._config.entity, this._expandedAlerts);
+    }
   }
 
   public setConfig(config: WeatherAlertsCardConfig): void {
@@ -149,6 +155,10 @@ export class WeatherAlertsCard extends LitElement {
     const { _preview, ...rest } = config;
     this._config = rest as WeatherAlertsCardConfig;
     this._forcePreview = !!_preview;
+    const saved = WeatherAlertsCard._editorExpandedState.get(config.entity);
+    if (saved) {
+      this._expandedAlerts = saved;
+    }
   }
 
   public getCardSize(): number {
@@ -286,6 +296,9 @@ export class WeatherAlertsCard extends LitElement {
     const next = new Map(this._expandedAlerts);
     next.set(alertId, !next.get(alertId));
     this._expandedAlerts = next;
+    if (this._config?.entity) {
+      WeatherAlertsCard._editorExpandedState.set(this._config.entity, next);
+    }
   }
 
   private _sourceLinkLabel(alert: WeatherAlert): string {

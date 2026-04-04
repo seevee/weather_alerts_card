@@ -62,7 +62,7 @@ export const cardStyles = css`
     border: 1px solid var(--divider-color);
     box-shadow: var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1));
     overflow: hidden;
-    transition: all 0.2s ease-in-out;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   }
 
   .alert-card:last-child {
