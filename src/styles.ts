@@ -509,6 +509,15 @@ export const cardStyles = css`
     animation: ongoing-pulse 5s infinite;
   }
 
+  /* --- SUPPRESS TRANSITIONS (editor state restore) --- */
+  .suppress-transitions .alert-card,
+  .suppress-transitions .alert-card *,
+  .suppress-transitions .alert-card::before,
+  .suppress-transitions .alert-card::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
   /* --- NO ANIMATIONS --- */
   .no-animations .alert-card {
     animation: none !important;

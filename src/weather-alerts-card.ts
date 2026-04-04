@@ -131,6 +131,7 @@ export class WeatherAlertsCard extends LitElement {
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
   @state() private _forcePreview = false;
+  private _suppressTransitions = false;
 
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
@@ -158,6 +159,14 @@ export class WeatherAlertsCard extends LitElement {
     const saved = WeatherAlertsCard._editorExpandedState.get(config.entity);
     if (saved) {
       this._expandedAlerts = saved;
+      this._suppressTransitions = true;
+    }
+  }
+
+  protected updated(): void {
+    if (this._suppressTransitions) {
+      this._suppressTransitions = false;
+      this.requestUpdate();
     }
   }
 
@@ -341,10 +350,11 @@ export class WeatherAlertsCard extends LitElement {
     this.style.display = '';
 
     const animClass = this._animationsEnabled ? '' : 'no-animations';
+    const suppressClass = this._suppressTransitions ? 'suppress-transitions' : '';
     const layoutClass = this._isCompact ? 'compact' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" style=${this._scaleStyle}>
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${suppressClass} ${layoutClass}" style=${this._scaleStyle}>
         ${alerts.length === 0
         ? this._renderNoAlerts()
         : alerts.map(alert => this._renderAlert(alert))}
@@ -355,10 +365,11 @@ export class WeatherAlertsCard extends LitElement {
   private _renderPreview(): TemplateResult {
     const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true });
     const animClass = this._animationsEnabled ? '' : 'no-animations';
+    const suppressClass = this._suppressTransitions ? 'suppress-transitions' : '';
     const layoutClass = this._isCompact ? 'compact' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" style=${this._scaleStyle}>
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${suppressClass} ${layoutClass}" style=${this._scaleStyle}>
         <div class="preview-label">${t('card.preview', this._lang)}</div>
         ${alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
