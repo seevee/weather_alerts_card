@@ -4,12 +4,12 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), and MeteoAlarm (EUMETNET, Europe). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
+A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), and PirateWeather. Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
 
 ## Build Commands
 
 ```bash
-npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~31KB minified)
+npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~117KB minified)
 npm run watch     # Rollup in watch mode
 npm run lint      # TypeScript type-check (tsc --noEmit)
 npm run test      # Vitest unit tests (jsdom environment)
@@ -29,6 +29,9 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/nws.ts` | NWS adapter: parses `attributes.Alerts` → `WeatherAlert[]`. |
 | `src/adapters/bom.ts` | BoM adapter: parses `attributes.warnings` → `WeatherAlert[]`. Filters cancelled warnings, maps severity from `type` + `warning_group_type`. |
 | `src/adapters/meteoalarm.ts` | MeteoAlarm adapter: parses flat `binary_sensor` attributes → single-element `WeatherAlert[]`. Maps `awareness_level` to severity. |
+| `src/adapters/dwd.ts` | DWD adapter: parses `dwd_weather_warnings` sensor attributes → `WeatherAlert[]`. Detects via `warning_count` + `region_name`. |
+| `src/adapters/pirateweather.ts` | PirateWeather adapter: parses Pirate Weather integration attributes → `WeatherAlert[]`. Detects via attribution string. |
+| `src/localize.ts` | i18n system with 5 languages (en, fr, es, it, de). Exports `t(key, lang, params?)`. |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
 | `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + terser → single `dist/weather-alerts-card.js`. |
@@ -36,7 +39,7 @@ Always run `npm run lint` and `npm run test` before committing.
 ## Key Patterns
 
 - The card uses an **adapter pattern** to support multiple alert providers. Each adapter converts raw entity attributes into a normalized `WeatherAlert[]` array.
-- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'`) or auto-detected from entity attributes.
+- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'`) or auto-detected from entity attributes.
 - **NWS adapter**: reads `attributes.Alerts` array (NWS Alerts integration v6.1+). Zones extracted from `AffectedZones` URLs and `Geocode.UGC`.
 - **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology or ha_bom_australia integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent). Maps `area_id` to `zones` for zone-based filtering.
 - **MeteoAlarm adapter**: reads flat attributes from a `binary_sensor` entity (MeteoAlarm integration). Maps `awareness_level` (semicolon-delimited "level; color; label") to severity. Falls back to CAP `severity` attribute. Returns a single alert per entity (upstream library limitation). CAP fields (`certainty`, `urgency`, `description`, `instruction`) are passed through directly.
@@ -55,15 +58,15 @@ interface WeatherAlertsCardConfig {
   entity: string;              // required — e.g. "sensor.nws_alerts_alerts"
   title?: string;              // optional card header
   zones?: string[];            // optional zone filter — e.g. ["COC059", "COZ039"]
-  eventCodes?: string[];       // NWS event codes to include — empty/omitted = all
-  excludeEventCodes?: string[]; // NWS event codes to exclude — empty/omitted = none excluded
+  eventCodes?: string[];       // event codes to include (provider-specific) — empty/omitted = all
+  excludeEventCodes?: string[]; // event codes to exclude (provider-specific) — empty/omitted = none excluded
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;        // undefined: respects prefers-reduced-motion; true/false: force
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   colorTheme?: 'severity' | 'nws' | 'meteoalarm';
-  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' — undefined: auto-detect
+  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' — undefined: auto-detect
   deduplicate?: boolean;       // undefined/true: dedup on; false: off
   deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all
   reformatText?: boolean;      // undefined/true: strip hard line wraps from alert text; false: preserve raw
@@ -166,7 +169,7 @@ All agent skills are defined in `.claude/commands/`. When modifying a skill, als
 ## HACS Distribution
 
 - `hacs.json` — HACS manifest (name, filename).
-- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` and `dist/weather-alerts-card.js` (backwards-compatible copy) to the release.
+- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` and `dist/nws-alerts-card.js` (backwards-compatible copy) to the release.
 - To release, use the `/release` skill or follow its steps manually:
   1. Create `release/vX.Y.Z` branch from `main`.
   2. Update `CHANGELOG.md`, bump version in `package.json`, run `npm run build`.

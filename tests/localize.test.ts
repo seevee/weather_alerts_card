@@ -147,12 +147,12 @@ describe('t()', () => {
     // Access translations indirectly through t()
     const enKeys = [
       'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
-      'card.open_source', 'card.active', 'card.in_prep', 'card.zones_count',
+      'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
       'detail.description', 'detail.instructions',
       'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.expires_in', 'progress.starts_in', 'progress.tbd', 'progress.na',
+      'progress.tbd', 'progress.na',
       'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
       'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
       'editor.entity', 'editor.title', 'editor.provider', 'editor.provider_auto',
@@ -185,12 +185,12 @@ describe('t()', () => {
   it('all en keys exist in es', () => {
     const enKeys = [
       'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
-      'card.open_source', 'card.active', 'card.in_prep', 'card.zones_count',
+      'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
       'detail.description', 'detail.instructions',
       'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.expires_in', 'progress.starts_in', 'progress.tbd', 'progress.na',
+      'progress.tbd', 'progress.na',
       'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
       'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
       'editor.entity', 'editor.title', 'editor.provider', 'editor.provider_auto',
@@ -219,12 +219,12 @@ describe('t()', () => {
   it('all en keys exist in it', () => {
     const enKeys = [
       'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
-      'card.open_source', 'card.active', 'card.in_prep', 'card.zones_count',
+      'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
       'detail.description', 'detail.instructions',
       'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.expires_in', 'progress.starts_in', 'progress.tbd', 'progress.na',
+      'progress.tbd', 'progress.na',
       'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
       'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
       'editor.entity', 'editor.title', 'editor.provider', 'editor.provider_auto',
@@ -253,12 +253,12 @@ describe('t()', () => {
   it('all en keys exist in de', () => {
     const enKeys = [
       'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
-      'card.open_source', 'card.active', 'card.in_prep', 'card.zones_count',
+      'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
       'detail.description', 'detail.instructions',
       'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.expires_in', 'progress.starts_in', 'progress.tbd', 'progress.na',
+      'progress.tbd', 'progress.na',
       'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
       'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
       'editor.entity', 'editor.title', 'editor.provider', 'editor.provider_auto',
