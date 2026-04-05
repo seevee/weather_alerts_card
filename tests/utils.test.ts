@@ -635,5 +635,27 @@ describe('reflowAlertText', () => {
     const input = 'Actions:\n- Stay indoors\n- Close windows';
     expect(reflowAlertText(input)).toBe('Actions:\n- Stay indoors\n- Close windows');
   });
+
+  it('preserves NWS period forecast lines (.TONIGHT... .SUN... etc)', () => {
+    const input =
+      '.TONIGHT...NW wind 25 kt. Seas 6 ft. Freezing spray.\n' +
+      '.SUN...W wind 25 kt. Seas 5 ft. Freezing spray.\n' +
+      '.SUN NIGHT...W wind 25 kt. Seas 6 ft. Freezing spray.\n' +
+      '.MON AND MON NIGHT...W wind 15 kt. Seas 4 ft.';
+    expect(reflowAlertText(input)).toBe(input);
+  });
+
+  it('reflows prose above NWS period forecast lines', () => {
+    const input =
+      'Wind forecasts reflect the predominant speed and\n' +
+      'direction expected.\n\n' +
+      '.TONIGHT...NW wind 25 kt.\n' +
+      '.SUN...W wind 25 kt.';
+    expect(reflowAlertText(input)).toBe(
+      'Wind forecasts reflect the predominant speed and direction expected.\n\n' +
+      '.TONIGHT...NW wind 25 kt.\n' +
+      '.SUN...W wind 25 kt.',
+    );
+  });
 });
 

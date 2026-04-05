@@ -377,6 +377,8 @@ export function reflowAlertText(text: string): string {
   if (!text) return '';
   // Short bullet: line starts with optional whitespace then · • or - (not * which NWS uses for headings)
   const shortBullet = /^\s*[·•\-]\s/;
+  // NWS period forecast: line starts with .UPPERCASE (e.g. ".TONIGHT...NW wind 25 kt.")
+  const nwsPeriod = /^\.[A-Z]/;
   return text
     .split(/\n{2,}/)
     .map(para => {
@@ -385,8 +387,8 @@ export function reflowAlertText(text: string): string {
       for (const line of lines) {
         if (merged.length === 0) {
           merged.push(line.trimStart());
-        } else if (shortBullet.test(line) || merged[merged.length - 1].trimEnd().endsWith(':')) {
-          // Current line is a bullet item, or previous line is a header — keep separate
+        } else if (shortBullet.test(line) || nwsPeriod.test(line.trimStart()) || merged[merged.length - 1].trimEnd().endsWith(':')) {
+          // Current line is a bullet item or NWS period forecast, or previous line is a header — keep separate
           merged.push(line);
         } else {
           // Join with previous line (strip hard wrap)
