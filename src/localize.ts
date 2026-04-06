@@ -56,7 +56,7 @@ const en: TranslationMap = {
   'badge.certainty_unknown': 'Unknown',
 
   // Editor
-  'editor.entity': 'Entity (required)',
+  'editor.entities': 'Entities',
   'editor.title': 'Title (optional)',
   'editor.provider': 'Alert provider',
   'editor.provider_auto': 'Auto-detect',
@@ -112,7 +112,7 @@ const en: TranslationMap = {
   'editor.no_entities_hint_link': 'Supported providers',
 
   // Editor section labels
-  'editor.section_entity': 'Entity & Provider',
+  'editor.section_entity': 'Entities & Provider',
   'editor.section_filtering': 'Filtering',
   'editor.section_appearance': 'Appearance',
   'editor.section_detail_panel': 'Detail Panel',
@@ -176,7 +176,7 @@ const fr: TranslationMap = {
   'badge.certainty_unknown': 'Inconnue',
 
   // Editor
-  'editor.entity': 'Entite (requis)',
+  'editor.entities': 'Entites',
   'editor.title': 'Titre (optionnel)',
   'editor.provider': 'Fournisseur d\'alertes',
   'editor.provider_auto': 'Detection auto',
@@ -296,7 +296,7 @@ const es: TranslationMap = {
   'badge.certainty_unknown': 'Desconocida',
 
   // Editor
-  'editor.entity': 'Entidad (requerido)',
+  'editor.entities': 'Entidades',
   'editor.title': 'Titulo (opcional)',
   'editor.provider': 'Proveedor de alertas',
   'editor.provider_auto': 'Deteccion auto',
@@ -416,7 +416,7 @@ const it: TranslationMap = {
   'badge.certainty_unknown': 'Sconosciuta',
 
   // Editor
-  'editor.entity': 'Entità (obbligatorio)',
+  'editor.entities': 'Entità',
   'editor.title': 'Titolo (opzionale)',
   'editor.provider': 'Fornitore allerte',
   'editor.provider_auto': 'Rilevamento automatico',
@@ -536,7 +536,7 @@ const de: TranslationMap = {
   'badge.certainty_unknown': 'Unbekannt',
 
   // Editor
-  'editor.entity': 'Entität (erforderlich)',
+  'editor.entities': 'Entitäten',
   'editor.title': 'Titel (optional)',
   'editor.provider': 'Warnanbieter',
   'editor.provider_auto': 'Automatisch erkennen',

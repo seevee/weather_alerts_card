@@ -22,6 +22,7 @@ export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dw
 export interface WeatherAlertsCardConfig {
   type: string;
   entity: string;
+  entities?: string[];           // additional entities to merge alerts from
   title?: string;
   zones?: string[];
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
