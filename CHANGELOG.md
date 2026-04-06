@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Multi-entity support: combine alerts from multiple sensors in a single card via the `entities` config option
+
 ## 2.9.0 — 2026-04-04
 
 ### Added

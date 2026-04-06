@@ -48,6 +48,7 @@ Then click the Download button, and click Reload when prompted.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `entity` | *(required)* | Alert sensor entity |
+| `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'pirateweather'` |
 | `title` | — | Card header title |
 | `zones` | — | Zone codes to filter (NWS zones or BoM `area_id`) |
@@ -127,6 +128,14 @@ provider: bom
 ```yaml
 type: custom:weather-alerts-card
 entity: sensor.dwd_weather_warnings_hamburg_current
+```
+
+**DWD current + advance warnings merged**
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.dwd_weather_warnings_current
+entities:
+  - sensor.dwd_weather_warnings_advance
 ```
 
 **PirateWeather alerts**

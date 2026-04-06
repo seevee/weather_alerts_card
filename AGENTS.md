@@ -56,6 +56,7 @@ Always run `npm run lint` and `npm run test` before committing.
 ```typescript
 interface WeatherAlertsCardConfig {
   entity: string;              // required — e.g. "sensor.nws_alerts_alerts"
+  entities?: string[];         // additional entities to merge alerts from
   title?: string;              // optional card header
   zones?: string[];            // optional zone filter — e.g. ["COC059", "COZ039"]
   eventCodes?: string[];       // event codes to include (provider-specific) — empty/omitted = all

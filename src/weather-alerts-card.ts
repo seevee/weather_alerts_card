@@ -144,18 +144,23 @@ export class WeatherAlertsCard extends LitElement {
     super.disconnectedCallback();
     this._motionQuery.removeEventListener('change', this._onMotionChange);
     if (this._config?.entity) {
-      WeatherAlertsCard._editorExpandedState.set(this._config.entity, this._expandedAlerts);
+      WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), this._expandedAlerts);
     }
   }
 
   public setConfig(config: WeatherAlertsCardConfig): void {
-    if (!config.entity) {
+    if (!config.entity && !(config.entities && config.entities.length > 0)) {
       throw new Error('You need to define an entity');
     }
     const { _preview, ...rest } = config;
+    // If entity is missing but entities is set, default entity to entities[0]
+    if (!rest.entity && rest.entities && rest.entities.length > 0) {
+      rest.entity = rest.entities[0];
+    }
     this._config = rest as WeatherAlertsCardConfig;
     this._forcePreview = !!_preview;
-    const saved = WeatherAlertsCard._editorExpandedState.get(config.entity);
+    const stateKey = this._entityStateKey();
+    const saved = WeatherAlertsCard._editorExpandedState.get(stateKey);
     if (saved) {
       this._expandedAlerts = saved;
     }
@@ -189,14 +194,35 @@ export class WeatherAlertsCard extends LitElement {
     return { entity: 'sensor.nws_alerts_alerts' };
   }
 
+  private _getAllEntities(): string[] {
+    if (!this._config) return [];
+    const primary = this._config.entity;
+    const extras = this._config.entities || [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const id of [primary, ...extras]) {
+      if (id && !seen.has(id)) {
+        seen.add(id);
+        result.push(id);
+      }
+    }
+    return result;
+  }
+
+  private _entityStateKey(): string {
+    return this._getAllEntities().sort().join(',');
+  }
+
   private _getAlerts(): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
-    const entity = this.hass.states[this._config.entity];
-    if (!entity) return [];
-
-    const adapter = getAdapter(this._config.provider, entity.attributes);
-    const alerts = adapter.parseAlerts(entity.attributes);
-    return this._filterAndSort(alerts);
+    const allAlerts: WeatherAlert[] = [];
+    for (const entityId of this._getAllEntities()) {
+      const entity = this.hass.states[entityId];
+      if (!entity) continue;
+      const adapter = getAdapter(this._config.provider, entity.attributes);
+      allAlerts.push(...adapter.parseAlerts(entity.attributes));
+    }
+    return this._filterAndSort(allAlerts);
   }
 
   private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean }): WeatherAlert[] {
@@ -297,7 +323,7 @@ export class WeatherAlertsCard extends LitElement {
     next.set(alertId, !next.get(alertId));
     this._expandedAlerts = next;
     if (this._config?.entity) {
-      WeatherAlertsCard._editorExpandedState.set(this._config.entity, next);
+      WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), next);
     }
   }
 
@@ -313,15 +339,18 @@ export class WeatherAlertsCard extends LitElement {
       return this._renderPreview();
     }
 
-    const entity = this.hass.states[this._config.entity];
-    const isPreview = !entity || this._forcePreview;
+    const allEntityIds = this._getAllEntities();
+    const resolvedEntities = allEntityIds.map(id => this.hass.states[id]).filter(Boolean);
+    const isPreview = resolvedEntities.length === 0 || this._forcePreview;
 
     if (isPreview) {
       return this._renderPreview();
     }
 
-    const stateVal = entity.state;
-    if (stateVal === 'unavailable' || stateVal === 'unknown') {
+    // Show unavailable only if all resolved entities are unavailable/unknown
+    const allUnavailable = resolvedEntities.every(e => e.state === 'unavailable' || e.state === 'unknown');
+    if (allUnavailable) {
+      const stateVal = resolvedEntities[0].state;
       return html`
         <ha-card .header=${this._config.title || ''}>
           <div class="sensor-unavailable">

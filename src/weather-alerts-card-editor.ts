@@ -40,12 +40,28 @@ export class WeatherAlertsCardEditor extends LitElement {
         ids.push(id);
       }
     }
-    // Always include the currently configured entity so it remains visible
+    // Always include currently configured entities so they remain visible
     if (this._config?.entity && !ids.includes(this._config.entity)) {
       ids.push(this._config.entity);
     }
+    if (this._config?.entities) {
+      for (const id of this._config.entities) {
+        if (id && !ids.includes(id)) ids.push(id);
+      }
+    }
     this._cachedEntityIds = ids;
     return ids;
+  }
+
+  private _getSelectedEntities(): string[] {
+    const result: string[] = [];
+    if (this._config?.entity) result.push(this._config.entity);
+    if (this._config?.entities) {
+      for (const id of this._config.entities) {
+        if (id && !result.includes(id)) result.push(id);
+      }
+    }
+    return result;
   }
 
   private _isEntityMismatch(): boolean {
@@ -70,18 +86,21 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _entityChanged(ev: CustomEvent): void {
-    const entity = ev.detail.value as string;
-    if (entity === this._config.entity) return;
-    const newConfig: WeatherAlertsCardConfig = { ...this._config, entity };
-    // Update visibility condition entity reference if hideNoAlerts is active
+    const value = ev.detail.value;
+    // ha-selector with multiple: true returns string[]
+    const selected: string[] = Array.isArray(value) ? value : (value ? [value] : []);
+    const newConfig: WeatherAlertsCardConfig = { ...this._config };
+
+    // entity = first selected (backwards compat); entities = rest
+    newConfig.entity = selected[0] || '';
+    if (selected.length > 1) {
+      newConfig.entities = selected.slice(1);
+    } else {
+      delete newConfig.entities;
+    }
+
     if (newConfig.hideNoAlerts) {
-      // Remove old entity condition, then add new one
-      const stripped = this._syncVisibilityCondition(
-        newConfig.visibility,
-        this._config.entity,
-        false,
-      );
-      newConfig.visibility = this._syncVisibilityCondition(stripped, entity, true);
+      newConfig.visibility = this._syncMultiEntityVisibility(newConfig);
     }
     this._fireConfigChanged(newConfig);
   }
@@ -242,11 +261,11 @@ export class WeatherAlertsCardEditor extends LitElement {
     }
     // Sync HA's native visibility conditions so the dashboard layout
     // fully removes the card (no residual gap) when there are no alerts.
-    newConfig.visibility = this._syncVisibilityCondition(
-      newConfig.visibility,
-      newConfig.entity,
-      hide,
-    );
+    if (hide) {
+      newConfig.visibility = this._syncMultiEntityVisibility(newConfig);
+    } else {
+      newConfig.visibility = this._syncMultiEntityVisibility(newConfig);
+    }
     this._fireConfigChanged(newConfig);
   }
 
@@ -272,6 +291,34 @@ export class WeatherAlertsCardEditor extends LitElement {
       }
     }
     return conditions.length > 0 ? conditions : undefined;
+  }
+
+  /**
+   * Rebuild visibility conditions for all configured entities (primary + extras).
+   * When hideNoAlerts is true, adds a condition per entity (OR logic in HA).
+   * When false, removes all managed conditions.
+   */
+  private _syncMultiEntityVisibility(
+    config: WeatherAlertsCardConfig,
+  ): Record<string, unknown>[] | undefined {
+    const allIds = new Set<string>();
+    if (config.entity) allIds.add(config.entity);
+    if (config.entities) config.entities.forEach(id => allIds.add(id));
+
+    // Strip all our managed conditions first
+    let conditions = config.visibility;
+    for (const id of allIds) {
+      conditions = this._syncVisibilityCondition(conditions, id, false);
+    }
+
+    // Re-add if hideNoAlerts is active
+    if (config.hideNoAlerts) {
+      for (const id of allIds) {
+        conditions = this._syncVisibilityCondition(conditions, id, true);
+      }
+    }
+
+    return conditions;
   }
 
   private _reformatTextChanged(ev: Event): void {
@@ -423,9 +470,9 @@ export class WeatherAlertsCardEditor extends LitElement {
 
         <ha-selector
           .hass=${this.hass}
-          .selector=${{ entity: { include_entities: this._getMatchingEntityIds() } }}
-          .value=${this._config.entity}
-          .label=${t('editor.entity', lang)}
+          .selector=${{ entity: { multiple: true, include_entities: this._getMatchingEntityIds() } }}
+          .value=${this._getSelectedEntities()}
+          .label=${t('editor.entities', lang)}
           .required=${true}
           @value-changed=${this._entityChanged}
         ></ha-selector>
