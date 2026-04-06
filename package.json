@@ -1,6 +1,6 @@
 {
   "name": "weather-alerts-card",
-  "version": "2.9.0",
+  "version": "2.10.0-alpha.1",
   "description": "A custom Home Assistant Lovelace card for displaying weather alerts",
   "main": "dist/weather-alerts-card.js",
   "module": "dist/weather-alerts-card.js",
