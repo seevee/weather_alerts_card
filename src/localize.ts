@@ -108,7 +108,8 @@ const en: TranslationMap = {
   'editor.show_preview': 'Show sample data',
   'editor.preview_hint': 'Preview card layout with placeholder alerts',
   'editor.entity_warning': 'Selected entity does not appear to contain weather alert data.',
-  'editor.no_entities_hint': 'No supported weather alert entities found. A provider integration (e.g. NWS Alerts) must be installed first. See the README for supported providers.',
+  'editor.no_entities_hint': 'No supported weather alert entities found. A provider integration (e.g. NWS Alerts) must be installed first.',
+  'editor.no_entities_hint_link': 'Supported providers',
 
   // Editor section labels
   'editor.section_entity': 'Entity & Provider',
@@ -227,7 +228,8 @@ const fr: TranslationMap = {
   'editor.show_preview': 'Afficher les donnees exemples',
   'editor.preview_hint': 'Apercu de la disposition avec des alertes fictives',
   'editor.entity_warning': 'L\'entite selectionnee ne semble pas contenir de donnees d\'alerte meteo.',
-  'editor.no_entities_hint': 'Aucune entite d\'alerte meteo compatible trouvee. Une integration (ex. NWS Alerts) doit etre installee. Voir le README pour les fournisseurs supportes.',
+  'editor.no_entities_hint': 'Aucune entite d\'alerte meteo compatible trouvee. Une integration (ex. NWS Alerts) doit etre installee.',
+  'editor.no_entities_hint_link': 'Fournisseurs supportes',
 
   // Editor section labels
   'editor.section_entity': 'Entite et fournisseur',
@@ -346,7 +348,8 @@ const es: TranslationMap = {
   'editor.show_preview': 'Mostrar datos de ejemplo',
   'editor.preview_hint': 'Vista previa con alertas de ejemplo',
   'editor.entity_warning': 'La entidad seleccionada no parece contener datos de alerta meteorologica.',
-  'editor.no_entities_hint': 'No se encontraron entidades de alerta meteorologica compatibles. Se debe instalar una integracion (ej. NWS Alerts). Consulte el README para los proveedores compatibles.',
+  'editor.no_entities_hint': 'No se encontraron entidades de alerta meteorologica compatibles. Se debe instalar una integracion (ej. NWS Alerts).',
+  'editor.no_entities_hint_link': 'Proveedores compatibles',
 
   // Editor section labels
   'editor.section_entity': 'Entidad y proveedor',
@@ -465,7 +468,8 @@ const it: TranslationMap = {
   'editor.show_preview': 'Mostra dati di esempio',
   'editor.preview_hint': 'Anteprima del layout con allerte di esempio',
   'editor.entity_warning': 'L\'entità selezionata non sembra contenere dati di allerta meteo.',
-  'editor.no_entities_hint': 'Nessuna entita di allerta meteo compatibile trovata. Un\'integrazione (es. NWS Alerts) deve essere installata. Vedere il README per i provider supportati.',
+  'editor.no_entities_hint': 'Nessuna entita di allerta meteo compatibile trovata. Un\'integrazione (es. NWS Alerts) deve essere installata.',
+  'editor.no_entities_hint_link': 'Provider supportati',
 
   // Editor section labels
   'editor.section_entity': 'Entità e fornitore',
@@ -584,7 +588,8 @@ const de: TranslationMap = {
   'editor.show_preview': 'Beispieldaten anzeigen',
   'editor.preview_hint': 'Kartenlayout mit Beispielwarnungen anzeigen',
   'editor.entity_warning': 'Die ausgewählte Entität scheint keine Wetterwarnungsdaten zu enthalten.',
-  'editor.no_entities_hint': 'Keine kompatiblen Wetterwarnungs-Entitaten gefunden. Eine Integration (z.B. NWS Alerts) muss installiert sein. Siehe README fur unterstutzte Anbieter.',
+  'editor.no_entities_hint': 'Keine kompatiblen Wetterwarnungs-Entitaten gefunden. Eine Integration (z.B. NWS Alerts) muss installiert sein.',
+  'editor.no_entities_hint_link': 'Unterstutzte Anbieter',
 
   // Editor section labels
   'editor.section_entity': 'Entität und Anbieter',
