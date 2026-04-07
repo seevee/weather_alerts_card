@@ -3,6 +3,7 @@
 ## 2.10.0-alpha.1 — 2026-04-06
 
 ### Added
+- Show hint in editor to toggle sample data when no alerts are active
 - Support multiple entities in a single card (#129) (13361a9…)
 
 ### Fixed

@@ -15,6 +15,7 @@ export class WeatherAlertsCardEditor extends LitElement {
 
   public setConfig(config: WeatherAlertsCardConfig): void {
     this._config = config;
+    this._showPreview = !!config._preview;
   }
 
   private _fireConfigChanged(newConfig: WeatherAlertsCardConfig): void {
@@ -62,6 +63,25 @@ export class WeatherAlertsCardEditor extends LitElement {
       }
     }
     return result;
+  }
+
+  /** True when all configured entities have zero active alerts (auto-preview will kick in).
+   *  Returns false if no entities are configured, none resolve, or any are unavailable/unknown. */
+  private _hasNoRealAlerts(): boolean {
+    if (!this.hass || !this._config?.entity) return false;
+    const allIds = this._getSelectedEntities();
+    let resolvedCount = 0;
+    for (const id of allIds) {
+      const entity = this.hass.states[id];
+      if (!entity) continue;
+      // Unavailable/unknown means the data source is broken, not "zero alerts"
+      if (entity.state === 'unknown' || entity.state === 'unavailable') return false;
+      resolvedCount++;
+      if (entity.state !== '0' && entity.state !== 'off') {
+        return false;
+      }
+    }
+    return resolvedCount > 0;
   }
 
   private _isEntityMismatch(): boolean {
@@ -479,6 +499,18 @@ export class WeatherAlertsCardEditor extends LitElement {
         ${this._renderEntityWarning(lang)}
         ${this._renderNoEntitiesHint(lang)}
 
+        <div class="preview-tools">
+          <ha-formfield .label=${t('editor.show_preview', lang)}>
+            <ha-switch
+              .checked=${this._showPreview}
+              @change=${this._previewChanged}
+            ></ha-switch>
+          </ha-formfield>
+          ${this._hasNoRealAlerts() && !this._showPreview
+            ? html`<div class="preview-nudge">${t('editor.preview_nudge', lang)}</div>`
+            : html`<div class="preview-hint">${t('editor.preview_hint', lang)}</div>`}
+        </div>
+
         <ha-textfield
           .label=${t('editor.title', lang)}
           .value=${this._config.title || ''}
@@ -674,18 +706,6 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
-        <!-- Tools -->
-        <div class="section-label">${t('editor.section_tools', lang)}</div>
-
-        <div class="preview-tools">
-          <ha-formfield .label=${t('editor.show_preview', lang)}>
-            <ha-switch
-              .checked=${this._showPreview}
-              @change=${this._previewChanged}
-            ></ha-switch>
-          </ha-formfield>
-          <div class="preview-hint">${t('editor.preview_hint', lang)}</div>
-        </div>
       </div>
     `;
   }
@@ -707,16 +727,14 @@ export class WeatherAlertsCardEditor extends LitElement {
       padding-bottom: 4px;
       margin-top: 8px;
     }
-    .preview-tools {
-      border-top: 1px solid var(--divider-color);
-      padding-top: 16px;
-      margin-top: 4px;
-    }
-    .preview-hint {
+    .preview-hint,
+    .preview-nudge {
       font-size: 0.8rem;
       color: var(--secondary-text-color);
       padding-left: 48px;
       margin-top: 4px;
+    }
+    .preview-hint {
       opacity: 0.7;
     }
   `;
