@@ -1,9 +1,19 @@
 # Changelog
 
+## 2.10.0-alpha.2 — 2026-04-07
+
+### Added
+- Show sample data toggle with nudge when no alerts active (#133) (f7648d1…)
+
+### Changed
+- Inject card version from package.json at build time (#132) (ec7a8e2…)
+
+### Maintenance
+- Update dependencies and fix rollup build (#131) (24248ab…)
+
 ## 2.10.0-alpha.1 — 2026-04-06
 
 ### Added
-- Show hint in editor to toggle sample data when no alerts are active
 - Support multiple entities in a single card (#129) (13361a9…)
 
 ### Fixed
