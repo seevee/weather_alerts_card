@@ -25,7 +25,7 @@ import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
 
 /* eslint-disable no-console */
-const CARD_VERSION = '2.0.0-alpha.1';
+const CARD_VERSION = '2.10.0-alpha.1';
 console.info(
   `%c  WEATHER-ALERTS-CARD  %c  Version ${CARD_VERSION}  `,
   'color: white; background: #555; font-weight: bold;',
@@ -481,8 +481,8 @@ export class WeatherAlertsCard extends LitElement {
             ></ha-icon>
           </div>
           ${this._expandedAlerts.get(alert.id + '_details')
-        ? this._renderDetailsContent(alert, progress)
-        : nothing}
+          ? this._renderDetailsContent(alert, progress)
+          : nothing}
         </div>
         ` : nothing}
       </div>
@@ -572,9 +572,9 @@ export class WeatherAlertsCard extends LitElement {
       ` : nothing}
       ${alert.mergedCount && alert.mergedCount > 1
         ? html`<span class="badge zones-badge">${t(
-            alert.mergedCount === 1 ? 'card.zone_count_singular' : 'card.zones_count',
-            this._lang, { count: alert.mergedCount },
-          )}</span>`
+          alert.mergedCount === 1 ? 'card.zone_count_singular' : 'card.zones_count',
+          this._lang, { count: alert.mergedCount },
+        )}</span>`
         : nothing}
     `;
   }
@@ -617,8 +617,8 @@ export class WeatherAlertsCard extends LitElement {
             <span class="meta-label">${progress.isExpired ? t('progress.expired_label', lang) : t('detail.expires', lang)}</span>
             <span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
             ${progress.hasEndTime
-        ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
-        : nothing}
+          ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
+          : nothing}
           </div>
           ${alert.areaDesc ? html`
             <div class="meta-item" style="grid-column: 1 / -1;">
