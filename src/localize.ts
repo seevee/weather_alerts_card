@@ -4,7 +4,7 @@ const en: TranslationMap = {
   // Card UI
   'card.no_alerts': 'No active alerts.',
   'card.sensor_unavailable': 'Alert sensor is {state}.',
-  'card.preview': 'Preview',
+  'card.preview': 'Sample Data',
   'card.read_details': 'Read Details',
   'card.open_source': 'Open {provider} Source',
   'card.zones_count': '{count} zones',
@@ -106,7 +106,8 @@ const en: TranslationMap = {
   'editor.hide_expired': 'Hide expired alerts',
   'editor.hide_no_alerts': 'Hide card when there are no active alerts',
   'editor.show_preview': 'Show sample data',
-  'editor.preview_hint': 'Preview card layout with placeholder alerts',
+  'editor.preview_hint': 'Preview card layout with sample alerts',
+  'editor.preview_nudge': 'No active alerts — enable to preview the card layout.',
   'editor.entity_warning': 'Selected entity does not appear to contain weather alert data.',
   'editor.no_entities_hint': 'No supported weather alert entities found. A provider integration (e.g. NWS Alerts) must be installed first.',
   'editor.no_entities_hint_link': 'Supported providers',
@@ -117,14 +118,13 @@ const en: TranslationMap = {
   'editor.section_appearance': 'Appearance',
   'editor.section_detail_panel': 'Detail Panel',
   'editor.section_behavior': 'Behavior',
-  'editor.section_tools': 'Tools',
 };
 
 const fr: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Aucune alerte active.',
   'card.sensor_unavailable': 'Le capteur d\'alerte est {state}.',
-  'card.preview': 'Apercu',
+  'card.preview': 'Donnees d\'exemple',
   'card.read_details': 'Lire les details',
   'card.open_source': 'Ouvrir la source {provider}',
   'card.zones_count': '{count} zones',
@@ -227,6 +227,7 @@ const fr: TranslationMap = {
   'editor.hide_no_alerts': 'Masquer la carte sans alertes',
   'editor.show_preview': 'Afficher les donnees exemples',
   'editor.preview_hint': 'Apercu de la disposition avec des alertes fictives',
+  'editor.preview_nudge': 'Aucune alerte active — activez pour previsualiser la disposition.',
   'editor.entity_warning': 'L\'entite selectionnee ne semble pas contenir de donnees d\'alerte meteo.',
   'editor.no_entities_hint': 'Aucune entite d\'alerte meteo compatible trouvee. Une integration (ex. NWS Alerts) doit etre installee.',
   'editor.no_entities_hint_link': 'Fournisseurs supportes',
@@ -237,14 +238,13 @@ const fr: TranslationMap = {
   'editor.section_appearance': 'Apparence',
   'editor.section_detail_panel': 'Panneau de details',
   'editor.section_behavior': 'Comportement',
-  'editor.section_tools': 'Outils',
 };
 
 const es: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Sin alertas activas.',
   'card.sensor_unavailable': 'El sensor de alertas esta {state}.',
-  'card.preview': 'Vista previa',
+  'card.preview': 'Datos de ejemplo',
   'card.read_details': 'Leer detalles',
   'card.open_source': 'Abrir fuente {provider}',
   'card.zones_count': '{count} zonas',
@@ -347,6 +347,7 @@ const es: TranslationMap = {
   'editor.hide_no_alerts': 'Ocultar tarjeta sin alertas',
   'editor.show_preview': 'Mostrar datos de ejemplo',
   'editor.preview_hint': 'Vista previa con alertas de ejemplo',
+  'editor.preview_nudge': 'Sin alertas activas — active para previsualizar el diseno.',
   'editor.entity_warning': 'La entidad seleccionada no parece contener datos de alerta meteorologica.',
   'editor.no_entities_hint': 'No se encontraron entidades de alerta meteorologica compatibles. Se debe instalar una integracion (ej. NWS Alerts).',
   'editor.no_entities_hint_link': 'Proveedores compatibles',
@@ -357,14 +358,13 @@ const es: TranslationMap = {
   'editor.section_appearance': 'Apariencia',
   'editor.section_detail_panel': 'Panel de detalles',
   'editor.section_behavior': 'Comportamiento',
-  'editor.section_tools': 'Herramientas',
 };
 
 const it: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Nessuna allerta attiva.',
   'card.sensor_unavailable': 'Il sensore di allerta è {state}.',
-  'card.preview': 'Anteprima',
+  'card.preview': 'Dati di esempio',
   'card.read_details': 'Leggi dettagli',
   'card.open_source': 'Apri fonte {provider}',
   'card.zones_count': '{count} zone',
@@ -467,6 +467,7 @@ const it: TranslationMap = {
   'editor.hide_no_alerts': 'Nascondi scheda senza allerte',
   'editor.show_preview': 'Mostra dati di esempio',
   'editor.preview_hint': 'Anteprima del layout con allerte di esempio',
+  'editor.preview_nudge': 'Nessuna allerta attiva — attiva per visualizzare il layout.',
   'editor.entity_warning': 'L\'entità selezionata non sembra contenere dati di allerta meteo.',
   'editor.no_entities_hint': 'Nessuna entita di allerta meteo compatibile trovata. Un\'integrazione (es. NWS Alerts) deve essere installata.',
   'editor.no_entities_hint_link': 'Provider supportati',
@@ -477,14 +478,13 @@ const it: TranslationMap = {
   'editor.section_appearance': 'Aspetto',
   'editor.section_detail_panel': 'Pannello dettagli',
   'editor.section_behavior': 'Comportamento',
-  'editor.section_tools': 'Strumenti',
 };
 
 const de: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Keine aktiven Warnungen.',
   'card.sensor_unavailable': 'Der Warnsensor ist {state}.',
-  'card.preview': 'Vorschau',
+  'card.preview': 'Beispieldaten',
   'card.read_details': 'Details lesen',
   'card.open_source': '{provider}-Quelle öffnen',
   'card.zones_count': '{count} Zonen',
@@ -587,6 +587,7 @@ const de: TranslationMap = {
   'editor.hide_no_alerts': 'Karte ohne aktive Warnungen ausblenden',
   'editor.show_preview': 'Beispieldaten anzeigen',
   'editor.preview_hint': 'Kartenlayout mit Beispielwarnungen anzeigen',
+  'editor.preview_nudge': 'Keine aktiven Warnungen — aktivieren, um das Kartenlayout zu sehen.',
   'editor.entity_warning': 'Die ausgewählte Entität scheint keine Wetterwarnungsdaten zu enthalten.',
   'editor.no_entities_hint': 'Keine kompatiblen Wetterwarnungs-Entitaten gefunden. Eine Integration (z.B. NWS Alerts) muss installiert sein.',
   'editor.no_entities_hint_link': 'Unterstutzte Anbieter',
@@ -597,7 +598,6 @@ const de: TranslationMap = {
   'editor.section_appearance': 'Darstellung',
   'editor.section_detail_panel': 'Detailbereich',
   'editor.section_behavior': 'Verhalten',
-  'editor.section_tools': 'Werkzeuge',
 };
 
 const translations: Record<string, TranslationMap> = { en, fr, es, it, de };

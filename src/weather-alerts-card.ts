@@ -342,9 +342,8 @@ export class WeatherAlertsCard extends LitElement {
 
     const allEntityIds = this._getAllEntities();
     const resolvedEntities = allEntityIds.map(id => this.hass.states[id]).filter(Boolean);
-    const isPreview = resolvedEntities.length === 0 || this._forcePreview;
 
-    if (isPreview) {
+    if (resolvedEntities.length === 0 || this._forcePreview) {
       return this._renderPreview();
     }
 
