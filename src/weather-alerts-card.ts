@@ -468,7 +468,9 @@ export class WeatherAlertsCard extends LitElement {
 
         ${this._renderProgressSection(alert, progress)}
 
-        ${this._config?.showDetails !== false ? html`
+        ${this._config?.showDetails !== false ? (this._config?.expandDetails ? html`
+        ${this._renderDetailsContent(alert, progress)}
+        ` : html`
         <div class="alert-details-section">
           <div
             class="details-summary"
@@ -484,7 +486,7 @@ export class WeatherAlertsCard extends LitElement {
           ? this._renderDetailsContent(alert, progress)
           : nothing}
         </div>
-        ` : nothing}
+        `) : nothing}
       </div>
     `;
   }
@@ -518,7 +520,9 @@ export class WeatherAlertsCard extends LitElement {
 
         ${this._renderProgressSection(alert, progress)}
 
-        ${this._config?.showDetails !== false ? html`
+        ${this._config?.showDetails !== false ? (this._config?.expandDetails ? html`
+        ${this._renderDetailsContent(alert, progress)}
+        ` : html`
         <div class="alert-details-section">
           <div
             class="details-summary"
@@ -532,7 +536,7 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           ${expanded ? this._renderDetailsContent(alert, progress) : nothing}
         </div>
-        ` : nothing}
+        `) : nothing}
       </div>
     `;
   }

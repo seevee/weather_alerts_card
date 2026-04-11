@@ -74,6 +74,7 @@ interface WeatherAlertsCardConfig {
   hideExpired?: boolean;       // undefined/true: hide expired alerts; false: show them (dimmed)
   hideNoAlerts?: boolean;      // undefined/false: show "No active alerts" banner; true: hide it
   showDetails?: boolean;       // undefined/true: show expandable detail panel; false: hide entirely
+  expandDetails?: boolean;     // undefined/false: details collapsed behind toggle; true: details always visible, toggle removed
   showMetadata?: boolean;      // undefined/true: show metadata grid in details; false: hide
   showDescription?: boolean;   // undefined/true: show description block in details; false: hide
   showInstructions?: boolean;  // undefined/true: show instructions block in details; false: hide

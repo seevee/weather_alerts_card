@@ -204,6 +204,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _expandDetailsChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const expand = target.checked;
+    if (expand === (this._config.expandDetails === true)) return;
+    const newConfig = { ...this._config };
+    if (expand) {
+      newConfig.expandDetails = true;
+    } else {
+      delete newConfig.expandDetails;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _showMetadataChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const show = target.checked;
@@ -621,6 +634,14 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-switch
             .checked=${this._config.showDetails !== false}
             @change=${this._showDetailsChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        <ha-formfield .label=${t('editor.expand_details', lang)}>
+          <ha-switch
+            .checked=${this._config.expandDetails === true}
+            .disabled=${this._config.showDetails === false}
+            @change=${this._expandDetailsChanged}
           ></ha-switch>
         </ha-formfield>
 

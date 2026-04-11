@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- `expand_details` config option to always show details inline without a toggle (#136)
+
 ## 2.10.0 — 2026-04-08
 
 ### Added
