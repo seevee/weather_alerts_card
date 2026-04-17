@@ -146,6 +146,62 @@ type: custom:weather-alerts-card
 entity: sensor.pirateweather_alerts
 ```
 
+**Match Bubble Card styling (requires [card-mod](https://github.com/thomasloven/lovelace-card-mod))**
+
+<details>
+<summary>Show snippet</summary>
+
+Styles this card to visually match [Bubble Card](https://github.com/Clooos/Bubble-Card)'s large layout — 28px corners, 56px rows, 42×42 icon chip. Note: the selectors below reach into this card's internal CSS class names, which aren't a stable public API and may change between releases. Contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144).
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+sortOrder: severity
+layout: compact
+provider: nws
+card_mod:
+  style: |
+    ha-card {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 28px !important;
+      box-shadow: none !important;
+    }
+    .alert-card {
+      background: rgb(40, 40, 40) !important;
+      border: none !important;
+      border-radius: 28px !important;
+      box-shadow: none !important;
+      overflow: hidden !important;
+      min-height: 56px !important;
+      margin: 0 0 8px !important;
+    }
+    .alert-card:last-child {
+      margin-bottom: 0 !important;
+    }
+    .alert-header-row {
+      min-height: 0 !important;
+      height: 56px !important;
+      padding: 0 12px 0 8px !important;
+    }
+    .icon-box {
+      width: 42px !important;
+      height: 42px !important;
+      flex: 0 0 42px !important;
+      --mdc-icon-size: 24px !important;
+    }
+    .icon-box ha-icon {
+      --mdc-icon-size: 24px !important;
+      width: 24px !important;
+      height: 24px !important;
+    }
+    .compact-time {
+      font-size: 13px !important;
+    }
+```
+
+</details>
+
 </details>
 
 ## Supported Providers
