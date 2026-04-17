@@ -197,6 +197,26 @@ const PORT = 3742;
         { theme: 'theme-dark',  label: 'themes dark ', out: 'img/themes-dark.png' },
       ],
     },
+    {
+      name: 'dedup',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-dedup.html`,
+      canvasId: 'dedup-canvas',
+      cardIds: ['card-dedup-off', 'card-dedup-on'],
+      variants: [
+        { theme: 'theme-light', label: 'dedup  light', out: 'img/dedup-light.png' },
+        { theme: 'theme-dark',  label: 'dedup  dark ', out: 'img/dedup-dark.png' },
+      ],
+      afterRender: async (page) => {
+        // Expand details on the dedup-on card's first alert to show the Source row
+        await page.locator('#card-dedup-on .compact-row').first().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-dedup-on');
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+
+        await page.locator('#card-dedup-on .details-summary').first().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-dedup-on');
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      },
+    },
   ];
 
   // Close the 1x context and create a 2x one for composite captures

@@ -59,10 +59,11 @@ Then click the Download button, and click Reload when prompted.
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `timezone` | `'server'` | `'server'` or `'browser'` (client's local time) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that repeat the event name |
-| `deduplicate` | `true` | Collapse matching alerts across zones |
+| `deduplicate` | `true` | Collapse matching alerts across zones and providers |
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion` |
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
+| `showProvider` | `true` | Show provider label (e.g., NWS) above event title |
 | `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel |
 | `showDescription` | `true` | Show description text in detail panel |
 | `showInstructions` | `true` | Show instructions text in detail panel |

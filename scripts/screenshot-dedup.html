@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Alerts Card – Cross-Provider Dedup</title>
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ---- */
+    .theme-light {
+      --primary-text-color: #212121;
+      --secondary-text-color: #727272;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: #e5e5e5;
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.12);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 33, 33, 33;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      --dedup-bg: #f0f0f0;
+      --dedup-label-color: rgba(0, 0, 0, 0.45);
+    }
+    .theme-dark {
+      --primary-text-color: #e1e1e1;
+      --secondary-text-color: #9b9b9b;
+      --primary-background-color: #111111;
+      --secondary-background-color: #202020;
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(225, 225, 225, 0.12);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 225, 225, 225;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.5),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.4),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+      --dedup-bg: #0d1117;
+      --dedup-label-color: rgba(255, 255, 255, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    .dedup-canvas {
+      background: var(--dedup-bg);
+      padding: 36px 28px 28px;
+      display: flex;
+      gap: 28px;
+      width: 1060px;
+    }
+
+    .showcase {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-label {
+      color: var(--dedup-label-color);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .card-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .card-inner {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dedup-canvas" id="dedup-canvas">
+
+    <!-- Left: deduplicate OFF — shows raw duplicates from both providers -->
+    <div class="showcase">
+      <div class="section-label">NWS + Pirate Weather &middot; Dedup Off</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-dedup-off"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: deduplicate ON — cross-provider dedup merges duplicates -->
+    <div class="showcase">
+      <div class="section-label">NWS + Pirate Weather &middot; Dedup On</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <nws-alerts-card id="card-dedup-on"></nws-alerts-card>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+    import { ALERTS, PIRATE_WEATHER_ATTRS } from '/scripts/screenshot-fixtures.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {}
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+            }
+          </style>
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock hass with two providers ----
+    const NWS_ENTITY = 'sensor.nws_alerts_alerts';
+    const PW_ENTITY = 'sensor.pirateweather_alerts';
+
+    const MOCK_HASS = {
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      states: {
+        [NWS_ENTITY]: {
+          state: String(ALERTS.length),
+          attributes: { Alerts: ALERTS },
+        },
+        [PW_ENTITY]: {
+          state: '3',
+          attributes: PIRATE_WEATHER_ATTRS,
+        },
+      },
+    };
+
+    // ---- Wire up cards ----
+
+    // Left: dedup off — shows all alerts from both providers
+    const dedupOff = document.getElementById('card-dedup-off');
+    dedupOff.setConfig({
+      type: 'custom:nws-alerts-card',
+      entity: NWS_ENTITY,
+      entities: [PW_ENTITY],
+      animations: false,
+      colorTheme: 'severity',
+      layout: 'compact',
+      deduplicate: false,
+    });
+    dedupOff.hass = MOCK_HASS;
+
+    // Right: dedup on — cross-provider duplicates collapsed
+    const dedupOn = document.getElementById('card-dedup-on');
+    dedupOn.setConfig({
+      type: 'custom:nws-alerts-card',
+      entity: NWS_ENTITY,
+      entities: [PW_ENTITY],
+      animations: false,
+      colorTheme: 'severity',
+      layout: 'compact',
+    });
+    dedupOn.hass = MOCK_HASS;
+  </script>
+</body>
+</html>

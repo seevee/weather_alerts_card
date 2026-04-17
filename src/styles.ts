@@ -394,6 +394,19 @@ export const cardStyles = css`
     border: 1px solid var(--divider-color);
   }
 
+  .provider-hint {
+    font-size: calc(0.7rem * var(--wac-scale, 1));
+    color: var(--secondary-text-color);
+    letter-spacing: 0.5px;
+    opacity: 0.5;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+  .provider-hint::after {
+    content: '·';
+    margin-left: 6px;
+    opacity: 0.6;
+  }
   .footer-link { text-align: right; margin-top: 10px; }
   .footer-link a {
     color: var(--color);
