@@ -75,7 +75,7 @@ interface WeatherAlertsCardConfig {
   hideNoAlerts?: boolean;      // undefined/false: show "No active alerts" banner; true: hide it
   showDetails?: boolean;       // undefined/true: show expandable detail panel; false: hide entirely
   expandDetails?: boolean;     // undefined/false: details collapsed behind toggle; true: details always visible, toggle removed
-  showProvider?: boolean;      // undefined/true: show provider label above title; false: hide
+  showProvider?: boolean;      // undefined/false: hide provider label; true: show above title
   showMetadata?: boolean;      // undefined/true: show metadata grid in details; false: hide
   showDescription?: boolean;   // undefined/true: show description block in details; false: hide
   showInstructions?: boolean;  // undefined/true: show instructions block in details; false: hide

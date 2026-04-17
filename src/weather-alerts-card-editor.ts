@@ -259,12 +259,12 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _showProviderChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const show = target.checked;
-    if (show === (this._config.showProvider !== false)) return;
+    if (show === (this._config.showProvider === true)) return;
     const newConfig = { ...this._config };
     if (show) {
-      delete newConfig.showProvider;
+      newConfig.showProvider = true;
     } else {
-      newConfig.showProvider = false;
+      delete newConfig.showProvider;
     }
     this._fireConfigChanged(newConfig);
   }
@@ -539,7 +539,7 @@ export class WeatherAlertsCardEditor extends LitElement {
 
         <ha-formfield .label=${t('editor.show_provider', lang)}>
           <ha-switch
-            .checked=${this._config.showProvider !== false}
+            .checked=${this._config.showProvider === true}
             @change=${this._showProviderChanged}
           ></ha-switch>
         </ha-formfield>

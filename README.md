@@ -63,7 +63,7 @@ Then click the Download button, and click Reload when prompted.
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion` |
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
-| `showProvider` | `true` | Show provider label (e.g., NWS) above event title |
+| `showProvider` | `false` | Show provider label (e.g., NWS) above event title |
 | `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel |
 | `showDescription` | `true` | Show description text in detail panel |
 | `showInstructions` | `true` | Show instructions text in detail panel |

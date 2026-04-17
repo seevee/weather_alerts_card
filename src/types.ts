@@ -45,7 +45,7 @@ export interface WeatherAlertsCardConfig {
   showMetadata?: boolean;    // undefined/true: show metadata grid in details; false: hide
   showDescription?: boolean; // undefined/true: show description block in details; false: hide
   showInstructions?: boolean; // undefined/true: show instructions block in details; false: hide
-  showProvider?: boolean;    // undefined/true: show provider hint above title when multiple providers configured; false: hide
+  showProvider?: boolean;    // undefined/false: hide provider hint; true: show provider label above title
   showSourceLink?: boolean;  // undefined/true: show "Open Source" link; false: hide link (kiosk mode)
   timezone?: 'server' | 'browser';  // undefined/'server': HA server tz; 'browser': client tz
   reformatText?: boolean;    // undefined/true: strip hard line wraps from alert text; false: preserve raw formatting

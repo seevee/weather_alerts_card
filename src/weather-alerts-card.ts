@@ -562,7 +562,7 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderProviderHint(alert: WeatherAlert): TemplateResult | typeof nothing {
-    if (this._config?.showProvider === false) return nothing;
+    if (this._config?.showProvider !== true) return nothing;
     const code = PROVIDER_SHORT[alert.provider] || alert.provider.toUpperCase();
     return html`<span class="provider-hint">${code}</span>`;
   }
