@@ -13,7 +13,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 - **Expandable details** — sanitized description, instructions, and source link
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
-- **Zone filtering** — show only alerts for specific zones
+- **Zone filtering (BoM)** — show only alerts for specific `area_id` zones
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display
 - **Localized UI** — English, French, Spanish, Italian, and German; auto-detected from Home Assistant locale
@@ -51,7 +51,7 @@ Then click the Download button, and click Reload when prompted.
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'pirateweather'` |
 | `title` | — | Card header title |
-| `zones` | — | Zone codes to filter (NWS zones or BoM `area_id`) |
+| `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'` |
@@ -83,14 +83,14 @@ type: custom:weather-alerts-card
 entity: sensor.nws_alerts_alerts
 ```
 
-**With title and zone filtering**
+**BoM with title and zone filtering**
 ```yaml
 type: custom:weather-alerts-card
-entity: sensor.nws_alerts_alerts
+entity: sensor.sydney_warnings
+provider: bom
 title: Weather Alerts
 zones:
-  - COC059
-  - COZ039
+  - NSW_FL049
 ```
 
 **NWS official colors, compact, sorted by severity**
@@ -145,6 +145,62 @@ entities:
 type: custom:weather-alerts-card
 entity: sensor.pirateweather_alerts
 ```
+
+**Match Bubble Card styling (requires [card-mod](https://github.com/thomasloven/lovelace-card-mod))**
+
+<details>
+<summary>Show snippet</summary>
+
+Styles this card to visually match [Bubble Card](https://github.com/Clooos/Bubble-Card)'s large layout — 28px corners, 56px rows, 42×42 icon chip. Note: the selectors below reach into this card's internal CSS class names, which aren't a stable public API and may change between releases. Contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144).
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+sortOrder: severity
+layout: compact
+provider: nws
+card_mod:
+  style: |
+    ha-card {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 28px !important;
+      box-shadow: none !important;
+    }
+    .alert-card {
+      background: rgb(40, 40, 40) !important;
+      border: none !important;
+      border-radius: 28px !important;
+      box-shadow: none !important;
+      overflow: hidden !important;
+      min-height: 56px !important;
+      margin: 0 0 8px !important;
+    }
+    .alert-card:last-child {
+      margin-bottom: 0 !important;
+    }
+    .alert-header-row {
+      min-height: 0 !important;
+      height: 56px !important;
+      padding: 0 12px 0 8px !important;
+    }
+    .icon-box {
+      width: 42px !important;
+      height: 42px !important;
+      flex: 0 0 42px !important;
+      --mdc-icon-size: 24px !important;
+    }
+    .icon-box ha-icon {
+      --mdc-icon-size: 24px !important;
+      width: 24px !important;
+      height: 24px !important;
+    }
+    .compact-time {
+      font-size: 13px !important;
+    }
+```
+
+</details>
 
 </details>
 
