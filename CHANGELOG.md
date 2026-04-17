@@ -1,14 +1,9 @@
 # Changelog
 
-## Unreleased
+## 2.11.0-alpha.2 — 2026-04-17
 
 ### Added
-- Cross-provider alert deduplication: when the same alert appears from multiple providers (e.g., NWS + PirateWeather), the card merges them into a single entry from the highest-priority provider (determined by entity ordering).
-- `showProvider` config option (`true` by default): displays a subtle provider label (e.g., "NWS", "PIRATE WEATHER") above the event title in both compact and default layouts.
-- Pirate Weather added to provider labels.
-
-### Changed
-- Consolidated within-provider and cross-provider dedup into a single `deduplicateAlerts()` function. The `deduplicateCrossProvider` export is removed.
+- Add cross-provider alert deduplication and provider label (#140) (1b1df86…)
 
 ## 2.11.0-alpha.1 — 2026-04-11
 
