@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.11.0-alpha.3 — 2026-04-17
+
+### Fixed
+- Default showProvider to false to avoid breaking existing setups (#142) (7d696d7…)
+
 ## 2.11.0-alpha.2 — 2026-04-17
 
 ### Added
