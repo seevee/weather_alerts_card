@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { WeatherAlert, AlertProgress } from './types';
+import { WeatherAlert, AlertProgress, AlertProvider } from './types';
 import { t } from './localize';
 
 const ALERT_HTML_TAGS = ['a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul'];
@@ -430,7 +430,11 @@ export function alertMatchesZones(alert: WeatherAlert, zones: Set<string>): bool
   return alert.zones.some(z => zones.has(z.toUpperCase()));
 }
 
-export function deduplicateAlerts(alerts: WeatherAlert[]): WeatherAlert[] {
+export function deduplicateAlerts(
+  alerts: WeatherAlert[],
+  providerPriority?: AlertProvider[],
+): WeatherAlert[] {
+  // Phase 1: merge zone-split alerts within the same provider
   const groups = new Map<string, WeatherAlert[]>();
   const order: string[] = [];
 
@@ -445,7 +449,7 @@ export function deduplicateAlerts(alerts: WeatherAlert[]): WeatherAlert[] {
     }
   }
 
-  return order.map(key => {
+  let result = order.map(key => {
     const group = groups.get(key)!;
     if (group.length === 1) return group[0];
 
@@ -463,5 +467,32 @@ export function deduplicateAlerts(alerts: WeatherAlert[]): WeatherAlert[] {
     representative.mergedCount = group.length;
     return representative;
   });
+
+  // Phase 2: collapse duplicates across providers (e.g., NWS + PirateWeather).
+  // Alerts with endsTs === 0 are excluded — can't match without an expiry.
+  if (providerPriority && providerPriority.length > 1) {
+    const rank = new Map<AlertProvider, number>();
+    for (let i = 0; i < providerPriority.length; i++) {
+      if (!rank.has(providerPriority[i])) rank.set(providerPriority[i], i);
+    }
+
+    const bestProvider = new Map<string, AlertProvider>();
+    for (const alert of result) {
+      if (alert.endsTs === 0) continue;
+      const key = `${alert.event}\0${alert.endsTs}`;
+      const current = bestProvider.get(key);
+      if (!current || (rank.get(alert.provider) ?? Infinity) < (rank.get(current) ?? Infinity)) {
+        bestProvider.set(key, alert.provider);
+      }
+    }
+
+    result = result.filter(alert => {
+      if (alert.endsTs === 0) return true;
+      const key = `${alert.event}\0${alert.endsTs}`;
+      return alert.provider === bestProvider.get(key);
+    });
+  }
+
+  return result;
 }
 

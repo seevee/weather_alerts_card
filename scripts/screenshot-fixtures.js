@@ -139,3 +139,34 @@ export const ALERT_MINOR = {
 };
 
 export const ALERTS_WITH_MINOR = [...ALERTS, ALERT_MINOR];
+
+// PirateWeather-format duplicates of some NWS alerts (for cross-provider dedup demos).
+// Uses the PirateWeather indexed attribute format (title_0, severity_0, etc.)
+// with matching event names and expiry times so the card's dedup logic merges them.
+export const PIRATE_WEATHER_ATTRS = {
+  attribution: 'Powered by Pirate Weather',
+  // Duplicate of ALERTS[0] (Tornado of Compliments)
+  title_0: ALERTS[0].Event,
+  severity_0: ALERTS[0].Severity,
+  time_0: ALERTS[0].Sent,
+  expires_0: ALERTS[0].Ends,
+  regions_0: ['Pleasantville', 'Sunnyside'],
+  uri_0: 'https://example.com/pirateweather/screenshot-1',
+  description_0: ALERTS[0].Description,
+  // Duplicate of ALERTS[1] (Gusty Wind Warning)
+  title_1: ALERTS[1].Event,
+  severity_1: ALERTS[1].Severity,
+  time_1: ALERTS[1].Sent,
+  expires_1: ALERTS[1].Ends,
+  regions_1: ['Sampletown County'],
+  uri_1: 'https://example.com/pirateweather/screenshot-2',
+  description_1: ALERTS[1].Description,
+  // Unique PirateWeather-only alert (no NWS equivalent)
+  title_2: 'Sunshine Heat Advisory',
+  severity_2: 'Moderate',
+  time_2: iso(-0.75 * H),
+  expires_2: iso(6 * H),
+  regions_2: ['Greater Exampleville Metro'],
+  uri_2: 'https://example.com/pirateweather/screenshot-extra',
+  description_2: 'Extended sunshine may cause squinting. Sunglasses recommended.',
+};

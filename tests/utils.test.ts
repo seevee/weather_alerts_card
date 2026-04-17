@@ -13,7 +13,7 @@ import {
   getDisplayHeadline,
   reflowAlertText,
 } from '../src/utils';
-import type { WeatherAlert } from '../src/types';
+import type { WeatherAlert, AlertProvider } from '../src/types';
 
 function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
   return {
@@ -579,6 +579,92 @@ describe('getDisplayHeadline', () => {
       event: 'Flood Warning for Bokhara River',
       headline: 'Flood Warning',
     }), false)).toBe('Flood Warning');
+  });
+});
+
+describe('deduplicateAlerts cross-provider', () => {
+  const priority: AlertProvider[] = ['nws', 'pirateweather', 'bom'];
+
+  it('returns empty array for empty input', () => {
+    expect(deduplicateAlerts([], priority)).toEqual([]);
+  });
+
+  it('single alert passes through unchanged', () => {
+    const alert = makeAlert({ provider: 'nws' });
+    const result = deduplicateAlerts([alert], priority);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('test-1');
+  });
+
+  it('keeps higher-priority provider when event + endsTs match across providers', () => {
+    const nws = makeAlert({ id: 'nws-1', provider: 'nws', event: 'Flood Warning', endsTs: 5000 });
+    const pw = makeAlert({ id: 'pw-1', provider: 'pirateweather', event: 'Flood Warning', endsTs: 5000 });
+    const result = deduplicateAlerts([nws, pw], priority);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('nws-1');
+  });
+
+  it('keeps both when event matches but endsTs differs', () => {
+    const a = makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 5000 });
+    const b = makeAlert({ id: 'b', provider: 'pirateweather', event: 'Flood Warning', endsTs: 6000 });
+    const result = deduplicateAlerts([a, b], priority);
+    expect(result).toHaveLength(2);
+  });
+
+  it('keeps both when endsTs matches but event differs', () => {
+    const a = makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 5000 });
+    const b = makeAlert({ id: 'b', provider: 'pirateweather', event: 'Wind Advisory', endsTs: 5000 });
+    const result = deduplicateAlerts([a, b], priority);
+    expect(result).toHaveLength(2);
+  });
+
+  it('never matches alerts with endsTs === 0', () => {
+    const a = makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 0 });
+    const b = makeAlert({ id: 'b', provider: 'pirateweather', event: 'Flood Warning', endsTs: 0 });
+    const result = deduplicateAlerts([a, b], priority);
+    expect(result).toHaveLength(2);
+  });
+
+  it('three providers, two matching — keeps highest priority', () => {
+    const bom = makeAlert({ id: 'bom-1', provider: 'bom', event: 'Flood Warning', endsTs: 5000 });
+    const pw = makeAlert({ id: 'pw-1', provider: 'pirateweather', event: 'Flood Warning', endsTs: 5000 });
+    const nws = makeAlert({ id: 'nws-1', provider: 'nws', event: 'Flood Warning', endsTs: 5000 });
+    const result = deduplicateAlerts([bom, pw, nws], priority);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('nws-1');
+  });
+
+  it('preserves all alerts from same provider with different within-provider keys', () => {
+    const a = makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 5000, severity: 'severe' });
+    const b = makeAlert({ id: 'b', provider: 'nws', event: 'Flood Warning', endsTs: 5000, severity: 'moderate' });
+    const result = deduplicateAlerts([a, b], priority);
+    expect(result).toHaveLength(2);
+  });
+
+  it('mixed: some match cross-provider, some do not — correct filtering and ordering', () => {
+    const nwsFlood = makeAlert({ id: 'nws-flood', provider: 'nws', event: 'Flood Warning', endsTs: 5000 });
+    const pwFlood = makeAlert({ id: 'pw-flood', provider: 'pirateweather', event: 'Flood Warning', endsTs: 5000 });
+    const nwsWind = makeAlert({ id: 'nws-wind', provider: 'nws', event: 'Wind Advisory', endsTs: 7000 });
+    const result = deduplicateAlerts([nwsFlood, pwFlood, nwsWind], priority);
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe('nws-flood');
+    expect(result[1].id).toBe('nws-wind');
+  });
+
+  it('second entity provider loses to first entity provider', () => {
+    const pwFirst: AlertProvider[] = ['pirateweather', 'nws'];
+    const nws = makeAlert({ id: 'nws-1', provider: 'nws', event: 'Flood Warning', endsTs: 5000 });
+    const pw = makeAlert({ id: 'pw-1', provider: 'pirateweather', event: 'Flood Warning', endsTs: 5000 });
+    const result = deduplicateAlerts([nws, pw], pwFirst);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('pw-1');
+  });
+
+  it('is a no-op when only one provider in priority list', () => {
+    const a = makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 5000, severity: 'severe' });
+    const b = makeAlert({ id: 'b', provider: 'nws', event: 'Flood Warning', endsTs: 5000, severity: 'moderate' });
+    const result = deduplicateAlerts([a, b], ['nws']);
+    expect(result).toHaveLength(2);
   });
 });
 

@@ -39,6 +39,15 @@ const PROVIDER_LABELS: Record<string, string> = {
   bom: 'BoM',
   meteoalarm: 'MeteoAlarm',
   dwd: 'DWD',
+  pirateweather: 'Pirate Weather',
+};
+
+const PROVIDER_SHORT: Record<string, string> = {
+  nws: 'NWS',
+  bom: 'BoM',
+  meteoalarm: 'MA',
+  dwd: 'DWD',
+  pirateweather: 'PW',
 };
 
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS)
@@ -214,24 +223,33 @@ export class WeatherAlertsCard extends LitElement {
     return this._getAllEntities().sort().join(',');
   }
 
+  private _multiProvider = false;
+
   private _getAlerts(): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
     const allAlerts: WeatherAlert[] = [];
+    const providerPriority: AlertProvider[] = [];
+    const seenProviders = new Set<AlertProvider>();
     for (const entityId of this._getAllEntities()) {
       const entity = this.hass.states[entityId];
       if (!entity) continue;
       const adapter = getAdapter(this._config.provider, entity.attributes);
+      if (!seenProviders.has(adapter.provider)) {
+        seenProviders.add(adapter.provider);
+        providerPriority.push(adapter.provider);
+      }
       allAlerts.push(...adapter.parseAlerts(entity.attributes));
     }
-    return this._filterAndSort(allAlerts);
+    this._multiProvider = providerPriority.length > 1;
+    return this._filterAndSort(allAlerts, { providerPriority });
   }
 
-  private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean }): WeatherAlert[] {
+  private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean; providerPriority?: AlertProvider[] }): WeatherAlert[] {
     if (!this._config) return alerts;
     let result = alerts;
 
     if (this._config.deduplicate !== false) {
-      result = deduplicateAlerts(result);
+      result = deduplicateAlerts(result, opts?.providerPriority);
     }
 
     if (!opts?.skipZones && this._config.zones && this._config.zones.length > 0) {
@@ -440,6 +458,7 @@ export class WeatherAlertsCard extends LitElement {
           <div class="icon-box">
             <ha-icon icon=${getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
           </div>
+          ${this._renderProviderHint(alert)}
           <span class="alert-title">${alert.event}</span>
           <span class="compact-time">${compactTimeLabel}</span>
           <ha-icon
@@ -503,6 +522,7 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           <div class="info-box">
             <div class="title-row">
+              ${this._renderProviderHint(alert)}
               <span class="alert-title">${alert.event}</span>
             </div>
             ${this._renderHeadline(alert)}
@@ -539,6 +559,12 @@ export class WeatherAlertsCard extends LitElement {
         `) : nothing}
       </div>
     `;
+  }
+
+  private _renderProviderHint(alert: WeatherAlert): TemplateResult | typeof nothing {
+    if (this._config?.showProvider === false) return nothing;
+    const code = PROVIDER_SHORT[alert.provider] || alert.provider.toUpperCase();
+    return html`<span class="provider-hint">${code}</span>`;
   }
 
   private _renderHeadline(alert: WeatherAlert): TemplateResult | typeof nothing {
