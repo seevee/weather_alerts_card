@@ -250,6 +250,10 @@ The card was renamed from "NWS Alerts Card" to "Weather Alerts Card" in v2.0 to 
 
 </details>
 
+## Support
+
+If you find this card useful, tip me at [Ko-fi](https://ko-fi.com/seeveezee) to support development, or donate to [The Y'all Squad](https://www.theyallsquad.org/donate) — a rapid-response program providing direct aid, chainsaws, and supplies to families affected by severe weather events.
+
 ---
 
 **Resources:** [Home Assistant Community thread](https://community.home-assistant.io/t/nws-alerts-card)
