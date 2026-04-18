@@ -315,34 +315,49 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  /**
-   * Add or remove our managed visibility condition.
-   * Preserves any user-defined conditions already present.
-   */
-  private _syncVisibilityCondition(
-    existing: Record<string, unknown>[] | undefined,
-    entity: string,
-    add: boolean,
-  ): Record<string, unknown>[] | undefined {
-    const isOurs = (c: Record<string, unknown>): boolean =>
-      c.condition === 'state' && c.entity === entity
-      && ('state_not' in c || 'state' in c);
-    const conditions = (existing || []).filter(c => !isOurs(c));
-    if (add) {
-      // binary_sensor (MeteoAlarm) uses "on"/"off"; sensors use numeric count "0","1",...
-      if (entity.startsWith('binary_sensor.')) {
-        conditions.push({ condition: 'state', entity, state: 'on' });
-      } else {
-        conditions.push({ condition: 'state', entity, state_not: '0' });
-      }
+  private _buildEntityCondition(entity: string): Record<string, unknown> {
+    // binary_sensor (MeteoAlarm) uses "on"/"off"; sensors use numeric count "0","1",...
+    if (entity.startsWith('binary_sensor.')) {
+      return { condition: 'state', entity, state: 'on' };
     }
-    return conditions.length > 0 ? conditions : undefined;
+    return { condition: 'state', entity, state_not: '0' };
+  }
+
+  private _isManagedCondition(
+    c: Record<string, unknown>,
+    managedIds: Set<string>,
+  ): boolean {
+    // Flat managed condition: scoped to current entity IDs so we don't disturb
+    // unrelated user-authored state conditions.
+    if (
+      c.condition === 'state'
+      && typeof c.entity === 'string'
+      && managedIds.has(c.entity)
+      && ('state_not' in c || 'state' in c)
+    ) {
+      return true;
+    }
+    // OR wrapper: matched by shape so stale wrappers (e.g. after entity
+    // removal) are also cleaned up on the next sync.
+    if (c.condition === 'or' && Array.isArray(c.conditions)) {
+      const subs = c.conditions as Record<string, unknown>[];
+      return subs.length > 0 && subs.every(sub =>
+        sub.condition === 'state'
+        && typeof sub.entity === 'string'
+        && (
+          ('state_not' in sub && sub.state_not === '0')
+          || ('state' in sub && sub.state === 'on')
+        ),
+      );
+    }
+    return false;
   }
 
   /**
    * Rebuild visibility conditions for all configured entities (primary + extras).
-   * When hideNoAlerts is true, adds a condition per entity (OR logic in HA).
-   * When false, removes all managed conditions.
+   * HA combines top-level visibility conditions with AND, so for 2+ entities we
+   * wrap per-entity state conditions in an `or` block — otherwise the card
+   * would stay hidden unless every entity had alerts.
    */
   private _syncMultiEntityVisibility(
     config: WeatherAlertsCardConfig,
@@ -351,20 +366,20 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (config.entity) allIds.add(config.entity);
     if (config.entities) config.entities.forEach(id => allIds.add(id));
 
-    // Strip all our managed conditions first
-    let conditions = config.visibility;
-    for (const id of allIds) {
-      conditions = this._syncVisibilityCondition(conditions, id, false);
-    }
+    const conditions = (config.visibility || []).filter(
+      c => !this._isManagedCondition(c, allIds),
+    );
 
-    // Re-add if hideNoAlerts is active
-    if (config.hideNoAlerts) {
-      for (const id of allIds) {
-        conditions = this._syncVisibilityCondition(conditions, id, true);
+    if (config.hideNoAlerts && allIds.size > 0) {
+      const perEntity = [...allIds].map(id => this._buildEntityCondition(id));
+      if (perEntity.length === 1) {
+        conditions.push(perEntity[0]);
+      } else {
+        conditions.push({ condition: 'or', conditions: perEntity });
       }
     }
 
-    return conditions;
+    return conditions.length > 0 ? conditions : undefined;
   }
 
   private _reformatTextChanged(ev: Event): void {
