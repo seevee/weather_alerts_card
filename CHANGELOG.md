@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.11.1 — 2026-04-18
+
+### Documentation
+- Add Support section to README (#147) (a90b4f0…)
+
+### Fixed
+- Use OR wrapper for multi-entity hideNoAlerts visibility (#148) (8a809fc…)
+
 ## 2.11.0 — 2026-04-17
 
 ### Added
