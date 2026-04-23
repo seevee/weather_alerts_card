@@ -585,17 +585,28 @@ meteoalarm() {
   # Province-level analysis from the top country's cached feed
   local atom_file="$CACHE_DIR/meteoalarm-atom-${top_slug}.xml"
 
-  if [ -s "$atom_file" ]; then
+  # Split areaDesc on commas — some countries (e.g. Ukraine) aggregate all
+  # affected regions into a single areaDesc. HA's meteoalarm integration
+  # matches province as a substring of areaDesc, so individual region names
+  # surface far more diverse alerts than the full aggregated string.
+  local areas
+  areas=$(grep -oP '(?<=<cap:areaDesc>)[^<]+' "$atom_file" 2>/dev/null \
+    | sed 's/&amp;amp;/\&/g; s/&amp;/\&/g' \
+    | tr ',' '\n' \
+    | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+    | grep -v '^$')
+
+  if [ -n "$areas" ]; then
     echo ""
     echo "  ── Top provinces ──"
-    grep -oP '(?<=<cap:areaDesc>)[^<]+' "$atom_file" | sed 's/&amp;amp;/\&/g; s/&amp;/\&/g' | sort | uniq -c | sort -rn | head -5 | \
+    echo "$areas" | sort | uniq -c | sort -rn | head -5 | \
       while read -r cnt name; do
-        printf "    %-35s %s alerts\n" "$name" "$cnt"
+        printf "    %-50s %s alerts\n" "$name" "$cnt"
       done
   fi
 
   local top_province
-  top_province=$(grep -oP '(?<=<cap:areaDesc>)[^<]+' "$atom_file" 2>/dev/null | sed 's/&amp;amp;/\&/g; s/&amp;/\&/g' | sort | uniq -c | sort -rn | head -1 | sed 's/^ *[0-9]* *//')
+  top_province=$(echo "$areas" | sort | uniq -c | sort -rn | head -1 | sed 's/^ *[0-9]* *//')
 
   echo ""
   echo "  country:  $top_slug"
