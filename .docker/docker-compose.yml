@@ -5,7 +5,10 @@ services:
       dockerfile: .docker/Dockerfile
     container_name: weather-alerts-card-ha
     restart: unless-stopped
-    network_mode: bridge
+    network_mode: host
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "8123:8123"
     volumes:
