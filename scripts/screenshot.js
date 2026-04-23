@@ -201,7 +201,10 @@ const PORT = 3742;
       name: 'contrast',
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-contrast.html`,
       canvasId: 'contrast-canvas',
-      cardIds: ['card-contrast-off', 'card-contrast-on', 'card-contrast-default-off', 'card-contrast-default-on'],
+      cardIds: [
+        'card-contrast-compact-off', 'card-contrast-compact-subtle', 'card-contrast-compact-strict',
+        'card-contrast-default-off', 'card-contrast-default-subtle', 'card-contrast-default-strict',
+      ],
       variants: [
         { theme: 'theme-light', label: 'contrast light', out: 'img/contrast-light.png' },
         { theme: 'theme-dark',  label: 'contrast dark ', out: 'img/contrast-dark.png' },
@@ -232,7 +235,7 @@ const PORT = 3742;
   // Close the 1x context and create a 2x one for composite captures
   await context.close();
   const compositeContext = await browser.newContext({
-    viewport: { width: 1100, height: 900 },
+    viewport: { width: 1600, height: 900 },
     deviceScaleFactor: 2,
   });
   const compositePage = await compositeContext.newPage();

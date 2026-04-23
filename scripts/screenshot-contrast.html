@@ -56,17 +56,18 @@
       font-family: Roboto, "Noto Sans", sans-serif;
     }
 
-    /* 2×2 grid: columns = raw / enhanced; rows = compact / default.
+    /* 2×3 grid: columns = off / subtle / strict contrast modes;
+       rows = compact / default.
        Compact row holds every fixture; default row shows a trimmed subset
        so the cards' full-layout details don't blow out vertical height. */
     .contrast-canvas {
       background: var(--contrast-bg);
       padding: 32px 28px 28px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       column-gap: 28px;
       row-gap: 28px;
-      width: 1060px;
+      width: 1540px;
     }
 
     .showcase {
@@ -100,39 +101,57 @@
 
   <div class="contrast-canvas" id="contrast-canvas">
 
-    <!-- Row 1: compact × raw -->
+    <!-- Row 1: compact × off -->
     <div class="showcase">
-      <div class="section-label">Compact &middot; Raw</div>
-      <div class="section-sub">enhanceContrast: false</div>
+      <div class="section-label">Compact &middot; Off</div>
+      <div class="section-sub">enhanceContrast: 'off'</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-off"></nws-alerts-card>
+        <nws-alerts-card id="card-contrast-compact-off"></nws-alerts-card>
       </div>
     </div>
 
-    <!-- Row 1: compact × enhanced -->
+    <!-- Row 1: compact × subtle -->
     <div class="showcase">
-      <div class="section-label">Compact &middot; Enhanced</div>
-      <div class="section-sub">enhanceContrast: true (default)</div>
+      <div class="section-label">Compact &middot; Subtle</div>
+      <div class="section-sub">enhanceContrast: 'subtle' (default)</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-on"></nws-alerts-card>
+        <nws-alerts-card id="card-contrast-compact-subtle"></nws-alerts-card>
       </div>
     </div>
 
-    <!-- Row 2: default × raw -->
+    <!-- Row 1: compact × strict -->
     <div class="showcase">
-      <div class="section-label">Default &middot; Raw</div>
-      <div class="section-sub">enhanceContrast: false</div>
+      <div class="section-label">Compact &middot; Strict</div>
+      <div class="section-sub">enhanceContrast: 'strict'</div>
+      <div class="card-inner">
+        <nws-alerts-card id="card-contrast-compact-strict"></nws-alerts-card>
+      </div>
+    </div>
+
+    <!-- Row 2: default × off -->
+    <div class="showcase">
+      <div class="section-label">Default &middot; Off</div>
+      <div class="section-sub">enhanceContrast: 'off'</div>
       <div class="card-inner">
         <nws-alerts-card id="card-contrast-default-off"></nws-alerts-card>
       </div>
     </div>
 
-    <!-- Row 2: default × enhanced -->
+    <!-- Row 2: default × subtle -->
     <div class="showcase">
-      <div class="section-label">Default &middot; Enhanced</div>
-      <div class="section-sub">enhanceContrast: true (default)</div>
+      <div class="section-label">Default &middot; Subtle</div>
+      <div class="section-sub">enhanceContrast: 'subtle' (default)</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-default-on"></nws-alerts-card>
+        <nws-alerts-card id="card-contrast-default-subtle"></nws-alerts-card>
+      </div>
+    </div>
+
+    <!-- Row 2: default × strict -->
+    <div class="showcase">
+      <div class="section-label">Default &middot; Strict</div>
+      <div class="section-sub">enhanceContrast: 'strict'</div>
+      <div class="card-inner">
+        <nws-alerts-card id="card-contrast-default-strict"></nws-alerts-card>
       </div>
     </div>
 
@@ -226,47 +245,29 @@
     const compactHass = makeHass(COMPACT_ALERTS);
     const defaultHass = makeHass(DEFAULT_ALERTS);
 
-    // Compact row
-    const off = document.getElementById('card-contrast-off');
-    off.setConfig({
-      type: 'custom:nws-alerts-card',
-      entity: NWS_ENTITY,
-      animations: false,
-      colorTheme: 'nws',
-      layout: 'compact',
-      enhanceContrast: false,
-    });
-    off.hass = compactHass;
+    const configure = (id, { layout, enhanceContrast }, hass) => {
+      const el = document.getElementById(id);
+      const cfg = {
+        type: 'custom:nws-alerts-card',
+        entity: NWS_ENTITY,
+        animations: false,
+        colorTheme: 'nws',
+      };
+      if (layout) cfg.layout = layout;
+      if (enhanceContrast !== undefined) cfg.enhanceContrast = enhanceContrast;
+      el.setConfig(cfg);
+      el.hass = hass;
+    };
 
-    const on = document.getElementById('card-contrast-on');
-    on.setConfig({
-      type: 'custom:nws-alerts-card',
-      entity: NWS_ENTITY,
-      animations: false,
-      colorTheme: 'nws',
-      layout: 'compact',
-    });
-    on.hass = compactHass;
+    // Compact row: off / subtle (default) / strict
+    configure('card-contrast-compact-off',    { layout: 'compact', enhanceContrast: 'off'    }, compactHass);
+    configure('card-contrast-compact-subtle', { layout: 'compact'                             }, compactHass);
+    configure('card-contrast-compact-strict', { layout: 'compact', enhanceContrast: 'strict' }, compactHass);
 
-    // Default-layout row (trimmed fixture set)
-    const defaultOff = document.getElementById('card-contrast-default-off');
-    defaultOff.setConfig({
-      type: 'custom:nws-alerts-card',
-      entity: NWS_ENTITY,
-      animations: false,
-      colorTheme: 'nws',
-      enhanceContrast: false,
-    });
-    defaultOff.hass = defaultHass;
-
-    const defaultOn = document.getElementById('card-contrast-default-on');
-    defaultOn.setConfig({
-      type: 'custom:nws-alerts-card',
-      entity: NWS_ENTITY,
-      animations: false,
-      colorTheme: 'nws',
-    });
-    defaultOn.hass = defaultHass;
+    // Default row (trimmed fixture set): off / subtle (default) / strict
+    configure('card-contrast-default-off',    { enhanceContrast: 'off'    }, defaultHass);
+    configure('card-contrast-default-subtle', {                            }, defaultHass);
+    configure('card-contrast-default-strict', { enhanceContrast: 'strict' }, defaultHass);
   </script>
 </body>
 </html>
