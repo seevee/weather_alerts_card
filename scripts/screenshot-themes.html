@@ -103,7 +103,7 @@
       <div class="section-label">Severity</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-severity"></nws-alerts-card>
+          <weather-alerts-card id="card-severity"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@
       <div class="section-label">NWS Official</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-nws"></nws-alerts-card>
+          <weather-alerts-card id="card-nws"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -123,7 +123,7 @@
       <div class="section-label">MeteoAlarm</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-meteoalarm"></nws-alerts-card>
+          <weather-alerts-card id="card-meteoalarm"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -202,15 +202,15 @@
 
     // ---- Wire up cards — all compact, different color themes ----
     const severity = document.getElementById('card-severity');
-    severity.setConfig({ type: 'custom:nws-alerts-card', entity: ENTITY, animations: false, colorTheme: 'severity', layout: 'compact' });
+    severity.setConfig({ type: 'custom:weather-alerts-card', entity: ENTITY, animations: false, colorTheme: 'severity', layout: 'compact' });
     severity.hass = MOCK_HASS;
 
     const nws = document.getElementById('card-nws');
-    nws.setConfig({ type: 'custom:nws-alerts-card', entity: ENTITY, animations: false, colorTheme: 'nws', layout: 'compact' });
+    nws.setConfig({ type: 'custom:weather-alerts-card', entity: ENTITY, animations: false, colorTheme: 'nws', layout: 'compact' });
     nws.hass = MOCK_HASS;
 
     const meteoalarm = document.getElementById('card-meteoalarm');
-    meteoalarm.setConfig({ type: 'custom:nws-alerts-card', entity: ENTITY, animations: false, colorTheme: 'meteoalarm', layout: 'compact' });
+    meteoalarm.setConfig({ type: 'custom:weather-alerts-card', entity: ENTITY, animations: false, colorTheme: 'meteoalarm', layout: 'compact' });
     meteoalarm.hass = MOCK_HASS;
   </script>
 </body>

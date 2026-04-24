@@ -106,7 +106,7 @@
       <div class="section-label">Compact &middot; Off</div>
       <div class="section-sub">enhanceContrast: 'off'</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-compact-off"></nws-alerts-card>
+        <weather-alerts-card id="card-contrast-compact-off"></weather-alerts-card>
       </div>
     </div>
 
@@ -115,7 +115,7 @@
       <div class="section-label">Compact &middot; Subtle</div>
       <div class="section-sub">enhanceContrast: 'subtle' (default)</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-compact-subtle"></nws-alerts-card>
+        <weather-alerts-card id="card-contrast-compact-subtle"></weather-alerts-card>
       </div>
     </div>
 
@@ -124,7 +124,7 @@
       <div class="section-label">Compact &middot; Strict</div>
       <div class="section-sub">enhanceContrast: 'strict'</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-compact-strict"></nws-alerts-card>
+        <weather-alerts-card id="card-contrast-compact-strict"></weather-alerts-card>
       </div>
     </div>
 
@@ -133,7 +133,7 @@
       <div class="section-label">Default &middot; Off</div>
       <div class="section-sub">enhanceContrast: 'off'</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-default-off"></nws-alerts-card>
+        <weather-alerts-card id="card-contrast-default-off"></weather-alerts-card>
       </div>
     </div>
 
@@ -142,7 +142,7 @@
       <div class="section-label">Default &middot; Subtle</div>
       <div class="section-sub">enhanceContrast: 'subtle' (default)</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-default-subtle"></nws-alerts-card>
+        <weather-alerts-card id="card-contrast-default-subtle"></weather-alerts-card>
       </div>
     </div>
 
@@ -151,7 +151,7 @@
       <div class="section-label">Default &middot; Strict</div>
       <div class="section-sub">enhanceContrast: 'strict'</div>
       <div class="card-inner">
-        <nws-alerts-card id="card-contrast-default-strict"></nws-alerts-card>
+        <weather-alerts-card id="card-contrast-default-strict"></weather-alerts-card>
       </div>
     </div>
 
@@ -248,7 +248,7 @@
     const configure = (id, { layout, enhanceContrast }, hass) => {
       const el = document.getElementById(id);
       const cfg = {
-        type: 'custom:nws-alerts-card',
+        type: 'custom:weather-alerts-card',
         entity: NWS_ENTITY,
         animations: false,
         colorTheme: 'nws',

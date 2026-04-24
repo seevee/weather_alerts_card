@@ -41,8 +41,6 @@ export interface WeatherAlertsCardConfig {
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes
   deduplicate?: boolean;     // undefined/true: dedup on; false: dedup off
   deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all verbatim
-  /** @deprecated Use deduplicateHeadlines instead */
-  headline?: boolean;
   hideExpired?: boolean;     // undefined/true: hide expired alerts; false: show them (dimmed)
   hideNoAlerts?: boolean;    // undefined/false: show "No active alerts" banner; true: hide it
   showDetails?: boolean;     // undefined/true: show expandable detail panel; false: hide entirely
@@ -158,9 +156,6 @@ export interface DwdWarning {
   color: string;          // hex color, e.g. "#FFFF00"
   parameters: Record<string, string>;
 }
-
-/** @deprecated Use WeatherAlertsCardConfig instead. Removed in v3. */
-export type NwsAlertsCardConfig = WeatherAlertsCardConfig;
 
 export interface AlertProgress {
   isActive: boolean;

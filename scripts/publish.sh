@@ -74,22 +74,6 @@ else
     --strip header)
 fi
 
-MIGRATION_NOTICE="
----
-
-<details>
-<summary><strong>Migrating from v1.x</strong></summary>
-
-The card was renamed from **NWS Alerts Card** to **Weather Alerts Card** to reflect multi-provider support. Your existing dashboards will continue to work — the old element name is supported but deprecated.
-
-1. Update your dashboard YAML: change \`type: custom:nws-alerts-card\` to \`type: custom:weather-alerts-card\`
-2. Update your resource URL:
-   - **HACS users:** HACS updates the resource path automatically — no action needed.
-   - **Manual install:** In Settings → Dashboards → Resources, change \`/local/nws-alerts-card.js\` to \`/local/weather-alerts-card.js\`
-3. The old names will be removed in v3.
-
-</details>"
-
 # Append new-contributors section
 if [ ${#NEW_CONTRIBUTORS[@]} -gt 0 ]; then
   CONTRIB_SECTION="
@@ -111,11 +95,6 @@ if [ -n "$CUSTOM_NOTES" ]; then
 ---
 
 $CUSTOM_NOTES"
-fi
-
-if [ "$PRERELEASE" = false ]; then
-  NOTES="$NOTES
-$MIGRATION_NOTICE"
 fi
 
 if gh release view "$TAG" >/dev/null 2>&1; then

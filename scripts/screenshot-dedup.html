@@ -98,7 +98,7 @@
       <div class="section-label">NWS + Pirate Weather &middot; Dedup Off</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-dedup-off"></nws-alerts-card>
+          <weather-alerts-card id="card-dedup-off"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -108,7 +108,7 @@
       <div class="section-label">NWS + Pirate Weather &middot; Dedup On</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-dedup-on"></nws-alerts-card>
+          <weather-alerts-card id="card-dedup-on"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -195,7 +195,7 @@
     // Left: dedup off — shows all alerts from both providers
     const dedupOff = document.getElementById('card-dedup-off');
     dedupOff.setConfig({
-      type: 'custom:nws-alerts-card',
+      type: 'custom:weather-alerts-card',
       entity: NWS_ENTITY,
       entities: [PW_ENTITY],
       animations: false,
@@ -209,7 +209,7 @@
     // Right: dedup on — cross-provider duplicates collapsed
     const dedupOn = document.getElementById('card-dedup-on');
     dedupOn.setConfig({
-      type: 'custom:nws-alerts-card',
+      type: 'custom:weather-alerts-card',
       entity: NWS_ENTITY,
       entities: [PW_ENTITY],
       animations: false,

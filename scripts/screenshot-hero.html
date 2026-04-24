@@ -103,7 +103,7 @@
       <div class="section-label">Default &middot; Severity Colors</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-severity"></nws-alerts-card>
+          <weather-alerts-card id="card-severity"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@
       <div class="section-label">Compact &middot; NWS Colors</div>
       <div class="card-wrapper">
         <div class="card-inner">
-          <nws-alerts-card id="card-nws"></nws-alerts-card>
+          <weather-alerts-card id="card-nws"></weather-alerts-card>
         </div>
       </div>
     </div>
@@ -190,11 +190,11 @@
 
     // ---- Wire up cards ----
     const severity = document.getElementById('card-severity');
-    severity.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'severity' });
+    severity.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'severity' });
     severity.hass = MOCK_HASS;
 
     const nws = document.getElementById('card-nws');
-    nws.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
+    nws.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
     nws.hass = MOCK_HASS;
   </script>
 </body>

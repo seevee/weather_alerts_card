@@ -65,10 +65,10 @@
   -->
 
   <div class="card-wrapper">
-    <nws-alerts-card id="card-severity-open"></nws-alerts-card>
+    <weather-alerts-card id="card-severity-open"></weather-alerts-card>
   </div>
   <div class="card-wrapper">
-    <nws-alerts-card id="card-nws-compact"></nws-alerts-card>
+    <weather-alerts-card id="card-nws-compact"></weather-alerts-card>
   </div>
 
   <script type="module">
@@ -147,12 +147,12 @@
 
     // Default layout, severity colors.
     const severityOpen = document.getElementById('card-severity-open');
-    severityOpen.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'severity' });
+    severityOpen.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'severity' });
     severityOpen.hass = MOCK_HASS;
 
     // Compact layout, NWS colors — all alerts collapsed (shows the space-efficient row UI).
     const nwsCompact = document.getElementById('card-nws-compact');
-    nwsCompact.setConfig({ type: 'custom:nws-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
+    nwsCompact.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
     nwsCompact.hass = MOCK_HASS;
   </script>
 </body>

@@ -725,7 +725,7 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderHeadline(alert: WeatherAlert): TemplateResult | typeof nothing {
-    const smart = (this._config?.deduplicateHeadlines ?? this._config?.headline) !== false;
+    const smart = this._config?.deduplicateHeadlines !== false;
     const text = getDisplayHeadline(alert, smart);
     if (!text) return nothing;
     return html`
@@ -873,18 +873,6 @@ export class WeatherAlertsCard extends LitElement {
   }
 }
 
-// Deprecated shim — removed in v3.0.0
-class DeprecatedNwsAlertsCard extends WeatherAlertsCard {
-  connectedCallback() {
-    super.connectedCallback();
-    console.warn(
-      'nws-alerts-card is deprecated and will be removed in v3.0. ' +
-      'Update your dashboard YAML to use "custom:weather-alerts-card".',
-    );
-  }
-}
-customElements.define('nws-alerts-card', DeprecatedNwsAlertsCard);
-
 // Register with HA card picker
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const w = window as any;
@@ -895,15 +883,9 @@ w.customCards.push({
   preview: true,
   description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).',
 });
-w.customCards.push({
-  type: 'nws-alerts-card',
-  name: 'NWS Alerts Card (Deprecated)',
-  description: 'Deprecated — use "Weather Alerts Card" instead. Will be removed in v3.0.',
-});
 
 declare global {
   interface HTMLElementTagNameMap {
     'weather-alerts-card': WeatherAlertsCard;
-    'nws-alerts-card': DeprecatedNwsAlertsCard;
   }
 }

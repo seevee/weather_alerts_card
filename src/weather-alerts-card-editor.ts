@@ -212,10 +212,9 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _deduplicateHeadlinesChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const dedup = target.checked;
-    const current = (this._config.deduplicateHeadlines ?? this._config.headline) !== false;
+    const current = this._config.deduplicateHeadlines !== false;
     if (dedup === current) return;
     const newConfig = { ...this._config };
-    delete newConfig.headline; // drop deprecated key
     if (dedup) {
       delete newConfig.deduplicateHeadlines;
     } else {
@@ -846,7 +845,7 @@ export class WeatherAlertsCardEditor extends LitElement {
 
         <ha-formfield .label=${t('editor.deduplicate_headlines', lang)}>
           <ha-switch
-            .checked=${(this._config.deduplicateHeadlines ?? this._config.headline) !== false}
+            .checked=${this._config.deduplicateHeadlines !== false}
             @change=${this._deduplicateHeadlinesChanged}
           ></ha-switch>
         </ha-formfield>
@@ -945,13 +944,8 @@ export class WeatherAlertsCardEditor extends LitElement {
   `;
 }
 
-// Deprecated shim — removed in v3.0.0
-class DeprecatedNwsAlertsCardEditor extends WeatherAlertsCardEditor {}
-customElements.define('nws-alerts-card-editor', DeprecatedNwsAlertsCardEditor);
-
 declare global {
   interface HTMLElementTagNameMap {
     'weather-alerts-card-editor': WeatherAlertsCardEditor;
-    'nws-alerts-card-editor': DeprecatedNwsAlertsCardEditor;
   }
 }

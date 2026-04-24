@@ -18,10 +18,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
-      - name: Create backwards-compatible copy under old name
-        run: cp dist/weather-alerts-card.js dist/nws-alerts-card.js
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/weather-alerts-card.js
-            dist/nws-alerts-card.js
