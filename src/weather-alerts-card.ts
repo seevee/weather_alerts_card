@@ -1,7 +1,16 @@
 import { LitElement, html, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord } from './types';
+import {
+  loadDismissals,
+  saveDismissals,
+  dismissAlert,
+  undoDismiss,
+  applyDismissals,
+  computeScopeHash,
+  subscribeToDismissalChanges,
+} from './dismissal';
 import {
   getWeatherIcon,
   getCertaintyIcon,
@@ -142,6 +151,9 @@ export class WeatherAlertsCard extends LitElement {
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
   @state() private _forcePreview = false;
+  @state() private _dismissals: Map<string, DismissalRecord> = new Map();
+  private _dismissalsScope = '';
+  private _unsubscribeDismissals?: () => void;
 
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
@@ -149,11 +161,18 @@ export class WeatherAlertsCard extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._motionQuery.addEventListener('change', this._onMotionChange);
+    // Re-prune stale records (30d TTL) on every mount.
+    if (this._config) {
+      this._dismissalsScope = '';
+      this._reloadDismissalsIfScopeChanged();
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this._motionQuery.removeEventListener('change', this._onMotionChange);
+    this._unsubscribeDismissals?.();
+    this._unsubscribeDismissals = undefined;
     if (this._config?.entity) {
       WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), this._expandedAlerts);
     }
@@ -175,6 +194,36 @@ export class WeatherAlertsCard extends LitElement {
     if (saved) {
       this._expandedAlerts = saved;
     }
+    this._reloadDismissalsIfScopeChanged();
+  }
+
+  private get _scopeHash(): string {
+    const entities = this._getAllEntities();
+    if (entities.length === 0) return '';
+    const [primary, ...extras] = entities;
+    return computeScopeHash(primary, extras);
+  }
+
+  private _reloadDismissalsIfScopeChanged(): void {
+    const scope = this._scopeHash;
+    if (scope === this._dismissalsScope) return;
+    this._dismissalsScope = scope;
+    this._dismissals = scope ? loadDismissals(scope) : new Map();
+    this._resubscribeDismissals();
+  }
+
+  private _resubscribeDismissals(): void {
+    this._unsubscribeDismissals?.();
+    this._unsubscribeDismissals = undefined;
+    if (!this.isConnected || !this._dismissalsScope) return;
+    this._unsubscribeDismissals = subscribeToDismissalChanges(
+      this._dismissalsScope,
+      () => {
+        // Any card instance (or the editor) may have written — pick up the
+        // canonical state from storage rather than trusting in-memory.
+        this._dismissals = loadDismissals(this._dismissalsScope);
+      },
+    );
   }
 
   public getCardSize(): number {
@@ -242,7 +291,69 @@ export class WeatherAlertsCard extends LitElement {
       allAlerts.push(...adapter.parseAlerts(entity.attributes));
     }
     this._multiProvider = providerPriority.length > 1;
-    return this._filterAndSort(allAlerts, { providerPriority });
+    let filtered = this._filterAndSort(allAlerts, { providerPriority });
+    if (this._config.allowDismiss && !this._forcePreview && this._dismissals.size > 0) {
+      const { visible, updatedMap } = applyDismissals(filtered, this._dismissals);
+      if (updatedMap !== this._dismissals) {
+        this._dismissals = updatedMap;
+        if (this._dismissalsScope) saveDismissals(this._dismissalsScope, updatedMap);
+      }
+      filtered = visible;
+    }
+    return filtered;
+  }
+
+  private _onDismiss(alert: WeatherAlert): void {
+    if (!this._dismissalsScope) return;
+    const next = dismissAlert(this._dismissals, alert);
+    this._dismissals = next;
+    saveDismissals(this._dismissalsScope, next);
+    if (this._config?.showDismissUndo !== false) {
+      this._fireUndoToast(alert);
+    }
+  }
+
+  private _onUndo(id: string): void {
+    if (!this._dismissalsScope) return;
+    const next = undoDismiss(this._dismissals, id);
+    if (next === this._dismissals) return;
+    this._dismissals = next;
+    saveDismissals(this._dismissalsScope, next);
+  }
+
+  private _fireUndoToast(alert: WeatherAlert): void {
+    const lang = this._lang;
+    this.dispatchEvent(new CustomEvent('hass-notification', {
+      detail: {
+        message: t('card.dismissed_toast', lang, { event: alert.event }),
+        duration: 4000,
+        action: {
+          text: t('card.dismissed_toast_undo', lang),
+          action: () => this._onUndo(alert.id),
+        },
+      },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
+  private _canDismiss(): boolean {
+    return !!this._config?.allowDismiss && !this._forcePreview;
+  }
+
+  private _renderDismissButton(alert: WeatherAlert): TemplateResult | typeof nothing {
+    if (!this._canDismiss()) return nothing;
+    return html`
+      <button
+        type="button"
+        class="dismiss-button"
+        aria-label=${t('card.dismiss', this._lang)}
+        title=${t('card.dismiss', this._lang)}
+        @click=${(e: Event) => { e.stopPropagation(); this._onDismiss(alert); }}
+      >
+        <ha-icon icon="mdi:close"></ha-icon>
+      </button>
+    `;
   }
 
   private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean; providerPriority?: AlertProvider[] }): WeatherAlert[] {
@@ -508,6 +619,7 @@ export class WeatherAlertsCard extends LitElement {
             icon="mdi:chevron-down"
             class="compact-chevron ${expanded ? 'expanded' : ''}"
           ></ha-icon>
+          ${this._renderDismissButton(alert)}
         </div>
         ${expanded ? this._renderExpandedContent(alert, progress) : nothing}
       </div>
@@ -580,6 +692,7 @@ export class WeatherAlertsCard extends LitElement {
               ${this._renderBadgesRow(alert, progress)}
             </div>
           </div>
+          ${this._renderDismissButton(alert)}
         </div>
 
         ${this._renderProgressSection(alert, progress)}

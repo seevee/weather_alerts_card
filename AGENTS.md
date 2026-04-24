@@ -82,6 +82,8 @@ interface WeatherAlertsCardConfig {
   showInstructions?: boolean;  // undefined/true: show instructions block in details; false: hide
   showSourceLink?: boolean;    // undefined/true: show "Open Source" link; false: hide (kiosk mode)
   timezone?: 'server' | 'browser'; // undefined/'server': HA server tz; 'browser': client tz
+  allowDismiss?: boolean;      // undefined/false: no dismiss UI; true: per-alert × button backed by browser-local dismissal list (keyed on entity-set hash). Re-surfaces automatically when severity/sentTs/endsTs/phase change
+  showDismissUndo?: boolean;   // undefined/true: fire HA's hass-notification toast with Undo on dismiss; false: silent. Has no effect when allowDismiss is off
 }
 ```
 
