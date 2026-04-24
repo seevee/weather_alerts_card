@@ -446,6 +446,41 @@ export const cardStyles = css`
     font-size: calc(0.85rem * var(--wac-scale, 1));
   }
 
+  /* --- DISMISS BUTTON --- */
+  .dismiss-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    width: calc(24px * var(--wac-scale, 1));
+    height: calc(24px * var(--wac-scale, 1));
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--secondary-text-color);
+    opacity: 0.6;
+    transition: opacity 0.2s, background 0.2s;
+    --mdc-icon-size: calc(18px * var(--wac-scale, 1));
+  }
+  .dismiss-button:hover,
+  .dismiss-button:focus-visible {
+    opacity: 1;
+    background: rgba(var(--rgb-primary-text-color, 128, 128, 128), 0.08);
+    outline: none;
+  }
+  /* Full layout: align the button to the top-right of the header row so it
+     doesn't fight the icon/info block vertically. */
+  .alert-header-row:not(.compact-row) > .dismiss-button {
+    align-self: flex-start;
+    margin-left: auto;
+  }
+  .compact-row > .dismiss-button {
+    margin-left: 4px;
+  }
+
   /* --- COMPACT LAYOUT --- */
   .compact .alert-card {
     margin-bottom: 4px;

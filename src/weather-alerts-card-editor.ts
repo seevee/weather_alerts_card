@@ -3,12 +3,41 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode } from './types';
 import { canHandleAny, ENTITY_NAME_PATTERNS } from './adapters';
 import { t } from './localize';
+import { computeScopeHash, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
 
 @customElement('weather-alerts-card-editor')
 export class WeatherAlertsCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _showPreview = false;
+  private _subscribedDismissalsScope = '';
+  private _unsubscribeDismissals?: () => void;
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this._unsubscribeDismissals?.();
+    this._unsubscribeDismissals = undefined;
+    this._subscribedDismissalsScope = '';
+  }
+
+  protected updated(changed: Map<string, unknown>): void {
+    super.updated(changed);
+    // Keep the dismissal-change subscription aligned with the editor's
+    // current entity-set scope so dismiss/undo/restore-all events on any
+    // card instance refresh the admin line immediately.
+    const scope = this._currentScopeHash();
+    if (scope === this._subscribedDismissalsScope) return;
+    this._unsubscribeDismissals?.();
+    this._unsubscribeDismissals = undefined;
+    this._subscribedDismissalsScope = scope;
+    if (scope) {
+      this._unsubscribeDismissals = subscribeToDismissalChanges(
+        scope,
+        () => this.requestUpdate(),
+      );
+    }
+  }
+
   private get _lang(): string {
     return this.hass?.locale?.language || 'en';
   }
@@ -311,6 +340,52 @@ export class WeatherAlertsCardEditor extends LitElement {
     }
     this._fireConfigChanged(newConfig);
   }
+
+  private _allowDismissChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const allow = target.checked;
+    if (allow === (this._config.allowDismiss === true)) return;
+    const newConfig = { ...this._config };
+    if (allow) {
+      newConfig.allowDismiss = true;
+    } else {
+      delete newConfig.allowDismiss;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _showDismissUndoChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const show = target.checked;
+    if (show === (this._config.showDismissUndo !== false)) return;
+    const newConfig = { ...this._config };
+    if (show) {
+      delete newConfig.showDismissUndo;
+    } else {
+      newConfig.showDismissUndo = false;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _currentScopeHash(): string {
+    const ids = this._getSelectedEntities();
+    if (ids.length === 0) return '';
+    const [primary, ...extras] = ids;
+    return computeScopeHash(primary, extras);
+  }
+
+  private _getDismissedCount(): number {
+    const scope = this._currentScopeHash();
+    if (!scope) return 0;
+    return loadDismissals(scope).size;
+  }
+
+  private _onRestoreAll = (): void => {
+    const scope = this._currentScopeHash();
+    if (!scope) return;
+    restoreAll(scope);
+    this.requestUpdate();
+  };
 
   private _hideNoAlertsChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
@@ -790,6 +865,38 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
+        <ha-formfield .label=${t('editor.allow_dismiss', lang)}>
+          <ha-switch
+            .checked=${this._config.allowDismiss === true}
+            @change=${this._allowDismissChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        <ha-formfield .label=${t('editor.show_dismiss_undo', lang)}>
+          <ha-switch
+            .checked=${this._config.showDismissUndo !== false}
+            .disabled=${this._config.allowDismiss !== true}
+            @change=${this._showDismissUndoChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        ${this._renderDismissedStatus(lang)}
+
+      </div>
+    `;
+  }
+
+  private _renderDismissedStatus(lang: string): TemplateResult | typeof nothing {
+    if (this._config.allowDismiss !== true) return nothing;
+    const count = this._getDismissedCount();
+    if (count === 0) return nothing;
+    const key = count === 1 ? 'editor.dismissed_count_singular' : 'editor.dismissed_count';
+    return html`
+      <div class="dismissed-status">
+        ${t(key, lang, { count })}
+        <a class="restore-link" @click=${this._onRestoreAll} tabindex="0" role="button">
+          ${t('editor.restore_all', lang)}
+        </a>
       </div>
     `;
   }
@@ -820,6 +927,20 @@ export class WeatherAlertsCardEditor extends LitElement {
     }
     .preview-hint {
       opacity: 0.7;
+    }
+    .dismissed-status {
+      font-size: 0.85rem;
+      color: var(--secondary-text-color);
+      padding-left: 48px;
+    }
+    .restore-link {
+      color: var(--primary-color);
+      cursor: pointer;
+      text-decoration: underline;
+      margin-left: 4px;
+    }
+    .restore-link:hover {
+      text-decoration: none;
     }
   `;
 }

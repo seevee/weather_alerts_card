@@ -54,8 +54,21 @@ export interface WeatherAlertsCardConfig {
   showSourceLink?: boolean;  // undefined/true: show "Open Source" link; false: hide link (kiosk mode)
   timezone?: 'server' | 'browser';  // undefined/'server': HA server tz; 'browser': client tz
   reformatText?: boolean;    // undefined/true: strip hard line wraps from alert text; false: preserve raw formatting
+  allowDismiss?: boolean;    // undefined/false: no dismiss UI; true: per-alert × button with browser-local dismissal list
+  showDismissUndo?: boolean; // undefined/true: fire HA toast on dismiss; false: silent. No effect when allowDismiss is off
   _preview?: boolean;        // transient editor-only key — triggers preview mode in card
   visibility?: Record<string, unknown>[];  // HA-managed visibility conditions (set via dashboard editor)
+}
+
+/**
+ * Per-alert record in the browser-local dismissal list.
+ * sig captures the CAP-lifecycle fields that, when changed, should
+ * re-surface a dismissed alert (severity, sentTs, endsTs, phase).
+ */
+export interface DismissalRecord {
+  sig: string;
+  dismissedAt: number;  // Unix seconds
+  lastSeenAt: number;   // Unix seconds — refreshed while the alert is still present
 }
 
 // Normalized alert consumed by the card UI — provider-agnostic
