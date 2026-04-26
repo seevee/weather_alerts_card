@@ -1,7 +1,15 @@
-import { LitElement, html, nothing, TemplateResult } from 'lit';
+import { LitElement, html, nothing, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord } from './types';
+import type { Connection } from 'home-assistant-js-websocket';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry } from './types';
+import {
+  resolveDeviceAlertEntities,
+  deviceHasAnyEntity,
+  subscribeEntityRegistry,
+} from './registry';
+// Re-export for existing test imports.
+export { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import {
   loadDismissals,
   saveDismissals,
@@ -50,6 +58,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   meteoalarm: 'MeteoAlarm',
   dwd: 'DWD',
   pirateweather: 'Pirate Weather',
+  cap: 'CAP',
 };
 
 const PROVIDER_SHORT: Record<string, string> = {
@@ -58,9 +67,12 @@ const PROVIDER_SHORT: Record<string, string> = {
   meteoalarm: 'MA',
   dwd: 'DWD',
   pirateweather: 'PW',
+  cap: 'CAP',
 };
 
-// Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS)
+// Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS).
+// Registry helpers (resolveDeviceAlertEntities, deviceHasAnyEntity,
+// subscribeEntityRegistry) live in ./registry and are re-exported above.
 
 function getPreviewAlerts(): WeatherAlert[] {
   const now = Date.now() / 1000;
@@ -155,6 +167,12 @@ export class WeatherAlertsCard extends LitElement {
   private _dismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
 
+  // Live entity-registry copy. `null` until the WS subscription delivers;
+  // resolution helpers fall back to `hass.entities` while it is null.
+  private _registryEntries: EntityRegistryDisplayEntry[] | null = null;
+  private _unsubscribeRegistry?: () => void;
+  private _subscribedRegistryConn?: Connection;
+
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
 
@@ -166,6 +184,7 @@ export class WeatherAlertsCard extends LitElement {
       this._dismissalsScope = '';
       this._reloadDismissalsIfScopeChanged();
     }
+    this._maybeSubscribeRegistry();
   }
 
   disconnectedCallback() {
@@ -173,14 +192,59 @@ export class WeatherAlertsCard extends LitElement {
     this._motionQuery.removeEventListener('change', this._onMotionChange);
     this._unsubscribeDismissals?.();
     this._unsubscribeDismissals = undefined;
-    if (this._config?.entity) {
+    this._teardownRegistrySubscription();
+    if (this._config?.entity || this._config?.device) {
       WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), this._expandedAlerts);
     }
   }
 
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    // `hass` is set as a property after the element mounts, so the WS
+    // connection typically becomes available here rather than in
+    // connectedCallback. Subscribe lazily and re-subscribe if the
+    // connection object swaps (e.g., after a reconnect).
+    if (changed.has('hass') && this.isConnected) {
+      this._maybeSubscribeRegistry();
+    }
+  }
+
+  private _maybeSubscribeRegistry(): void {
+    const conn = this.hass?.connection;
+    if (!conn || conn === this._subscribedRegistryConn) return;
+    // New (or first) connection — drop any prior subscription.
+    this._unsubscribeRegistry?.();
+    this._unsubscribeRegistry = undefined;
+    this._subscribedRegistryConn = conn;
+    subscribeEntityRegistry(conn, (entries) => {
+      this._registryEntries = entries;
+      this.requestUpdate();
+    }).then((unsub) => {
+      // The connection (or our own state) may have changed while the
+      // subscribe round-trip was in flight; honour that by tearing the
+      // freshly-acquired subscription down rather than retaining it.
+      if (this._subscribedRegistryConn !== conn) {
+        unsub();
+        return;
+      }
+      this._unsubscribeRegistry = unsub;
+    }).catch(() => {
+      if (this._subscribedRegistryConn === conn) {
+        this._subscribedRegistryConn = undefined;
+      }
+    });
+  }
+
+  private _teardownRegistrySubscription(): void {
+    this._unsubscribeRegistry?.();
+    this._unsubscribeRegistry = undefined;
+    this._subscribedRegistryConn = undefined;
+  }
+
   public setConfig(config: WeatherAlertsCardConfig): void {
-    if (!config.entity && !(config.entities && config.entities.length > 0)) {
-      throw new Error('You need to define an entity');
+    const hasEntity = !!config.entity || !!config.entities?.length;
+    if (!hasEntity && !config.device) {
+      throw new Error('You need to define an entity or device');
     }
     const { _preview, ...rest } = config;
     // If entity is missing but entities is set, default entity to entities[0]
@@ -198,10 +262,26 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private get _scopeHash(): string {
-    const entities = this._getAllEntities();
-    if (entities.length === 0) return '';
-    const [primary, ...extras] = entities;
+    // Hash the *configured* sources (entity + device id), not the resolved
+    // entity list — device-mode alerts come and go, and the dismissal scope
+    // must stay stable across that churn.
+    const tokens = this._configuredScopeTokens();
+    if (tokens.length === 0) return '';
+    const [primary, ...extras] = tokens;
     return computeScopeHash(primary, extras);
+  }
+
+  private _configuredScopeTokens(): string[] {
+    if (!this._config) return [];
+    const tokens: string[] = [];
+    if (this._config.entity) tokens.push(this._config.entity);
+    if (this._config.entities) {
+      for (const id of this._config.entities) {
+        if (id) tokens.push(id);
+      }
+    }
+    if (this._config.device) tokens.push(`device:${this._config.device}`);
+    return tokens;
   }
 
   private _reloadDismissalsIfScopeChanged(): void {
@@ -266,14 +346,27 @@ export class WeatherAlertsCard extends LitElement {
         result.push(id);
       }
     }
+    if (this._config.device && this.hass) {
+      for (const id of resolveDeviceAlertEntities(this.hass, this._config.device, this._registryEntries)) {
+        if (!seen.has(id)) {
+          seen.add(id);
+          result.push(id);
+        }
+      }
+    }
     return result;
   }
 
   private _entityStateKey(): string {
-    return this._getAllEntities().sort().join(',');
+    return [...this._configuredScopeTokens()].sort().join(',');
   }
 
   private _multiProvider = false;
+
+  private _deviceHasAnyEntity(deviceId: string): boolean {
+    if (!this.hass) return false;
+    return deviceHasAnyEntity(this.hass, deviceId, this._registryEntries);
+  }
 
   private _getAlerts(): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
@@ -494,7 +587,7 @@ export class WeatherAlertsCard extends LitElement {
     const next = new Map(this._expandedAlerts);
     next.set(alertId, !next.get(alertId));
     this._expandedAlerts = next;
-    if (this._config?.entity) {
+    if (this._config?.entity || this._config?.device) {
       WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), next);
     }
   }
@@ -514,12 +607,17 @@ export class WeatherAlertsCard extends LitElement {
     const allEntityIds = this._getAllEntities();
     const resolvedEntities = allEntityIds.map(id => this.hass.states[id]).filter(Boolean);
 
-    if (resolvedEntities.length === 0 || this._forcePreview) {
+    // Device mode: if the device is registered (even when no per-alert
+    // children currently exist), treat zero-resolved as "no active alerts"
+    // rather than falling back to preview.
+    const deviceLinked = !!this._config.device && this._deviceHasAnyEntity(this._config.device);
+    if ((resolvedEntities.length === 0 && !deviceLinked) || this._forcePreview) {
       return this._renderPreview();
     }
 
     // Show unavailable only if all resolved entities are unavailable/unknown
-    const allUnavailable = resolvedEntities.every(e => e.state === 'unavailable' || e.state === 'unknown');
+    const allUnavailable = resolvedEntities.length > 0
+      && resolvedEntities.every(e => e.state === 'unavailable' || e.state === 'unknown');
     if (allUnavailable) {
       const stateVal = resolvedEntities[0].state;
       return html`

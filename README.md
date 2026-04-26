@@ -1,12 +1,12 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), and PirateWeather.
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.png)
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), and PirateWeather with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), PirateWeather, and CAP Alerts (multi-region) with auto-detection
 - **Color themes** — severity-based (default), NWS official event colors, or MeteoAlarm awareness level colors
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
@@ -47,9 +47,10 @@ Then click the Download button, and click Reload when prompted.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `entity` | *(required)* | Alert sensor entity |
+| `entity` | *(required, unless `device` is set)* | Alert sensor entity |
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'pirateweather'` |
+| `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape. Can be combined with `entity`/`entities` or used on its own. |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
@@ -147,6 +148,21 @@ type: custom:weather-alerts-card
 entity: sensor.pirateweather_alerts
 ```
 
+**CAP Alerts — auto-discover all per-alert sensors under a device**
+
+The [CAP Alerts integration](https://github.com/seevee/cap_alerts) creates one
+sensor per active alert under a Home Assistant device. Point the card at the
+device and it picks up every active alert sensor automatically — and re-picks
+them up as alerts are issued or cleared.
+
+```yaml
+type: custom:weather-alerts-card
+device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
+```
+
+Pick the device from the editor's CAP Alerts device selector to avoid hand-typing
+the id. `device` can also coexist with `entities:` for mixed setups.
+
 **Match Bubble Card styling (requires [card-mod](https://github.com/thomasloven/lovelace-card-mod))**
 
 <details>
@@ -216,6 +232,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
+| CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery |
 
 ## Data Fidelity
 
@@ -228,6 +245,7 @@ Severity and certainty badges are always localized to your configured language. 
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
 | DWD | Raw (from integer `level`) | Absent |
 | PirateWeather | Raw (from `severity` field) | Absent |
+| CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty` field) |
 
 ## Development
 

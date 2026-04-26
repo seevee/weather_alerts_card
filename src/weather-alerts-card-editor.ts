@@ -1,7 +1,9 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode } from './types';
+import type { Connection } from 'home-assistant-js-websocket';
+import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry } from './types';
 import { canHandleAny, ENTITY_NAME_PATTERNS } from './adapters';
+import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
 import { computeScopeHash, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
 
@@ -13,11 +15,18 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _subscribedDismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
 
+  // Live entity-registry copy. `null` until the WS subscription delivers;
+  // `_renderNoEntitiesHint` falls back to `hass.entities` while it is null.
+  private _registryEntries: EntityRegistryDisplayEntry[] | null = null;
+  private _unsubscribeRegistry?: () => void;
+  private _subscribedRegistryConn?: Connection;
+
   disconnectedCallback(): void {
     super.disconnectedCallback();
     this._unsubscribeDismissals?.();
     this._unsubscribeDismissals = undefined;
     this._subscribedDismissalsScope = '';
+    this._teardownRegistrySubscription();
   }
 
   protected updated(changed: Map<string, unknown>): void {
@@ -26,16 +35,48 @@ export class WeatherAlertsCardEditor extends LitElement {
     // current entity-set scope so dismiss/undo/restore-all events on any
     // card instance refresh the admin line immediately.
     const scope = this._currentScopeHash();
-    if (scope === this._subscribedDismissalsScope) return;
-    this._unsubscribeDismissals?.();
-    this._unsubscribeDismissals = undefined;
-    this._subscribedDismissalsScope = scope;
-    if (scope) {
-      this._unsubscribeDismissals = subscribeToDismissalChanges(
-        scope,
-        () => this.requestUpdate(),
-      );
+    if (scope !== this._subscribedDismissalsScope) {
+      this._unsubscribeDismissals?.();
+      this._unsubscribeDismissals = undefined;
+      this._subscribedDismissalsScope = scope;
+      if (scope) {
+        this._unsubscribeDismissals = subscribeToDismissalChanges(
+          scope,
+          () => this.requestUpdate(),
+        );
+      }
     }
+    if (this.isConnected) {
+      this._maybeSubscribeRegistry();
+    }
+  }
+
+  private _maybeSubscribeRegistry(): void {
+    const conn = this.hass?.connection;
+    if (!conn || conn === this._subscribedRegistryConn) return;
+    this._unsubscribeRegistry?.();
+    this._unsubscribeRegistry = undefined;
+    this._subscribedRegistryConn = conn;
+    subscribeEntityRegistry(conn, (entries) => {
+      this._registryEntries = entries;
+      this.requestUpdate();
+    }).then((unsub) => {
+      if (this._subscribedRegistryConn !== conn) {
+        unsub();
+        return;
+      }
+      this._unsubscribeRegistry = unsub;
+    }).catch(() => {
+      if (this._subscribedRegistryConn === conn) {
+        this._subscribedRegistryConn = undefined;
+      }
+    });
+  }
+
+  private _teardownRegistrySubscription(): void {
+    this._unsubscribeRegistry?.();
+    this._unsubscribeRegistry = undefined;
+    this._subscribedRegistryConn = undefined;
   }
 
   private get _lang(): string {
@@ -127,6 +168,17 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _renderNoEntitiesHint(lang: string): TemplateResult | typeof nothing {
+    // Device-mode: surface a distinct hint while resolution returns 0 so the
+    // user knows the device is wired correctly but has no active alerts yet.
+    if (this._config?.device && this.hass) {
+      const resolved = resolveDeviceAlertEntities(
+        this.hass,
+        this._config.device,
+        this._registryEntries,
+      );
+      if (resolved.length > 0) return nothing;
+      return html`<ha-alert alert-type="info">${t('editor.no_device_alerts_hint', lang)}</ha-alert>`;
+    }
     const ids = this._getMatchingEntityIds();
     // The list always includes the configured entity as a fallback;
     // check whether any entry actually exists in HA
@@ -159,6 +211,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _deviceChanged(ev: CustomEvent): void {
+    const value = ev.detail.value;
+    const deviceId: string = typeof value === 'string' ? value : '';
+    if (deviceId === (this._config.device || '')) return;
+    const newConfig: WeatherAlertsCardConfig = { ...this._config };
+    if (deviceId) {
+      newConfig.device = deviceId;
+    } else {
+      delete newConfig.device;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _titleChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const title = target.value;
@@ -179,7 +244,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (value === 'auto') {
       delete newConfig.provider;
     } else {
-      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather';
+      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap';
     }
     this._fireConfigChanged(newConfig);
   }
@@ -626,11 +691,21 @@ export class WeatherAlertsCardEditor extends LitElement {
           .selector=${{ entity: { multiple: true, include_entities: this._getMatchingEntityIds() } }}
           .value=${this._getSelectedEntities()}
           .label=${t('editor.entities', lang)}
-          .required=${true}
+          .required=${!this._config?.device}
           @value-changed=${this._entityChanged}
         ></ha-selector>
         ${this._renderEntityWarning(lang)}
         ${this._renderNoEntitiesHint(lang)}
+
+        <ha-selector
+          .hass=${this.hass}
+          .selector=${{ device: { integration: 'cap_alerts' } }}
+          .value=${this._config.device || ''}
+          .label=${t('editor.device', lang)}
+          .helper=${t('editor.device_helper', lang)}
+          .helperPersistent=${true}
+          @value-changed=${this._deviceChanged}
+        ></ha-selector>
 
         <div class="preview-tools">
           <ha-formfield .label=${t('editor.show_preview', lang)}>
@@ -668,6 +743,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>
         </ha-select>
 
         <!-- Filtering -->

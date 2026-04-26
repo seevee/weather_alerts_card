@@ -1,3 +1,5 @@
+import type { Connection } from 'home-assistant-js-websocket';
+
 // HA types (subset needed by card + editor)
 export interface HomeAssistant {
   states: Record<string, HassEntity>;
@@ -12,6 +14,10 @@ export interface HomeAssistant {
   themes?: {
     darkMode?: boolean;
   };
+  // Entity registry, keyed by entity_id. Available in HA 2023.4+.
+  entities?: Record<string, EntityRegistryDisplayEntry>;
+  // Live WS connection — used to subscribe to entity_registry updates.
+  connection?: Connection;
 }
 
 export interface HassEntity {
@@ -19,14 +25,24 @@ export interface HassEntity {
   attributes: Record<string, unknown>;
 }
 
+export interface EntityRegistryDisplayEntry {
+  entity_id: string;
+  device_id?: string | null;
+  area_id?: string | null;
+  hidden?: boolean;
+  entity_category?: string | null;
+  platform?: string;
+}
+
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 export interface WeatherAlertsCardConfig {
   type: string;
   entity: string;
   entities?: string[];           // additional entities to merge alerts from
+  device?: string;               // HA device_id — auto-discovers per-alert sensors under it. Provider-agnostic; currently only the CAP Alerts integration produces this shape.
   title?: string;
   zones?: string[];
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all

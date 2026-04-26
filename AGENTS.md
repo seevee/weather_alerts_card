@@ -4,7 +4,7 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), and PirateWeather. Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
+A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
 
 ## Build Commands
 
@@ -31,6 +31,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/meteoalarm.ts` | MeteoAlarm adapter: parses flat `binary_sensor` attributes → single-element `WeatherAlert[]`. Maps `awareness_level` to severity. |
 | `src/adapters/dwd.ts` | DWD adapter: parses `dwd_weather_warnings` sensor attributes → `WeatherAlert[]`. Detects via `warning_count` + `region_name`. |
 | `src/adapters/pirateweather.ts` | PirateWeather adapter: parses Pirate Weather integration attributes → `WeatherAlert[]`. Detects via attribution string. |
+| `src/adapters/cap.ts` | CAP Alerts adapter: each `sensor.cap_alert_*` entity carries one alert as flat CAP 1.2 attributes. Detects via `incident_platform_version`. Thin passthrough — normalisation happens in the integration. |
 | `src/localize.ts` | i18n system with 5 languages (en, fr, es, it, de). Exports `t(key, lang, params?)`. |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
@@ -39,10 +40,11 @@ Always run `npm run lint` and `npm run test` before committing.
 ## Key Patterns
 
 - The card uses an **adapter pattern** to support multiple alert providers. Each adapter converts raw entity attributes into a normalized `WeatherAlert[]` array.
-- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'`) or auto-detected from entity attributes.
+- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'` | `'cap'`) or auto-detected from entity attributes.
 - **NWS adapter**: reads `attributes.Alerts` array (NWS Alerts integration v6.1+). Zones extracted from `AffectedZones` URLs and `Geocode.UGC`.
 - **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology or ha_bom_australia integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent). Maps `area_id` to `zones` for zone-based filtering.
 - **MeteoAlarm adapter**: reads flat attributes from a `binary_sensor` entity (MeteoAlarm integration). Maps `awareness_level` (semicolon-delimited "level; color; label") to severity. Falls back to CAP `severity` attribute. Returns a single alert per entity (upstream library limitation). CAP fields (`certainty`, `urgency`, `description`, `instruction`) are passed through directly.
+- **CAP Alerts adapter**: each `sensor.cap_alert_*` entity exposes a single alert as flat CAP 1.2 attributes; the integration handles upstream fan-out (NWS / ECCC / MeteoAlarm). Detects via `incident_platform_version`. Severity is consumed pre-normalised from `severity_normalized`. Recommended setup: configure `device: <device_id>` (CAP Alerts device picker in the editor) — the card walks `hass.entities` and pulls every `sensor.cap_alert_*` child of that device automatically, so dynamically added/removed alert entities surface without re-editing the card. Manual `entities: [...]` listing is also supported but requires updates whenever the alert set changes.
 - The card UI only consumes normalized `WeatherAlert` objects — never raw provider data.
 - Severity levels map to CSS classes: `severity-extreme`, `severity-severe`, `severity-moderate`, `severity-minor`, `severity-unknown`, each with `--color` and `--color-rgb` custom properties.
 - Progress bars use inverted fill logic: the filled portion represents remaining time, positioned from the elapsed percentage.
@@ -56,6 +58,7 @@ Always run `npm run lint` and `npm run test` before committing.
 interface WeatherAlertsCardConfig {
   entity: string;              // required — e.g. "sensor.nws_alerts_alerts"
   entities?: string[];         // additional entities to merge alerts from
+  device?: string;             // HA device_id — auto-discovers per-alert sensors under it. Provider-agnostic; currently only the CAP Alerts integration produces this shape.
   title?: string;              // optional card header
   zones?: string[];            // optional zone filter — e.g. ["COC059", "COZ039"]
   eventCodes?: string[];       // event codes to include (provider-specific) — empty/omitted = all

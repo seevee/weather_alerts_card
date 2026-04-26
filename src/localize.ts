@@ -69,6 +69,9 @@ const en: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm (Europe)',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD (Germany)',
+  'editor.provider_cap': 'CAP Alerts (multi-region)',
+  'editor.device': 'CAP Alerts device (optional)',
+  'editor.device_helper': 'Pulls in every active alert sensor under this device automatically.',
   'editor.zones': 'Zones (optional)',
   'editor.zones_helper': 'Comma-separated BoM area_id codes, e.g. NSW_FL049',
   'editor.event_codes': 'Event codes (optional)',
@@ -126,6 +129,7 @@ const en: TranslationMap = {
   'editor.entity_warning': 'Selected entity does not appear to contain weather alert data.',
   'editor.no_entities_hint': 'No supported weather alert entities found. A provider integration (e.g. NWS Alerts) must be installed first.',
   'editor.no_entities_hint_link': 'Supported providers',
+  'editor.no_device_alerts_hint': 'No active alert sensors found under this device yet. The card will populate automatically when CAP Alerts publishes alerts.',
 
   // Editor section labels
   'editor.section_entity': 'Entities & Provider',
@@ -204,6 +208,9 @@ const fr: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm (Europe)',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD (Allemagne)',
+  'editor.provider_cap': 'Alertes CAP (multi-region)',
+  'editor.device': 'Appareil CAP Alerts (optionnel)',
+  'editor.device_helper': 'Recupere automatiquement chaque capteur d\'alerte actif sous cet appareil.',
   'editor.zones': 'Zones (optionnel)',
   'editor.zones_helper': 'Codes area_id BoM separes par des virgules, ex. NSW_FL049',
   'editor.event_codes': 'Codes d\'evenement (optionnel)',
@@ -261,6 +268,7 @@ const fr: TranslationMap = {
   'editor.entity_warning': 'L\'entite selectionnee ne semble pas contenir de donnees d\'alerte meteo.',
   'editor.no_entities_hint': 'Aucune entite d\'alerte meteo compatible trouvee. Une integration (ex. NWS Alerts) doit etre installee.',
   'editor.no_entities_hint_link': 'Fournisseurs supportes',
+  'editor.no_device_alerts_hint': 'Aucun capteur d\'alerte actif trouve sous cet appareil pour le moment. La carte se remplira automatiquement lorsque CAP Alerts publiera des alertes.',
 
   // Editor section labels
   'editor.section_entity': 'Entite et fournisseur',
@@ -339,6 +347,9 @@ const es: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm (Europa)',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD (Alemania)',
+  'editor.provider_cap': 'Alertas CAP (multi-region)',
+  'editor.device': 'Dispositivo CAP Alerts (opcional)',
+  'editor.device_helper': 'Incorpora automaticamente cada sensor de alerta activo bajo este dispositivo.',
   'editor.zones': 'Zonas (opcional)',
   'editor.zones_helper': 'Codigos area_id de BoM separados por comas, ej. NSW_FL049',
   'editor.event_codes': 'Codigos de evento (opcional)',
@@ -396,6 +407,7 @@ const es: TranslationMap = {
   'editor.entity_warning': 'La entidad seleccionada no parece contener datos de alerta meteorologica.',
   'editor.no_entities_hint': 'No se encontraron entidades de alerta meteorologica compatibles. Se debe instalar una integracion (ej. NWS Alerts).',
   'editor.no_entities_hint_link': 'Proveedores compatibles',
+  'editor.no_device_alerts_hint': 'Aun no se encontraron sensores de alerta activos bajo este dispositivo. La tarjeta se rellenara automaticamente cuando CAP Alerts publique alertas.',
 
   // Editor section labels
   'editor.section_entity': 'Entidad y proveedor',
@@ -474,6 +486,9 @@ const it: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm (Europa)',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD (Germania)',
+  'editor.provider_cap': 'Allerte CAP (multi-regione)',
+  'editor.device': 'Dispositivo CAP Alerts (opzionale)',
+  'editor.device_helper': 'Aggiunge automaticamente ogni sensore di allerta attivo sotto questo dispositivo.',
   'editor.zones': 'Zone (opzionale)',
   'editor.zones_helper': 'Codici area_id BoM separati da virgola, es. NSW_FL049',
   'editor.event_codes': 'Codici evento (opzionale)',
@@ -531,6 +546,7 @@ const it: TranslationMap = {
   'editor.entity_warning': 'L\'entità selezionata non sembra contenere dati di allerta meteo.',
   'editor.no_entities_hint': 'Nessuna entita di allerta meteo compatibile trovata. Un\'integrazione (es. NWS Alerts) deve essere installata.',
   'editor.no_entities_hint_link': 'Provider supportati',
+  'editor.no_device_alerts_hint': 'Nessun sensore di allerta attivo trovato sotto questo dispositivo per ora. La scheda si popolera automaticamente quando CAP Alerts pubblichera delle allerte.',
 
   // Editor section labels
   'editor.section_entity': 'Entità e fornitore',
@@ -609,6 +625,9 @@ const de: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm (Europa)',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD (Deutschland)',
+  'editor.provider_cap': 'CAP-Warnungen (multi-regional)',
+  'editor.device': 'CAP-Alerts-Gerät (optional)',
+  'editor.device_helper': 'Bezieht automatisch jeden aktiven Warnsensor unter diesem Gerät ein.',
   'editor.zones': 'Zonen (optional)',
   'editor.zones_helper': 'Kommagetrennte BoM area_id-Codes, z. B. NSW_FL049',
   'editor.event_codes': 'Ereigniscodes (optional)',
@@ -666,6 +685,7 @@ const de: TranslationMap = {
   'editor.entity_warning': 'Die ausgewählte Entität scheint keine Wetterwarnungsdaten zu enthalten.',
   'editor.no_entities_hint': 'Keine kompatiblen Wetterwarnungs-Entitaten gefunden. Eine Integration (z.B. NWS Alerts) muss installiert sein.',
   'editor.no_entities_hint_link': 'Unterstutzte Anbieter',
+  'editor.no_device_alerts_hint': 'Noch keine aktiven Warnsensoren unter diesem Gerat gefunden. Die Karte fullt sich automatisch, sobald CAP Alerts Warnungen veroffentlicht.',
 
   // Editor section labels
   'editor.section_entity': 'Entität und Anbieter',
