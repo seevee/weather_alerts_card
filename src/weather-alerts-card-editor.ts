@@ -127,6 +127,9 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _renderNoEntitiesHint(lang: string): TemplateResult | typeof nothing {
+    // A configured device satisfies the editor's "alert source" requirement
+    // even if no per-alert entities exist yet.
+    if (this._config?.device) return nothing;
     const ids = this._getMatchingEntityIds();
     // The list always includes the configured entity as a fallback;
     // check whether any entry actually exists in HA
@@ -159,6 +162,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _deviceChanged(ev: CustomEvent): void {
+    const value = ev.detail.value;
+    const deviceId: string = typeof value === 'string' ? value : '';
+    if (deviceId === (this._config.device || '')) return;
+    const newConfig: WeatherAlertsCardConfig = { ...this._config };
+    if (deviceId) {
+      newConfig.device = deviceId;
+    } else {
+      delete newConfig.device;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _titleChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const title = target.value;
@@ -179,7 +195,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (value === 'auto') {
       delete newConfig.provider;
     } else {
-      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather';
+      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap';
     }
     this._fireConfigChanged(newConfig);
   }
@@ -626,11 +642,21 @@ export class WeatherAlertsCardEditor extends LitElement {
           .selector=${{ entity: { multiple: true, include_entities: this._getMatchingEntityIds() } }}
           .value=${this._getSelectedEntities()}
           .label=${t('editor.entities', lang)}
-          .required=${true}
+          .required=${!this._config?.device}
           @value-changed=${this._entityChanged}
         ></ha-selector>
         ${this._renderEntityWarning(lang)}
         ${this._renderNoEntitiesHint(lang)}
+
+        <ha-selector
+          .hass=${this.hass}
+          .selector=${{ device: { integration: 'cap_alerts' } }}
+          .value=${this._config.device || ''}
+          .label=${t('editor.device', lang)}
+          .helper=${t('editor.device_helper', lang)}
+          .helperPersistent=${true}
+          @value-changed=${this._deviceChanged}
+        ></ha-selector>
 
         <div class="preview-tools">
           <ha-formfield .label=${t('editor.show_preview', lang)}>
@@ -668,6 +694,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>
         </ha-select>
 
         <!-- Filtering -->

@@ -29,7 +29,7 @@ import {
   getDisplayHeadline,
   reflowAlertText,
 } from './utils';
-import { getAdapter, ENTITY_NAME_PATTERNS } from './adapters';
+import { getAdapter, canHandleAny, ENTITY_NAME_PATTERNS } from './adapters';
 import { t } from './localize';
 import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
@@ -50,6 +50,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   meteoalarm: 'MeteoAlarm',
   dwd: 'DWD',
   pirateweather: 'Pirate Weather',
+  cap: 'CAP',
 };
 
 const PROVIDER_SHORT: Record<string, string> = {
@@ -58,9 +59,35 @@ const PROVIDER_SHORT: Record<string, string> = {
   meteoalarm: 'MA',
   dwd: 'DWD',
   pirateweather: 'PW',
+  cap: 'CAP',
 };
 
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS)
+
+/**
+ * Returns entity IDs of per-alert sensors that belong to the given device.
+ * Filters by attribute shape (any adapter's `canHandle`) rather than
+ * entity_id prefix — the CAP Alerts integration produces ids of the form
+ * `sensor.<device_slug>_cap_alert_<event>_<hash>`, so a prefix filter would
+ * miss them. Diagnostic siblings (count, last_updated) carry no recognised
+ * alert attributes and are skipped naturally.
+ *
+ * @internal exported for testing
+ */
+export function resolveDeviceAlertEntities(hass: HomeAssistant, deviceId: string): string[] {
+  const reg = hass.entities;
+  if (!reg) return [];
+  const result: string[] = [];
+  for (const entry of Object.values(reg)) {
+    if (!entry || entry.device_id !== deviceId) continue;
+    const id = entry.entity_id;
+    if (!id) continue;
+    const state = hass.states[id];
+    if (!state || !canHandleAny(state.attributes)) continue;
+    result.push(id);
+  }
+  return result;
+}
 
 function getPreviewAlerts(): WeatherAlert[] {
   const now = Date.now() / 1000;
@@ -173,14 +200,15 @@ export class WeatherAlertsCard extends LitElement {
     this._motionQuery.removeEventListener('change', this._onMotionChange);
     this._unsubscribeDismissals?.();
     this._unsubscribeDismissals = undefined;
-    if (this._config?.entity) {
+    if (this._config?.entity || this._config?.device) {
       WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), this._expandedAlerts);
     }
   }
 
   public setConfig(config: WeatherAlertsCardConfig): void {
-    if (!config.entity && !(config.entities && config.entities.length > 0)) {
-      throw new Error('You need to define an entity');
+    const hasEntity = !!config.entity || !!config.entities?.length;
+    if (!hasEntity && !config.device) {
+      throw new Error('You need to define an entity or device');
     }
     const { _preview, ...rest } = config;
     // If entity is missing but entities is set, default entity to entities[0]
@@ -198,10 +226,26 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private get _scopeHash(): string {
-    const entities = this._getAllEntities();
-    if (entities.length === 0) return '';
-    const [primary, ...extras] = entities;
+    // Hash the *configured* sources (entity + device id), not the resolved
+    // entity list — device-mode alerts come and go, and the dismissal scope
+    // must stay stable across that churn.
+    const tokens = this._configuredScopeTokens();
+    if (tokens.length === 0) return '';
+    const [primary, ...extras] = tokens;
     return computeScopeHash(primary, extras);
+  }
+
+  private _configuredScopeTokens(): string[] {
+    if (!this._config) return [];
+    const tokens: string[] = [];
+    if (this._config.entity) tokens.push(this._config.entity);
+    if (this._config.entities) {
+      for (const id of this._config.entities) {
+        if (id) tokens.push(id);
+      }
+    }
+    if (this._config.device) tokens.push(`device:${this._config.device}`);
+    return tokens;
   }
 
   private _reloadDismissalsIfScopeChanged(): void {
@@ -266,14 +310,31 @@ export class WeatherAlertsCard extends LitElement {
         result.push(id);
       }
     }
+    if (this._config.device && this.hass?.entities) {
+      for (const id of resolveDeviceAlertEntities(this.hass, this._config.device)) {
+        if (!seen.has(id)) {
+          seen.add(id);
+          result.push(id);
+        }
+      }
+    }
     return result;
   }
 
   private _entityStateKey(): string {
-    return this._getAllEntities().sort().join(',');
+    return [...this._configuredScopeTokens()].sort().join(',');
   }
 
   private _multiProvider = false;
+
+  private _deviceHasAnyEntity(deviceId: string): boolean {
+    const reg = this.hass?.entities;
+    if (!reg) return false;
+    for (const entry of Object.values(reg)) {
+      if (entry?.device_id === deviceId) return true;
+    }
+    return false;
+  }
 
   private _getAlerts(): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
@@ -494,7 +555,7 @@ export class WeatherAlertsCard extends LitElement {
     const next = new Map(this._expandedAlerts);
     next.set(alertId, !next.get(alertId));
     this._expandedAlerts = next;
-    if (this._config?.entity) {
+    if (this._config?.entity || this._config?.device) {
       WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), next);
     }
   }
@@ -514,12 +575,17 @@ export class WeatherAlertsCard extends LitElement {
     const allEntityIds = this._getAllEntities();
     const resolvedEntities = allEntityIds.map(id => this.hass.states[id]).filter(Boolean);
 
-    if (resolvedEntities.length === 0 || this._forcePreview) {
+    // Device mode: if the device is registered (even when no per-alert
+    // children currently exist), treat zero-resolved as "no active alerts"
+    // rather than falling back to preview.
+    const deviceLinked = !!this._config.device && this._deviceHasAnyEntity(this._config.device);
+    if ((resolvedEntities.length === 0 && !deviceLinked) || this._forcePreview) {
       return this._renderPreview();
     }
 
     // Show unavailable only if all resolved entities are unavailable/unknown
-    const allUnavailable = resolvedEntities.every(e => e.state === 'unavailable' || e.state === 'unknown');
+    const allUnavailable = resolvedEntities.length > 0
+      && resolvedEntities.every(e => e.state === 'unavailable' || e.state === 'unknown');
     if (allUnavailable) {
       const stateVal = resolvedEntities[0].state;
       return html`

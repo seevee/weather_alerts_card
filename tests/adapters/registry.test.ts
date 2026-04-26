@@ -60,6 +60,22 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('dwd');
   });
 
+  it('returns CAP adapter for explicit cap provider', () => {
+    const adapter = getAdapter('cap', {});
+    expect(adapter.provider).toBe('cap');
+  });
+
+  it('auto-detects CAP from incident_platform_version', () => {
+    const adapter = getAdapter(undefined, {
+      incident_platform_version: '1.0',
+      id: 'urn:oid:abc',
+      event: 'Tornado Warning',
+      severity: 'Severe',
+      severity_normalized: 'severe',
+    });
+    expect(adapter.provider).toBe('cap');
+  });
+
   it('auto-detects DWD from warning_count and region_name', () => {
     const adapter = getAdapter(undefined, {
       warning_count: 1,
@@ -110,6 +126,13 @@ describe('canHandleAny', () => {
     expect(canHandleAny({ attribution: 'Data provided by Pirate Weather' })).toBe(true);
   });
 
+  it('returns true for CAP Alerts attributes', () => {
+    expect(canHandleAny({
+      incident_platform_version: '1.0',
+      id: 'urn:oid:abc',
+    })).toBe(true);
+  });
+
   it('returns false for unrelated attributes', () => {
     expect(canHandleAny({ temperature: 72, humidity: 45 })).toBe(false);
   });
@@ -138,6 +161,22 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
   it('matches DWD weather warnings entity', () => {
     expect(matches('sensor.dwd_weather_warnings_hamburg_current')).toBe(true);
+  });
+
+  it('matches CAP Alerts per-alert entity (device-slug prefixed form)', () => {
+    expect(matches('sensor.cap_alerts_meteoalarm_germany_cap_alert_frost_ccd3fb06')).toBe(true);
+    expect(matches('sensor.cap_alerts_nws_pkz730_cap_alert_tornado_warning_a1b2c3d4')).toBe(true);
+  });
+
+  it('matches CAP Alerts per-alert entity (bare suggested-object-id form)', () => {
+    expect(matches('sensor.cap_alert_tornado_warning_a1b2c3d4')).toBe(true);
+  });
+
+  it('does not match CAP Alerts diagnostic entities', () => {
+    expect(matches('sensor.cap_alerts_meteoalarm_germany_alert_count')).toBe(false);
+    expect(matches('sensor.cap_alerts_meteoalarm_germany_last_updated')).toBe(false);
+    expect(matches('sensor.cap_alerts_count')).toBe(false);
+    expect(matches('sensor.cap_alerts_last_updated')).toBe(false);
   });
 
   it('does not match metadata entities with alert in the middle', () => {
