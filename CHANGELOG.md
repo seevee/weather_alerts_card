@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.0-alpha.2 — 2026-04-26
+
+### Added
+- Add CAP Alerts adapter with device auto-discovery (#158) (f0673bb…)
+
 ## 3.0.0-alpha.1 — 2026-04-24
 
 ### Added
