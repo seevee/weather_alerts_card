@@ -244,7 +244,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (value === 'auto') {
       delete newConfig.provider;
     } else {
-      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap';
+      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc';
     }
     this._fireConfigChanged(newConfig);
   }
@@ -614,7 +614,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _colorThemeChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'severity' | 'nws' | 'meteoalarm';
+    const value = ev.detail.value as 'severity' | 'nws' | 'meteoalarm' | 'eccc';
     if (value === (this._config.colorTheme || 'severity')) return;
     const newConfig = { ...this._config };
     if (value === 'severity') {
@@ -742,6 +742,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="bom">${t('editor.provider_bom', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="eccc">${t('editor.provider_eccc', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>
         </ha-select>
@@ -803,6 +804,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="severity">${t('editor.color_severity', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="nws">${t('editor.color_nws', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoalarm">${t('editor.color_meteoalarm', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="eccc">${t('editor.color_eccc', lang)}</ha-dropdown-item>
         </ha-select>
 
         <ha-select

@@ -4,6 +4,7 @@ import {
   getCertaintyIcon,
   getNwsEventColor,
   getMeteoAlarmColor,
+  getEcccColor,
   resolveContrastMode,
   computeAlertProgress,
   normalizeSeverity,
@@ -400,6 +401,48 @@ describe('getMeteoAlarmColor', () => {
     expect(getMeteoAlarmColor('minor', 'subtle').boostLight).toBe(false);
     expect(getMeteoAlarmColor('minor', 'strict').boostLight).toBe(true);
     expect(getMeteoAlarmColor('extreme', 'strict').boostLight).toBe(false);
+  });
+});
+
+describe('getEcccColor', () => {
+  it('returns palette hex for each ECCC color', () => {
+    expect(getEcccColor(makeAlert({ colorHint: 'red' })).color).toBe('#D10000');
+    expect(getEcccColor(makeAlert({ colorHint: 'orange' })).color).toBe('#FF9500');
+    expect(getEcccColor(makeAlert({ colorHint: 'yellow' })).color).toBe('#FFFF00');
+    expect(getEcccColor(makeAlert({ colorHint: 'grey' })).color).toBe('#656565');
+  });
+
+  it('is case-insensitive on colorHint', () => {
+    expect(getEcccColor(makeAlert({ colorHint: 'YELLOW' })).color).toBe('#FFFF00');
+    expect(getEcccColor(makeAlert({ colorHint: 'Red' })).color).toBe('#D10000');
+  });
+
+  it('falls back to severity table when colorHint is missing', () => {
+    expect(getEcccColor(makeAlert({ severity: 'extreme' })).color).toBe('#D10000');
+    expect(getEcccColor(makeAlert({ severity: 'severe' })).color).toBe('#FF9500');
+    expect(getEcccColor(makeAlert({ severity: 'moderate' })).color).toBe('#FFFF00');
+    expect(getEcccColor(makeAlert({ severity: 'minor' })).color).toBe('#656565');
+    expect(getEcccColor(makeAlert({ severity: 'unknown' })).color).toBe('#656565');
+  });
+
+  it('falls back to severity table when colorHint is unrecognised', () => {
+    expect(getEcccColor(makeAlert({ colorHint: 'fuchsia', severity: 'severe' })).color).toBe('#FF9500');
+  });
+
+  it('populates EventColor shape (rgb, text, boost flags)', () => {
+    const result = getEcccColor(makeAlert({ colorHint: 'red' }));
+    expect(result.color).toBe('#D10000');
+    expect(result.rgb).toBe('209, 0, 0');
+    expect(result.textColorLight).toBeTruthy();
+    expect(result.textColorDark).toBeTruthy();
+    expect(typeof result.boostLight).toBe('boolean');
+    expect(typeof result.boostDark).toBe('boolean');
+    expect(typeof result.progressBoostLight).toBe('boolean');
+    expect(typeof result.progressBoostDark).toBe('boolean');
+  });
+
+  it('flags yellow for text-tier boost on light (pure yellow vs white is ~1.07:1)', () => {
+    expect(getEcccColor(makeAlert({ colorHint: 'yellow' })).boostLight).toBe(true);
   });
 });
 

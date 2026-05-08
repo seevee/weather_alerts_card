@@ -94,6 +94,27 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('dwd');
   });
 
+  it('returns ECCC adapter for explicit eccc provider', () => {
+    const adapter = getAdapter('eccc', {});
+    expect(adapter.provider).toBe('eccc');
+  });
+
+  it('auto-detects ECCC from English attribution', () => {
+    const adapter = getAdapter(undefined, {
+      attribution: 'Data provided by Environment Canada',
+      alerts: [],
+    });
+    expect(adapter.provider).toBe('eccc');
+  });
+
+  it('auto-detects ECCC from French attribution', () => {
+    const adapter = getAdapter(undefined, {
+      attribution: 'Données fournies par Environnement Canada',
+      alerts: [],
+    });
+    expect(adapter.provider).toBe('eccc');
+  });
+
   it('defaults to NWS when attributes are ambiguous', () => {
     const adapter = getAdapter(undefined, {});
     expect(adapter.provider).toBe('nws');
@@ -133,6 +154,14 @@ describe('canHandleAny', () => {
     })).toBe(true);
   });
 
+  it('returns true for ECCC attributes (English attribution)', () => {
+    expect(canHandleAny({ attribution: 'Data provided by Environment Canada' })).toBe(true);
+  });
+
+  it('returns true for ECCC attributes (French attribution)', () => {
+    expect(canHandleAny({ attribution: 'Données fournies par Environnement Canada' })).toBe(true);
+  });
+
   it('returns false for unrelated attributes', () => {
     expect(canHandleAny({ temperature: 72, humidity: 45 })).toBe(false);
   });
@@ -148,6 +177,10 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
   it('matches warning entity names', () => {
     expect(matches('sensor.bom_brisbane_warnings')).toBe(true);
+  });
+
+  it('matches ECCC alert entity names', () => {
+    expect(matches('sensor.marathon_alerts')).toBe(true);
   });
 
   it('matches MeteoAlarm binary sensor', () => {

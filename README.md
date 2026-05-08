@@ -1,13 +1,13 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), PirateWeather, and CAP Alerts (multi-region).
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), ECCC (Canada), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.png)
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), PirateWeather, and CAP Alerts (multi-region) with auto-detection
-- **Color themes** — severity-based (default), NWS official event colors, or MeteoAlarm awareness level colors
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), ECCC (Canada), PirateWeather, and CAP Alerts (multi-region) with auto-detection
+- **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
@@ -50,12 +50,12 @@ Then click the Download button, and click Reload when prompted.
 | `entity` | *(required, unless `device` is set)* | Alert sensor entity |
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape. Can be combined with `entity`/`entities` or used on its own. |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'eccc'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
-| `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'` |
+| `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — `'eccc'` uses ECCC's published `red`/`orange`/`yellow`/`grey` palette (matches weather.gc.ca); falls back to the canonical severity tier for non-ECCC alerts displayed under this theme |
 | `enhanceContrast` | `'subtle'` | `'off'`, `'subtle'`, `'strict'` — boost foreground colors for NWS/MeteoAlarm events whose raw hex reads poorly against the active theme's card background, applied per event, per theme mode, and only in the direction where it fails. `'subtle'` (default) uses a text tier (~2:1 for icon/label) and a stricter progress tier (~1.3:1 for progress-bar fill, which catches near-invisible tints like yellow Tornado Watch). `'strict'` tightens both tiers (text ~3:1, progress ~2:1) toward WCAG AA-ish guarantees. `'off'` always renders raw theme hex values. Events that already read cleanly (e.g. Tornado Warning) render unchanged in all modes. |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
@@ -140,6 +140,19 @@ type: custom:weather-alerts-card
 entity: sensor.dwd_weather_warnings_current
 entities:
   - sensor.dwd_weather_warnings_advance
+```
+
+**ECCC (Canada)**
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.marathon_alerts
+```
+
+**ECCC with the official public-alert palette**
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.marathon_alerts
+colorTheme: eccc
 ```
 
 **PirateWeather alerts**
@@ -231,8 +244,11 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
+| ECCC | Canada | HACS [michaeldavie/environment_canada_hacs](https://github.com/michaeldavie/environment_canada_hacs) — *not* the bundled HA core integration; see note below |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery |
+
+> **Note on ECCC.** The HA core `environment_canada` integration does not currently expose alert details. Until the upstream [PR #164481](https://github.com/home-assistant/core/pull/164481) lands, the HACS custom component is the supported source.
 
 ## Data Fidelity
 
@@ -244,6 +260,7 @@ Severity and certainty badges are always localized to your configured language. 
 | BoM | Inferred (parsed from title/type/group) | Absent |
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
 | DWD | Raw (from integer `level`) | Absent |
+| ECCC | Inferred (max of `color`/`type`/`impact`) | Raw (from `confidence` field) |
 | PirateWeather | Raw (from `severity` field) | Absent |
 | CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty` field) |
 

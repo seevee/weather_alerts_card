@@ -623,6 +623,11 @@ meteoalarm() {
 # Atom entries use <category term="key=value"/> for CAP fields, <georss:polygon>
 # for coordinates, and area names in <summary>.
 # Ref: https://rss.naad-adna.pelmorex.com/
+#
+# NAAD retains entries well past their expiry (often 24h+). The Expires
+# timestamp lives only in the <summary> HTML, not in a category term, so
+# we parse it out and drop past-expiry entries — otherwise scoring is
+# dominated by recently-ended alerts that no HA integration will surface.
 
 eccc() {
   echo "ECCC — Environment and Climate Change Canada"
@@ -633,10 +638,16 @@ eccc() {
     echo "  FAIL: could not reach rss.naad-adna.pelmorex.com"; return 1
   }
 
+  # ISO timestamp without timezone suffix; entry Expires fields are UTC
+  # ("-00:00") and string-compare correctly once their suffix is stripped.
+  local now_iso
+  now_iso=$(date -u '+%Y-%m-%dT%H:%M:%S')
+
   # Parse entries into TSV: area \t severity \t event \t polygon \t urgency
   local parsed
-  parsed=$(echo "$feed" | sed 's/<entry>/\n<entry>/g' | awk '
-    /<entry>/ { lang = ""; status = ""; msg_type = ""; sev = ""; evt = ""; poly = ""; area = ""; urg = "" }
+  parsed=$(echo "$feed" | sed 's/<entry>/\n<entry>/g' | awk -v now_iso="$now_iso" '
+    function strip_tz(t) { sub(/Z$/, "", t); sub(/[+-][0-9][0-9]:?[0-9][0-9]$/, "", t); return t }
+    /<entry>/ { lang = ""; status = ""; msg_type = ""; sev = ""; evt = ""; poly = ""; area = ""; urg = ""; expires = "" }
     /term="language=/ { match($0, /term="language=([^"]*)"/, m); lang = m[1] }
     /term="status=/   { match($0, /term="status=([^"]*)"/, m); status = m[1] }
     /term="msgType=/  { match($0, /term="msgType=([^"]*)"/, m); msg_type = m[1] }
@@ -644,12 +655,16 @@ eccc() {
     /term="urgency=/  { match($0, /term="urgency=([^"]*)"/, m); urg = m[1] }
     /term="event=/    { match($0, /term="event=([^"]*)"/, m); evt = m[1] }
     /<georss:polygon>/ && poly == "" { match($0, /<georss:polygon>([^<]+)</, m); poly = m[1] }
+    /Expires:/ {
+      if (match($0, /Expires:[[:space:]]*([0-9T:.+\-]+)/, m)) expires = strip_tz(m[1])
+    }
     /Area:/ {
       match($0, /Area: ([^<]*)/, m); area = m[1]
       gsub(/&amp;/, "\\&", area); gsub(/&lt;/, "<", area); gsub(/&gt;/, ">", area)
     }
     /<\/entry>/ {
-      if (lang == "en-CA" && status == "Actual" && msg_type != "Cancel" && area != "")
+      if (lang == "en-CA" && status == "Actual" && msg_type != "Cancel" && area != "" \
+          && (expires == "" || expires > now_iso))
         print area "\t" sev "\t" evt "\t" poly "\t" urg
     }
   ')
@@ -719,7 +734,11 @@ eccc() {
   echo "$parsed" | cut -f3 | show_distribution "Event types" 45 8
 
   echo ""
-  echo "  Use these coordinates when configuring PirateWeather for Canadian alert testing."
+  echo "  HA integrations (all accept this lat/lon directly):"
+  echo "    cap_alerts:        provider=eccc, gps_loc=\"$lat,$lon\""
+  echo "    environment_canada: coordinates=($lat, $lon) — auto-finds nearest station"
+  echo "    pirateweather:     latitude=$lat, longitude=$lon"
+  echo "                        (note: WMO filtering drops most Canadian alerts)"
 }
 
 # ─── WMO CAP ─────────────────────────────────────────────────────────────────
