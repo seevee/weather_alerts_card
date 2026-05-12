@@ -35,7 +35,7 @@ export interface EntityRegistryDisplayEntry {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 export interface WeatherAlertsCardConfig {
@@ -52,7 +52,7 @@ export interface WeatherAlertsCardConfig {
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
-  colorTheme?: 'severity' | 'nws' | 'meteoalarm';
+  colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';
   enhanceContrast?: ContrastMode;  // undefined/'subtle': two-tier WCAG boost on NWS/MeteoAlarm colors — text tier (~2:1) darkens icon/label, progress tier (~1.3:1) darkens the progress-bar fill; 'strict': tighter thresholds (text ~3:1, progress ~2:1) for WCAG-AA-style accessibility; 'off': always render raw colors. Triggered per event + per theme mode against the active card background.
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes
   deduplicate?: boolean;     // undefined/true: dedup on; false: dedup off
@@ -109,6 +109,8 @@ export interface WeatherAlert {
   certaintyInferred: boolean; // true if certainty was synthesized/inferred, not raw from provider
   iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
+  colorHint?: string;      // Provider-published color tag (currently only ECCC: red/orange/yellow/grey/green); consumed by getEcccColor when colorTheme: 'eccc'
+  severityBadgeLabel?: string; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
 }
 
 // Adapter contract: converts raw entity attributes → WeatherAlert[]
@@ -157,6 +159,24 @@ export interface BomWarning {
   issue_time: string;       // ISO 8601 timestamp
   expiry_time: string;      // ISO 8601 timestamp
   phase: string;            // "new", "update", "renewal", "downgrade", "upgrade", "final", "cancelled"
+}
+
+// Raw ECCC alert shape published by the HACS environment_canada custom
+// component (michaeldavie/environment_canada_hacs). All fields are optional
+// because the integration filters None values before publishing.
+export interface EcccAlert {
+  title?: string;
+  issued?: string;       // ISO 8601 with timezone
+  expiry?: string;       // ISO 8601 with timezone
+  color?: string;        // 'red' | 'orange' | 'yellow' | 'grey' | 'green'
+  text?: string;         // multi-paragraph plain text
+  area?: string;         // single string, e.g. "Marathon - Schreiber"
+  status?: string;       // 'new' | 'continued' | 'updated' | 'cancelled' | 'ended' | …
+  confidence?: string;   // 'Low' | 'Moderate' | 'High'
+  impact?: string;       // 'Low' | 'Medium' | 'High'
+  alert_code?: string;   // EC short code, e.g. 'RFW'
+  type?: string;         // 'warning' | 'watch' | 'advisory' | 'statement' | 'ending'
+  url?: string;          // optional — only present when upstream sets it
 }
 
 // Raw DWD warning shape from the dwd_weather_warnings integration (nested object at warning_N keys)

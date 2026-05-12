@@ -258,6 +258,39 @@ export function getMeteoAlarmColor(severity: string, mode: ContrastMode = DEFAUL
   );
 }
 
+// ECCC public-alert palette (matches the `--alert-*-bg` palette on
+// weather.gc.ca, defined in `/204/css/base.css`).
+const ECCC_COLOR_PALETTE: Record<string, string> = {
+  red:    '#D10000',
+  orange: '#FF9500',
+  yellow: '#FFFF00',
+  grey:   '#656565',
+};
+
+// Fallback when colorHint is missing (e.g. non-ECCC alert displayed under
+// the eccc theme): pick a reasonable hex from the canonical severity tier.
+const ECCC_SEVERITY_FALLBACK: Record<string, string> = {
+  extreme:  '#D10000',
+  severe:   '#FF9500',
+  moderate: '#FFFF00',
+  minor:    '#656565',
+  unknown:  '#656565',
+};
+
+export function getEcccColor(alert: WeatherAlert, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor {
+  const hint = alert.colorHint?.toLowerCase();
+  const hex = (hint && ECCC_COLOR_PALETTE[hint])
+    ?? ECCC_SEVERITY_FALLBACK[alert.severity]
+    ?? '#808080';
+  return buildEventColor(
+    hex,
+    hexToRgbString(hex),
+    contrastRatio(hex, LIGHT_BG),
+    contrastRatio(hex, DARK_BG),
+    mode,
+  );
+}
+
 export function parseTimestamp(raw: string | undefined | null): number {
   if (!raw || raw === 'None' || raw.trim() === '') return 0;
   const d = new Date(raw.trim());
@@ -515,7 +548,7 @@ export function normalizeSeverity(severity: string | undefined): string {
   return 'unknown';
 }
 
-const SEVERITY_RANK: Record<string, number> = {
+export const SEVERITY_RANK: Record<string, number> = {
   extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
 };
 

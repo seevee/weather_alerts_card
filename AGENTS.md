@@ -4,7 +4,7 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
+A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), ECCC (Environment and Climate Change Canada — via the HACS [`environment_canada`](https://github.com/michaeldavie/environment_canada_hacs) custom component, *not* the bundled HA core integration), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
 
 ## Build Commands
 
@@ -32,6 +32,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/dwd.ts` | DWD adapter: parses `dwd_weather_warnings` sensor attributes → `WeatherAlert[]`. Detects via `warning_count` + `region_name`. |
 | `src/adapters/pirateweather.ts` | PirateWeather adapter: parses Pirate Weather integration attributes → `WeatherAlert[]`. Detects via attribution string. |
 | `src/adapters/cap.ts` | CAP Alerts adapter: each `sensor.cap_alert_*` entity carries one alert as flat CAP 1.2 attributes. Detects via `incident_platform_version`. Thin passthrough — normalisation happens in the integration. |
+| `src/adapters/eccc.ts` | ECCC adapter: parses the HACS `environment_canada` custom component's `attributes.alerts` array → `WeatherAlert[]`. Detects via Environment Canada attribution (English or French). Severity is synthesised as the max of `color`/`type`/`impact`. |
 | `src/localize.ts` | i18n system with 5 languages (en, fr, es, it, de). Exports `t(key, lang, params?)`. |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
@@ -40,7 +41,7 @@ Always run `npm run lint` and `npm run test` before committing.
 ## Key Patterns
 
 - The card uses an **adapter pattern** to support multiple alert providers. Each adapter converts raw entity attributes into a normalized `WeatherAlert[]` array.
-- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'` | `'cap'`) or auto-detected from entity attributes.
+- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'` | `'cap'` | `'eccc'`) or auto-detected from entity attributes.
 - **NWS adapter**: reads `attributes.Alerts` array (NWS Alerts integration v6.1+). Zones extracted from `AffectedZones` URLs and `Geocode.UGC`.
 - **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology or ha_bom_australia integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent). Maps `area_id` to `zones` for zone-based filtering.
 - **MeteoAlarm adapter**: reads flat attributes from a `binary_sensor` entity (MeteoAlarm integration). Maps `awareness_level` (semicolon-delimited "level; color; label") to severity. Falls back to CAP `severity` attribute. Returns a single alert per entity (upstream library limitation). CAP fields (`certainty`, `urgency`, `description`, `instruction`) are passed through directly.

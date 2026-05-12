@@ -11,7 +11,7 @@
 #   NWS:       1 (alerts/active) + 1-3 zone geometry lookups
 #   BoM:       1 (warnings) + 0-1 location search
 #   MeteoAlarm: up to 30 (per-country atom feeds, parallel) — legacy RSS is deprecated
-#   ECCC:      1 (NAAD atom)
+#   ECCC:      2 (NAAD atom + GeoMet WFS Current-Alerts; one per HA integration)
 #   WMO CAP:   1-3 (RSS per source) + 1 (CAP XML)
 #   DWD:       1 (warnings.json)
 #
@@ -620,23 +620,57 @@ meteoalarm() {
 }
 
 # ─── ECCC ─────────────────────────────────────────────────────────────────────
-# Atom entries use <category term="key=value"/> for CAP fields, <georss:polygon>
-# for coordinates, and area names in <summary>.
-# Ref: https://rss.naad-adna.pelmorex.com/
+# Environment and Climate Change Canada is served by two HA integrations that
+# read two different upstream feeds, and the feeds don't agree:
+#
+#   environment_canada (HACS) — GeoMet WFS Current-Alerts layer, point-in-
+#     polygon matched against the supplied lat/lon. Per-R.M. features with
+#     tight polygons; subject to WFS ingest lag and coverage gaps relative
+#     to NAAD. A NAAD-centroid is not guaranteed to land inside any WFS
+#     polygon, so this integration needs coords derived from the WFS layer
+#     itself.
+#   cap_alerts (provider=eccc) — NAAD CAP feed from Pelmorex (multi-region
+#     CAP polygons preserved). Same point-in-polygon model, against the
+#     authoritative firehose.
+#
+# This section emits separate recommendations for each integration.
+#
+# NAAD: https://rss.naad-adna.pelmorex.com/
+# WFS:  https://geo.weather.gc.ca/geomet?SERVICE=WFS&TYPENAMES=Current-Alerts
+#
+# NAAD retains entries well past their expiry (often 24h+). The Expires
+# timestamp lives only in the <summary> HTML, not in a category term, so
+# we parse it out and drop past-expiry entries — otherwise scoring is
+# dominated by recently-ended alerts that no HA integration will surface.
 
 eccc() {
   echo "ECCC — Environment and Climate Change Canada"
-  echo "  Fetching NAAD alert feed..."
+  echo "  Two HA integrations consume different feeds; recommending each separately."
+  eccc_naad
+  eccc_geomet
+}
+
+# NAAD CAP feed — the data source for cap_alerts (provider=eccc).
+eccc_naad() {
+  echo ""
+  echo "  ── NAAD CAP feed (for cap_alerts) ──"
+  echo "    Fetching NAAD alert feed..."
 
   local feed
   feed=$(cached_fetch "https://rss.naad-adna.pelmorex.com/" "$CACHE_DIR/eccc-naad.xml") || {
-    echo "  FAIL: could not reach rss.naad-adna.pelmorex.com"; return 1
+    echo "    FAIL: could not reach rss.naad-adna.pelmorex.com"; return 1
   }
+
+  # ISO timestamp without timezone suffix; entry Expires fields are UTC
+  # ("-00:00") and string-compare correctly once their suffix is stripped.
+  local now_iso
+  now_iso=$(date -u '+%Y-%m-%dT%H:%M:%S')
 
   # Parse entries into TSV: area \t severity \t event \t polygon \t urgency
   local parsed
-  parsed=$(echo "$feed" | sed 's/<entry>/\n<entry>/g' | awk '
-    /<entry>/ { lang = ""; status = ""; msg_type = ""; sev = ""; evt = ""; poly = ""; area = ""; urg = "" }
+  parsed=$(echo "$feed" | sed 's/<entry>/\n<entry>/g' | awk -v now_iso="$now_iso" '
+    function strip_tz(t) { sub(/Z$/, "", t); sub(/[+-][0-9][0-9]:?[0-9][0-9]$/, "", t); return t }
+    /<entry>/ { lang = ""; status = ""; msg_type = ""; sev = ""; evt = ""; poly = ""; area = ""; urg = ""; expires = "" }
     /term="language=/ { match($0, /term="language=([^"]*)"/, m); lang = m[1] }
     /term="status=/   { match($0, /term="status=([^"]*)"/, m); status = m[1] }
     /term="msgType=/  { match($0, /term="msgType=([^"]*)"/, m); msg_type = m[1] }
@@ -644,24 +678,28 @@ eccc() {
     /term="urgency=/  { match($0, /term="urgency=([^"]*)"/, m); urg = m[1] }
     /term="event=/    { match($0, /term="event=([^"]*)"/, m); evt = m[1] }
     /<georss:polygon>/ && poly == "" { match($0, /<georss:polygon>([^<]+)</, m); poly = m[1] }
+    /Expires:/ {
+      if (match($0, /Expires:[[:space:]]*([0-9T:.+\-]+)/, m)) expires = strip_tz(m[1])
+    }
     /Area:/ {
       match($0, /Area: ([^<]*)/, m); area = m[1]
       gsub(/&amp;/, "\\&", area); gsub(/&lt;/, "<", area); gsub(/&gt;/, ">", area)
     }
     /<\/entry>/ {
-      if (lang == "en-CA" && status == "Actual" && msg_type != "Cancel" && area != "")
+      if (lang == "en-CA" && status == "Actual" && msg_type != "Cancel" && area != "" \
+          && (expires == "" || expires > now_iso))
         print area "\t" sev "\t" evt "\t" poly "\t" urg
     }
   ')
 
   if [ -z "$parsed" ]; then
-    echo "  No active alerts across Canada."
+    echo "    No active alerts across Canada."
     return 0
   fi
 
   local total
   total=$(echo "$parsed" | wc -l | tr -d ' ')
-  echo "  Active alert entries: $total"
+  echo "    Active alert entries: $total"
 
   # Per-area diversity scoring
   local area_analysis
@@ -696,30 +734,148 @@ eccc() {
   fi
 
   echo ""
-  echo "  ── Best testing area (score: $best_score) ──"
+  echo "    ── Best testing area (score: $best_score) ──"
   echo ""
-  echo "  area:       $best_area"
-  echo "  lat:        $lat"
-  echo "  lon:        $lon"
-  echo "  alerts:     $best_count"
-  echo "  severities: $best_sevs"
-  echo "  events:     $best_evts"
+  echo "    area:       $best_area"
+  echo "    lat:        $lat"
+  echo "    lon:        $lon"
+  echo "    alerts:     $best_count"
+  echo "    severities: $best_sevs"
+  echo "    events:     $best_evts"
 
   echo ""
-  echo "  ── Top areas by diversity score ──"
+  echo "    ── Top areas by diversity score ──"
   echo "$area_analysis" | head -8 | while IFS=$'\t' read -r score area cnt sevs evts _poly; do
-    printf "    score=%-3s alerts=%-2s %-45s sev=%s\n" "$score" "$cnt" "$area" "$sevs"
+    printf "      score=%-3s alerts=%-2s %-45s sev=%s\n" "$score" "$cnt" "$area" "$sevs"
   done
 
   # Condition coverage
   echo ""
-  echo "  ── Condition coverage ──"
-  echo "  Total areas:  $(echo "$area_analysis" | wc -l | tr -d ' ')"
-  echo "$parsed" | cut -f2 | show_distribution "Severity" 12
-  echo "$parsed" | cut -f3 | show_distribution "Event types" 45 8
+  echo "    ── Condition coverage ──"
+  echo "    Total areas:  $(echo "$area_analysis" | wc -l | tr -d ' ')"
+  echo "$parsed" | cut -f2 | sort | uniq -c | sort -rn | while read -r cnt val; do
+    printf "      %-12s %s\n" "$val" "$cnt"
+  done
 
   echo ""
-  echo "  Use these coordinates when configuring PirateWeather for Canadian alert testing."
+  echo "    HA integrations using this lat/lon:"
+  echo "      cap_alerts:    provider=eccc, gps_loc=\"$lat,$lon\""
+  echo "      pirateweather: latitude=$lat, longitude=$lon"
+  echo "                     (note: WMO filtering drops most Canadian alerts)"
+}
+
+# GeoMet WFS Current-Alerts layer — the data source for env_canada (HACS).
+# Each feature is one (alert × R.M.) pairing; we group by feature_name_en
+# inside a province, score on diversity, then take the polygon centroid of
+# the winning feature. The env_canada library does point-in-polygon against
+# the supplied coords, so the centroid lands inside its own polygon.
+eccc_geomet() {
+  echo ""
+  echo "  ── GeoMet WFS (for environment_canada HACS) ──"
+  echo "    Fetching Current-Alerts layer..."
+
+  local wfs_url="https://geo.weather.gc.ca/geomet?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=Current-Alerts&outputFormat=application/json&BBOX=-90,-180,90,180,EPSG:4326&count=2000"
+  local wfs
+  wfs=$(cached_fetch "$wfs_url" "$CACHE_DIR/eccc-geomet.json") || {
+    echo "    FAIL: could not reach geo.weather.gc.ca"; return 1
+  }
+
+  local total
+  total=$(echo "$wfs" | jq '.features | length' 2>/dev/null || echo 0)
+  echo "    Active feature rows (alert × area): $total"
+  if [ "$total" = "0" ]; then
+    echo "    No active alerts in WFS."
+    return 0
+  fi
+
+  # Group (province, feature_name_en), score by diversity, return TSV:
+  #   score \t feature \t province \t count \t lat \t lon \t colours \t names
+  local analysis
+  analysis=$(echo "$wfs" | jq -r '
+    def centroid_of:
+      (if .type == "Polygon" then .coordinates[0]
+       elif .type == "MultiPolygon" then .coordinates[0][0]
+       else null end) as $ring
+      | if $ring == null or ($ring | length) == 0 then "0 0"
+        else
+          (($ring | map(.[1]) | add) / ($ring | length)) as $lat
+          | (($ring | map(.[0]) | add) / ($ring | length)) as $lon
+          | "\($lat) \($lon)"
+        end;
+
+    [.features[] | {
+      province: (.properties.province // "??"),
+      feature:  (.properties.feature_name_en // "unknown"),
+      type:     (.properties.alert_type // ""),
+      name:     (.properties.alert_name_en // ""),
+      colour:   (.properties.risk_colour_en // ""),
+      impact:   (.properties.impact_en // ""),
+      status:   (.properties.status_en // ""),
+      coord:    (.geometry | centroid_of)
+    }]
+    | group_by(.province + "|" + .feature)
+    | map({
+        province: .[0].province,
+        feature:  .[0].feature,
+        coord:    .[0].coord,
+        count:    length,
+        types:    ([.[].type]   | unique - [""]),
+        names:    ([.[].name]   | unique - [""]),
+        colours:  ([.[].colour] | unique - [""]),
+        impacts:  ([.[].impact] | unique - [""]),
+        statuses: ([.[].status] | unique - [""]),
+        score: (
+          (([.[].type]   | unique - [""] | length) * 15)
+        + (([.[].name]   | unique - [""] | length) * 10)
+        + (([.[].colour] | unique - [""] | length) * 15)
+        + (([.[].impact] | unique - [""] | length) * 10)
+        + (([.[].status] | unique - [""] | length) * 5)
+        + (if length >= 4 then 30 elif length >= 3 then 20 elif length >= 2 then 10 else 0 end)
+        )
+      })
+    | sort_by(-.score, -.count)
+    | .[]
+    | "\(.score)\t\(.feature)\t\(.province)\t\(.count)\t\(.coord)\t\(.colours | join(","))\t\(.names | join(","))"
+  ')
+
+  local best_score best_feature best_prov best_count best_coord best_colours best_names
+  IFS=$'\t' read -r best_score best_feature best_prov best_count best_coord best_colours best_names \
+    <<< "$(echo "$analysis" | head -1)"
+  local best_lat best_lon
+  read -r best_lat best_lon <<< "$best_coord"
+
+  echo ""
+  echo "    ── Best testing feature (score: $best_score) ──"
+  echo ""
+  echo "    feature:    $best_feature ($best_prov)"
+  printf "    lat:        %.6f\n" "$best_lat"
+  printf "    lon:        %.6f\n" "$best_lon"
+  echo "    alerts:     $best_count"
+  echo "    colours:    $best_colours"
+  echo "    names:      $best_names"
+
+  echo ""
+  echo "    ── Top features by diversity score ──"
+  echo "$analysis" | head -8 | while IFS=$'\t' read -r score feature prov cnt _coord colours _names; do
+    printf "      score=%-3s alerts=%-2s [%s] %-45s colours=%s\n" "$score" "$cnt" "$prov" "$feature" "$colours"
+  done
+
+  # Condition coverage across all WFS features
+  echo ""
+  echo "    ── Condition coverage ──"
+  echo "$wfs" | jq -r '
+    [.features[].properties] |
+    "    Total features:  \(length)",
+    "    Distinct alerts: \([.[].alert_name_en] | unique | length)",
+    "    Distinct areas:  \([.[].feature_name_en] | unique | length)"
+  '
+  echo "$wfs" | jq -r '[.features[].properties.risk_colour_en // "?"] | .[]' | sort | uniq -c | sort -rn | while read -r cnt val; do
+    printf "      colour:%-8s %s\n" "$val" "$cnt"
+  done
+
+  echo ""
+  echo "    HA integration:"
+  printf "      environment_canada: coordinates=(%.6f, %.6f)\n" "$best_lat" "$best_lon"
 }
 
 # ─── WMO CAP ─────────────────────────────────────────────────────────────────

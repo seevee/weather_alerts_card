@@ -32,6 +32,7 @@ import {
   deduplicateAlerts,
   getNwsEventColor,
   getMeteoAlarmColor,
+  getEcccColor,
   resolveContrastMode,
   sanitizeAlertHtml,
   getDisplayHeadline,
@@ -57,6 +58,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   bom: 'BoM',
   meteoalarm: 'MeteoAlarm',
   dwd: 'DWD',
+  eccc: 'Environment Canada',
   pirateweather: 'Pirate Weather',
   cap: 'CAP',
 };
@@ -66,6 +68,7 @@ const PROVIDER_SHORT: Record<string, string> = {
   bom: 'BoM',
   meteoalarm: 'MA',
   dwd: 'DWD',
+  eccc: 'EC',
   pirateweather: 'PW',
   cap: 'CAP',
 };
@@ -508,7 +511,7 @@ export class WeatherAlertsCard extends LitElement {
     return !this._motionQuery.matches; // undefined → respect OS prefers-reduced-motion
   }
   private get _isCompact(): boolean { return this._config?.layout === 'compact'; }
-  private get _colorTheme(): 'severity' | 'nws' | 'meteoalarm' { return this._config?.colorTheme || 'severity'; }
+  private get _colorTheme(): 'severity' | 'nws' | 'meteoalarm' | 'eccc' { return this._config?.colorTheme || 'severity'; }
   private get _fontScale(): number | undefined {
     switch (this._config?.fontSize) {
       case 'small': return 0.85;
@@ -540,6 +543,10 @@ export class WeatherAlertsCard extends LitElement {
       const { color, rgb, textColorLight, textColorDark } = getMeteoAlarmColor(alert.severity, this._contrastMode);
       return `--color: ${color}; --color-rgb: ${rgb}; --color-on-light: ${textColorLight}; --color-on-dark: ${textColorDark};`;
     }
+    if (this._colorTheme === 'eccc') {
+      const { color, rgb, textColorLight, textColorDark } = getEcccColor(alert, this._contrastMode);
+      return `--color: ${color}; --color-rgb: ${rgb}; --color-on-light: ${textColorLight}; --color-on-dark: ${textColorDark};`;
+    }
     return '';
   }
 
@@ -560,6 +567,8 @@ export class WeatherAlertsCard extends LitElement {
       tags = getNwsEventColor(alert.event, mode);
     } else if (this._colorTheme === 'meteoalarm') {
       tags = getMeteoAlarmColor(alert.severity, mode);
+    } else if (this._colorTheme === 'eccc') {
+      tags = getEcccColor(alert, mode);
     }
     if (!tags) return '';
     const classes: string[] = [];
@@ -834,7 +843,8 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderBadgesRow(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
-    const severityText = t('badge.severity_' + alert.severity, this._lang);
+    const severityText = alert.severityBadgeLabel
+      ?? t('badge.severity_' + alert.severity, this._lang);
     const certText = alert.certainty
       ? t('badge.certainty_' + alert.certainty.toLowerCase(), this._lang)
       : '';
