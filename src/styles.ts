@@ -74,7 +74,7 @@ export const cardStyles = css`
     border: 1px solid var(--divider-color);
     box-shadow: var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1));
     overflow: hidden;
-    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.15s ease-out;
   }
 
   /* Contrast boost: only when theme mode matches the failing side.
@@ -471,14 +471,86 @@ export const cardStyles = css`
     background: rgba(var(--rgb-primary-text-color, 128, 128, 128), 0.08);
     outline: none;
   }
-  /* Full layout: align the button to the top-right of the header row so it
-     doesn't fight the icon/info block vertically. */
+  /* Full layout: corner-tuck the dismiss button as window-decoration so it
+     doesn't reserve space in the flex flow (which would squeeze title,
+     headline, area, and badges). Labeled variant overrides position below
+     to sit flush against the card's rounded corner. */
   .alert-header-row:not(.compact-row) > .dismiss-button {
-    align-self: flex-start;
-    margin-left: auto;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    margin-left: 0;
   }
   .compact-row > .dismiss-button {
     margin-left: 4px;
+  }
+
+  /* Labeled dismiss button (full layout only) — window-decoration placement:
+     absolute at top-right of the card, outside the header flex flow, so title,
+     headline, area, and badges flow full row width. The button is visually
+     subtle and overlays the rare long title that reaches its column. */
+  .dismiss-button.labeled {
+    border-left: 1px solid var(--divider-color);
+    border-bottom: 1px solid var(--divider-color);
+    border-radius: 12px;
+    padding: 2px 8px 2px 4px;
+    color: var(--secondary-text-color);
+    opacity: 1;
+    gap: 4px;
+    font-size: calc(0.78rem * var(--wac-scale, 1));
+    width: auto;
+    height: auto;
+    --mdc-icon-size: calc(16px * var(--wac-scale, 1));
+  }
+  .dismiss-button.labeled:hover,
+  .dismiss-button.labeled:focus-visible {
+    background: rgba(var(--rgb-primary-text-color, 128, 128, 128), 0.08);
+    opacity: 1;
+  }
+  .alert-header-row:not(.compact-row) > .dismiss-button.labeled {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin-left: 0;
+  }
+  /* Compact row: revert labeled button to icon-only */
+  .compact-row > .dismiss-button.labeled {
+    border: none;
+    border-radius: 50%;
+    padding: 0;
+    color: var(--secondary-text-color);
+    gap: 0;
+    font-size: inherit;
+    width: calc(24px * var(--wac-scale, 1));
+    height: calc(24px * var(--wac-scale, 1));
+    --mdc-icon-size: calc(18px * var(--wac-scale, 1));
+  }
+  .compact-row > .dismiss-button.labeled span {
+    display: none;
+  }
+
+  /* --- SWIPE GESTURE ---
+     swipe-enabled: applied whenever pointer drag-to-dismiss is wired up. Sets
+     touch-action so vertical scroll stays native while horizontal is reserved
+     for the JS gesture; shows the grab cursor on hover. */
+  .alert-card.swipe-enabled {
+    touch-action: pan-y;
+    cursor: grab;
+  }
+  .alert-card.swiping {
+    transition: none !important;
+    user-select: none;
+    cursor: grabbing;
+  }
+  .alert-card.swipe-exit {
+    transform: translateX(-110%) !important;
+    opacity: 0 !important;
+    transition: transform 0.2s ease-in, opacity 0.2s ease-in !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .alert-card.swipe-exit {
+      transition: none !important;
+    }
   }
 
   /* --- COMPACT LAYOUT --- */
