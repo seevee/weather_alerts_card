@@ -193,6 +193,28 @@ describe('CapAdapter', () => {
       expect(alerts[0].phase).toBe('');
     });
 
+    describe('providerIcon passthrough', () => {
+      it('passes through a valid mdi: icon from attributes', () => {
+        const alerts = adapter.parseAlerts(makeCapAttributes({ icon: 'mdi:weather-tornado' }));
+        expect(alerts[0].providerIcon).toBe('mdi:weather-tornado');
+      });
+
+      it('ignores an empty icon attribute', () => {
+        const alerts = adapter.parseAlerts(makeCapAttributes({ icon: '' }));
+        expect(alerts[0].providerIcon).toBeUndefined();
+      });
+
+      it('ignores a non-mdi: string (e.g. hass: prefix)', () => {
+        const alerts = adapter.parseAlerts(makeCapAttributes({ icon: 'hass:thermostat' }));
+        expect(alerts[0].providerIcon).toBeUndefined();
+      });
+
+      it('leaves providerIcon absent when icon attribute is missing', () => {
+        const alerts = adapter.parseAlerts(makeCapAttributes());
+        expect(Object.prototype.hasOwnProperty.call(alerts[0], 'providerIcon')).toBe(false);
+      });
+    });
+
     it('handles missing optional fields gracefully', () => {
       const alerts = adapter.parseAlerts({
         incident_platform_version: '1.0',

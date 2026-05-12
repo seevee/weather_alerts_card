@@ -108,6 +108,7 @@ export interface WeatherAlert {
   severityInferred: boolean;  // true if severity was synthesized/inferred, not raw from provider
   certaintyInferred: boolean; // true if certainty was synthesized/inferred, not raw from provider
   iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
+  providerIcon?: string;   // Raw MDI icon from provider (e.g. 'mdi:weather-tornado'); bypasses dictionary when present
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
   colorHint?: string;      // Provider-published color tag (currently only ECCC: red/orange/yellow/grey/green); consumed by getEcccColor when colorTheme: 'eccc'
   severityBadgeLabel?: string; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.

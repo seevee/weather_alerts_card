@@ -34,6 +34,9 @@ export class CapAdapter implements AlertAdapter {
     const onsetTs = parseTimestamp(str(attributes['onset'])) || sentTs;
     const endsTs = parseTimestamp(str(attributes['ends'])) || parseTimestamp(str(attributes['expires']));
 
+    const rawIcon = str(attributes['icon']);
+    const providerIcon = rawIcon.startsWith('mdi:') ? rawIcon : undefined;
+
     return [{
       id,
       event: event || 'Unknown',
@@ -55,6 +58,7 @@ export class CapAdapter implements AlertAdapter {
       phase: phaseLabel(str(attributes['phase'])),
       severityInferred: !rawSeverity && !normalizedSev,
       certaintyInferred: false,
+      ...(providerIcon !== undefined && { providerIcon }),
     }];
   }
 }

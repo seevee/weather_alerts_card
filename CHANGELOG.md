@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- CAP adapter: pass through provider-supplied MDI icon (`attributes.icon`) as `providerIcon` on `WeatherAlert`; both compact and full layouts prefer it over the dictionary lookup
+
 ## 3.0.0-alpha.3 — 2026-05-12
 
 ### Added

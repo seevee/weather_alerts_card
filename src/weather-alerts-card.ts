@@ -717,7 +717,7 @@ export class WeatherAlertsCard extends LitElement {
           @click=${() => this._toggleDetails(alert.id)}
         >
           <div class="icon-box">
-            <ha-icon icon=${getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
+            <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
           </div>
           ${this._renderProviderHint(alert)}
           <span class="alert-title">${alert.event}</span>
@@ -781,7 +781,7 @@ export class WeatherAlertsCard extends LitElement {
       <div class="alert-card ${className} ${phaseClass} ${boostClasses}" style=${this._alertColorStyle(alert)}>
         <div class="alert-header-row">
           <div class="icon-box">
-            <ha-icon icon=${getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
+            <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
           </div>
           <div class="info-box">
             <div class="title-row">
