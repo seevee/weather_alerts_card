@@ -108,11 +108,6 @@ function titleCase(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-function typeLabel(type: string | undefined, severity: AlertSeverity): string {
-  if (type) return titleCase(type);
-  return titleCase(severity);
-}
-
 function phaseLabel(status: string | undefined): string {
   if (!status) return '';
   const lower = status.toLowerCase();
@@ -171,14 +166,20 @@ export class EcccAdapter implements AlertAdapter {
     const area = str(a.area);
     const colorHint = a.color ? a.color.toLowerCase() : undefined;
     const impactRaw = str(a.impact);
-    const severityBadgeLabel = impactRaw ? titleCase(impactRaw) : undefined;
+    // `impact` mirrors CAP's raw severity word (preserves locale, e.g. "Élevée");
+    // when absent we fall back to the canonical tier so severityLabel is never
+    // empty. severityBadgeLabel stays undefined in that case so the badge uses
+    // the localized i18n tier label instead of repeating English.
+    const rawSeverityLabel = impactRaw ? titleCase(impactRaw) : undefined;
+    const severityLabel = rawSeverityLabel
+      ?? (severity.charAt(0).toUpperCase() + severity.slice(1));
     const certainty = certaintyFromConfidence(a.confidence);
 
     return {
       id: `eccc_${eventCode || headline || 'unknown'}_${area}_${issuedTs}`,
       event: headline,
       severity,
-      severityLabel: typeLabel(a.type, severity),
+      severityLabel,
       certainty,
       urgency: '',
       sentTs: issuedTs,
@@ -193,10 +194,10 @@ export class EcccAdapter implements AlertAdapter {
       eventCode,
       provider: 'eccc',
       phase: phaseLabel(a.status),
-      severityInferred: true,
-      certaintyInferred: true,
+      severityInferred: !a.color && !a.type && !a.impact,
+      certaintyInferred: !a.confidence,
       colorHint,
-      severityBadgeLabel,
+      severityBadgeLabel: rawSeverityLabel,
     };
   }
 }

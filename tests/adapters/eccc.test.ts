@@ -115,8 +115,8 @@ describe('EcccAdapter', () => {
       expect(a.severity).toBe('severe');
     });
 
-    it('severityLabel is the title-cased type', () => {
-      expect(a.severityLabel).toBe('Warning');
+    it('severityLabel mirrors the raw impact (CAP-aligned)', () => {
+      expect(a.severityLabel).toBe('High');
     });
 
     it('eventCode is the EC short code', () => {
@@ -151,12 +151,12 @@ describe('EcccAdapter', () => {
       expect(a.zones).toEqual([]);
     });
 
-    it('severityInferred is true', () => {
-      expect(a.severityInferred).toBe(true);
+    it('severityInferred is false when color/type/impact is published', () => {
+      expect(a.severityInferred).toBe(false);
     });
 
-    it('certaintyInferred is true (mapped from confidence)', () => {
-      expect(a.certaintyInferred).toBe(true);
+    it('certaintyInferred is false when confidence is published', () => {
+      expect(a.certaintyInferred).toBe(false);
     });
 
     it('sentTs equals onsetTs and is a positive number', () => {
@@ -277,6 +277,44 @@ describe('EcccAdapter', () => {
     it('French impact "Élevée" → "Élevée"', () => expect(badgeLabel('Élevée')).toBe('Élevée'));
     it('lowercase impact is title-cased', () => expect(badgeLabel('low')).toBe('Low'));
     it('missing impact → undefined', () => expect(badgeLabel(undefined)).toBeUndefined());
+  });
+
+  describe('parseAlerts — inference flags', () => {
+    function alert(overrides: Record<string, unknown>) {
+      return adapter.parseAlerts(makeEcccAttributes(overrides))[0];
+    }
+
+    it('severityInferred=true only when color, type, and impact are all absent', () => {
+      expect(alert({
+        color: undefined, type: undefined, impact: undefined,
+      }).severityInferred).toBe(true);
+    });
+
+    it('severityInferred=false when only color is present', () => {
+      expect(alert({
+        color: 'yellow', type: undefined, impact: undefined,
+      }).severityInferred).toBe(false);
+    });
+
+    it('severityInferred=false when only type is present', () => {
+      expect(alert({
+        color: undefined, type: 'warning', impact: undefined,
+      }).severityInferred).toBe(false);
+    });
+
+    it('severityInferred=false when only impact is present', () => {
+      expect(alert({
+        color: undefined, type: undefined, impact: 'High',
+      }).severityInferred).toBe(false);
+    });
+
+    it('certaintyInferred=true only when confidence is absent', () => {
+      expect(alert({ confidence: undefined }).certaintyInferred).toBe(true);
+    });
+
+    it('certaintyInferred=false when confidence is present (even if it does not map)', () => {
+      expect(alert({ confidence: 'something' }).certaintyInferred).toBe(false);
+    });
   });
 
   describe('parseAlerts — filtering', () => {
