@@ -1,10 +1,14 @@
 # Changelog
 
-## Unreleased
+## 3.0.0-alpha.4 — 2026-05-12
 
 ### Added
-- CAP adapter: pass through provider-supplied MDI icon (`attributes.icon`) as `providerIcon` on `WeatherAlert`; both compact and full layouts prefer it over the dictionary lookup
-- Dismissal as a first-class feature: dedicated **Dismissal** editor section, `dismissTrigger` option (`button` / `swipe` / `both`), `dismissButtonStyle` option (`icon` / `labeled`), and a unified drag-to-dismiss gesture (touch swipe + mouse click-drag via Pointer Events) with spring-back and reduced-motion support. Labeled button uses neutral chrome colors and is positioned as window-decoration at the card's top-right so long event titles flow full-width (#151 follow-up)
+- Pass through provider-supplied MDI icon from CAP adapter (#162) (067793c…)
+- Dismiss trigger + style options, pointer drag-to-dismiss (#163) (7f935b9…)
+
+### Maintenance
+- Dependency update pass — TypeScript 6, drop custom-card-helpers (#164) (fad8dcd…)
+- Add ECCC color theme column to themes screenshot (#165) (1426d80…)
 
 ## 3.0.0-alpha.3 — 2026-05-12
 
