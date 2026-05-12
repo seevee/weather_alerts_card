@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.0-alpha.3 — 2026-05-12
+
+### Added
+- Add ECCC adapter for Environment Canada alerts (#160) (0d41495…)
+
 ## 3.0.0-alpha.2 — 2026-04-26
 
 ### Added
