@@ -70,6 +70,8 @@ export interface WeatherAlertsCardConfig {
   reformatText?: boolean;    // undefined/true: strip hard line wraps from alert text; false: preserve raw formatting
   allowDismiss?: boolean;    // undefined/false: no dismiss UI; true: per-alert × button with browser-local dismissal list
   showDismissUndo?: boolean; // undefined/true: fire HA toast on dismiss; false: silent. No effect when allowDismiss is off
+  dismissTrigger?: 'button' | 'swipe' | 'both'; // undefined/'button': × button only; 'swipe': left drag/swipe only (touch + mouse via Pointer Events; no button); 'both': button + drag. Requires allowDismiss: true
+  dismissButtonStyle?: 'icon' | 'labeled'; // undefined/'icon': × icon only; 'labeled': icon + "Dismiss" text pill (compact always icon-only). No effect when dismissTrigger: 'swipe'
   _preview?: boolean;        // transient editor-only key — triggers preview mode in card
   visibility?: Record<string, unknown>[];  // HA-managed visibility conditions (set via dashboard editor)
 }

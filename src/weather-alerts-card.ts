@@ -170,6 +170,19 @@ export class WeatherAlertsCard extends LitElement {
   private _dismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
 
+  // Pointer-drag-to-dismiss gesture state (plain fields — requestUpdate() called manually).
+  // Unifies touch swipe and mouse drag via Pointer Events; setPointerCapture takes
+  // over after lock so drags that leave the card still resolve to this element.
+  private _swipeState: { id: string; offset: number; locked: boolean; cardWidth: number } | null = null;
+  private _swipeStartX = 0;
+  private _swipeStartY = 0;
+  private _swipeCurrentDx = 0;
+  private _swipeRAF: number | null = null;
+  private _swipePointerId: number | null = null;
+  private _swipeExitTimeout: number | null = null;
+  private _swipeJustDragged = false;
+  @state() private _swipeExiting: string | null = null;
+
   // Live entity-registry copy. `null` until the WS subscription delivers;
   // resolution helpers fall back to `hass.entities` while it is null.
   private _registryEntries: EntityRegistryDisplayEntry[] | null = null;
@@ -196,6 +209,16 @@ export class WeatherAlertsCard extends LitElement {
     this._unsubscribeDismissals?.();
     this._unsubscribeDismissals = undefined;
     this._teardownRegistrySubscription();
+    if (this._swipeRAF !== null) {
+      cancelAnimationFrame(this._swipeRAF);
+      this._swipeRAF = null;
+    }
+    if (this._swipeExitTimeout !== null) {
+      clearTimeout(this._swipeExitTimeout);
+      this._swipeExitTimeout = null;
+    }
+    this._swipeState = null;
+    this._swipeExiting = null;
     if (this._config?.entity || this._config?.device) {
       WeatherAlertsCard._editorExpandedState.set(this._entityStateKey(), this._expandedAlerts);
     }
@@ -437,8 +460,146 @@ export class WeatherAlertsCard extends LitElement {
     return !!this._config?.allowDismiss && !this._forcePreview;
   }
 
+  private _swipeEnabled(): boolean {
+    return this._canDismiss()
+      && (this._config?.dismissTrigger === 'swipe' || this._config?.dismissTrigger === 'both');
+  }
+
+  private _onSwipePointerDown(alert: WeatherAlert, e: PointerEvent): void {
+    if (!this._swipeEnabled()) return;
+    if (this._swipeState) return;
+    // Primary button only — ignores right/middle click and pen barrel buttons.
+    if (e.button !== 0) return;
+    this._swipePointerId = e.pointerId;
+    this._swipeStartX = e.clientX;
+    this._swipeStartY = e.clientY;
+    this._swipeCurrentDx = 0;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    this._swipeState = { id: alert.id, offset: 0, locked: false, cardWidth: rect.width };
+  }
+
+  private _onSwipePointerMove(alert: WeatherAlert, e: PointerEvent): void {
+    if (!this._swipeState || this._swipeState.id !== alert.id) return;
+    if (e.pointerId !== this._swipePointerId) return;
+
+    const dx = e.clientX - this._swipeStartX;
+    const dy = e.clientY - this._swipeStartY;
+
+    if (!this._swipeState.locked) {
+      if (Math.abs(dy) - Math.abs(dx) > 12) {
+        this._swipeState = null;
+        return;
+      }
+      if (dx >= 0) {
+        this._swipeState = null;
+        return;
+      }
+      // Capture so the gesture survives the pointer leaving the card; the
+      // rAF below schedules the lock-class + offset DOM update together on
+      // the next frame — no separate requestUpdate() needed here.
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      this._swipeState = { ...this._swipeState, locked: true };
+    }
+
+    this._swipeCurrentDx = Math.min(0, dx);
+
+    if (this._swipeRAF !== null) return;
+    this._swipeRAF = requestAnimationFrame(() => {
+      this._swipeRAF = null;
+      if (!this._swipeState || this._swipeState.id !== alert.id) return;
+      this._swipeState = { ...this._swipeState, offset: this._swipeCurrentDx };
+      this.requestUpdate();
+    });
+  }
+
+  private _onSwipePointerUp(alert: WeatherAlert, e: PointerEvent): void {
+    if (!this._swipeState || this._swipeState.id !== alert.id) return;
+    if (e.pointerId !== this._swipePointerId) return;
+    const target = e.currentTarget as HTMLElement;
+    if (target.hasPointerCapture(e.pointerId)) target.releasePointerCapture(e.pointerId);
+    if (this._swipeRAF !== null) {
+      cancelAnimationFrame(this._swipeRAF);
+      this._swipeRAF = null;
+    }
+    const { offset, cardWidth, locked } = this._swipeState;
+    this._swipeState = null;
+    this._swipePointerId = null;
+    if (locked) {
+      // Suppress the synthesized click that follows a mouse drag, so the
+      // header's @click=_toggleDetails doesn't fire after a swipe. Auto-clears
+      // next tick in case the browser doesn't fire a click at all.
+      this._swipeJustDragged = true;
+      setTimeout(() => { this._swipeJustDragged = false; }, 0);
+    }
+    if (locked && offset <= -(cardWidth * 0.4)) {
+      this._swipeExiting = alert.id;
+      const delay = this._motionQuery.matches ? 0 : 200;
+      this._swipeExitTimeout = window.setTimeout(() => {
+        this._swipeExitTimeout = null;
+        this._swipeExiting = null;
+        this._onDismiss(alert);
+      }, delay);
+    } else {
+      this.requestUpdate();
+    }
+  }
+
+  private _onSwipePointerCancel(alert: WeatherAlert, e: PointerEvent): void {
+    if (!this._swipeState || this._swipeState.id !== alert.id) return;
+    if (e.pointerId !== this._swipePointerId) return;
+    const target = e.currentTarget as HTMLElement;
+    if (target.hasPointerCapture(e.pointerId)) target.releasePointerCapture(e.pointerId);
+    if (this._swipeRAF !== null) {
+      cancelAnimationFrame(this._swipeRAF);
+      this._swipeRAF = null;
+    }
+    this._swipeState = null;
+    this._swipePointerId = null;
+    this.requestUpdate();
+  }
+
+  private _swipeCardStyle(alert: WeatherAlert, baseStyle: string): string {
+    if (this._swipeExiting === alert.id) return baseStyle;
+    if (this._swipeState?.id === alert.id) {
+      const { offset, cardWidth } = this._swipeState;
+      const opacity = Math.max(0, 1 + offset / cardWidth).toFixed(2);
+      return `${baseStyle} transform: translateX(${offset}px); opacity: ${opacity};`;
+    }
+    return baseStyle;
+  }
+
+  private _swipeCardClass(alert: WeatherAlert): string {
+    const classes: string[] = [];
+    if (this._swipeEnabled()) classes.push('swipe-enabled');
+    if (this._swipeExiting === alert.id) classes.push('swipe-exit');
+    else if (this._swipeState?.id === alert.id && this._swipeState.locked) classes.push('swiping');
+    return classes.join(' ');
+  }
+
+  private _isLabeledDismissActive(): boolean {
+    return this._canDismiss()
+      && this._config?.dismissTrigger !== 'swipe'
+      && this._config?.dismissButtonStyle === 'labeled'
+      && !this._isCompact;
+  }
+
   private _renderDismissButton(alert: WeatherAlert): TemplateResult | typeof nothing {
     if (!this._canDismiss()) return nothing;
+    if (this._config?.dismissTrigger === 'swipe') return nothing;
+    if (this._isLabeledDismissActive()) {
+      return html`
+        <button
+          type="button"
+          class="dismiss-button labeled"
+          aria-label=${t('card.dismiss', this._lang)}
+          title=${t('card.dismiss', this._lang)}
+          @click=${(e: Event) => { e.stopPropagation(); this._onDismiss(alert); }}
+        >
+          <ha-icon icon="mdi:close"></ha-icon>
+          <span>${t('card.dismiss', this._lang)}</span>
+        </button>
+      `;
+    }
     return html`
       <button
         type="button"
@@ -593,6 +754,12 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _toggleDetails(alertId: string): void {
+    // A click synthesized at the end of a successful pointer drag would
+    // otherwise toggle the alert that was just swiped — swallow it.
+    if (this._swipeJustDragged) {
+      this._swipeJustDragged = false;
+      return;
+    }
     const next = new Map(this._expandedAlerts);
     next.set(alertId, !next.get(alertId));
     this._expandedAlerts = next;
@@ -710,8 +877,17 @@ export class WeatherAlertsCard extends LitElement {
     const ongoingClass = isOngoing ? 'ongoing' : '';
     const boostClasses = this._alertBoostClasses(alert);
     const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
+    const swipeClass = this._swipeCardClass(alert);
+    const cardStyle = this._swipeCardStyle(alert, `${this._alertColorStyle(alert)} ${progressStyle}`);
     return html`
-      <div class="alert-card ${className} ${phaseClass} ${ongoingClass} ${boostClasses}" style=${`${this._alertColorStyle(alert)} ${progressStyle}`}>
+      <div
+        class="alert-card ${className} ${phaseClass} ${ongoingClass} ${boostClasses} ${swipeClass}"
+        style=${cardStyle}
+        @pointerdown=${(e: PointerEvent) => this._onSwipePointerDown(alert, e)}
+        @pointermove=${(e: PointerEvent) => this._onSwipePointerMove(alert, e)}
+        @pointerup=${(e: PointerEvent) => this._onSwipePointerUp(alert, e)}
+        @pointercancel=${(e: PointerEvent) => this._onSwipePointerCancel(alert, e)}
+      >
         <div
           class="alert-header-row compact-row"
           @click=${() => this._toggleDetails(alert.id)}
@@ -777,8 +953,17 @@ export class WeatherAlertsCard extends LitElement {
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
     const boostClasses = this._alertBoostClasses(alert);
+    const swipeClass = this._swipeCardClass(alert);
+    const cardStyle = this._swipeCardStyle(alert, this._alertColorStyle(alert));
     return html`
-      <div class="alert-card ${className} ${phaseClass} ${boostClasses}" style=${this._alertColorStyle(alert)}>
+      <div
+        class="alert-card ${className} ${phaseClass} ${boostClasses} ${swipeClass}"
+        style=${cardStyle}
+        @pointerdown=${(e: PointerEvent) => this._onSwipePointerDown(alert, e)}
+        @pointermove=${(e: PointerEvent) => this._onSwipePointerMove(alert, e)}
+        @pointerup=${(e: PointerEvent) => this._onSwipePointerUp(alert, e)}
+        @pointercancel=${(e: PointerEvent) => this._onSwipePointerCancel(alert, e)}
+      >
         <div class="alert-header-row">
           <div class="icon-box">
             <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>

@@ -4,6 +4,7 @@
 
 ### Added
 - CAP adapter: pass through provider-supplied MDI icon (`attributes.icon`) as `providerIcon` on `WeatherAlert`; both compact and full layouts prefer it over the dictionary lookup
+- Dismissal as a first-class feature: dedicated **Dismissal** editor section, `dismissTrigger` option (`button` / `swipe` / `both`), `dismissButtonStyle` option (`icon` / `labeled`), and a unified drag-to-dismiss gesture (touch swipe + mouse click-drag via Pointer Events) with spring-back and reduced-motion support. Labeled button uses neutral chrome colors and is positioned as window-decoration at the card's top-right so long event titles flow full-width (#151 follow-up)
 
 ## 3.0.0-alpha.3 — 2026-05-12
 

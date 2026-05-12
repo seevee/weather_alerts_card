@@ -431,6 +431,30 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _dismissTriggerChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as 'button' | 'swipe' | 'both';
+    if (value === (this._config.dismissTrigger || 'button')) return;
+    const newConfig = { ...this._config };
+    if (value === 'button') {
+      delete newConfig.dismissTrigger;
+    } else {
+      newConfig.dismissTrigger = value;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _dismissButtonStyleChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as 'icon' | 'labeled';
+    if (value === (this._config.dismissButtonStyle || 'icon')) return;
+    const newConfig = { ...this._config };
+    if (value === 'icon') {
+      delete newConfig.dismissButtonStyle;
+    } else {
+      newConfig.dismissButtonStyle = value;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _currentScopeHash(): string {
     const ids = this._getSelectedEntities();
     if (ids.length === 0) return '';
@@ -942,12 +966,38 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
+        <!-- Dismissal -->
+        <div class="section-label">${t('editor.section_dismissal', lang)}</div>
+
         <ha-formfield .label=${t('editor.allow_dismiss', lang)}>
           <ha-switch
             .checked=${this._config.allowDismiss === true}
             @change=${this._allowDismissChanged}
           ></ha-switch>
         </ha-formfield>
+
+        ${this._config.allowDismiss === true ? html`
+          <ha-select
+            .label=${t('editor.dismiss_trigger', lang)}
+            .value=${this._config.dismissTrigger || 'button'}
+            @selected=${this._dismissTriggerChanged}
+          >
+            <ha-dropdown-item value="button">${t('editor.dismiss_trigger_button', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="swipe">${t('editor.dismiss_trigger_swipe', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="both">${t('editor.dismiss_trigger_both', lang)}</ha-dropdown-item>
+          </ha-select>
+
+          ${this._config.dismissTrigger !== 'swipe' ? html`
+            <ha-select
+              .label=${t('editor.dismiss_button_style', lang)}
+              .value=${this._config.dismissButtonStyle || 'icon'}
+              @selected=${this._dismissButtonStyleChanged}
+            >
+              <ha-dropdown-item value="icon">${t('editor.dismiss_button_style_icon', lang)}</ha-dropdown-item>
+              <ha-dropdown-item value="labeled">${t('editor.dismiss_button_style_labeled', lang)}</ha-dropdown-item>
+            </ha-select>
+          ` : nothing}
+        ` : nothing}
 
         <ha-formfield .label=${t('editor.show_dismiss_undo', lang)}>
           <ha-switch

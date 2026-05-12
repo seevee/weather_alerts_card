@@ -9,7 +9,7 @@ const en: TranslationMap = {
   'card.open_source': 'Open {provider} Source',
   'card.zones_count': '{count} zones',
   'card.zone_count_singular': '{count} zone',
-  'card.dismiss': 'Dismiss alert',
+  'card.dismiss': 'Dismiss',
   'card.dismissed_toast': 'Dismissed: {event}',
   'card.dismissed_toast_undo': 'Undo',
 
@@ -139,6 +139,14 @@ const en: TranslationMap = {
   'editor.section_appearance': 'Appearance',
   'editor.section_detail_panel': 'Detail Panel',
   'editor.section_behavior': 'Behavior',
+  'editor.section_dismissal': 'Dismissal',
+  'editor.dismiss_trigger': 'Dismiss trigger',
+  'editor.dismiss_trigger_button': 'Button only',
+  'editor.dismiss_trigger_swipe': 'Swipe only',
+  'editor.dismiss_trigger_both': 'Button and swipe',
+  'editor.dismiss_button_style': 'Button style',
+  'editor.dismiss_button_style_icon': 'Icon only',
+  'editor.dismiss_button_style_labeled': 'Icon and label',
 };
 
 const fr: TranslationMap = {
@@ -150,7 +158,7 @@ const fr: TranslationMap = {
   'card.open_source': 'Ouvrir la source {provider}',
   'card.zones_count': '{count} zones',
   'card.zone_count_singular': '{count} zone',
-  'card.dismiss': 'Ignorer l\'alerte',
+  'card.dismiss': 'Ignorer',
   'card.dismissed_toast': 'Ignorée : {event}',
   'card.dismissed_toast_undo': 'Annuler',
 
@@ -280,6 +288,14 @@ const fr: TranslationMap = {
   'editor.section_appearance': 'Apparence',
   'editor.section_detail_panel': 'Panneau de details',
   'editor.section_behavior': 'Comportement',
+  'editor.section_dismissal': 'Masquage',
+  'editor.dismiss_trigger': 'Declencheur',
+  'editor.dismiss_trigger_button': 'Bouton uniquement',
+  'editor.dismiss_trigger_swipe': 'Glissement uniquement',
+  'editor.dismiss_trigger_both': 'Bouton et glissement',
+  'editor.dismiss_button_style': 'Style du bouton',
+  'editor.dismiss_button_style_icon': 'Icone uniquement',
+  'editor.dismiss_button_style_labeled': 'Icone et texte',
 };
 
 const es: TranslationMap = {
@@ -291,7 +307,7 @@ const es: TranslationMap = {
   'card.open_source': 'Abrir fuente {provider}',
   'card.zones_count': '{count} zonas',
   'card.zone_count_singular': '{count} zona',
-  'card.dismiss': 'Descartar alerta',
+  'card.dismiss': 'Descartar',
   'card.dismissed_toast': 'Descartada: {event}',
   'card.dismissed_toast_undo': 'Deshacer',
 
@@ -421,6 +437,14 @@ const es: TranslationMap = {
   'editor.section_appearance': 'Apariencia',
   'editor.section_detail_panel': 'Panel de detalles',
   'editor.section_behavior': 'Comportamiento',
+  'editor.section_dismissal': 'Descarte',
+  'editor.dismiss_trigger': 'Disparador',
+  'editor.dismiss_trigger_button': 'Solo boton',
+  'editor.dismiss_trigger_swipe': 'Solo deslizamiento',
+  'editor.dismiss_trigger_both': 'Boton y deslizamiento',
+  'editor.dismiss_button_style': 'Estilo del boton',
+  'editor.dismiss_button_style_icon': 'Solo icono',
+  'editor.dismiss_button_style_labeled': 'Icono y texto',
 };
 
 const it: TranslationMap = {
@@ -432,7 +456,7 @@ const it: TranslationMap = {
   'card.open_source': 'Apri fonte {provider}',
   'card.zones_count': '{count} zone',
   'card.zone_count_singular': '{count} zona',
-  'card.dismiss': 'Ignora allerta',
+  'card.dismiss': 'Ignora',
   'card.dismissed_toast': 'Ignorata: {event}',
   'card.dismissed_toast_undo': 'Annulla',
 
@@ -562,6 +586,14 @@ const it: TranslationMap = {
   'editor.section_appearance': 'Aspetto',
   'editor.section_detail_panel': 'Pannello dettagli',
   'editor.section_behavior': 'Comportamento',
+  'editor.section_dismissal': 'Dismissione',
+  'editor.dismiss_trigger': 'Attivatore',
+  'editor.dismiss_trigger_button': 'Solo pulsante',
+  'editor.dismiss_trigger_swipe': 'Solo scorrimento',
+  'editor.dismiss_trigger_both': 'Pulsante e scorrimento',
+  'editor.dismiss_button_style': 'Stile pulsante',
+  'editor.dismiss_button_style_icon': 'Solo icona',
+  'editor.dismiss_button_style_labeled': 'Icona e testo',
 };
 
 const de: TranslationMap = {
@@ -573,7 +605,7 @@ const de: TranslationMap = {
   'card.open_source': '{provider}-Quelle öffnen',
   'card.zones_count': '{count} Zonen',
   'card.zone_count_singular': '{count} Zone',
-  'card.dismiss': 'Warnung ausblenden',
+  'card.dismiss': 'Ausblenden',
   'card.dismissed_toast': 'Ausgeblendet: {event}',
   'card.dismissed_toast_undo': 'Rückgängig',
 
@@ -703,6 +735,14 @@ const de: TranslationMap = {
   'editor.section_appearance': 'Darstellung',
   'editor.section_detail_panel': 'Detailbereich',
   'editor.section_behavior': 'Verhalten',
+  'editor.section_dismissal': 'Ausblenden',
+  'editor.dismiss_trigger': 'Auslöser',
+  'editor.dismiss_trigger_button': 'Nur Schaltfläche',
+  'editor.dismiss_trigger_swipe': 'Nur wischen',
+  'editor.dismiss_trigger_both': 'Schaltfläche und wischen',
+  'editor.dismiss_button_style': 'Schaltflächenstil',
+  'editor.dismiss_button_style_icon': 'Nur Symbol',
+  'editor.dismiss_button_style_labeled': 'Symbol und Text',
 };
 
 const translations: Record<string, TranslationMap> = { en, fr, es, it, de };
