@@ -273,10 +273,48 @@ npm run watch     # bundle with file watching
 npm run lint      # TypeScript type-check
 ```
 
+## Migrating to v3
+
+v3.0.0 removes backwards-compatibility shims that were deprecated in v2. If you are upgrading from v1.x or v2.x, make the following changes:
+
+**1. Card type rename** (v1.x users only)
+
+Change the card type in your dashboard YAML:
+
+```yaml
+# Before
+type: custom:nws-alerts-card
+
+# After
+type: custom:weather-alerts-card
+```
+
+**2. `headline` config key removed** (v1.x users only)
+
+The `headline` key was replaced by `deduplicateHeadlines` in v2. If your card config still has `headline:`, rename it:
+
+```yaml
+# Before
+headline: true   # or false
+
+# After
+deduplicateHeadlines: true   # or false
+```
+
+**3. Manual install only: resource filename changed**
+
+If you installed manually (not via HACS), update the resource path in Settings → Dashboards → Resources:
+
+| Before | After |
+|--------|-------|
+| `/local/nws-alerts-card.js` | `/local/weather-alerts-card.js` |
+
+HACS users: no action needed — HACS manages the resource path automatically.
+
 ## Support
 
 If you find this card useful, tip me at [Ko-fi](https://ko-fi.com/seeveezee) to support development, or donate to [The Y'all Squad](https://www.theyallsquad.org/donate) — a rapid-response program providing direct aid, chainsaws, and supplies to families affected by severe weather events.
 
 ---
 
-**Resources:** [Home Assistant Community thread](https://community.home-assistant.io/t/nws-alerts-card)
+**Resources:** [Home Assistant Community thread](https://community.home-assistant.io/t/weather-alerts-card)
