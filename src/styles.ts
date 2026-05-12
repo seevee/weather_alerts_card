@@ -471,11 +471,15 @@ export const cardStyles = css`
     background: rgba(var(--rgb-primary-text-color, 128, 128, 128), 0.08);
     outline: none;
   }
-  /* Full layout: align the button to the top-right of the header row so it
-     doesn't fight the icon/info block vertically. */
+  /* Full layout: corner-tuck the dismiss button as window-decoration so it
+     doesn't reserve space in the flex flow (which would squeeze title,
+     headline, area, and badges). Labeled variant overrides position below
+     to sit flush against the card's rounded corner. */
   .alert-header-row:not(.compact-row) > .dismiss-button {
-    align-self: flex-start;
-    margin-left: auto;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    margin-left: 0;
   }
   .compact-row > .dismiss-button {
     margin-left: 4px;
