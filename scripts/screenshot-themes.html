@@ -60,7 +60,7 @@
       padding: 36px 28px 28px;
       display: flex;
       gap: 24px;
-      width: 1100px;
+      width: 1460px;
     }
 
     /* Each showcase column */
@@ -128,11 +128,21 @@
       </div>
     </div>
 
+    <!-- ECCC theme: compact layout -->
+    <div class="showcase">
+      <div class="section-label">ECCC</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <weather-alerts-card id="card-eccc"></weather-alerts-card>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script type="module">
     import '/dist/weather-alerts-card.js';
-    import { ALERTS_WITH_MINOR } from '/scripts/screenshot-fixtures.js';
+    import { ALERTS_WITH_MINOR, ECCC_ALERTS } from '/scripts/screenshot-fixtures.js';
 
     // ---- ha-card stub ----
     class HaCard extends HTMLElement {
@@ -186,7 +196,7 @@
     }
     customElements.define('ha-icon', HaIcon);
 
-    // ---- Mock hass — all four alerts for every card ----
+    // ---- Mock hass — alerts for every card ----
     const MOCK_HASS = {
       locale: { language: 'en', time_format: '12', date_format: 'MDY' },
       config: { time_zone: 'America/Denver' },
@@ -195,10 +205,18 @@
           state: String(ALERTS_WITH_MINOR.length),
           attributes: { Alerts: ALERTS_WITH_MINOR },
         },
+        'sensor.eccc_alerts': {
+          state: String(ECCC_ALERTS.length),
+          attributes: {
+            attribution: 'Environment Canada',
+            alerts: ECCC_ALERTS,
+          },
+        },
       },
     };
 
     const ENTITY = 'sensor.nws_alerts_alerts';
+    const ECCC_ENTITY = 'sensor.eccc_alerts';
 
     // ---- Wire up cards — all compact, different color themes ----
     const severity = document.getElementById('card-severity');
@@ -212,6 +230,10 @@
     const meteoalarm = document.getElementById('card-meteoalarm');
     meteoalarm.setConfig({ type: 'custom:weather-alerts-card', entity: ENTITY, animations: false, colorTheme: 'meteoalarm', layout: 'compact' });
     meteoalarm.hass = MOCK_HASS;
+
+    const eccc = document.getElementById('card-eccc');
+    eccc.setConfig({ type: 'custom:weather-alerts-card', entity: ECCC_ENTITY, animations: false, colorTheme: 'eccc', layout: 'compact' });
+    eccc.hass = MOCK_HASS;
   </script>
 </body>
 </html>

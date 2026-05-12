@@ -207,6 +207,64 @@ export const ALERTS_CONTRAST_DEMO = [
   makeContrastAlert('c9', 'Freeze Watch',                'Minor',    'Northfield',   watchTiming),
 ];
 
+// ECCC-format alerts covering all four active color tiers (red/orange/yellow/grey).
+// Uses the EcccAlert shape consumed by EcccAdapter: attribution on the entity
+// attributes, alerts array with ECCC fields.
+export const ECCC_ALERTS = [
+  {
+    title: 'Rainfall Warning',
+    color: 'red',
+    type: 'warning',
+    impact: 'High',
+    confidence: 'High',
+    status: 'new',
+    alert_code: 'RWW',
+    area: 'Sampletown - Demoville',
+    issued: new Date(now - 2 * H).toISOString(),
+    expiry: new Date(now + 1.5 * H).toISOString(),
+    text: 'Heavy rainfall warning in effect. Sample data for demonstration purposes.',
+  },
+  {
+    title: 'Wind Warning',
+    color: 'orange',
+    type: 'warning',
+    impact: 'High',
+    confidence: 'High',
+    status: 'continued',
+    alert_code: 'WW',
+    area: 'Mockton County',
+    issued: new Date(now - 1 * H).toISOString(),
+    expiry: new Date(now + 4 * H).toISOString(),
+    text: 'Strong wind warning in effect. Sample data for demonstration purposes.',
+  },
+  {
+    title: 'Winter Storm Watch',
+    color: 'yellow',
+    type: 'watch',
+    impact: 'Medium',
+    confidence: 'Moderate',
+    status: 'new',
+    alert_code: 'WSW',
+    area: 'Northern Placeholder Highlands',
+    issued: new Date(now - 0.5 * H).toISOString(),
+    expiry: new Date(now + 10 * H).toISOString(),
+    text: 'Winter storm watch in effect. Sample data for demonstration purposes.',
+  },
+  {
+    title: 'Special Weather Statement',
+    color: 'grey',
+    type: 'statement',
+    impact: 'Low',
+    confidence: 'Moderate',
+    status: 'new',
+    alert_code: 'SWS',
+    area: 'Greater Exampleville Region',
+    issued: new Date(now - 0.25 * H).toISOString(),
+    expiry: new Date(now + 12 * H).toISOString(),
+    text: 'Special weather statement in effect. Sample data for demonstration purposes.',
+  },
+];
+
 // PirateWeather-format duplicates of some NWS alerts (for cross-provider dedup demos).
 // Uses the PirateWeather indexed attribute format (title_0, severity_0, etc.)
 // with matching event names and expiry times so the card's dedup logic merges them.
