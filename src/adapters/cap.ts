@@ -49,7 +49,7 @@ export class CapAdapter implements AlertAdapter {
       endsTs,
       description: str(attributes['description']),
       instruction: str(attributes['instruction']),
-      url: str(attributes['url']) || str(attributes['web']),
+      url: httpUrl(str(attributes['url'])) || httpUrl(str(attributes['web'])),
       headline: str(attributes['headline']),
       areaDesc: str(attributes['area_desc']),
       zones: collectZones(attributes),
@@ -94,4 +94,8 @@ function collectZones(attributes: Record<string, unknown>): string[] {
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
+}
+
+function httpUrl(v: string): string {
+  return v.startsWith('http://') || v.startsWith('https://') ? v : '';
 }
