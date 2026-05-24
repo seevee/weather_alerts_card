@@ -75,7 +75,8 @@ export class BomAdapter implements AlertAdapter {
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[] {
     const raw = attributes['warnings'];
     if (!Array.isArray(raw)) return [];
-    return (raw as BomWarning[])
+    return (raw as unknown[])
+      .filter((w): w is BomWarning => typeof w === 'object' && w !== null)
       .filter(w => w.phase !== 'cancelled')
       .map(w => this._normalize(w));
   }

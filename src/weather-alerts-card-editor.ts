@@ -52,6 +52,12 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _maybeSubscribeRegistry(): void {
+    // Only the device-mode hint reads the entity registry. Don't subscribe
+    // (and refetch the whole registry on every update) for plain entity cards.
+    if (!this._config?.device) {
+      this._teardownRegistrySubscription();
+      return;
+    }
     const conn = this.hass?.connection;
     if (!conn || conn === this._subscribedRegistryConn) return;
     this._unsubscribeRegistry?.();
@@ -99,11 +105,19 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _cachedHass?: HomeAssistant;
+  private _cachedConfigKey?: string;
   private _cachedEntityIds?: string[];
 
   private _getMatchingEntityIds(): string[] {
-    if (this._cachedHass === this.hass && this._cachedEntityIds) return this._cachedEntityIds;
+    // Cache is keyed on both hass identity AND the configured entity set:
+    // editing config while hass is unchanged must still surface a newly
+    // configured entity in the list.
+    const configKey = this._getSelectedEntities().join(',');
+    if (this._cachedHass === this.hass && this._cachedConfigKey === configKey && this._cachedEntityIds) {
+      return this._cachedEntityIds;
+    }
     this._cachedHass = this.hass;
+    this._cachedConfigKey = configKey;
     const ids: string[] = [];
     for (const [id, entity] of Object.entries(this.hass.states)) {
       if (!id.startsWith('sensor.') && !id.startsWith('binary_sensor.')) continue;

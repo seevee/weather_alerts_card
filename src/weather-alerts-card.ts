@@ -230,12 +230,20 @@ export class WeatherAlertsCard extends LitElement {
     // connection typically becomes available here rather than in
     // connectedCallback. Subscribe lazily and re-subscribe if the
     // connection object swaps (e.g., after a reconnect).
-    if (changed.has('hass') && this.isConnected) {
+    if ((changed.has('hass') || changed.has('_config')) && this.isConnected) {
       this._maybeSubscribeRegistry();
     }
   }
 
   private _maybeSubscribeRegistry(): void {
+    // Only device mode reads the entity registry (to resolve per-alert child
+    // sensors under a device). A plain entity/entities card never touches
+    // _registryEntries, so subscribing would refetch the entire registry on
+    // every entity_registry_updated event for nothing. Gate it.
+    if (!this._config?.device) {
+      this._teardownRegistrySubscription();
+      return;
+    }
     const conn = this.hass?.connection;
     if (!conn || conn === this._subscribedRegistryConn) return;
     // New (or first) connection — drop any prior subscription.
@@ -333,7 +341,10 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   public getCardSize(): number {
-    const alerts = this._getAlerts();
+    // Pass reconcile=false: this is a layout-measurement call from HA's
+    // masonry engine and must not trigger localStorage writes or reactive
+    // state mutations as a side effect.
+    const alerts = this._getAlerts(false);
     const perAlert = this._isCompact ? 1 : 3;
     return Math.max(1, alerts.length * perAlert);
   }
@@ -387,14 +398,18 @@ export class WeatherAlertsCard extends LitElement {
     return [...this._configuredScopeTokens()].sort().join(',');
   }
 
-  private _multiProvider = false;
-
   private _deviceHasAnyEntity(deviceId: string): boolean {
     if (!this.hass) return false;
     return deviceHasAnyEntity(this.hass, deviceId, this._registryEntries);
   }
 
-  private _getAlerts(): WeatherAlert[] {
+  // Set when applyDismissals produces a changed map during render; persisted
+  // out-of-band by _scheduleDismissalReconcile so render() stays free of
+  // localStorage writes and reactive-state mutation.
+  private _pendingDismissals: Map<string, DismissalRecord> | null = null;
+  private _dismissalReconcileScheduled = false;
+
+  private _getAlerts(reconcile = true): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
     const allAlerts: WeatherAlert[] = [];
     const providerPriority: AlertProvider[] = [];
@@ -409,17 +424,36 @@ export class WeatherAlertsCard extends LitElement {
       }
       allAlerts.push(...adapter.parseAlerts(entity.attributes));
     }
-    this._multiProvider = providerPriority.length > 1;
     let filtered = this._filterAndSort(allAlerts, { providerPriority });
     if (this._config.allowDismiss && !this._forcePreview && this._dismissals.size > 0) {
       const { visible, updatedMap } = applyDismissals(filtered, this._dismissals);
-      if (updatedMap !== this._dismissals) {
-        this._dismissals = updatedMap;
-        if (this._dismissalsScope) saveDismissals(this._dismissalsScope, updatedMap);
+      // applyDismissals can change the map (un-dismiss on signature shift,
+      // renew lastSeenAt). Defer the write/state-mutation out of the render &
+      // measurement path so we never mutate reactive state during render() or
+      // touch localStorage from getCardSize().
+      if (reconcile && updatedMap !== this._dismissals) {
+        this._scheduleDismissalReconcile(updatedMap);
       }
       filtered = visible;
     }
     return filtered;
+  }
+
+  private _scheduleDismissalReconcile(updatedMap: Map<string, DismissalRecord>): void {
+    // Each render recomputes updatedMap against the unchanged this._dismissals,
+    // so the latest snapshot is always the one to persist. Coalesce repeated
+    // renders into a single microtask write.
+    this._pendingDismissals = updatedMap;
+    if (this._dismissalReconcileScheduled) return;
+    this._dismissalReconcileScheduled = true;
+    queueMicrotask(() => {
+      this._dismissalReconcileScheduled = false;
+      const next = this._pendingDismissals;
+      this._pendingDismissals = null;
+      if (!next || !this._dismissalsScope) return;
+      this._dismissals = next;
+      saveDismissals(this._dismissalsScope, next);
+    });
   }
 
   private _onDismiss(alert: WeatherAlert): void {
@@ -641,7 +675,11 @@ export class WeatherAlertsCard extends LitElement {
         extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
       };
       const threshold = severityRank[this._config.minSeverity] ?? 4;
-      result = result.filter(a => (severityRank[a.severity] ?? 4) <= threshold);
+      // 'unknown' means the provider couldn't classify the alert, not that
+      // it's low-priority. Never silently drop it via the severity floor —
+      // suppressing an unclassified weather alert is a safety hazard. Users
+      // who truly want it gone can use eventCode/zone filters instead.
+      result = result.filter(a => a.severity === 'unknown' || (severityRank[a.severity] ?? 4) <= threshold);
     }
 
     if (this._config.hideExpired !== false) {
@@ -1052,8 +1090,7 @@ export class WeatherAlertsCard extends LitElement {
       ` : nothing}
       ${alert.mergedCount && alert.mergedCount > 1
         ? html`<span class="badge zones-badge">${t(
-          alert.mergedCount === 1 ? 'card.zone_count_singular' : 'card.zones_count',
-          this._lang, { count: alert.mergedCount },
+          'card.zones_count', this._lang, { count: alert.mergedCount },
         )}</span>`
         : nothing}
     `;

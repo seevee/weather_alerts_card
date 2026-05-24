@@ -606,6 +606,13 @@ export function deduplicateAlerts(
     representative.zones = [...zoneSet];
     representative.areaDesc = [...areaDescs].join('; ');
     representative.mergedCount = group.length;
+    // Use a stable id derived from the merge key rather than group[0].id.
+    // The group key (event/severity/onset/ends/provider) is invariant to the
+    // order in which the integration emits zone-split alerts, so browser-local
+    // dismissals keyed on this id survive upstream array reordering and
+    // zone-set churn (zones are intentionally excluded from the dismissal
+    // signature, so identity must not depend on them either).
+    representative.id = `merged:${key}`;
     return representative;
   });
 

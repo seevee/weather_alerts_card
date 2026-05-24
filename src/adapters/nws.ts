@@ -8,13 +8,17 @@ function extractZoneCode(url: string): string {
 
 function collectZones(alert: NwsAlert): string[] {
   const zones: string[] = [];
-  if (alert.AffectedZones) {
+  // Guard element types: a single non-string entry (malformed payload from a
+  // future/buggy integration version) must not throw and blank the whole card.
+  if (Array.isArray(alert.AffectedZones)) {
     for (const z of alert.AffectedZones) {
+      if (typeof z !== 'string' || !z) continue;
       zones.push(extractZoneCode(z));
     }
   }
-  if (alert.Geocode?.UGC) {
-    for (const code of alert.Geocode.UGC) {
+  if (Array.isArray(alert.Geocode?.UGC)) {
+    for (const code of alert.Geocode!.UGC!) {
+      if (typeof code !== 'string' || !code) continue;
       const upper = code.toUpperCase();
       if (!zones.includes(upper)) zones.push(upper);
     }
@@ -36,7 +40,11 @@ export class NwsAdapter implements AlertAdapter {
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[] {
     const raw = attributes['Alerts'];
     if (!Array.isArray(raw)) return [];
-    return (raw as NwsAlert[]).map(a => this._normalize(a));
+    // Skip non-object entries so a single malformed element can't crash
+    // normalization of the rest of the array.
+    return (raw as unknown[])
+      .filter((a): a is NwsAlert => typeof a === 'object' && a !== null)
+      .map(a => this._normalize(a));
   }
 
   private _normalize(a: NwsAlert): WeatherAlert {

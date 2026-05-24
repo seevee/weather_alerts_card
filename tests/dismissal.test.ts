@@ -263,6 +263,39 @@ describe('subscribeToDismissalChanges', () => {
     restoreAll('scope');
     expect(hits).toBe(0);
   });
+
+  it('fires on a cross-tab storage event for the matching key', () => {
+    let hits = 0;
+    const unsub = subscribeToDismissalChanges('scope', () => { hits++; });
+    window.dispatchEvent(new StorageEvent('storage', { key: storageKey('scope'), newValue: '{}' }));
+    expect(hits).toBe(1);
+    unsub();
+  });
+
+  it('fires on a cross-tab storage clear (null key)', () => {
+    let hits = 0;
+    const unsub = subscribeToDismissalChanges('scope', () => { hits++; });
+    window.dispatchEvent(new StorageEvent('storage', { key: null }));
+    expect(hits).toBe(1);
+    unsub();
+  });
+
+  it('ignores storage events for unrelated keys', () => {
+    let hits = 0;
+    const unsub = subscribeToDismissalChanges('scope', () => { hits++; });
+    window.dispatchEvent(new StorageEvent('storage', { key: storageKey('other'), newValue: '{}' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'some-unrelated-key' }));
+    expect(hits).toBe(0);
+    unsub();
+  });
+
+  it('removes the storage listener on unsubscribe', () => {
+    let hits = 0;
+    const unsub = subscribeToDismissalChanges('scope', () => { hits++; });
+    unsub();
+    window.dispatchEvent(new StorageEvent('storage', { key: storageKey('scope'), newValue: '{}' }));
+    expect(hits).toBe(0);
+  });
 });
 
 describe('applyDismissals', () => {

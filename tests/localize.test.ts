@@ -34,6 +34,12 @@ describe('t()', () => {
     expect(t('card.zones_count', 'en', { count: 3 })).toBe('3 zones');
   });
 
+  it('replaces every occurrence of a repeated placeholder', () => {
+    // An unknown key falls through to the raw key verbatim, letting us assert
+    // multi-occurrence substitution without depending on a translation string.
+    expect(t('{x} and {x}', 'en', { x: 'A' })).toBe('A and A');
+  });
+
   it('interpolates named parameters in French', () => {
     expect(t('card.sensor_unavailable', 'fr', { state: 'indisponible' }))
       .toBe("Le capteur d'alerte est indisponible.");

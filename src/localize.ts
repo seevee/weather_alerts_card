@@ -754,7 +754,9 @@ export function t(key: string, lang: string, params?: Record<string, string | nu
 
   if (params) {
     for (const [k, v] of Object.entries(params)) {
-      value = value.replace(`{${k}}`, String(v));
+      // split/join replaces every occurrence — String.replace(str, …) only
+      // replaces the first, which would leave repeated placeholders intact.
+      value = value.split(`{${k}}`).join(String(v));
     }
   }
 

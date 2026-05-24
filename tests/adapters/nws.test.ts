@@ -104,6 +104,26 @@ describe('NwsAdapter', () => {
       expect(alerts[0].zones.filter(z => z === 'COZ039')).toHaveLength(1);
     });
 
+    it('skips non-string zone entries without throwing', () => {
+      const attrs = makeNwsAttributes([{
+        // Malformed payload: null / numeric entries mixed with valid ones.
+        AffectedZones: ['https://api.weather.gov/zones/forecast/COZ039', null, 42] as unknown as string[],
+        Geocode: { UGC: ['COC059', null] as unknown as string[] },
+      }]);
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).toContain('COZ039');
+      expect(alerts[0].zones).toContain('COC059');
+      expect(alerts[0].zones).toHaveLength(2);
+    });
+
+    it('skips non-object entries in the Alerts array', () => {
+      const valid = makeNwsAttributes([{ Event: 'Tornado Warning' }]);
+      const attrs = { Alerts: [null, 'oops', (valid.Alerts as unknown[])[0]] };
+      const alerts = adapter.parseAlerts(attrs as Record<string, unknown>);
+      expect(alerts).toHaveLength(1);
+      expect(alerts[0].event).toBe('Tornado Warning');
+    });
+
     it('parses timestamps to Unix seconds', () => {
       const attrs = makeNwsAttributes([{
         Sent: '2026-03-06T10:00:00Z',

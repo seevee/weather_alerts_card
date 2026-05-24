@@ -81,9 +81,35 @@ export async function subscribeEntityRegistry(
     });
     onChange(result ?? []);
   };
-  const unsubEvents = await conn.subscribeEvents(() => {
+  // entity_registry_updated fires in bursts (integration reloads add/rename
+  // many entities at once). Leading-edge throttle: fetch immediately on the
+  // first event so the UI stays responsive, then coalesce any further events
+  // within the window into a single trailing refetch — so we don't re-pull
+  // the full registry once per entity.
+  let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+  let trailingPending = false;
+  const scheduleFetch = (): void => {
+    if (throttleTimer !== null) {
+      trailingPending = true;
+      return;
+    }
     void fetchAndPush().catch(() => { /* ignore — next event will retry */ });
-  }, 'entity_registry_updated');
+    throttleTimer = setTimeout(() => {
+      throttleTimer = null;
+      if (trailingPending) {
+        trailingPending = false;
+        scheduleFetch();
+      }
+    }, 250);
+  };
+  const unsubEvents = await conn.subscribeEvents(() => scheduleFetch(), 'entity_registry_updated');
   await fetchAndPush();
-  return () => { void unsubEvents(); };
+  return () => {
+    if (throttleTimer !== null) {
+      clearTimeout(throttleTimer);
+      throttleTimer = null;
+    }
+    trailingPending = false;
+    void unsubEvents();
+  };
 }

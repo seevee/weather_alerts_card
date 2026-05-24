@@ -663,11 +663,24 @@ describe('deduplicateAlerts', () => {
     const b = makeAlert({ id: 'b', zones: ['COZ040'], areaDesc: 'Zone B' });
     const result = deduplicateAlerts([a, b]);
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('a');
+    // Merged alerts get a stable synthetic id derived from the merge key, not
+    // the first member's id (which depends on emission order).
+    expect(result[0].id.startsWith('merged:')).toBe(true);
     expect(result[0].zones).toContain('COZ039');
     expect(result[0].zones).toContain('COZ040');
     expect(result[0].areaDesc).toBe('Zone A; Zone B');
     expect(result[0].mergedCount).toBe(2);
+  });
+
+  it('gives merged alerts an id invariant to member order', () => {
+    // Regression: the representative id must not flip when the upstream
+    // integration reorders zone-split alerts, or browser-local dismissals
+    // (keyed on id) would resurface on every reorder.
+    const a = makeAlert({ id: 'a', zones: ['COZ039'], areaDesc: 'Zone A' });
+    const b = makeAlert({ id: 'b', zones: ['COZ040'], areaDesc: 'Zone B' });
+    const forward = deduplicateAlerts([a, b]);
+    const reversed = deduplicateAlerts([b, a]);
+    expect(forward[0].id).toBe(reversed[0].id);
   });
 
   it('merges three alerts with same key', () => {
@@ -718,8 +731,12 @@ describe('deduplicateAlerts', () => {
     const flood2 = makeAlert({ id: 'f2', event: 'Flood Warning', zones: ['Z2'] });
     const result = deduplicateAlerts([tornado, flood1, flood2]);
     expect(result).toHaveLength(2);
+    // Unmerged single alert keeps its real id; the merged flood group follows
+    // in first-occurrence order with a stable synthetic id.
     expect(result[0].id).toBe('t');
-    expect(result[1].id).toBe('f1');
+    expect(result[1].event).toBe('Flood Warning');
+    expect(result[1].mergedCount).toBe(2);
+    expect(result[1].id.startsWith('merged:')).toBe(true);
   });
 });
 

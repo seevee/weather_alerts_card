@@ -57,8 +57,12 @@ function notifyDismissalChange(scope: string): void {
 }
 
 /**
- * Listen for same-tab dismissal-state changes (dismiss, undo, restore-all)
- * scoped to a specific entity-set hash. Returns an unsubscribe function.
+ * Listen for dismissal-state changes (dismiss, undo, restore-all) scoped to a
+ * specific entity-set hash. Returns an unsubscribe function.
+ *
+ * Fires for both same-tab changes (via the in-page CustomEvent) and cross-tab
+ * changes (via the native `storage` event, which only fires in *other* tabs),
+ * so dismissing in one tab updates the dashboard open in another.
  */
 export function subscribeToDismissalChanges(
   scope: string,
@@ -70,8 +74,19 @@ export function subscribeToDismissalChanges(
     if (!detail || detail.scope !== scope) return;
     handler();
   };
+  const key = storageKey(scope);
+  const storageListener = (ev: StorageEvent) => {
+    // ev.key === null when storage was cleared wholesale; otherwise only react
+    // to our own scoped key so unrelated writes don't churn every card.
+    if (ev.key !== null && ev.key !== key) return;
+    handler();
+  };
   window.addEventListener(DISMISSALS_CHANGED_EVENT, listener);
-  return () => window.removeEventListener(DISMISSALS_CHANGED_EVENT, listener);
+  window.addEventListener('storage', storageListener);
+  return () => {
+    window.removeEventListener(DISMISSALS_CHANGED_EVENT, listener);
+    window.removeEventListener('storage', storageListener);
+  };
 }
 
 export function loadDismissals(
