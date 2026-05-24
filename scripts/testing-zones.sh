@@ -306,8 +306,13 @@ nws() {
 }
 
 # ─── BoM ──────────────────────────────────────────────────────────────────────
-# BoM warnings have no geometry — we extract a place name from the warning
-# title, resolve it via the BoM locations API, and decode the geohash locally.
+# BoM warnings carry no geometry. The HA integration calls
+# /v1/locations/{geohash}/warnings, so the recommended location must fall
+# within an active warning area. We:
+#   1. Extract candidate place names from warning titles (multi-pattern).
+#   2. Resolve each via the BoM locations API.
+#   3. Verify via /v1/locations/{geohash}/warnings (same endpoint HA uses).
+#   4. Return the first location that is confirmed to have active warnings.
 
 decode_geohash() {
   echo "$1" | awk '
@@ -333,8 +338,20 @@ decode_geohash() {
 
 extract_bom_places() {
   local title="$1"
-  echo "$title" | grep -oP '(?<= at )\w+' || true
-  echo "$title" | cut -d, -f1 | sed 's/\b\(River\|Creek\|Bay\|Lake\|Range\)\b//g; s/^ *//; s/ *$//'
+  # Specific location after "at" (e.g. "Flood Warning for Murray River at Albury")
+  echo "$title" | grep -oP '(?<= at )[A-Z]\w+' || true
+  # Strip the warning-type prefix to get just the area description
+  local area
+  area=$(echo "$title" | sed -E 's/^.*(Warning|Watch|Advice|Advisory) for (the )?//')
+  # Directional+city patterns: "Greater Sydney", "Central Coast", etc. → "Sydney", "Coast"
+  echo "$area" | grep -oP '(?:Greater|Central|Northern|Southern|Western|Eastern|Inner|Outer|Upper|Lower|Far North|South East|North East) +([A-Z][a-z]+(?:(?: [A-Z][a-z]+)*)?)' \
+    | grep -oP '[A-Z][a-z]+(?:(?: [A-Z][a-z]+)*)$' || true
+  # "X Region / District / Coast / Valley / Basin" → "X"
+  echo "$area" | grep -oP '\b([A-Z][a-z]+(?:(?: [A-Z][a-z]+)+)?)\b(?=\s+(?:Region|District|Coast|Valley|Basin|Peninsula|Ranges|Plateau))' || true
+  # All capitalised words (skip common weather/geographic noise) — broadest fallback
+  echo "$area" | grep -oP '\b[A-Z][a-z]{2,}\b' \
+    | grep -iv 'Warning\|Watch\|Advice\|Advisory\|Region\|District\|Coast\|Valley\|Basin\|Peninsula\|Ranges\|Plateau\|Catchment\|River\|Creek\|Bay\|Lake\|Range\|Weather\|Flood\|Storm\|Fire\|Wind\|Rain\|Hail\|Thunder\|Cyclone\|Tropical\|Severe\|Major\|Minor\|Moderate\|Extreme\|Initial\|Final\|Update\|Australia\|Territory\|State' \
+    || true
 }
 
 bom_search_place() {
@@ -345,6 +362,37 @@ bom_search_place() {
   echo "$result" | jq -r --arg st "$target_state" '
     (.data[] | select(.state == $st) | "\(.geohash)\t\(.name)") // empty
   ' | head -1
+}
+
+# Search for a place and return the first land-based result whose geohash is
+# confirmed to have active warnings via /v1/locations/{geohash}/warnings.
+#
+# "Land-based" = BoM location has a postcode. Marine/offshore stations have no
+# postcode, and their geohash centroids typically fall in the ocean.
+#
+# Prints: "geohash\tname\tlat\tlon\tcount" on success, nothing on failure.
+# lat/lon come from the API directly (more accurate than geohash centroid).
+bom_search_verified() {
+  local place="$1" target_state="$2"
+  local search_result
+  search_result=$(curl -sf --max-time 10 -H "User-Agent: $UA" \
+    "https://api.weather.bom.gov.au/v1/locations?search=$(echo "$place" | sed 's/ /%20/g')" 2>/dev/null) || return 1
+
+  # Only land-based locations (postcode present); iterate in API order.
+  while IFS=$'\t' read -r gh name lat lon; do
+    [ -z "$gh" ] && continue
+    local check count
+    check=$(curl -sf --max-time 10 -H "User-Agent: $UA" \
+      "https://api.weather.bom.gov.au/v1/locations/${gh}/warnings" 2>/dev/null) || continue
+    count=$(echo "$check" | jq '[.data[] | select(.phase != "cancelled")] | length' 2>/dev/null || echo 0)
+    if [ "$count" -gt 0 ]; then
+      printf '%s\t%s\t%s\t%s\t%s\n' "$gh" "$name" "$lat" "$lon" "$count"
+      return 0
+    fi
+  done < <(echo "$search_result" | jq -r --arg st "$target_state" '
+    [.data[] | select(.state == $st and (.postcode? // "") != "")] |
+    .[] | "\(.geohash)\t\(.name)\t\(.latitude? // "")\t\(.longitude? // "")"
+  ' 2>/dev/null)
 }
 
 bom() {
@@ -358,17 +406,39 @@ bom() {
 
   local total
   total=$(echo "$warnings" | jq '[.data[] | select(.phase != "cancelled")] | length')
-  echo "  Active warnings: $total"
 
   if [ "$total" -eq 0 ]; then
+    echo "  Active warnings: 0"
     echo "  No active warnings."
     return 0
   fi
 
-  # Per-state diversity analysis
+  # Marine warnings (type contains "marine") appear in the coverage totals but are
+  # not useful for HA land-integration testing: the integration's point-in-polygon
+  # query never matches offshore/marine station geohashes for these alerts.
+  local land_warnings land_total marine_total
+  land_warnings=$(echo "$warnings" | jq '[.data[] | select(.phase != "cancelled" and (.type | test("marine"; "i") | not))]')
+  land_total=$(echo "$land_warnings" | jq 'length')
+  marine_total=$((total - land_total))
+
+  echo "  Active warnings: $total  ($land_total land-based, $marine_total marine/coastal)"
+
+  if [ "$land_total" -eq 0 ]; then
+    echo ""
+    echo "  All active warnings are marine/coastal — not suitable for HA land-integration"
+    echo "  testing. Run again when Australia has active flood, storm, or fire warnings."
+    echo ""
+    echo "  ── Condition coverage (all $total warnings) ──"
+    echo "$warnings" | jq -r '
+      [.data[] | select(.phase != "cancelled")] |
+      "  By type:  \(group_by(.type) | map("\(.[0].type)=\(length)") | join("  "))"
+    '
+    return 0
+  fi
+
+  # Per-state diversity analysis — land warnings only.
   local state_analysis
-  state_analysis=$(echo "$warnings" | jq '
-    [.data[] | select(.phase != "cancelled")] |
+  state_analysis=$(echo "$land_warnings" | jq '
     group_by(.state) | map(
       . as $arr |
       {
@@ -393,7 +463,7 @@ bom() {
     <<< "$(echo "$state_analysis" | jq -r '.[0] | [.state, .score, .count, (.phases|join(", ")), (.groups|join(", ")), (.types|join(", "))] | @tsv')"
 
   echo ""
-  echo "  ── Best testing state (score: $best_score) ──"
+  echo "  ── Best testing state (score: $best_score, land warnings only) ──"
   echo ""
   echo "  state:          $best_state"
   echo "  warnings:       $best_count"
@@ -411,77 +481,106 @@ bom() {
   # Sample warnings from best state
   echo ""
   echo "  ── Sample warnings from $best_state ──"
-  echo "$warnings" | jq -r --arg st "$best_state" '
-    [.data[] | select(.state == $st and .phase != "cancelled")] |
+  echo "$land_warnings" | jq -r --arg st "$best_state" '
+    [.[] | select(.state == $st)] |
     .[0:6] | .[] |
     "    [\(.phase)] \(.title) (\(.type), \(.warning_group_type))"
   '
 
-  # Resolve a location for the best state
-  local lat="?" lon="?" resolved_name=""
+  # Find a BoM location that is confirmed to have active warnings.
+  # Tries place names from up to 5 warning titles; verifies each candidate via
+  # /v1/locations/{geohash}/warnings (the same call the HA integration makes).
+  local lat="?" lon="?" resolved_name="" bom_geohash="" bom_warning_count=0
   echo ""
-  echo "  Resolving location..."
+  echo "  Searching for a verified location with active warnings..."
 
-  local sample_title
-  sample_title=$(echo "$warnings" | jq -r --arg st "$best_state" '
-    [.data[] | select(.state == $st and .phase != "cancelled")] | .[0].title // ""
+  local found_verified=""
+  while IFS= read -r wtitle; do
+    [ -z "$wtitle" ] && continue
+    local places
+    places=$(extract_bom_places "$wtitle")
+    while IFS= read -r place; do
+      [ -z "$place" ] && continue
+      local match
+      match=$(bom_search_verified "$place" "$best_state") || continue
+      if [ -n "$match" ]; then
+        found_verified="$match"
+        break 2
+      fi
+    done <<< "$places"
+  done < <(echo "$land_warnings" | jq -r --arg st "$best_state" '
+    [.[] | select(.state == $st)] | .[0:5] | .[].title
   ')
 
-  local places found=""
-  places=$(extract_bom_places "$sample_title")
-  while IFS= read -r place; do
-    [ -z "$place" ] && continue
-    local match
-    match=$(bom_search_place "$place" "$best_state") || continue
-    if [ -n "$match" ]; then
-      found="$match"
-      break
+  if [ -n "$found_verified" ]; then
+    bom_geohash=$(echo "$found_verified" | cut -f1)
+    resolved_name=$(echo "$found_verified" | cut -f2)
+    local api_lat api_lon
+    api_lat=$(echo "$found_verified" | cut -f3)
+    api_lon=$(echo "$found_verified" | cut -f4)
+    bom_warning_count=$(echo "$found_verified" | cut -f5)
+    # Prefer coordinates from the API over the geohash centroid (more accurate for coastal towns)
+    if [ -n "$api_lat" ] && [ "$api_lat" != "null" ] && [ "$api_lat" != "" ]; then
+      lat="$api_lat"; lon="$api_lon"
+    else
+      read -r lat lon < <(decode_geohash "$bom_geohash")
     fi
-  done <<< "$places"
-
-  if [ -n "$found" ]; then
-    local geohash
-    geohash=$(echo "$found" | cut -f1)
-    resolved_name=$(echo "$found" | cut -f2)
-    read -r lat lon < <(decode_geohash "$geohash")
-    echo "  Resolved: $resolved_name ($geohash)"
+    echo "  Verified: $resolved_name (geohash: $bom_geohash, warnings confirmed: $bom_warning_count)"
   else
-    echo "  Could not resolve a location from title — using state capital"
+    # Nothing verified — try the state capital as a last resort with explicit caveat.
+    echo "  Could not find a verified warning location — using state capital"
+    echo "  (state capital is unlikely to show warnings; use a suburb in the affected area)"
+    local cap_place
     case "$best_state" in
-      NSW) lat="-33.8688"; lon="151.2093"; resolved_name="Sydney" ;;
-      VIC) lat="-37.8136"; lon="144.9631"; resolved_name="Melbourne" ;;
-      QLD) lat="-27.4698"; lon="153.0251"; resolved_name="Brisbane" ;;
-      SA)  lat="-34.9285"; lon="138.6007"; resolved_name="Adelaide" ;;
-      WA)  lat="-31.9505"; lon="115.8605"; resolved_name="Perth" ;;
-      TAS) lat="-42.8821"; lon="147.3272"; resolved_name="Hobart" ;;
-      NT)  lat="-12.4634"; lon="130.8456"; resolved_name="Darwin" ;;
-      ACT) lat="-35.2809"; lon="149.1300"; resolved_name="Canberra" ;;
-      *)   resolved_name="unknown" ;;
+      NSW) cap_place="Sydney" ;;
+      VIC) cap_place="Melbourne" ;;
+      QLD) cap_place="Brisbane" ;;
+      SA)  cap_place="Adelaide" ;;
+      WA)  cap_place="Perth" ;;
+      TAS) cap_place="Hobart" ;;
+      NT)  cap_place="Darwin" ;;
+      ACT) cap_place="Canberra" ;;
+      *)   cap_place="" ;;
     esac
+    if [ -n "$cap_place" ]; then
+      local cap_match
+      cap_match=$(bom_search_place "$cap_place" "$best_state") || true
+      if [ -n "$cap_match" ]; then
+        bom_geohash=$(echo "$cap_match" | cut -f1)
+        resolved_name=$(echo "$cap_match" | cut -f2)
+        read -r lat lon < <(decode_geohash "$bom_geohash")
+      fi
+    fi
   fi
 
   echo ""
-  echo "  place: $resolved_name"
-  echo "  lat:   $lat"
-  echo "  lon:   $lon"
+  echo "  place:   $resolved_name"
+  echo "  geohash: $bom_geohash"
+  echo "  lat:     $lat"
+  echo "  lon:     $lon"
+  if [ "$bom_warning_count" -gt 0 ]; then
+    echo "  warnings at this location: $bom_warning_count (confirmed)"
+  fi
   echo ""
   echo "  HA integration: bureau_of_meteorology"
-  echo "  Configure for a location near $resolved_name, $best_state to pick up warnings"
+  echo "  Search for \"$resolved_name\" when adding the integration"
 
   # Condition coverage
   echo ""
   echo "  ── Condition coverage ──"
-  echo "$warnings" | jq -r '
-    [.data[] | select(.phase != "cancelled")] |
+  echo "$land_warnings" | jq -r '
     {
       total: length,
       phases: (group_by(.phase) | map({phase: .[0].phase, count: length}) | sort_by(-.count)),
       groups: (group_by(.warning_group_type) | map({group: .[0].warning_group_type, count: length}) | sort_by(-.count))
     } |
-    "  Total active warnings: \(.total)",
+    "  Land warnings: \(.total)",
     "  By phase:  \(.phases | map("\(.phase)=\(.count)") | join("  "))",
     "  By group:  \(.groups | map("\(.group)=\(.count)") | join("  "))"
   '
+  if [ "$marine_total" -gt 0 ]; then
+    echo "  Marine/coastal warnings: $marine_total (excluded from analysis)"
+  fi
 }
 
 # ─── MeteoAlarm ───────────────────────────────────────────────────────────────

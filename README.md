@@ -260,7 +260,7 @@ Severity and certainty badges are always localized to your configured language. 
 | BoM | Inferred (parsed from title/type/group) | Absent |
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
 | DWD | Raw (from integer `level`) | Absent |
-| ECCC | Inferred (max of `color`/`type`/`impact`) | Raw (from `confidence` field) |
+| ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
 | PirateWeather | Raw (from `severity` field) | Absent |
 | CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty` field) |
 
