@@ -16,7 +16,8 @@ import {
   dismissAlert,
   undoDismiss,
   applyDismissals,
-  computeScopeHash,
+  configuredScopeTokens,
+  scopeHashForConfig,
   subscribeToDismissalChanges,
 } from './dismissal';
 import {
@@ -298,24 +299,13 @@ export class WeatherAlertsCard extends LitElement {
   private get _scopeHash(): string {
     // Hash the *configured* sources (entity + device id), not the resolved
     // entity list — device-mode alerts come and go, and the dismissal scope
-    // must stay stable across that churn.
-    const tokens = this._configuredScopeTokens();
-    if (tokens.length === 0) return '';
-    const [primary, ...extras] = tokens;
-    return computeScopeHash(primary, extras);
+    // must stay stable across that churn. Shared with the editor so both
+    // agree on the storage key (see scopeHashForConfig).
+    return scopeHashForConfig(this._config);
   }
 
   private _configuredScopeTokens(): string[] {
-    if (!this._config) return [];
-    const tokens: string[] = [];
-    if (this._config.entity) tokens.push(this._config.entity);
-    if (this._config.entities) {
-      for (const id of this._config.entities) {
-        if (id) tokens.push(id);
-      }
-    }
-    if (this._config.device) tokens.push(`device:${this._config.device}`);
-    return tokens;
+    return configuredScopeTokens(this._config);
   }
 
   private _reloadDismissalsIfScopeChanged(): void {

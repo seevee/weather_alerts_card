@@ -37,6 +37,42 @@ export function storageKey(scope: string): string {
   return STORAGE_KEY_PREFIX + scope;
 }
 
+/** Config subset that determines a card's dismissal scope. */
+export interface ScopeConfig {
+  entity?: string;
+  entities?: string[];
+  device?: string;
+}
+
+/**
+ * The dismissal-scope source tokens for a card config: primary entity, any
+ * extra entities, and the device id (prefixed). The card and editor MUST both
+ * derive their scope from this single helper — if they diverge, the editor
+ * loads/clears the wrong storage key and the "restore all" UI silently fails.
+ * In particular a device-mode CAP card has no `entity`, so a tokeniser that
+ * ignores `device` produces an empty scope and never surfaces dismissals.
+ */
+export function configuredScopeTokens(config: ScopeConfig | undefined): string[] {
+  if (!config) return [];
+  const tokens: string[] = [];
+  if (config.entity) tokens.push(config.entity);
+  if (config.entities) {
+    for (const id of config.entities) {
+      if (id) tokens.push(id);
+    }
+  }
+  if (config.device) tokens.push(`device:${config.device}`);
+  return tokens;
+}
+
+/** Scope hash for a card config, or '' when no sources are configured. */
+export function scopeHashForConfig(config: ScopeConfig | undefined): string {
+  const tokens = configuredScopeTokens(config);
+  if (tokens.length === 0) return '';
+  const [primary, ...extras] = tokens;
+  return computeScopeHash(primary, extras);
+}
+
 function safeGetStorage(): Storage | null {
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;

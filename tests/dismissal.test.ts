@@ -4,6 +4,8 @@ import {
   STALE_TTL_SEC,
   computeAlertSignature,
   computeScopeHash,
+  configuredScopeTokens,
+  scopeHashForConfig,
   storageKey,
   loadDismissals,
   saveDismissals,
@@ -123,6 +125,51 @@ describe('computeScopeHash', () => {
 describe('storageKey', () => {
   it('prefixes with the v1 namespace', () => {
     expect(storageKey('abc')).toBe(`${STORAGE_KEY_PREFIX}abc`);
+  });
+});
+
+describe('configuredScopeTokens', () => {
+  it('includes the device token (prefixed) for device-mode cards', () => {
+    expect(configuredScopeTokens({ device: 'abc' })).toEqual(['device:abc']);
+  });
+
+  it('combines entity, entities, and device', () => {
+    expect(configuredScopeTokens({
+      entity: 'sensor.a',
+      entities: ['sensor.b'],
+      device: 'dev1',
+    })).toEqual(['sensor.a', 'sensor.b', 'device:dev1']);
+  });
+
+  it('returns [] for empty/undefined config', () => {
+    expect(configuredScopeTokens(undefined)).toEqual([]);
+    expect(configuredScopeTokens({})).toEqual([]);
+  });
+});
+
+describe('scopeHashForConfig', () => {
+  it('produces a non-empty scope for a device-only (CAP) card', () => {
+    // Regression: device-mode CAP cards have no `entity`. A tokeniser that
+    // ignored `device` returned '' here, which made the editor's restore-all
+    // UI invisible and the dismissal subscription watch the wrong scope.
+    const hash = scopeHashForConfig({ device: 'abc' });
+    expect(hash).not.toBe('');
+    expect(hash).toBe(computeScopeHash('device:abc', []));
+  });
+
+  it('matches the storage key the card writes for the same device config', () => {
+    const config = { device: 'cap-device-1' };
+    const fresh = Math.floor(Date.now() / 1000);
+    const dismissals = new Map([['alert-A', makeRecord('sig', fresh)]]);
+    // Simulate the card persisting under its own scope...
+    saveDismissals(scopeHashForConfig(config), dismissals);
+    // ...and the editor reading back under the scope it derives.
+    expect(loadDismissals(scopeHashForConfig(config)).size).toBe(1);
+  });
+
+  it('returns "" when no sources are configured', () => {
+    expect(scopeHashForConfig({})).toBe('');
+    expect(scopeHashForConfig(undefined)).toBe('');
   });
 });
 

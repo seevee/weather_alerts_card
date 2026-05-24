@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { WeatherAlertsCardEditor } from '../src/weather-alerts-card-editor';
 import type { WeatherAlertsCardConfig } from '../src/types';
+import { saveDismissals, scopeHashForConfig } from '../src/dismissal';
 
 // Reach into private helpers — this suite exists to pin down the
 // condition-matching heuristics used to sync HA visibility conditions.
 type EditorInternals = {
+  _config: WeatherAlertsCardConfig;
   _syncMultiEntityVisibility(
     config: WeatherAlertsCardConfig,
   ): Record<string, unknown>[] | undefined;
@@ -12,6 +14,8 @@ type EditorInternals = {
     c: Record<string, unknown>,
     managedIds: Set<string>,
   ): boolean;
+  _currentScopeHash(): string;
+  _getDismissedCount(): number;
 };
 
 function makeEditor(): EditorInternals {
@@ -195,5 +199,48 @@ describe('_isManagedCondition', () => {
       { condition: 'or', conditions: [] },
       new Set(),
     )).toBe(false);
+  });
+});
+
+describe('editor dismissal scope (device-mode CAP)', () => {
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        get length() { return store.size; },
+        clear: () => store.clear(),
+        getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
+        setItem: (k: string, v: string) => { store.set(k, String(v)); },
+        removeItem: (k: string) => { store.delete(k); },
+        key: (i: number) => Array.from(store.keys())[i] ?? null,
+      },
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  it('derives the same scope hash the card uses for a device-only config', () => {
+    const editor = makeEditor();
+    const config = { type: 'custom:weather-alerts-card', device: 'cap-dev-1' } as WeatherAlertsCardConfig;
+    editor._config = config;
+    // The card writes under scopeHashForConfig(config); the editor must read
+    // the identical key, even though there is no `entity`.
+    expect(editor._currentScopeHash()).toBe(scopeHashForConfig(config));
+    expect(editor._currentScopeHash()).not.toBe('');
+  });
+
+  it('counts dismissals stored under the device scope so restore-all is reachable', () => {
+    const config = { type: 'custom:weather-alerts-card', device: 'cap-dev-1' } as WeatherAlertsCardConfig;
+    // Simulate the card having dismissed two alerts under its device scope.
+    // Fresh lastSeenAt so loadDismissals' 30-day staleness prune doesn't drop them.
+    const fresh = Math.floor(Date.now() / 1000);
+    saveDismissals(scopeHashForConfig(config), new Map([
+      ['a', { sig: 's1', dismissedAt: fresh, lastSeenAt: fresh }],
+      ['b', { sig: 's2', dismissedAt: fresh, lastSeenAt: fresh }],
+    ]));
+    const editor = makeEditor();
+    editor._config = config;
+    // Before the fix this was 0 (empty scope) and the restore-all UI never showed.
+    expect(editor._getDismissedCount()).toBe(2);
   });
 });

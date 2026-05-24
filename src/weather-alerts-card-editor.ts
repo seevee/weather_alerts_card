@@ -5,7 +5,7 @@ import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, En
 import { canHandleAny, ENTITY_NAME_PATTERNS } from './adapters';
 import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
-import { computeScopeHash, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
+import { scopeHashForConfig, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
 
 @customElement('weather-alerts-card-editor')
 export class WeatherAlertsCardEditor extends LitElement {
@@ -470,10 +470,11 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _currentScopeHash(): string {
-    const ids = this._getSelectedEntities();
-    if (ids.length === 0) return '';
-    const [primary, ...extras] = ids;
-    return computeScopeHash(primary, extras);
+    // Must match the card's scope exactly (entity + entities + device), or the
+    // restore-all UI reads the wrong storage key. Notably, a device-mode CAP
+    // card has no `entity`, so omitting `device` here yields an empty scope and
+    // the dismissed-count/restore-all status never appears.
+    return scopeHashForConfig(this._config);
   }
 
   private _getDismissedCount(): number {
