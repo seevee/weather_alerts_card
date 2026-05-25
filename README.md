@@ -13,7 +13,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 - **Expandable details** — sanitized description, instructions, and source link
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
-- **Zone filtering** — show only alerts for specific zone codes (BoM `area_id`, NWS UGC)
+- **Zone filtering (BoM)** — show only alerts for specific `area_id` zones
 - **Dismissable alerts** — optional per-alert dismiss (button or swipe) with undo and a restore-all control, stored browser-locally
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display (unclassified alerts always shown)
@@ -53,7 +53,7 @@ Then click the Download button, and click Reload when prompted.
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape. Can be combined with `entity`/`entities` or used on its own. |
 | `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'eccc'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
-| `zones` | — | Zone codes to filter — BoM `area_id` (e.g. `NSW_FL049`) or NWS UGC (e.g. `COZ039`) |
+| `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'`. Alerts whose severity is unknown/unclassified are always shown, regardless of this threshold |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — `'eccc'` uses ECCC's published `red`/`orange`/`yellow`/`grey` palette (matches weather.gc.ca); falls back to the canonical severity tier for non-ECCC alerts displayed under this theme |
@@ -238,17 +238,6 @@ card_mod:
 </details>
 
 </details>
-
-### Dismissing alerts
-
-Set `allowDismiss: true` to let users clear individual alerts from view. Dismissals are **browser-local** — stored in that browser only, scoped to the card's configured entity/device set. They never touch the integration or sync to other devices, and an alert automatically re-surfaces if it is re-issued or its severity/timing changes. The visual editor's **Dismissal** section shows how many alerts are currently dismissed and offers a **Restore all** action.
-
-```yaml
-type: custom:weather-alerts-card
-entity: sensor.nws_alerts_alerts
-allowDismiss: true
-dismissTrigger: both   # 'button' (default), 'swipe', or 'both'
-```
 
 ## Supported Providers
 
