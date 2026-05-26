@@ -197,6 +197,25 @@ describe('getWeatherIcon', () => {
     expect(getWeatherIcon('Extreme high temperature')).toBe('mdi:weather-sunny-alert');
   });
 
+  // Regression: MeteoAlarm awareness_type labels arrive hyphenated
+  // (e.g. "5; high-temperature" → iconHint "high-temperature"). These must
+  // match the same keywords as their spaced/English-prose equivalents.
+  it('returns heat icon for hyphenated "high-temperature"', () => {
+    expect(getWeatherIcon('high-temperature')).toBe('mdi:weather-sunny-alert');
+  });
+
+  it('returns cold icon for hyphenated "low-temperature"', () => {
+    expect(getWeatherIcon('low-temperature')).toBe('mdi:thermometer-low');
+  });
+
+  it('returns fire icon for hyphenated "forest-fire"', () => {
+    expect(getWeatherIcon('forest-fire')).toBe('mdi:fire');
+  });
+
+  it('returns snow icon for slashed "snow/ice"', () => {
+    expect(getWeatherIcon('snow/ice')).toBe('mdi:weather-snowy-heavy');
+  });
+
   it('returns cold icon for "Extreme low temperature"', () => {
     expect(getWeatherIcon('Extreme low temperature')).toBe('mdi:thermometer-low');
   });

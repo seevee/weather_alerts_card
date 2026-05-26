@@ -26,7 +26,7 @@ const WEATHER_ICONS: [readonly string[], string][] = [
   [['tornado'], 'mdi:weather-tornado'],
   [['tsunami'], 'mdi:tsunami'],
   [['hurricane', 'tropical', 'typhoon', 'cyclone'], 'mdi:weather-hurricane'],
-  [['thunderstorm', 't-storm', 'gewitter'], 'mdi:weather-lightning'],
+  [['thunderstorm', 'gewitter'], 'mdi:weather-lightning'],
   [['hail', 'hagel'], 'mdi:weather-hail'],
   // Flooding & rain
   [['flood', 'hydrologic', 'storm surge', 'hochwasser'], 'mdi:home-flood'],
@@ -59,7 +59,10 @@ const WEATHER_ICONS: [readonly string[], string][] = [
 ];
 
 export function getWeatherIcon(event: string): string {
-  const e = event.toLowerCase();
+  // Normalize separators to spaces so MeteoAlarm awareness_type labels —
+  // which arrive hyphenated/slashed (e.g. "high-temperature", "snow/ice") —
+  // match our space-separated keywords.
+  const e = event.toLowerCase().replace(/[-/]/g, ' ');
   for (const [patterns, icon] of WEATHER_ICONS) {
     if (patterns.some(p => e.includes(p))) return icon;
   }
