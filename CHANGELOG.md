@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.2 — 2026-05-26
+
+### Fixed
+- Normalize hyphen/slash separators in getWeatherIcon (#176) (51d61f4…)
+
 ## 3.0.1 — 2026-05-25
 
 ### Documentation
