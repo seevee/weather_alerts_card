@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.3 — 2026-05-29
+
+### Fixed
+- Tint preparation icon ring with severity color (#179) (947d6ae…)
+
 ## 3.0.2 — 2026-05-26
 
 ### Fixed
