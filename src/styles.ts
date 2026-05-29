@@ -154,7 +154,7 @@ export const cardStyles = css`
 
   /* Temporal state: preparation — dashed ring */
   .preparation .icon-box {
-    border: 2px dashed var(--divider-color);
+    border: 2px dashed var(--color);
   }
   .icon-box ha-icon { --mdc-icon-size: calc(26px * var(--wac-scale, 1)); }
 
