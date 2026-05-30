@@ -37,6 +37,10 @@ export class CapAdapter implements AlertAdapter {
     const rawIcon = str(attributes['icon']);
     const providerIcon = rawIcon.startsWith('mdi:') ? rawIcon : undefined;
 
+    const geometryRefRaw = str(attributes['geometry_ref']);
+    const geometryRef = geometryRefRaw || undefined;
+    const bbox = numArray4(attributes['bbox']);
+
     return [{
       id,
       event: event || 'Unknown',
@@ -59,6 +63,8 @@ export class CapAdapter implements AlertAdapter {
       severityInferred: !rawSeverity && !normalizedSev,
       certaintyInferred: false,
       ...(providerIcon !== undefined && { providerIcon }),
+      ...(geometryRef !== undefined && { geometryRef }),
+      ...(bbox !== undefined && { bbox }),
     }];
   }
 }
@@ -94,6 +100,15 @@ function collectZones(attributes: Record<string, unknown>): string[] {
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
+}
+
+// Returns a [minlon, minlat, maxlon, maxlat] tuple only when `v` is an array
+// of exactly 4 finite numbers; otherwise undefined (malformed bbox is dropped,
+// never thrown).
+function numArray4(v: unknown): [number, number, number, number] | undefined {
+  if (!Array.isArray(v) || v.length !== 4) return undefined;
+  if (!v.every(n => typeof n === 'number' && Number.isFinite(n))) return undefined;
+  return [v[0], v[1], v[2], v[3]];
 }
 
 function httpUrl(v: string): string {

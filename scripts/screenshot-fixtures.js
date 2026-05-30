@@ -265,6 +265,64 @@ export const ECCC_ALERTS = [
   },
 ];
 
+// CAP-format alert carrying geometry (bbox + geometry_ref) for the opt-in
+// showGeometry mini-map. Shape matches the cap_alerts integration: a flat dict
+// of CAP fields plus the `incident_platform_version` marker. bbox is lon-first
+// [minlon, minlat, maxlon, maxlat]. The full polygon is fetched out-of-band via
+// the `cap_alerts/geometry` WS command keyed by geometry_ref — see
+// CAP_GEOMETRY_STUB below for a renderable stub payload. Obviously-fake demo
+// data (no real location/coords).
+export const CAP_GEOMETRY_REF = 'screenshot-geom-ref-1';
+
+export const CAP_GEOMETRY_ALERT_ATTRS = {
+  incident_platform_version: '1.0',
+  id: 'urn:oid:2.49.0.1.840.0.screenshot-geom',
+  event: 'Placeholder Area Warning',
+  severity: 'Severe',
+  severity_normalized: 'severe',
+  certainty: 'Likely',
+  urgency: 'Expected',
+  sent: iso(-1 * H),
+  onset: iso(-1 * H),
+  expires: iso(4 * H),
+  headline: 'Placeholder Area Warning for the Sample Region',
+  area_desc: 'Sample Region; Demo Basin',
+  description: 'An affected-area outline is shown below. Sample data for demonstration purposes.',
+  instruction: 'This is placeholder data for the card preview. No action needed.',
+  url: 'https://example.com/alerts/screenshot-geom',
+  event_code_nws: 'SVR',
+  provider: 'nws',
+  phase: 'new',
+  bbox: [-2, -1, 2, 1],
+  geometry_ref: CAP_GEOMETRY_REF,
+};
+
+// Stub GeoJSON FeatureCollection — the shape the `cap_alerts/geometry` WS
+// command returns. A harness with a mock connection can resolve geometry_ref
+// to this so the polygon overlays the bbox frame. A simple convex blob inside
+// the bbox above.
+export const CAP_GEOMETRY_STUB = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [-1.6, -0.2],
+          [-0.4, -0.8],
+          [1.2, -0.5],
+          [1.5, 0.4],
+          [0.3, 0.85],
+          [-1.1, 0.6],
+          [-1.6, -0.2],
+        ]],
+      },
+    },
+  ],
+};
+
 // PirateWeather-format duplicates of some NWS alerts (for cross-provider dedup demos).
 // Uses the PirateWeather indexed attribute format (title_0, severity_0, etc.)
 // with matching event names and expiry times so the card's dedup logic merges them.

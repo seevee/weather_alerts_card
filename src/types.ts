@@ -64,6 +64,10 @@ export interface WeatherAlertsCardConfig {
   showMetadata?: boolean;    // undefined/true: show metadata grid in details; false: hide
   showDescription?: boolean; // undefined/true: show description block in details; false: hide
   showInstructions?: boolean; // undefined/true: show instructions block in details; false: hide
+  showGeometry?: boolean;    // undefined/false: no geometry mini-map; true: show affected-area SVG in details (cap_alerts only)
+  geometryStyle?: 'shape' | 'map'; // undefined/'shape': bare polygon outline (offline); 'map': OSM raster-tile basemap behind the polygon (opt-in, fetches tiles, online). Only applies when showGeometry is on.
+  geometryTileUrl?: string;  // undefined: default CARTO basemap (theme-aware light/dark, same tiles HA's map uses); override slippy-map template ({z}/{x}/{y}[/{s}]) for self-hosted/proxied/privacy sources. Only applies when geometryStyle: 'map'.
+  geometryTileAttribution?: string; // undefined: attribution for the default/override source; set to credit a custom geometryTileUrl provider. Only applies when geometryStyle: 'map'.
   showProvider?: boolean;    // undefined/false: hide provider hint; true: show provider label above title
   showSourceLink?: boolean;  // undefined/true: show "Open Source" link; false: hide link (kiosk mode)
   timezone?: 'server' | 'browser';  // undefined/'server': HA server tz; 'browser': client tz
@@ -114,6 +118,8 @@ export interface WeatherAlert {
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
   colorHint?: string;      // Provider-published color tag (currently only ECCC: red/orange/yellow/grey/green); consumed by getEcccColor when colorTheme: 'eccc'
   severityBadgeLabel?: string; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
+  bbox?: [number, number, number, number]; // [minlon, minlat, maxlon, maxlat] (lon-first); synchronous from cap_alerts attributes. Drives the geometry mini-map frame.
+  geometryRef?: string;    // Opaque handle for the out-of-band cap_alerts geometry fetch (full polygon). Empty/absent when unavailable.
 }
 
 // Adapter contract: converts raw entity attributes → WeatherAlert[]

@@ -230,6 +230,32 @@ const PORT = 3742;
         await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
       },
     },
+    {
+      name: 'geometry',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry.html`,
+      canvasId: 'geometry-canvas',
+      cardIds: ['card-geometry'],
+      variants: [
+        { theme: 'theme-light', label: 'geom   light', out: 'img/geometry-light.png' },
+        { theme: 'theme-dark',  label: 'geom   dark ', out: 'img/geometry-dark.png' },
+      ],
+      afterRender: async (page) => {
+        // Expand "Read Details" to reveal the affected-area mini-map in the
+        // detail panel.
+        await page.locator('#card-geometry .details-summary').first().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-geometry');
+
+        // The polygon is fetched out-of-band (cap_alerts/geometry) and overlays
+        // the bbox frame on a later render. Wait for the resolved shape so the
+        // screenshot captures the polygon, not just the frame.
+        await page.waitForFunction(() => {
+          const card = document.getElementById('card-geometry');
+          return !!card?.shadowRoot?.querySelector('.alert-geometry .geometry-shape');
+        }, { timeout: 10000 });
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-geometry');
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      },
+    },
   ];
 
   // Close the 1x context and create a 2x one for composite captures

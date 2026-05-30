@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Alerts Card – Affected-Area Geometry</title>
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ---- */
+    .theme-light {
+      --primary-text-color: #212121;
+      --secondary-text-color: #727272;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: #e5e5e5;
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.12);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 33, 33, 33;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      --geometry-bg: #f0f0f0;
+      --geometry-label-color: rgba(0, 0, 0, 0.45);
+    }
+    .theme-dark {
+      --primary-text-color: #e1e1e1;
+      --secondary-text-color: #9b9b9b;
+      --primary-background-color: #111111;
+      --secondary-background-color: #202020;
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(225, 225, 225, 0.12);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 225, 225, 225;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.5),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.4),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+      --geometry-bg: #0d1117;
+      --geometry-label-color: rgba(255, 255, 255, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    .geometry-canvas {
+      background: var(--geometry-bg);
+      padding: 36px 28px 28px;
+      display: flex;
+      justify-content: center;
+      width: 560px;
+    }
+
+    .showcase {
+      width: 460px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-label {
+      color: var(--geometry-label-color);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .card-inner {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="geometry-canvas" id="geometry-canvas">
+
+    <!-- CAP Alerts affected-area outline (showGeometry, 'shape' style) -->
+    <div class="showcase">
+      <div class="section-label">CAP Alerts &middot; Affected Area</div>
+      <div class="card-inner">
+        <weather-alerts-card id="card-geometry"></weather-alerts-card>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+    import { CAP_GEOMETRY_ALERT_ATTRS, CAP_GEOMETRY_STUB } from '/scripts/screenshot-fixtures.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {}
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+            }
+          </style>
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock hass with a connection that resolves the out-of-band geometry ----
+    // The card draws the bbox frame synchronously from the entity attributes, then
+    // fetches the full polygon via the `cap_alerts/geometry` WS command. Resolve
+    // that command to the stub FeatureCollection so the polygon overlays the frame.
+    const CAP_ENTITY = 'sensor.cap_alert_demo_screenshot';
+
+    const MOCK_CONNECTION = {
+      sendMessagePromise(msg) {
+        if (msg && msg.type === 'cap_alerts/geometry') {
+          return Promise.resolve(CAP_GEOMETRY_STUB);
+        }
+        return Promise.reject(new Error(`unhandled WS command: ${msg && msg.type}`));
+      },
+    };
+
+    const MOCK_HASS = {
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      connection: MOCK_CONNECTION,
+      states: {
+        [CAP_ENTITY]: {
+          state: 'on',
+          attributes: CAP_GEOMETRY_ALERT_ATTRS,
+        },
+      },
+    };
+
+    // ---- Wire up the card ----
+    const card = document.getElementById('card-geometry');
+    card.setConfig({
+      type: 'custom:weather-alerts-card',
+      entity: CAP_ENTITY,
+      animations: false,
+      colorTheme: 'severity',
+      showGeometry: true,
+      geometryStyle: 'shape',
+    });
+    card.hass = MOCK_HASS;
+  </script>
+</body>
+</html>

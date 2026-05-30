@@ -409,6 +409,83 @@ export const cardStyles = css`
     font-style: italic;
   }
 
+  /* --- GEOMETRY MINI-MAP (cap_alerts, opt-in) --- */
+  .alert-geometry {
+    display: block;
+    width: 100%;
+    max-width: 260px;
+    height: 120px;
+    margin: 0 auto 16px;
+    /* No basemap — the shape reads against the panel background. */
+  }
+  .alert-geometry .geometry-frame {
+    fill: rgba(var(--color-rgb), 0.04);
+    stroke: var(--divider-color);
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+  }
+  .alert-geometry .geometry-shape {
+    fill: rgba(var(--color-rgb), 0.18);
+    stroke: var(--wac-fg, var(--color));
+    stroke-width: 1.5px;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Map style: raster tiles behind the polygon. The wrapper carries an inline
+     aspect-ratio (matching the tile viewBox) so tiles fill with no letterbox. */
+  .alert-geometry-map {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    max-height: 220px;
+    margin: 0 auto 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--divider-color);
+  }
+  .alert-geometry.map {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    max-width: none;
+  }
+  .alert-geometry.map image {
+    image-rendering: auto;
+  }
+  /* Over tiles the bbox frame is just a hairline; the polygon does the work. */
+  .alert-geometry.map .geometry-frame {
+    fill: none;
+    stroke: rgba(var(--rgb-primary-text-color, 128, 128, 128), 0.25);
+  }
+  .alert-geometry.map .geometry-shape {
+    fill: rgba(var(--color-rgb), 0.22);
+    stroke-width: 2px;
+  }
+  /* White casing under the colored stroke keeps the outline legible over busy
+     tiles (light or dark). */
+  .alert-geometry.map .geometry-shape-casing {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.85);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .geometry-attrib {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    font-size: 9px;
+    line-height: 1.2;
+    padding: 1px 4px;
+    color: #333;
+    background: rgba(255, 255, 255, 0.7);
+    border-top-left-radius: 4px;
+    pointer-events: none;
+  }
+
   .text-block { margin-bottom: 16px; }
   .text-label {
     font-weight: 600;

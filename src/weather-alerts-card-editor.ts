@@ -380,6 +380,31 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _showGeometryChanged(ev: Event): void {
+    const target = ev.target as HTMLInputElement;
+    const show = target.checked;
+    if (show === (this._config.showGeometry === true)) return;
+    const newConfig = { ...this._config };
+    if (show) {
+      newConfig.showGeometry = true;
+    } else {
+      delete newConfig.showGeometry;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _geometryStyleChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as 'shape' | 'map';
+    if (value === (this._config.geometryStyle || 'shape')) return;
+    const newConfig = { ...this._config };
+    if (value === 'shape') {
+      delete newConfig.geometryStyle;
+    } else {
+      newConfig.geometryStyle = value;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _showProviderChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     const show = target.checked;
@@ -922,6 +947,26 @@ export class WeatherAlertsCardEditor extends LitElement {
             @change=${this._showInstructionsChanged}
           ></ha-switch>
         </ha-formfield>
+
+        <ha-formfield .label=${t('editor.show_geometry', lang)}>
+          <ha-switch
+            .checked=${this._config.showGeometry === true}
+            .disabled=${this._config.showDetails === false}
+            @change=${this._showGeometryChanged}
+          ></ha-switch>
+        </ha-formfield>
+
+        ${this._config.showGeometry === true ? html`
+          <ha-select
+            .label=${t('editor.geometry_style', lang)}
+            .value=${this._config.geometryStyle || 'shape'}
+            .disabled=${this._config.showDetails === false}
+            @selected=${this._geometryStyleChanged}
+          >
+            <ha-dropdown-item value="shape">${t('editor.geometry_style_shape', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="map">${t('editor.geometry_style_map', lang)}</ha-dropdown-item>
+          </ha-select>
+        ` : nothing}
 
         <ha-formfield .label=${t('editor.show_source_link', lang)}>
           <ha-switch
