@@ -215,6 +215,42 @@ describe('CapAdapter', () => {
       });
     });
 
+    describe('geometry parsing', () => {
+      it('parses bbox + geometry_ref onto the alert when present and valid', () => {
+        const alerts = adapter.parseAlerts(makeCapAttributes({
+          bbox: [-105.3, 39.9, -105.1, 40.1],
+          geometry_ref: 'geom-abc-123',
+        }));
+        expect(alerts[0].bbox).toEqual([-105.3, 39.9, -105.1, 40.1]);
+        expect(alerts[0].geometryRef).toBe('geom-abc-123');
+      });
+
+      it('leaves bbox/geometryRef undefined when both are absent', () => {
+        const a = adapter.parseAlerts(makeCapAttributes())[0];
+        expect(a.bbox).toBeUndefined();
+        expect(a.geometryRef).toBeUndefined();
+        expect(Object.prototype.hasOwnProperty.call(a, 'bbox')).toBe(false);
+        expect(Object.prototype.hasOwnProperty.call(a, 'geometryRef')).toBe(false);
+      });
+
+      it('drops a bbox of the wrong length without throwing', () => {
+        const a = adapter.parseAlerts(makeCapAttributes({ bbox: [-105.3, 39.9, -105.1] }))[0];
+        expect(a.bbox).toBeUndefined();
+      });
+
+      it('drops a bbox containing a non-finite or non-numeric value', () => {
+        expect(adapter.parseAlerts(makeCapAttributes({ bbox: [-105.3, 39.9, '-105.1', 40.1] }))[0].bbox)
+          .toBeUndefined();
+        expect(adapter.parseAlerts(makeCapAttributes({ bbox: [-105.3, 39.9, NaN, 40.1] }))[0].bbox)
+          .toBeUndefined();
+      });
+
+      it('treats an empty geometry_ref as absent', () => {
+        const a = adapter.parseAlerts(makeCapAttributes({ geometry_ref: '' }))[0];
+        expect(a.geometryRef).toBeUndefined();
+      });
+    });
+
     it('handles missing optional fields gracefully', () => {
       const alerts = adapter.parseAlerts({
         incident_platform_version: '1.0',

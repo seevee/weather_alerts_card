@@ -1,4 +1,4 @@
-import { LitElement, html, nothing, TemplateResult, PropertyValues } from 'lit';
+import { LitElement, html, svg, nothing, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { Connection } from 'home-assistant-js-websocket';
@@ -40,6 +40,15 @@ import {
   reflowAlertText,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS } from './adapters';
+import {
+  fetchGeometry,
+  buildGeometrySvg,
+  buildGeometryMap,
+  DEFAULT_TILE_URL,
+  DEFAULT_TILE_URL_DARK,
+  DEFAULT_TILE_ATTRIBUTION,
+  GeoJsonGeometry,
+} from './geometry';
 import { t } from './localize';
 import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
@@ -190,6 +199,14 @@ export class WeatherAlertsCard extends LitElement {
   private _unsubscribeRegistry?: () => void;
   private _subscribedRegistryConn?: Connection;
 
+  // cap_alerts geometry mini-map (opt-in via showGeometry). Cache maps a
+  // geometry_ref → fetched geometry (or `null` for 404/eviction, cached to
+  // avoid refetch storms). In-flight set dedupes concurrent fetches. Cache is
+  // cleared on connection swap (the backing store is per-connection ephemeral).
+  @state() private _geometryCache = new Map<string, GeoJsonGeometry | null>();
+  private _geometryInFlight = new Set<string>();
+  private _geometryConn?: Connection;
+
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
 
@@ -210,6 +227,9 @@ export class WeatherAlertsCard extends LitElement {
     this._unsubscribeDismissals?.();
     this._unsubscribeDismissals = undefined;
     this._teardownRegistrySubscription();
+    // Drop any in-flight geometry fetches; the cache may persist for a quick
+    // remount (connection-swap detection re-validates it on next fetch).
+    this._geometryInFlight.clear();
     if (this._swipeRAF !== null) {
       cancelAnimationFrame(this._swipeRAF);
       this._swipeRAF = null;
@@ -233,6 +253,7 @@ export class WeatherAlertsCard extends LitElement {
     // connection object swaps (e.g., after a reconnect).
     if ((changed.has('hass') || changed.has('_config')) && this.isConnected) {
       this._maybeSubscribeRegistry();
+      this._maybeFetchGeometry();
     }
   }
 
@@ -274,6 +295,55 @@ export class WeatherAlertsCard extends LitElement {
     this._unsubscribeRegistry?.();
     this._unsubscribeRegistry = undefined;
     this._subscribedRegistryConn = undefined;
+  }
+
+  // Out-of-band geometry fetch orchestration. Opt-in (showGeometry) so the
+  // default config — and every non-cap provider — incurs zero network. Mirrors
+  // the registry subscription's connection-swap + in-flight discipline. Runs
+  // from updated(); never from render/_getAlerts/getCardSize (render purity).
+  private _maybeFetchGeometry(): void {
+    if (this._config?.showGeometry !== true) return;
+    const conn = this.hass?.connection;
+    if (!conn) return;
+
+    // Connection swap (e.g. reconnect): the geometry store is per-connection
+    // and ephemeral, so drop everything and refetch against the new socket.
+    if (conn !== this._geometryConn) {
+      this._geometryCache = new Map();
+      this._geometryInFlight.clear();
+      this._geometryConn = conn;
+    }
+
+    // Collect the refs of currently-filtered alerts.
+    const refs = new Set<string>();
+    for (const alert of this._getAlerts(false)) {
+      if (alert.geometryRef) refs.add(alert.geometryRef);
+    }
+
+    // Prune cache/in-flight entries whose alert is no longer present.
+    for (const ref of [...this._geometryCache.keys()]) {
+      if (!refs.has(ref)) this._geometryCache.delete(ref);
+    }
+    for (const ref of [...this._geometryInFlight]) {
+      if (!refs.has(ref)) this._geometryInFlight.delete(ref);
+    }
+
+    // Fetch each new ref exactly once. Results (geometry or null) are cached so
+    // a 404 doesn't refetch on every state update.
+    for (const ref of refs) {
+      if (this._geometryCache.has(ref) || this._geometryInFlight.has(ref)) continue;
+      this._geometryInFlight.add(ref);
+      fetchGeometry(conn, ref).then((result) => {
+        // Drop the result if the connection swapped mid-flight.
+        if (conn !== this._geometryConn) return;
+        this._geometryInFlight.delete(ref);
+        this._geometryCache.set(ref, result);
+        this.requestUpdate();
+      }).catch(() => {
+        // fetchGeometry never rejects, but stay defensive.
+        if (conn === this._geometryConn) this._geometryInFlight.delete(ref);
+      });
+    }
   }
 
   public setConfig(config: WeatherAlertsCardConfig): void {
@@ -1136,6 +1206,8 @@ export class WeatherAlertsCard extends LitElement {
         </div>
         ` : nothing}
 
+        ${this._config?.showGeometry === true ? this._renderGeometry(alert) : nothing}
+
         ${this._config?.showDescription !== false ? this._renderTextBlock(t('detail.description', lang), desc) : nothing}
         ${this._config?.showInstructions !== false ? this._renderTextBlock(t('detail.instructions', lang), instr) : nothing}
 
@@ -1147,6 +1219,79 @@ export class WeatherAlertsCard extends LitElement {
             </a>
           </div>
         ` : nothing}
+      </div>
+    `;
+  }
+
+  // Inline SVG mini-map of the affected area (cap_alerts geometry). bbox draws
+  // an immediate frame with zero network; the polygon overlays once the
+  // out-of-band fetch lands. Reads cache only — purity preserved. The severity
+  // color flows in via the inherited --color custom property.
+  private _renderGeometry(alert: WeatherAlert): TemplateResult | typeof nothing {
+    if (this._config?.showGeometry !== true || !alert.bbox) return nothing;
+    const geometry = alert.geometryRef ? this._geometryCache.get(alert.geometryRef) : undefined;
+    if (this._config?.geometryStyle === 'map') {
+      return this._renderGeometryMap(alert, geometry ?? undefined);
+    }
+    const { viewBox, polygonPaths } = buildGeometrySvg(alert.bbox, geometry ?? undefined);
+    return html`
+      <svg
+        class="alert-geometry"
+        viewBox=${viewBox}
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label=${alert.areaDesc || t('detail.area', this._lang)}
+      >
+        <rect class="geometry-frame" x="0" y="0" width="100%" height="100%"></rect>
+        ${polygonPaths.map(d => svg`<path class="geometry-shape" d=${d}></path>`)}
+      </svg>
+    `;
+  }
+
+  // 'map' style: OSM raster tiles (browser-loaded <image>) behind the polygon.
+  // Tiles/polygon share the Web-Mercator tile space so they align; the polygon
+  // gets a white casing for legibility over busy tiles. Tile failure / offline
+  // leaves the frame + polygon visible. The attribution lives in an HTML overlay
+  // (CSS-positioned) rather than the SVG so it doesn't scale with the viewBox.
+  private _renderGeometryMap(
+    alert: WeatherAlert,
+    geometry?: GeoJsonGeometry,
+  ): TemplateResult {
+    // Default basemap follows the card's theme (CARTO light/dark, matching HA's
+    // own map). A user override opts out of theme-switching and OSM-credit
+    // assumptions, so default its attribution to the generic OSM credit.
+    const override = this._config?.geometryTileUrl;
+    const tileUrl = override
+      || (this._themeMode === 'dark' ? DEFAULT_TILE_URL_DARK : DEFAULT_TILE_URL);
+    const attribution = this._config?.geometryTileAttribution
+      ?? (override ? '© OpenStreetMap' : DEFAULT_TILE_ATTRIBUTION);
+    const { viewBox, aspect, tiles, polygonPaths } = buildGeometryMap(
+      alert.bbox as [number, number, number, number],
+      geometry,
+      { tileUrl, attribution },
+    );
+    const label = alert.areaDesc || t('detail.area', this._lang);
+    return html`
+      <div class="alert-geometry-map" style="aspect-ratio: ${aspect};">
+        <svg
+          class="alert-geometry map"
+          viewBox=${viewBox}
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label=${label}
+        >
+          ${tiles.map(tile => svg`<image
+            href=${tile.href}
+            x=${tile.x}
+            y=${tile.y}
+            width=${tile.size}
+            height=${tile.size}
+          ></image>`)}
+          <rect class="geometry-frame" x="0" y="0" width="100%" height="100%"></rect>
+          ${polygonPaths.map(d => svg`<path class="geometry-shape-casing" d=${d}></path>`)}
+          ${polygonPaths.map(d => svg`<path class="geometry-shape" d=${d}></path>`)}
+        </svg>
+        <span class="geometry-attrib">${attribution}</span>
       </div>
     `;
   }

@@ -70,6 +70,10 @@ Then click the Download button, and click Reload when prompted.
 | `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel |
 | `showDescription` | `true` | Show description text in detail panel |
 | `showInstructions` | `true` | Show instructions text in detail panel |
+| `showGeometry` | `false` | Show an inline SVG mini-map of the affected-area outline in the detail panel. CAP Alerts (`cap_alerts`) only — other providers have no geometry. Draws the bbox frame immediately and overlays the polygon once fetched out-of-band (falls back to the frame on cache miss). |
+| `geometryStyle` | `'shape'` | Mini-map rendering when `showGeometry` is on. `'shape'`: bare polygon outline, fully offline. `'map'`: raster-tile basemap behind the polygon for geographic context — **opt-in, fetches map tiles (online), and reveals the alert's bounding box to the tile host**. Falls back to the outline if tiles fail. |
+| `geometryTileUrl` | CARTO | Slippy-map tile template (`{z}/{x}/{y}`, optional `{s}`) used when `geometryStyle: 'map'`. Default is the theme-aware CARTO basemap that Home Assistant's own map uses (`light_all`/`dark_all`, CORS-enabled). Override to point at a self-hosted or proxied tile source. |
+| `geometryTileAttribution` | `© OpenStreetMap, CARTO` | Attribution label shown over the map. Set this to credit your provider when using a custom `geometryTileUrl`. |
 | `showSourceLink` | `true` | Show "Open Source" link (`false` for kiosk mode) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Opt-in `showGeometry` toggle renders an inline SVG mini-map of an alert's affected-area outline in the detail panel (CAP Alerts only); draws the bbox frame immediately and overlays the polygon fetched out-of-band, falling back to the frame on cache miss.
+- `geometryStyle: 'map'` adds a raster-tile basemap behind the geometry polygon for geographic context (opt-in, online — fetches tiles; falls back to the outline on tile failure). Defaults to the theme-aware CARTO basemap Home Assistant's own map uses (CORS-friendly); `geometryTileUrl` / `geometryTileAttribution` override the source.
+
 ## 3.0.3 — 2026-05-29
 
 ### Fixed
