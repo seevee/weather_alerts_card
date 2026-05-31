@@ -253,6 +253,25 @@ const PORT = 3742;
           return !!card?.shadowRoot?.querySelector('.alert-geometry .geometry-shape');
         }, { timeout: 10000 });
         await page.evaluate(id => document.getElementById(id).updateComplete, 'card-geometry');
+
+        // 'map' style draws CARTO raster tiles as SVG <image> elements fetched
+        // over the network. The polygon-shape wait above fires before those
+        // tiles finish loading, so capture too early and the basemap is blank.
+        // Re-load each tile href via HTMLImageElement (hits the browser cache)
+        // and wait for them all to settle before screenshotting.
+        await page.evaluate(async () => {
+          const card = document.getElementById('card-geometry');
+          const svg = card?.shadowRoot?.querySelector('.alert-geometry.map');
+          if (!svg) return; // 'shape' style (no tiles) — nothing to wait for
+          const hrefs = [...svg.querySelectorAll('image')]
+            .map(im => im.getAttribute('href') || im.getAttribute('xlink:href'))
+            .filter(Boolean);
+          await Promise.all(hrefs.map(href => new Promise(resolve => {
+            const probe = new Image();
+            probe.onload = probe.onerror = () => resolve();
+            probe.src = href;
+          })));
+        });
         await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
       },
     },

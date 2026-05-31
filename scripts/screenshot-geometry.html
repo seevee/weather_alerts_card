@@ -86,7 +86,7 @@
 
   <div class="geometry-canvas" id="geometry-canvas">
 
-    <!-- CAP Alerts affected-area outline (showGeometry, 'shape' style) -->
+    <!-- CAP Alerts affected-area mini-map (showGeometry, 'map' style) -->
     <div class="showcase">
       <div class="section-label">CAP Alerts &middot; Affected Area</div>
       <div class="card-inner">
@@ -169,7 +169,7 @@
 
     const MOCK_HASS = {
       locale: { language: 'en', time_format: '12', date_format: 'MDY' },
-      config: { time_zone: 'America/Denver' },
+      config: { time_zone: 'America/New_York' },
       connection: MOCK_CONNECTION,
       states: {
         [CAP_ENTITY]: {
@@ -187,7 +187,7 @@
       animations: false,
       colorTheme: 'severity',
       showGeometry: true,
-      geometryStyle: 'shape',
+      geometryStyle: 'map',
     });
     card.hass = MOCK_HASS;
   </script>

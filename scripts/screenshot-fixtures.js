@@ -270,14 +270,18 @@ export const ECCC_ALERTS = [
 // of CAP fields plus the `incident_platform_version` marker. bbox is lon-first
 // [minlon, minlat, maxlon, maxlat]. The full polygon is fetched out-of-band via
 // the `cap_alerts/geometry` WS command keyed by geometry_ref — see
-// CAP_GEOMETRY_STUB below for a renderable stub payload. Obviously-fake demo
-// data (no real location/coords).
+// CAP_GEOMETRY_STUB below for a renderable stub payload.
+//
+// Uses real lon/lat over the Tampa Bay area so the `geometryStyle: 'map'`
+// raster basemap aligns with actual tiles (a fabricated bbox near 0,0 would
+// render open ocean). The polygon below is an illustrative SVR-style outline,
+// not a record of a real warning.
 export const CAP_GEOMETRY_REF = 'screenshot-geom-ref-1';
 
 export const CAP_GEOMETRY_ALERT_ATTRS = {
   incident_platform_version: '1.0',
   id: 'urn:oid:2.49.0.1.840.0.screenshot-geom',
-  event: 'Placeholder Area Warning',
+  event: 'Severe Thunderstorm Warning',
   severity: 'Severe',
   severity_normalized: 'severe',
   certainty: 'Likely',
@@ -285,22 +289,27 @@ export const CAP_GEOMETRY_ALERT_ATTRS = {
   sent: iso(-1 * H),
   onset: iso(-1 * H),
   expires: iso(4 * H),
-  headline: 'Placeholder Area Warning for the Sample Region',
-  area_desc: 'Sample Region; Demo Basin',
-  description: 'An affected-area outline is shown below. Sample data for demonstration purposes.',
-  instruction: 'This is placeholder data for the card preview. No action needed.',
+  headline: 'Severe Thunderstorm Warning for the Tampa Bay Area',
+  area_desc: 'Pinellas, FL; Hillsborough, FL',
+  description:
+    'A severe thunderstorm was located over Tampa Bay, moving east at 30 mph. ' +
+    'HAZARD: 60 mph wind gusts and quarter size hail. SOURCE: Radar indicated. ' +
+    'IMPACT: Expect damage to roofs, siding, and trees.',
+  instruction:
+    'For your protection move to an interior room on the lowest floor of a building.',
   url: 'https://example.com/alerts/screenshot-geom',
   event_code_nws: 'SVR',
   provider: 'nws',
   phase: 'new',
-  bbox: [-2, -1, 2, 1],
+  // [minlon, minlat, maxlon, maxlat] — Tampa Bay metro, ~0.45° square.
+  bbox: [-82.72, 27.72, -82.28, 28.12],
   geometry_ref: CAP_GEOMETRY_REF,
 };
 
 // Stub GeoJSON FeatureCollection — the shape the `cap_alerts/geometry` WS
 // command returns. A harness with a mock connection can resolve geometry_ref
-// to this so the polygon overlays the bbox frame. A simple convex blob inside
-// the bbox above.
+// to this so the polygon overlays the bbox frame. A slanted SVR-style quad
+// (lon, lat) inside the bbox above, crossing the bay and both peninsulas.
 export const CAP_GEOMETRY_STUB = {
   type: 'FeatureCollection',
   features: [
@@ -310,13 +319,12 @@ export const CAP_GEOMETRY_STUB = {
       geometry: {
         type: 'Polygon',
         coordinates: [[
-          [-1.6, -0.2],
-          [-0.4, -0.8],
-          [1.2, -0.5],
-          [1.5, 0.4],
-          [0.3, 0.85],
-          [-1.1, 0.6],
-          [-1.6, -0.2],
+          [-82.70, 27.80],
+          [-82.35, 27.72],
+          [-82.28, 28.05],
+          [-82.55, 28.12],
+          [-82.72, 27.98],
+          [-82.70, 27.80],
         ]],
       },
     },
