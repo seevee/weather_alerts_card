@@ -104,3 +104,57 @@ describe('minSeverity filter', () => {
     cleanup();
   });
 });
+
+describe('unavailable banner', () => {
+  // A cap_alerts per-alert sensor can report state "unknown" while its
+  // attributes carry a fully valid alert. It must render the alert, not be
+  // dropped as a broken data source.
+  function capUnknownStateHass(): HomeAssistant {
+    return {
+      states: {
+        'sensor.cap_alerts_beach_hazards': {
+          state: 'unknown',
+          attributes: {
+            incident_platform_version: '1.0',
+            id: 'fefdc9427295',
+            event: 'Beach Hazards Statement',
+            severity: 'Moderate',
+            certainty: 'Likely',
+            urgency: 'Expected',
+            description: 'High wave action and dangerous swimming conditions.',
+            headline: 'Beach Hazards Statement',
+          },
+        },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+  }
+
+  it('renders a CAP alert whose sensor sits at state "unknown"', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.cap_alerts_beach_hazards' } as WeatherAlertsCardConfig,
+      capUnknownStateHass(),
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    expect(alertTitles(card)).toContain('Beach Hazards Statement');
+    // The broken-sensor banner must NOT appear when valid alert data is present.
+    expect(root.querySelector('.sensor-unavailable')).toBeNull();
+    cleanup();
+  });
+
+  it('still shows the broken-sensor banner when an unknown sensor has no alert data', async () => {
+    const hass = {
+      states: { 'sensor.nws_alerts': { state: 'unavailable', attributes: {} } },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' } as WeatherAlertsCardConfig,
+      hass,
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    expect(root.querySelector('.sensor-unavailable')).not.toBeNull();
+    cleanup();
+  });
+});
