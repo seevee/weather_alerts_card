@@ -889,9 +889,15 @@ export class WeatherAlertsCard extends LitElement {
       return this._renderPreview();
     }
 
-    // Show unavailable only if all resolved entities are unavailable/unknown
+    // Show unavailable only if every resolved entity is unavailable/unknown
+    // AND carries no parseable alert. CAP per-alert sensors can report state
+    // "unknown" while their attributes hold a fully valid alert (e.g. an NWS
+    // Beach Hazards Statement) — those must still render, not be dropped as a
+    // broken data source.
     const allUnavailable = resolvedEntities.length > 0
-      && resolvedEntities.every(e => e.state === 'unavailable' || e.state === 'unknown');
+      && resolvedEntities.every(e =>
+        (e.state === 'unavailable' || e.state === 'unknown')
+        && getAdapter(this._config!.provider, e.attributes).parseAlerts(e.attributes).length === 0);
     if (allUnavailable) {
       const stateVal = resolvedEntities[0].state;
       return html`
