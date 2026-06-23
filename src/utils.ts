@@ -34,10 +34,12 @@ const WEATHER_ICONS: [readonly string[], string][] = [
   // Winter weather
   [['snow', 'blizzard', 'winter', 'schnee', 'schneesturm'], 'mdi:weather-snowy-heavy'],
   [['sleet'], 'mdi:weather-snowy-rainy'],
-  [['ice', 'freeze', 'frost', 'glätte', 'glatteis'], 'mdi:snowflake'],
+  [['ice', 'freeze', 'frost', 'slippery', 'glätte', 'glatteis'], 'mdi:snowflake'],
+  [['thaw'], 'mdi:snowflake-melt'],
   [['cold', 'chill', 'low temperature', 'kälte'], 'mdi:thermometer-low'],
   // Geologic
   [['landslide', 'avalanche', 'lawine'], 'mdi:landslide'],
+  [['earthquake'], 'mdi:pulse'],
   [['volcano', 'ashfall', 'vog'], 'mdi:volcano'],
   // Airborne hazards
   [['dust', 'sand'], 'mdi:weather-dust'],

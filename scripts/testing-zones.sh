@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # testing-zones.sh — Find zones with the best cross-section of alert conditions
-# Providers: NWS (US), BoM (Australia), MeteoAlarm (Europe), ECCC (Canada), DWD (Germany)
+# Providers: NWS (US), BoM (Australia), MeteoAlarm (Europe), ECCC (Canada), DWD (Germany), MeteoSwiss (Switzerland)
 # Optimizes for testing diversity: mixed severities, prep vs active, multiple
 # alerts per zone, contiguous zone clusters with overlapping alerts.
 #
 # Usage: ./scripts/testing-zones.sh [provider ...]
-#   provider: nws, bom, meteoalarm, eccc, wmo, dwd (default: all)
+#   provider: nws, bom, meteoalarm, eccc, wmo, dwd, meteoswiss (default: all)
 #
 # API requests per provider:
 #   NWS:       1 (alerts/active) + 1-3 zone geometry lookups
@@ -14,6 +14,7 @@
 #   ECCC:      2 (NAAD atom + GeoMet WFS Current-Alerts; one per HA integration)
 #   WMO CAP:   1-3 (RSS per source) + 1 (CAP XML)
 #   DWD:       1 (warnings.json)
+#   MeteoSwiss: up to 5 (per-postcode detail, one per sampled postcode)
 #
 # These are public, free government APIs. To avoid abusing them:
 # - Results are cached in .cache/most-alerted-zones/ for 1 hour
@@ -1222,10 +1223,72 @@ dwd() {
   echo "  Paste either value into the 'Warncell ID or name' field"
 }
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
-VALID_PROVIDERS="nws bom meteoalarm eccc wmo dwd"
+meteoswiss() {
+  echo "MeteoSwiss — Federal Office of Meteorology and Climatology (Switzerland)"
+  echo "  Probing a sample of postcodes (no national listing endpoint exists)..."
 
-run_provider() { case "$1" in nws|bom|meteoalarm|eccc) "$1";; wmo) wmo_cap;; dwd) dwd;; esac; }
+  # The hass-swissweather integration reads per-postcode data from the
+  # MeteoSwiss app backend, where warnings live in the top-level `warnings`
+  # array (meteo.py: warnType / warnLevel / validFrom / validTo / text, with
+  # validFrom/validTo as epoch milliseconds). The 4-digit Swiss postcode is
+  # left-padded to 6 digits with trailing zeros ("8000" → "800000").
+  #
+  # The integration's documented FORECAST_URL (`/v2/plzDetail`) intermittently
+  # 500s; `/v2/forecast` returns the identical `warnings` array and is the
+  # more reliable probe. Representative spread across language regions:
+  #   8000 Zürich (DE), 1200 Genève (FR), 6900 Lugano (IT), 3900 Brig (DE/IT),
+  #   7000 Chur (DE/RM)
+  local postcodes=("8000" "1200" "6900" "3900" "7000")
+  local with_warnings=0
+
+  for pc in "${postcodes[@]}"; do
+    local padded raw count
+    padded="${pc}00"  # left-justify to 6 digits with trailing zeros
+    raw=$(cached_fetch \
+      "https://app-prod-ws.meteoswiss-app.ch/v2/forecast?plz=${padded}" \
+      "$CACHE_DIR/meteoswiss-${pc}.json") || {
+      echo "  [$pc] FAIL: could not reach app-prod-ws.meteoswiss-app.ch"
+      echo "       (endpoint may require browser-like headers or be rate-limited)"
+      continue
+    }
+
+    count=$(echo "$raw" | jq '(.warnings // []) | length' 2>/dev/null) || {
+      echo "  [$pc] FAIL: could not parse response"; continue
+    }
+
+    if [ "$count" -eq 0 ]; then
+      echo "  [$pc] no active warnings"
+      continue
+    fi
+
+    with_warnings=$((with_warnings + 1))
+    echo ""
+    echo "  ── [$pc] $count warning(s) ──"
+    # validFrom/validTo are epoch ms; show ISO via (value/1000 | todate).
+    echo "$raw" | jq -r '
+      (.warnings // [])[] |
+      "    [level \(.warnLevel)] type=\(.warnType)  " +
+        ((.validFrom // null) | if . == null then "?" else (./1000 | todate) end) + " → " +
+        ((.validTo   // null) | if . == null then "?" else (./1000 | todate) end),
+      "       \((.text // "") | gsub("\\s+"; " ") | .[0:90])"
+    '
+  done
+
+  echo ""
+  if [ "$with_warnings" -eq 0 ]; then
+    echo "  No sampled postcode currently carries a warning."
+  else
+    echo "  $with_warnings of ${#postcodes[@]} sampled postcodes carry warnings."
+  fi
+  echo ""
+  echo "  HA integration: izacus/hass-swissweather"
+  echo "  Card entity:    sensor.weather_warnings_at_<postcode>  (e.g. sensor.weather_warnings_at_8000)"
+}
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+VALID_PROVIDERS="nws bom meteoalarm eccc wmo dwd meteoswiss"
+
+run_provider() { case "$1" in nws|bom|meteoalarm|eccc) "$1";; wmo) wmo_cap;; dwd) dwd;; meteoswiss) meteoswiss;; esac; }
 
 providers=()
 if [ $# -eq 0 ]; then

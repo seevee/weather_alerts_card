@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- MeteoSwiss adapter for Switzerland via the izacus/hass-swissweather integration (#186)
+
 ## 3.1.0 — 2026-05-31
 
 ### Added
