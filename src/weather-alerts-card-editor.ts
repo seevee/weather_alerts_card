@@ -258,7 +258,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (value === 'auto') {
       delete newConfig.provider;
     } else {
-      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc';
+      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss';
     }
     this._fireConfigChanged(newConfig);
   }
@@ -806,6 +806,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="bom">${t('editor.provider_bom', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="meteoswiss">${t('editor.provider_meteoswiss', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="eccc">${t('editor.provider_eccc', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>

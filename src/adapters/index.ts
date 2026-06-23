@@ -2,6 +2,7 @@ import { AlertAdapter, AlertProvider } from '../types';
 import { NwsAdapter } from './nws';
 import { BomAdapter } from './bom';
 import { DwdAdapter } from './dwd';
+import { MeteoSwissAdapter } from './meteoswiss';
 import { MeteoAlarmAdapter } from './meteoalarm';
 import { PirateWeatherAdapter } from './pirateweather';
 import { CapAdapter } from './cap';
@@ -9,7 +10,7 @@ import { EcccAdapter } from './eccc';
 
 // CAP comes first so its `incident_platform_version` marker wins detection
 // over any upstream-shaped attributes that the integration may surface.
-const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new DwdAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
+const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
@@ -17,6 +18,7 @@ export const ENTITY_NAME_PATTERNS: RegExp[] = [
   /^sensor\..*warnings?$/i,
   /^binary_sensor\.meteoalarm/i,
   /^sensor\.dwd_weather_warnings/i,
+  /^sensor\.weather_warnings_at_/i,
   // CAP Alerts per-alert entities. Real entity_ids are
   // `sensor.<device_slug>_cap_alert_<event>_<hash>` because HA prefixes the
   // device slug onto `suggested_object_id` when `_attr_has_entity_name` is

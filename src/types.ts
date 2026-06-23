@@ -35,7 +35,7 @@ export interface EntityRegistryDisplayEntry {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 export interface WeatherAlertsCardConfig {
@@ -200,6 +200,17 @@ export interface DwdWarning {
   level: number;          // 0-4 severity level
   color: string;          // hex color, e.g. "#FFFF00"
   parameters: Record<string, string>;
+}
+
+// Raw MeteoSwiss warning shape, reconstructed per-index from the parallel
+// arrays on the hass-swissweather aggregate `weather_warnings` sensor.
+export interface MeteoSwissWarning {
+  type: string;          // English enum name, e.g. "Wind", "Thunderstorms"
+  levelLabel: string;    // e.g. "Severe hazard"
+  level: number;         // WarningLevel IntEnum, 0-5
+  validFrom: string | null; // ISO 8601
+  validTo: string | null;   // ISO 8601
+  text: string;
 }
 
 export interface AlertProgress {
