@@ -253,11 +253,53 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
-| ECCC | Canada | HACS [michaeldavie/environment_canada_hacs](https://github.com/michaeldavie/environment_canada_hacs) — *not* the bundled HA core integration; see note below |
+| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery |
 
-> **Note on ECCC.** The HA core `environment_canada` integration does not currently expose alert details. Until the upstream [PR #164481](https://github.com/home-assistant/core/pull/164481) lands, the HACS custom component is the supported source.
+> **Note on ECCC.** For Environment and Climate Change Canada alerts, use [CAP Alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`). It is the only ECCC source this card recommends — neither the bundled HA core `environment_canada` integration nor the HACS `environment_canada` fork is routed to. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below for why.
+
+### Canada: ECCC via CAP Alerts
+
+For Environment and Climate Change Canada (ECCC) alerts, [CAP Alerts](https://github.com/seevee/cap_alerts)
+(`provider: eccc`) is the source to use. It ingests the NAAD CAP firehose,
+creating one sensor per active alert under a Home Assistant device. That carries
+**raw** CAP severity and certainty, preserves the original multi-region alert
+polygons, and unlocks the `showGeometry` affected-area mini-map.
+
+Point the card at the device and it auto-discovers every active alert,
+re-discovering as alerts come and go:
+
+```yaml
+type: custom:weather-alerts-card
+device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
+colorTheme: eccc      # ECCC's official red/orange/yellow/grey palette
+showGeometry: true    # affected-area mini-map
+```
+
+Pick the device from the editor's CAP Alerts device selector rather than
+hand-typing the id. The provider auto-detects as `eccc`; set `provider: eccc`
+explicitly only if you've disabled auto-detection.
+
+> **Why not the other ECCC integrations?** Two other ECCC integrations exist,
+> but neither is the right source for this card:
+> - **HA core `environment_canada`** exposes rich alert detail only through a
+>   `get_alerts` **action** ([#172393](https://github.com/home-assistant/core/pull/172393),
+>   merged in place of the attribute-based [#164481](https://github.com/home-assistant/core/pull/164481)).
+>   A Lovelace card reads state and attributes during render and can't consume
+>   an action response, so core can't drive this card.
+> - The HACS **`environment_canada`** fork does surface alert attributes, but
+>   it's a stop-gap its own maintainer would rather not keep running (see
+>   [discussion #3130](https://github.com/orgs/home-assistant/discussions/3130)),
+>   and it overrides the core integration's domain. Out of respect for that, we
+>   don't route ECCC users to it; CAP Alerts is the entity-based path the card
+>   author maintains for rich alert data.
+
+> **Heads-up if you also run `environment_canada` for weather.** Its alert list
+> (GeoMet WFS, filtered by a point-in-polygon test against your coordinates)
+> won't line up with CAP Alerts' (NAAD CAP polygons, ingested directly). The WFS
+> feed lags and truncates NAAD coverage, so an alert can show up in one and not
+> the other — that's upstream behaviour, not the card.
 
 ## Data Fidelity
 
