@@ -94,6 +94,24 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('dwd');
   });
 
+  it('returns MeteoSwiss adapter for explicit meteoswiss provider', () => {
+    const adapter = getAdapter('meteoswiss', {});
+    expect(adapter.provider).toBe('meteoswiss');
+  });
+
+  it('auto-detects MeteoSwiss from the parallel-array triple', () => {
+    const adapter = getAdapter(undefined, {
+      attribution: 'Source: MeteoSwiss',
+      warning_types: ['Wind'],
+      warning_levels: ['Severe hazard'],
+      warning_levels_numeric: [4],
+      warning_valid_from: ['2026-06-04T08:00:00+00:00'],
+      warning_valid_to: ['2026-06-04T18:00:00+00:00'],
+      warning_texts: ['Strong wind gusts.'],
+    });
+    expect(adapter.provider).toBe('meteoswiss');
+  });
+
   it('returns ECCC adapter for explicit eccc provider', () => {
     const adapter = getAdapter('eccc', {});
     expect(adapter.provider).toBe('eccc');
@@ -162,6 +180,14 @@ describe('canHandleAny', () => {
     expect(canHandleAny({ attribution: 'Données fournies par Environnement Canada' })).toBe(true);
   });
 
+  it('returns true for MeteoSwiss attributes', () => {
+    expect(canHandleAny({
+      warning_types: [],
+      warning_levels_numeric: [],
+      warning_valid_from: [],
+    })).toBe(true);
+  });
+
   it('returns false for unrelated attributes', () => {
     expect(canHandleAny({ temperature: 72, humidity: 45 })).toBe(false);
   });
@@ -194,6 +220,10 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
   it('matches DWD weather warnings entity', () => {
     expect(matches('sensor.dwd_weather_warnings_hamburg_current')).toBe(true);
+  });
+
+  it('matches MeteoSwiss weather warnings entity', () => {
+    expect(matches('sensor.weather_warnings_at_8000')).toBe(true);
   });
 
   it('matches CAP Alerts per-alert entity (device-slug prefixed form)', () => {
