@@ -255,7 +255,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
-| CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery |
+| CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
 > **Note on ECCC.** For Environment and Climate Change Canada alerts, use [CAP Alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`). It is the only ECCC source this card recommends — neither the bundled HA core `environment_canada` integration nor the HACS `environment_canada` fork is routed to. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below for why.
 

@@ -22,6 +22,7 @@ beforeAll(() => {
 });
 
 import { WeatherAlertsCard, resolveDeviceAlertEntities } from '../src/weather-alerts-card';
+import { DISMISSALS_CHANGED_EVENT, storageKey } from '../src/dismissal';
 import type {
   HomeAssistant,
   EntityRegistryDisplayEntry,
@@ -520,5 +521,47 @@ describe('WeatherAlertsCard dismissal scope stability across registry churn', ()
     expect(card._scopeHash).toBe(scopeBefore);
     expect(card._dismissals.size).toBe(1);
     cleanup();
+  });
+
+  it('stops reacting to same-scope dismissal events once disconnected', async () => {
+    // Guards the disconnectedCallback unsubscribe contract. The card subscribes
+    // to a global window event keyed by dismissal scope; if a removed card kept
+    // that listener, it would reload `_dismissals` whenever a later test sharing
+    // the same `device:` scope wrote to storage — the cross-test bleed behind
+    // the intermittent full-suite failure. After disconnect, a scope-matched
+    // notification must NOT mutate the card.
+    const mock = makeMockConnection([entry(ALERT_ID_1)]);
+    const hass = {
+      states: {
+        [ALERT_ID_1]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Frost' }) },
+      },
+      locale: { language: 'en' },
+      entities: undefined,
+      connection: mock.conn,
+    } as unknown as HomeAssistant;
+
+    const { card, cleanup } = await mountCard(
+      {
+        type: 'custom:weather-alerts-card',
+        device: DEVICE,
+        allowDismiss: true,
+      } as WeatherAlertsCardConfig,
+      hass,
+    );
+
+    const scope = card._scopeHash;
+    const alerts = card._getAlerts() as { id: string }[];
+    card._onDismiss(alerts[0]);
+    expect(card._dismissals.size).toBe(1);
+
+    // Disconnect the card — disconnectedCallback must remove the listener.
+    cleanup();
+
+    // Simulate another writer clearing this scope, then broadcasting the change.
+    // A still-subscribed card would reload from the now-empty store (size → 0).
+    localStorage.removeItem(storageKey(scope));
+    window.dispatchEvent(new CustomEvent(DISMISSALS_CHANGED_EVENT, { detail: { scope } }));
+
+    expect(card._dismissals.size).toBe(1);
   });
 });
