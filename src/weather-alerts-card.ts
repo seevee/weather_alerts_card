@@ -1153,7 +1153,7 @@ export class WeatherAlertsCard extends LitElement {
       ${alert.phase ? html`
         <span class="badge phase-badge">${alert.phase}</span>
       ` : nothing}
-      ${alert.eventCode ? html`
+      ${alert.eventCode && alert.eventCode.trim().toLowerCase() !== alert.event.trim().toLowerCase() ? html`
         <span class="badge event-code-badge">${alert.eventCode}</span>
       ` : nothing}
       ${alert.mergedCount && alert.mergedCount > 1
