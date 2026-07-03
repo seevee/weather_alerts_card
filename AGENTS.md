@@ -9,7 +9,7 @@ A standalone custom Home Assistant Lovelace card for displaying weather alerts f
 ## Build Commands
 
 ```bash
-npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~117KB minified)
+npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~189KB minified, downleveled to ES2019)
 npm run watch     # Rollup in watch mode
 npm run lint      # TypeScript type-check (tsc --noEmit)
 npm run test      # Vitest unit tests (jsdom environment)
@@ -37,7 +37,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/localize.ts` | i18n system with 5 languages (en, fr, es, it, de). Exports `t(key, lang, params?)`. |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
-| `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + terser → single `dist/weather-alerts-card.js`. |
+| `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + esbuild (minify + `target: es2019`, downlevels the whole bundle incl. Lit for old Android WebViews, #194) → single `dist/weather-alerts-card.js`. |
 
 ## Key Patterns
 

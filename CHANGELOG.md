@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Card now loads on older Android WebViews such as Shelly Wall Displays (#194). The build is downleveled to ES2019 (esbuild replaces terser as the minifier), so ES2021 logical-assignment and ES2022 private-field syntax — emitted by both the card and its Lit dependency — no longer reach engines that can't parse them and trigger Home Assistant's red error card.
+
 ### Changed
 - Zone filtering now also reads cap_alerts's typed `geocodes` container, so MeteoAlarm region codes (EMMA_ID / NUTS3 / …) keep matching once cap_alerts moves them out of the flat per-scheme attributes. No config change; existing `zones:` filters are unaffected.
 
