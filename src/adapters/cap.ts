@@ -83,16 +83,27 @@ function phaseLabel(phase: string): string {
 function collectZones(attributes: Record<string, unknown>): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
+  const push = (z: unknown): void => {
+    if (typeof z !== 'string') return;
+    const upper = z.toUpperCase();
+    if (!seen.has(upper)) {
+      seen.add(upper);
+      out.push(upper);
+    }
+  };
   for (const key of ['affected_zones', 'geocode_ugc', 'geocode_same']) {
     const raw = attributes[key];
     if (!Array.isArray(raw)) continue;
-    for (const z of raw) {
-      if (typeof z !== 'string') continue;
-      const upper = z.toUpperCase();
-      if (!seen.has(upper)) {
-        seen.add(upper);
-        out.push(upper);
-      }
+    for (const z of raw) push(z);
+  }
+  // cap_alerts's typed geocode container: { scheme: [codes] } (e.g. MeteoAlarm
+  // EMMA_ID/NUTS3). Flatten the array values only — scheme keys are not zones.
+  // Read after the flat keys so existing providers' zone order is unchanged.
+  const geocodes = attributes['geocodes'];
+  if (geocodes && typeof geocodes === 'object' && !Array.isArray(geocodes)) {
+    for (const codes of Object.values(geocodes as Record<string, unknown>)) {
+      if (!Array.isArray(codes)) continue;
+      for (const z of codes) push(z);
     }
   }
   return out;

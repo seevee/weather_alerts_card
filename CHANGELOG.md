@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Zone filtering now also reads cap_alerts's typed `geocodes` container, so MeteoAlarm region codes (EMMA_ID / NUTS3 / …) keep matching once cap_alerts moves them out of the flat per-scheme attributes. No config change; existing `zones:` filters are unaffected.
+
 ## 3.2.0-alpha.1 — 2026-07-03
 
 ### Added

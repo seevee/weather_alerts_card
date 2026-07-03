@@ -161,6 +161,59 @@ describe('CapAdapter', () => {
       expect(alerts[0].zones).toEqual(['COC013']);
     });
 
+    it('flattens the geocodes container into zones', () => {
+      const attrs = makeCapAttributes({
+        affected_zones: [],
+        geocode_ugc: [],
+        geocodes: { NUTS3: ['FR614', 'FR631'] },
+      });
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).toEqual(['FR614', 'FR631']);
+    });
+
+    it('coexists with flat keys and dedups container codes', () => {
+      const attrs = makeCapAttributes({
+        affected_zones: [],
+        geocode_ugc: ['COC013'],
+        geocodes: { SAME: ['coc013'], EMMA_ID: ['DE100'] },
+      });
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).toEqual(['COC013', 'DE100']);
+    });
+
+    it('flattens all schemes in the container (scheme-agnostic)', () => {
+      const attrs = makeCapAttributes({
+        affected_zones: [],
+        geocode_ugc: [],
+        geocodes: { EMMA_ID: ['DE100'], WARNCELLID: ['112110000'] },
+      });
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).toEqual(['DE100', '112110000']);
+    });
+
+    it('never adds container scheme keys as zones', () => {
+      const attrs = makeCapAttributes({
+        affected_zones: [],
+        geocode_ugc: [],
+        geocodes: { NUTS3: ['FR614'] },
+      });
+      const alerts = adapter.parseAlerts(attrs);
+      expect(alerts[0].zones).not.toContain('NUTS3');
+    });
+
+    it('tolerates malformed geocodes without throwing', () => {
+      const malformed: unknown[] = [null, 'string', ['array'], { X: 'not-an-array' }];
+      for (const geocodes of malformed) {
+        const attrs = makeCapAttributes({
+          affected_zones: [],
+          geocode_ugc: ['COC013'],
+          geocodes,
+        });
+        const alerts = adapter.parseAlerts(attrs);
+        expect(alerts[0].zones).toEqual(['COC013']);
+      }
+    });
+
     it('falls back to event_code_same when event_code_nws is absent', () => {
       const attrs = makeCapAttributes({ event_code_same: 'TOR' });
       delete attrs.event_code_nws;
