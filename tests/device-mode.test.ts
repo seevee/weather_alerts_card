@@ -485,8 +485,14 @@ describe('WeatherAlertsCard dismissal scope stability across registry churn', ()
     const mock = makeMockConnection([entry(ALERT_ID_1)]);
     const hass = {
       states: {
-        [ALERT_ID_1]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Frost' }) },
-        [ALERT_ID_2]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Wind' }) },
+        // Distinct CAP `id` per sensor, as real cap_alerts entities carry.
+        // Sharing one id collapses both alerts onto a single dismissal key;
+        // then, because capAlertAttrs anchors sent/expires to Date.now(), the
+        // two alerts' signatures diverge whenever their attribute-build calls
+        // straddle a millisecond — that signature "shift" un-dismisses the
+        // record and intermittently flakes the size assertion below.
+        [ALERT_ID_1]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Frost', id: 'urn:oid:2.49.0.1.276.0.frost' }) },
+        [ALERT_ID_2]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Wind', id: 'urn:oid:2.49.0.1.276.0.wind' }) },
       },
       locale: { language: 'en' },
       entities: undefined,
