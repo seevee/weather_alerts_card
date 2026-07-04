@@ -1,9 +1,9 @@
 # Changelog
 
-## Unreleased
+## 3.2.0-alpha.3 — 2026-07-04
 
 ### Added
-- Graduated `unavailableBehavior` option (`message`/`compact`/`hide`) controlling how a broken alert sensor is shown; `'hide'` suppresses the card only when every configured sensor is unavailable (#187)
+- Opt-in unavailableBehavior for broken alert sensors (#187) (#200) (78308de…)
 
 ## 3.2.0-alpha.2 — 2026-07-03
 
