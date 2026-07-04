@@ -275,6 +275,27 @@ const PORT = 3742;
         await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
       },
     },
+    {
+      name: 'unavailable',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-unavailable.html`,
+      canvasId: 'unavailable-canvas',
+      cardIds: [
+        'card-unavail-message', 'card-unavail-compact', 'card-unavail-hide',
+      ],
+      variants: [
+        { theme: 'theme-light', label: 'unavail light', out: 'img/unavailable-light.png' },
+        { theme: 'theme-dark',  label: 'unavail dark ', out: 'img/unavailable-dark.png' },
+      ],
+      // Unavailable/hidden cards never render `.alert-card` (and the `hide` card
+      // renders nothing at all), so the default gate would time out. Wait on
+      // Lit's updateComplete for every card instead.
+      readyCheck: async (page, cardIds) => {
+        await page.evaluate(async (ids) => {
+          await Promise.all(ids.map(id => document.getElementById(id)?.updateComplete));
+        }, cardIds);
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      },
+    },
   ];
 
   // Close the 1x context and create a 2x one for composite captures
@@ -301,10 +322,16 @@ const PORT = 3742;
 
       await compositePage.goto(set.url);
 
-      // Wait for all card instances to render
-      await compositePage.waitForFunction(ids => {
-        return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
-      }, set.cardIds, { timeout: 10000 });
+      // Wait for all card instances to render. Sets whose cards never render
+      // an `.alert-card` (e.g. the unavailable/hidden showcase) supply their
+      // own `readyCheck`, which replaces the default gate.
+      if (set.readyCheck) {
+        await set.readyCheck(compositePage, set.cardIds);
+      } else {
+        await compositePage.waitForFunction(ids => {
+          return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
+        }, set.cardIds, { timeout: 10000 });
+      }
 
       // Apply theme class to the canvas
       await compositePage.evaluate(([canvasId, cls]) => document.getElementById(canvasId).classList.add(cls), [set.canvasId, theme]);

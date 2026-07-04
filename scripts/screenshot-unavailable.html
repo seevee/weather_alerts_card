@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Alerts Card – Unavailable Behavior</title>
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ---- */
+    .theme-light {
+      --primary-text-color: #212121;
+      --secondary-text-color: #727272;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: #e5e5e5;
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.12);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 33, 33, 33;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      --canvas-bg: #f0f0f0;
+      --label-color: rgba(0, 0, 0, 0.45);
+      --empty-color: rgba(0, 0, 0, 0.28);
+      --empty-border: rgba(0, 0, 0, 0.14);
+    }
+    .theme-dark {
+      --primary-text-color: #e1e1e1;
+      --secondary-text-color: #9b9b9b;
+      --primary-background-color: #111111;
+      --secondary-background-color: #202020;
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(225, 225, 225, 0.12);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 225, 225, 225;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.5),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.4),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+      --canvas-bg: #0d1117;
+      --label-color: rgba(255, 255, 255, 0.45);
+      --empty-color: rgba(255, 255, 255, 0.28);
+      --empty-border: rgba(255, 255, 255, 0.14);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    .unavailable-canvas {
+      background: var(--canvas-bg);
+      padding: 36px 28px 28px;
+      display: flex;
+      gap: 24px;
+      width: 1180px;
+    }
+
+    .showcase {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-label {
+      color: var(--label-color);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .card-wrapper {
+      flex: 1;
+      min-height: 96px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+    .card-inner {
+      width: 100%;
+    }
+
+    /* Placeholder shown behind the `hide` card so its column reads as an
+       intentional absence, not a broken render. The card sets host
+       display:none, revealing this label underneath. */
+    .empty-hint {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 72px;
+      border: 1px dashed var(--empty-border);
+      border-radius: 12px;
+      color: var(--empty-color);
+      font-size: 13px;
+      font-style: italic;
+    }
+    .card-inner { position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="unavailable-canvas" id="unavailable-canvas">
+
+    <div class="showcase">
+      <div class="section-label">Message &middot; full notice</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <weather-alerts-card id="card-unavail-message"></weather-alerts-card>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase">
+      <div class="section-label">Compact &middot; muted one-liner</div>
+      <div class="card-wrapper">
+        <div class="card-inner">
+          <weather-alerts-card id="card-unavail-compact"></weather-alerts-card>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase">
+      <div class="section-label">Hide &middot; card removed</div>
+      <div class="card-wrapper">
+        <div class="empty-hint">Card hidden (all sensors broken)</div>
+        <div class="card-inner">
+          <weather-alerts-card id="card-unavail-hide"></weather-alerts-card>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {}
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+            }
+          </style>
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock states ----
+    // A broken sensor: unavailable + no parseable alert attributes.
+    const BROKEN = { state: 'unavailable', attributes: {} };
+
+    const MOCK_HASS = {
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      states: {
+        'sensor.nws_broken': BROKEN,
+      },
+    };
+
+    function wire(id, config) {
+      const card = document.getElementById(id);
+      card.setConfig({
+        type: 'custom:weather-alerts-card',
+        entity: 'sensor.nws_broken',
+        animations: false,
+        ...config,
+      });
+      card.hass = MOCK_HASS;
+      return card;
+    }
+
+    // Message (default) — full notice
+    wire('card-unavail-message', {});
+
+    // Compact — muted one-liner
+    wire('card-unavail-compact', { unavailableBehavior: 'compact' });
+
+    // Hide — nothing renders; host display:none reveals the empty-hint underneath
+    wire('card-unavail-hide', { unavailableBehavior: 'hide' });
+  </script>
+</body>
+</html>

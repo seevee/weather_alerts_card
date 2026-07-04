@@ -59,6 +59,7 @@ export interface WeatherAlertsCardConfig {
   deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all verbatim
   hideExpired?: boolean;     // undefined/true: hide expired alerts; false: show them (dimmed)
   hideNoAlerts?: boolean;    // undefined/false: show "No active alerts" banner; true: hide it
+  unavailableBehavior?: 'message' | 'compact' | 'hide'; // how a broken alert sensor (unavailable/unknown + zero parseable alerts) is shown when EVERY resolved entity is broken. undefined/'message': full notice banner; 'compact': muted one-liner; 'hide': hide the card entirely. Has no effect on partial breakage (some but not all entities broken), which falls through to normal rendering.
   showDetails?: boolean;     // undefined/true: show expandable detail panel; false: hide entirely
   expandDetails?: boolean;   // undefined/false: details collapsed behind toggle; true: details always visible, toggle removed
   showMetadata?: boolean;    // undefined/true: show metadata grid in details; false: hide

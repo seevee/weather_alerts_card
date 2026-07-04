@@ -677,6 +677,18 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  private _unavailableBehaviorChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as 'message' | 'compact' | 'hide';
+    if (value === (this._config.unavailableBehavior || 'message')) return;
+    const newConfig = { ...this._config };
+    if (value === 'message') {
+      delete newConfig.unavailableBehavior;
+    } else {
+      newConfig.unavailableBehavior = value;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _colorThemeChanged(ev: CustomEvent): void {
     const value = ev.detail.value as 'severity' | 'nws' | 'meteoalarm' | 'eccc';
     if (value === (this._config.colorTheme || 'severity')) return;
@@ -1026,6 +1038,19 @@ export class WeatherAlertsCardEditor extends LitElement {
             @change=${this._hideNoAlertsChanged}
           ></ha-switch>
         </ha-formfield>
+
+        <ha-select
+          .label=${t('editor.unavailable_behavior', lang)}
+          .value=${this._config.unavailableBehavior || 'message'}
+          @selected=${this._unavailableBehaviorChanged}
+        >
+          <ha-dropdown-item value="message">${t('editor.unavailable_message', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="compact">${t('editor.unavailable_compact', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="hide">${t('editor.unavailable_hide', lang)}</ha-dropdown-item>
+        </ha-select>
+        ${this._config.unavailableBehavior === 'hide'
+        ? html`<ha-alert alert-type="warning">${t('editor.unavailable_hide_warning', lang)}</ha-alert>`
+        : ''}
 
         <!-- Dismissal -->
         <div class="section-label">${t('editor.section_dismissal', lang)}</div>

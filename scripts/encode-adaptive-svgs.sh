@@ -13,6 +13,7 @@ PAIRS=(
   "hero-light.png     hero-dark.png     hero-adaptive.svg"
   "themes-light.png   themes-dark.png   themes-adaptive.svg"
   "geometry-light.png geometry-dark.png geometry-adaptive.svg"
+  "unavailable-light.png unavailable-dark.png unavailable-adaptive.svg"
 )
 
 for pair in "${PAIRS[@]}"; do

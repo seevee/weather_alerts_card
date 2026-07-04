@@ -45,6 +45,16 @@ export const cardStyles = css`
     font-style: italic;
   }
 
+  .sensor-unavailable.compact {
+    padding: 6px 16px;
+    gap: 8px;
+    font-size: 0.85em;
+  }
+
+  .sensor-unavailable.compact ha-icon {
+    --mdc-icon-size: 18px;
+  }
+
   /* --- COLOR MAPPING --- */
   .severity-extreme,
   .severity-severe { --color: var(--error-color); --color-rgb: 244, 67, 54; --color-on: #ffffff; }

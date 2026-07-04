@@ -2,7 +2,7 @@ import { LitElement, html, svg, nothing, TemplateResult, PropertyValues } from '
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry, HassEntity } from './types';
 import {
   resolveDeviceAlertEntities,
   deviceHasAnyEntity,
@@ -873,6 +873,17 @@ export class WeatherAlertsCard extends LitElement {
     return t('card.open_source', this._lang, { provider: label });
   }
 
+  private _renderUnavailable(compact: boolean, stateVal: string): TemplateResult {
+    return html`
+      <ha-card .header=${this._config!.title || ''}>
+        <div class="sensor-unavailable ${compact ? 'compact' : ''}">
+          <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
+          ${t('card.sensor_unavailable', this._lang, { state: stateVal })}
+        </div>
+      </ha-card>
+    `;
+  }
+
   protected render(): TemplateResult {
     if (!this._config) return html``;
 
@@ -891,25 +902,27 @@ export class WeatherAlertsCard extends LitElement {
       return this._renderPreview();
     }
 
-    // Show unavailable only if every resolved entity is unavailable/unknown
-    // AND carries no parseable alert. CAP per-alert sensors can report state
-    // "unknown" while their attributes hold a fully valid alert (e.g. an NWS
-    // Beach Hazards Statement) — those must still render, not be dropped as a
-    // broken data source.
-    const allUnavailable = resolvedEntities.length > 0
-      && resolvedEntities.every(e =>
-        (e.state === 'unavailable' || e.state === 'unknown')
-        && getAdapter(this._config!.provider, e.attributes).parseAlerts(e.attributes).length === 0);
+    // A sensor is "broken" when it is unavailable/unknown AND carries no
+    // parseable alert. CAP per-alert sensors can report state "unknown" while
+    // their attributes hold a fully valid alert (e.g. an NWS Beach Hazards
+    // Statement) — those must still render, not be dropped as a broken source.
+    const isBroken = (e: HassEntity): boolean =>
+      (e.state === 'unavailable' || e.state === 'unknown')
+      && getAdapter(this._config!.provider, e.attributes).parseAlerts(e.attributes).length === 0;
+    const behavior = this._config.unavailableBehavior || 'message';
+
+    // Every resolved entity is broken: honor the configured behavior. 'hide'
+    // fully suppresses the card (render-only display:none); otherwise show the
+    // notice. Partial breakage (some but not all entities broken) is
+    // deliberately NOT special-cased here — tracked separately in issue #201.
+    const allUnavailable = resolvedEntities.length > 0 && resolvedEntities.every(isBroken);
     if (allUnavailable) {
-      const stateVal = resolvedEntities[0].state;
-      return html`
-        <ha-card .header=${this._config.title || ''}>
-          <div class="sensor-unavailable">
-            <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-            ${t('card.sensor_unavailable', this._lang, { state: stateVal })}
-          </div>
-        </ha-card>
-      `;
+      if (behavior === 'hide') {
+        this.style.display = 'none';
+        return html``;
+      }
+      this.style.display = '';
+      return this._renderUnavailable(behavior === 'compact', resolvedEntities[0].state);
     }
 
     const alerts = this._getAlerts();

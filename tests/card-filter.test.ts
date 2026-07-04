@@ -157,4 +157,72 @@ describe('unavailable banner', () => {
     expect(root.querySelector('.sensor-unavailable')).not.toBeNull();
     cleanup();
   });
+
+  // A single broken sensor with empty attrs — the reporter's scenario (#187).
+  function brokenSensorHass(): HomeAssistant {
+    return {
+      states: { 'sensor.nws_alerts': { state: 'unavailable', attributes: {} } },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+  }
+
+  it('all-broken + hide fully suppresses the card', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'hide' } as WeatherAlertsCardConfig,
+      brokenSensorHass(),
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    expect((card as unknown as HTMLElement).style.display).toBe('none');
+    expect(root.querySelector('.sensor-unavailable')).toBeNull();
+    cleanup();
+  });
+
+  it('all-broken + compact renders the muted one-liner', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'compact' } as WeatherAlertsCardConfig,
+      brokenSensorHass(),
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    expect(root.querySelector('.sensor-unavailable.compact')).not.toBeNull();
+    cleanup();
+  });
+
+  it('all-broken + default (message) renders the full notice without the compact class', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' } as WeatherAlertsCardConfig,
+      brokenSensorHass(),
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    expect(root.querySelector('.sensor-unavailable')).not.toBeNull();
+    expect(root.querySelector('.sensor-unavailable.compact')).toBeNull();
+    cleanup();
+  });
+
+  // Guard the all-broken predicate: 'hide' must NOT fire when only some
+  // entities are broken (a working sensor must never be masked). Partial
+  // breakage falls through to normal rendering here; richer partial handling
+  // is tracked in issue #201.
+  it('hide does not suppress the card when only some entities are broken', async () => {
+    const hass = {
+      states: {
+        'sensor.nws_broken': { state: 'unavailable', attributes: {} },
+        'sensor.nws_quiet': { state: '0', attributes: { Alerts: [] } },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+    const { card, cleanup } = await mountCard(
+      {
+        type: 'custom:weather-alerts-card',
+        entity: 'sensor.nws_broken',
+        entities: ['sensor.nws_quiet'],
+        unavailableBehavior: 'hide',
+      } as WeatherAlertsCardConfig,
+      hass,
+    );
+    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
+    cleanup();
+  });
 });
