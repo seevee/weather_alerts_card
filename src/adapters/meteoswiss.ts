@@ -4,9 +4,13 @@ import { parseTimestamp } from '../utils';
 // Last-resort fallback when the sensor exposes no per-warning deep link. The
 // integration's own `warning_links` are the primary source (mapped per-alert
 // in parseAlerts); this constant is only reached when that array is empty,
-// which in practice happens only at zero warnings (no alerts emitted).
+// which in practice happens only at zero warnings (no alerts emitted). Points
+// at the interactive severe-weather warnings map (the English-host mirror of
+// meteoschweiz.admin.ch/.../gefahren.html) with the severe-weather tab
+// pre-selected. It is a client-routed SPA, so the base path resolves (200) but
+// only renders in a real browser.
 const METEOSWISS_WARNINGS_URL =
-  'https://www.meteoswiss.admin.ch/home/weather/hazards.html';
+  'https://www.meteoswiss.admin.ch/services-and-publications/applications/hazards.html#tab=severe-weather-map&weather-tab=all';
 
 // Map the integration's numeric WarningLevel (0-5) to the card's severity tier.
 // Mirrors MeteoAlarm's color semantics (the other European provider): red/

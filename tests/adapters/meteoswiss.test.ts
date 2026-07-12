@@ -34,7 +34,7 @@ function makeMeteoSwissAttributes(
 const DEAD_WARNINGS_URL =
   'https://www.meteoswiss.admin.ch/services-and-publications/service/warnings.html';
 const FALLBACK_WARNINGS_URL =
-  'https://www.meteoswiss.admin.ch/home/weather/hazards.html';
+  'https://www.meteoswiss.admin.ch/services-and-publications/applications/hazards.html#tab=severe-weather-map&weather-tab=all';
 
 describe('MeteoSwissAdapter', () => {
   const adapter = new MeteoSwissAdapter();
