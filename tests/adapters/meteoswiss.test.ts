@@ -14,7 +14,10 @@ function makeMeteoSwissWarning(overrides: Partial<MeteoSwissWarning> = {}): Mete
   };
 }
 
-function makeMeteoSwissAttributes(warnings: Partial<MeteoSwissWarning>[] = [{}]): Record<string, unknown> {
+function makeMeteoSwissAttributes(
+  warnings: Partial<MeteoSwissWarning>[] = [{}],
+  links: string[] = ['https://www.meteoswiss.admin.ch/some/link'],
+): Record<string, unknown> {
   const full = warnings.map(makeMeteoSwissWarning);
   return {
     attribution: 'Source: MeteoSwiss',
@@ -24,9 +27,14 @@ function makeMeteoSwissAttributes(warnings: Partial<MeteoSwissWarning>[] = [{}])
     warning_valid_from: full.map(w => w.validFrom),
     warning_valid_to: full.map(w => w.validTo),
     warning_texts: full.map(w => w.text),
-    warning_links: ['https://www.meteoswiss.admin.ch/some/link'],
+    warning_links: links,
   };
 }
+
+const DEAD_WARNINGS_URL =
+  'https://www.meteoswiss.admin.ch/services-and-publications/service/warnings.html';
+const FALLBACK_WARNINGS_URL =
+  'https://www.meteoswiss.admin.ch/home/weather/hazards.html';
 
 describe('MeteoSwissAdapter', () => {
   const adapter = new MeteoSwissAdapter();
@@ -207,11 +215,51 @@ describe('MeteoSwissAdapter', () => {
       expect(alerts[0].description).toBe(html);
     });
 
-    it('uses the fixed MeteoSwiss warnings page as url', () => {
-      const alerts = adapter.parseAlerts(makeMeteoSwissAttributes([{}]));
-      expect(alerts[0].url).toBe(
-        'https://www.meteoswiss.admin.ch/services-and-publications/service/warnings.html',
-      );
+    it('maps a 1:1 warning_links array to links[i]', () => {
+      const alerts = adapter.parseAlerts(makeMeteoSwissAttributes(
+        [{ type: 'Wind' }, { type: 'Thunderstorms' }],
+        ['https://mch/wind', 'https://mch/thunder'],
+      ));
+      expect(alerts[0].url).toBe('https://mch/wind');
+      expect(alerts[1].url).toBe('https://mch/thunder');
+    });
+
+    it('maps a 2:1 warning_links array to each warning\'s lead link', () => {
+      const alerts = adapter.parseAlerts(makeMeteoSwissAttributes(
+        [{ type: 'Forest fire' }, { type: 'Heat wave' }],
+        [
+          'https://mch/forest-fire',
+          'https://mch/forest-fire/detail',
+          'https://mch/heat-wave',
+          'https://mch/heat-wave/detail',
+        ],
+      ));
+      expect(alerts[0].url).toBe('https://mch/forest-fire');
+      expect(alerts[1].url).toBe('https://mch/heat-wave');
+    });
+
+    it('falls back to links[0] when the count is not evenly divisible', () => {
+      const alerts = adapter.parseAlerts(makeMeteoSwissAttributes(
+        [{ type: 'Wind' }, { type: 'Thunderstorms' }],
+        ['https://mch/first', 'https://mch/second', 'https://mch/third'],
+      ));
+      expect(alerts[0].url).toBe('https://mch/first');
+      expect(alerts[1].url).toBe('https://mch/first');
+    });
+
+    it('falls back to the overview constant when warning_links is empty', () => {
+      const alerts = adapter.parseAlerts(makeMeteoSwissAttributes([{}], []));
+      expect(alerts[0].url).toBe(FALLBACK_WARNINGS_URL);
+    });
+
+    it('never emits the dead service/warnings url when links are present', () => {
+      const alerts = adapter.parseAlerts(makeMeteoSwissAttributes(
+        [{ type: 'Wind' }, { type: 'Thunderstorms' }],
+        ['https://mch/a', 'https://mch/b'],
+      ));
+      for (const a of alerts) {
+        expect(a.url).not.toBe(DEAD_WARNINGS_URL);
+      }
     });
 
     it('returns empty array for empty arrays', () => {

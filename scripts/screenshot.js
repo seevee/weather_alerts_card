@@ -88,6 +88,8 @@ const ALL_SCENARIOS = [
   { cardId: 'card-severity-open', colorScheme: 'dark', label: 'severity dark  details', out: 'img/severity-dark-details.png', expand: true },
   { cardId: 'card-nws-compact', colorScheme: 'light', label: 'nws     light compact ', out: 'img/nws-light-compact.png' },
   { cardId: 'card-nws-compact', colorScheme: 'dark', label: 'nws     dark  compact ', out: 'img/nws-dark-compact.png' },
+  { cardId: 'card-meteoswiss-sparse', colorScheme: 'light', label: 'mswiss  light sparse  ', out: 'img/meteoswiss-light-sparse.png', expand: true },
+  { cardId: 'card-meteoswiss-sparse', colorScheme: 'dark', label: 'mswiss  dark  sparse  ', out: 'img/meteoswiss-dark-sparse.png', expand: true },
 ];
 
 // Filter by SCREENSHOT_THEMES env var if set (e.g. "nws" or "severity,nws")
@@ -136,7 +138,7 @@ const PORT = 3742;
 
     // Wait for both card instances to finish their initial Lit render
     await page.waitForFunction(() => {
-      const ids = ['card-severity-open', 'card-nws-compact'];
+      const ids = ['card-severity-open', 'card-nws-compact', 'card-meteoswiss-sparse'];
       return ids.every(id => document.getElementById(id)?.shadowRoot?.querySelector('.alert-card') !== null);
     }, { timeout: 10000 });
 

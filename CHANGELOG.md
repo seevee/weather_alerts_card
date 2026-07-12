@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Use `warning_links` for the MeteoSwiss source link; render open-ended warnings as "Ongoing" and omit the empty Issued row (#186)
+
 ## 3.2.0-alpha.3 — 2026-07-04
 
 ### Added
