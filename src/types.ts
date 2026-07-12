@@ -35,7 +35,7 @@ export interface EntityRegistryDisplayEntry {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 export interface WeatherAlertsCardConfig {
@@ -43,6 +43,7 @@ export interface WeatherAlertsCardConfig {
   entity: string;
   entities?: string[];           // additional entities to merge alerts from
   device?: string;               // HA device_id — auto-discovers per-alert sensors under it. Provider-agnostic; currently only the CAP Alerts integration produces this shape.
+  sources?: string[];            // geo_location feed `source` attribute values (e.g. ["nsw_rural_fire_service_feed"]) — auto-collects EVERY entity carrying that source, so per-incident providers (NSW RFS) never need hand-listed, churning entity ids. Usually auto-filled by selecting the matching provider.
   title?: string;
   zones?: string[];
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
@@ -128,6 +129,12 @@ export interface AlertAdapter {
   provider: AlertProvider;
   canHandle(attributes: Record<string, unknown>): boolean;
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[];
+  // Per-incident providers (e.g. NSW RFS) explode a feed into many
+  // dynamically-named entities, each carrying a `source` state attribute. An
+  // adapter lists those source values here so the card can auto-collect every
+  // matching entity by source instead of relying on hand-listed entity ids.
+  // Absent/empty for providers backed by a single stable sensor.
+  feedSources?: string[];
 }
 
 // Raw NWS alert shape from the nws_alerts integration (v6.1+)
@@ -212,6 +219,23 @@ export interface MeteoSwissWarning {
   validFrom: string | null; // ISO 8601
   validTo: string | null;   // ISO 8601
   text: string;
+}
+
+// Raw NSW RFS incident shape from the nsw_rural_fire_service_feed integration.
+// The integration explodes each GeoJSON feature into one geo_location entity
+// whose attributes are the fields below (the entity state is distance in km).
+// All optional/defensive — a name drift degrades gracefully rather than throws.
+export interface NswRfsIncident {
+  external_id?: string;        // stable feed id, e.g. a GUID/URL
+  category?: string;           // Australian Warning System ladder, e.g. "Advice", "Emergency Warning"
+  status?: string;             // e.g. "Under control", "Being controlled", "Out of control"
+  type?: string;               // e.g. "Bush Fire", "Grass Fire", "Hazard Reduction"
+  location?: string;           // free-text location string
+  council_area?: string;       // e.g. "Blue Mountains"
+  size?: string | number;      // burnt area, e.g. "5 ha" or a bare number
+  fire?: boolean;              // true when the incident is a fire
+  responsible_agency?: string; // e.g. "Rural Fire Service"
+  publication_date?: string;   // ISO 8601 timestamp
 }
 
 export interface AlertProgress {

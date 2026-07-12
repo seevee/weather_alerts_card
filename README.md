@@ -1,12 +1,12 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), PirateWeather, and CAP Alerts (multi-region).
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.png)
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), PirateWeather, and CAP Alerts (multi-region) with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region) with auto-detection
 - **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
@@ -51,7 +51,7 @@ Then click the Download button, and click Reload when prompted.
 | `entity` | *(required, unless `device` is set)* | Alert sensor entity |
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape. Can be combined with `entity`/`entities` or used on its own. |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'meteoswiss'`, `'eccc'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
@@ -171,6 +171,25 @@ entity: sensor.marathon_alerts
 colorTheme: eccc
 ```
 
+**NSW RFS (Australian bushfire)**
+
+The `nsw_rural_fire_service_feed` integration creates one `geo_location.*` entity
+per active incident, so list them under `entities:` (or group them with a
+`device:`) rather than a single primary `entity:`:
+
+```yaml
+type: custom:weather-alerts-card
+entities:
+  - geo_location.bush_fire_wollemi_national_park
+  - geo_location.grass_fire_dubbo
+```
+
+Severity comes straight from the incident `category` (Emergency Warning / Watch
+and Act / Advice — the Australian Warning System ladder). Incidents have no real
+expiry, so the card shows an honest "ongoing" state with no progress bar, and the
+`showGeometry` mini-map is unavailable (the entity carries only a point, not the
+fire-ground polygon).
+
 **PirateWeather alerts**
 ```yaml
 type: custom:weather-alerts-card
@@ -262,6 +281,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) — point the card at `sensor.weather_warnings_at_<postcode>` |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
+| NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; add them via `entities:` or a `device:` grouping |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
@@ -321,6 +341,7 @@ Severity and certainty badges are always localized to your configured language. 
 | DWD | Raw (from integer `level`) | Absent |
 | MeteoSwiss | Raw (from integer level) | Absent |
 | ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
+| NSW RFS | Raw (from `category` — the Australian Warning System ladder) | Absent |
 | PirateWeather | Raw (from `severity` field) | Absent |
 | CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty` field) |
 

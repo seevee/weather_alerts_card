@@ -42,6 +42,7 @@ export interface ScopeConfig {
   entity?: string;
   entities?: string[];
   device?: string;
+  sources?: string[];
 }
 
 /**
@@ -51,6 +52,9 @@ export interface ScopeConfig {
  * loads/clears the wrong storage key and the "restore all" UI silently fails.
  * In particular a device-mode CAP card has no `entity`, so a tokeniser that
  * ignores `device` produces an empty scope and never surfaces dismissals.
+ * Source-mode (per-incident feeds) is the same: the scope keys on the stable
+ * `source:` token, never the churning per-incident entity ids, so a dismissal
+ * survives the incident feed adding/removing entities.
  */
 export function configuredScopeTokens(config: ScopeConfig | undefined): string[] {
   if (!config) return [];
@@ -62,6 +66,11 @@ export function configuredScopeTokens(config: ScopeConfig | undefined): string[]
     }
   }
   if (config.device) tokens.push(`device:${config.device}`);
+  if (config.sources) {
+    for (const s of config.sources) {
+      if (s) tokens.push(`source:${s}`);
+    }
+  }
   return tokens;
 }
 

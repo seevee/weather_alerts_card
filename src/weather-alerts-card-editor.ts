@@ -1,8 +1,8 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry } from './types';
-import { canHandleAny, ENTITY_NAME_PATTERNS } from './adapters';
+import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider } from './types';
+import { canHandleAny, ENTITY_NAME_PATTERNS, knownFeedSources } from './adapters';
 import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
 import { scopeHashForConfig, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
@@ -120,7 +120,9 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._cachedConfigKey = configKey;
     const ids: string[] = [];
     for (const [id, entity] of Object.entries(this.hass.states)) {
-      if (!id.startsWith('sensor.') && !id.startsWith('binary_sensor.')) continue;
+      // geo_location.* is admitted for per-incident providers (NSW RFS); the
+      // canHandleAny test below keeps it provider-specific (no broad name pattern).
+      if (!id.startsWith('sensor.') && !id.startsWith('binary_sensor.') && !id.startsWith('geo_location.')) continue;
       if (ENTITY_NAME_PATTERNS.some(p => p.test(id)) || canHandleAny(entity.attributes)) {
         ids.push(id);
       }
@@ -200,6 +202,41 @@ export class WeatherAlertsCardEditor extends LitElement {
     return html`<ha-alert alert-type="info">${t('editor.no_entities_hint', lang)} <a href="https://github.com/seevee/weather_alerts_card#supported-providers" target="_blank" rel="noopener">${t('editor.no_entities_hint_link', lang)}</a></ha-alert>`;
   }
 
+  // Source-mode (per-incident feed providers, e.g. NSW RFS): the card collects
+  // incidents automatically by feed `source`, so the entity picker is optional
+  // and left empty. Surface how many incidents are currently matched so the
+  // user sees the wiring is live even though they listed nothing.
+  private _renderSourceHint(lang: string): TemplateResult | typeof nothing {
+    const sources = this._config?.sources;
+    if (!sources || sources.length === 0 || !this.hass) return nothing;
+    const sourceSet = new Set(sources);
+    // Which configured sources currently have at least one entity present?
+    const present = new Set<string>();
+    let count = 0;
+    for (const s of Object.values(this.hass.states)) {
+      const src = s.attributes?.source;
+      if (typeof src === 'string' && sourceSet.has(src)) {
+        present.add(src);
+        count++;
+      }
+    }
+    // A configured source with no live entities means the feed's integration
+    // isn't installed (or is currently producing nothing). Warn — the checkbox
+    // alone doesn't reveal that the data source is missing.
+    const missing = sources.filter(s => !present.has(s));
+    if (missing.length > 0) {
+      const labels = knownFeedSources();
+      const names = missing.map(s => {
+        const match = labels.find(f => f.source === s);
+        return match ? t(`editor.provider_${match.provider}`, lang) : s;
+      });
+      return html`<ha-alert alert-type="warning"
+        >${t('editor.feeds_missing_warning', lang, { feeds: names.join(', ') })}</ha-alert
+      >`;
+    }
+    return html`<ha-alert alert-type="info">${t('editor.source_hint', lang, { count })}</ha-alert>`;
+  }
+
   private _entityChanged(ev: CustomEvent): void {
     const value = ev.detail.value;
     // ha-selector with multiple: true returns string[]
@@ -254,11 +291,27 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _providerChanged(ev: CustomEvent): void {
     const value = ev.detail.value as string;
     if (value === (this._config.provider || 'auto')) return;
+    // `provider` is a pure parsing *override* — it forces one adapter for every
+    // resolved entity. It is deliberately decoupled from feed collection (the
+    // `sources` field / feed picker), so leaving it on Auto keeps mixed-provider
+    // cards auto-detecting per entity.
     const newConfig = { ...this._config };
     if (value === 'auto') {
       delete newConfig.provider;
     } else {
-      newConfig.provider = value as 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss';
+      newConfig.provider = value as AlertProvider;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _feedsChanged(ev: CustomEvent): void {
+    const value = ev.detail.value;
+    const selected: string[] = Array.isArray(value) ? value : (value ? [value] : []);
+    const newConfig = { ...this._config };
+    if (selected.length > 0) {
+      newConfig.sources = selected;
+    } else {
+      delete newConfig.sources;
     }
     this._fireConfigChanged(newConfig);
   }
@@ -756,6 +809,25 @@ export class WeatherAlertsCardEditor extends LitElement {
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
     const eventCodesStr = this._config.eventCodes ? this._config.eventCodes.join(', ') : '';
     const excludeEventCodesStr = this._config.excludeEventCodes ? this._config.excludeEventCodes.join(', ') : '';
+    // Per-incident feeds a user can auto-collect (currently NSW RFS), labelled
+    // by the provider that parses them. Independent of the provider override.
+    // Only offer a feed whose integration is actually present in this HA — i.e.
+    // at least one entity currently carries that `source` — so the option only
+    // appears *because* the integration is installed, never implying the card
+    // itself is the data source. A feed already saved in `sources` stays listed
+    // even while quiet (empty fire feed) so its checkbox isn't lost.
+    const presentSources = new Set<string>();
+    for (const s of Object.values(this.hass.states)) {
+      const src = s.attributes?.source;
+      if (typeof src === 'string') presentSources.add(src);
+    }
+    const selectedSources = new Set(this._config.sources ?? []);
+    const feedOptions = knownFeedSources()
+      .filter(f => presentSources.has(f.source) || selectedSources.has(f.source))
+      .map(f => ({
+        value: f.source,
+        label: t(`editor.provider_${f.provider}`, lang),
+      }));
 
     return html`
       <div class="editor">
@@ -767,7 +839,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           .selector=${{ entity: { multiple: true, include_entities: this._getMatchingEntityIds() } }}
           .value=${this._getSelectedEntities()}
           .label=${t('editor.entities', lang)}
-          .required=${!this._config?.device}
+          .required=${!this._config?.device && !this._config?.sources?.length}
           @value-changed=${this._entityChanged}
         ></ha-selector>
         ${this._renderEntityWarning(lang)}
@@ -782,6 +854,21 @@ export class WeatherAlertsCardEditor extends LitElement {
           .helperPersistent=${true}
           @value-changed=${this._deviceChanged}
         ></ha-selector>
+
+        ${feedOptions.length > 0
+          ? html`
+              <ha-selector
+                .hass=${this.hass}
+                .selector=${{ select: { multiple: true, mode: 'list', options: feedOptions } }}
+                .value=${this._config.sources || []}
+                .label=${t('editor.feeds', lang)}
+                .helper=${t('editor.feeds_helper', lang)}
+                .helperPersistent=${true}
+                @value-changed=${this._feedsChanged}
+              ></ha-selector>
+              ${this._renderSourceHint(lang)}
+            `
+          : nothing}
 
         <div class="preview-tools">
           <ha-formfield .label=${t('editor.show_preview', lang)}>
@@ -820,6 +907,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoswiss">${t('editor.provider_meteoswiss', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="eccc">${t('editor.provider_eccc', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="nsw_rfs">${t('editor.provider_nsw_rfs', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>
         </ha-select>

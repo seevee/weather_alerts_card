@@ -7,10 +7,11 @@ import { MeteoAlarmAdapter } from './meteoalarm';
 import { PirateWeatherAdapter } from './pirateweather';
 import { CapAdapter } from './cap';
 import { EcccAdapter } from './eccc';
+import { NswRfsAdapter } from './nsw_rfs';
 
 // CAP comes first so its `incident_platform_version` marker wins detection
 // over any upstream-shaped attributes that the integration may surface.
-const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
+const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new NswRfsAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
@@ -31,6 +32,23 @@ export const ENTITY_NAME_PATTERNS: RegExp[] = [
 /** Returns true if any adapter recognises the given attributes. */
 export function canHandleAny(attributes: Record<string, unknown>): boolean {
   return adapters.some(a => a.canHandle(attributes));
+}
+
+/**
+ * Every per-incident feed `source` an adapter can auto-collect, paired with the
+ * provider that parses it (for labelling the editor's feed picker). Independent
+ * of the `provider` *override* — collection by source leaves the adapter to
+ * auto-detection so mixed-provider cards (e.g. RFS feed + a BoM sensor) keep
+ * routing each entity to its own adapter.
+ */
+export function knownFeedSources(): { source: string; provider: AlertProvider }[] {
+  const out: { source: string; provider: AlertProvider }[] = [];
+  for (const a of adapters) {
+    for (const source of a.feedSources ?? []) {
+      out.push({ source, provider: a.provider });
+    }
+  }
+  return out;
 }
 
 export function getAdapter(

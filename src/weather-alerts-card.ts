@@ -39,7 +39,7 @@ import {
   getDisplayHeadline,
   reflowAlertText,
 } from './utils';
-import { getAdapter, ENTITY_NAME_PATTERNS } from './adapters';
+import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
 import {
   fetchGeometry,
   buildGeometrySvg,
@@ -72,6 +72,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   eccc: 'Environment Canada',
   pirateweather: 'Pirate Weather',
   cap: 'CAP',
+  nsw_rfs: 'NSW RFS',
 };
 
 const PROVIDER_SHORT: Record<string, string> = {
@@ -83,6 +84,7 @@ const PROVIDER_SHORT: Record<string, string> = {
   eccc: 'EC',
   pirateweather: 'PW',
   cap: 'CAP',
+  nsw_rfs: 'RFS',
 };
 
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS).
@@ -350,8 +352,8 @@ export class WeatherAlertsCard extends LitElement {
 
   public setConfig(config: WeatherAlertsCardConfig): void {
     const hasEntity = !!config.entity || !!config.entities?.length;
-    if (!hasEntity && !config.device) {
-      throw new Error('You need to define an entity or device');
+    if (!hasEntity && !config.device && !config.sources?.length) {
+      throw new Error('You need to define an entity, device, or feed');
     }
     const { _preview, ...rest } = config;
     // If entity is missing but entities is set, default entity to entities[0]
@@ -453,7 +455,33 @@ export class WeatherAlertsCard extends LitElement {
         }
       }
     }
+    if (this._config.sources && this._config.sources.length > 0 && this.hass) {
+      for (const id of this._resolveSourceEntities(this._config.sources)) {
+        if (!seen.has(id)) {
+          seen.add(id);
+          result.push(id);
+        }
+      }
+    }
     return result;
+  }
+
+  // Collect every entity whose `source` state attribute matches a configured
+  // feed source (e.g. all nsw_rural_fire_service_feed geo_location incidents),
+  // so per-incident providers need no hand-listed, churning entity ids. Sorted
+  // for stable ordering across the live feed's add/remove churn. Guarded by
+  // canHandleAny so a stray source match can't inject unparseable entities.
+  private _resolveSourceEntities(sources: string[]): string[] {
+    if (!this.hass) return [];
+    const sourceSet = new Set(sources);
+    const ids: string[] = [];
+    for (const [id, state] of Object.entries(this.hass.states)) {
+      const src = state.attributes?.source;
+      if (typeof src === 'string' && sourceSet.has(src) && canHandleAny(state.attributes)) {
+        ids.push(id);
+      }
+    }
+    return ids.sort();
   }
 
   private _entityStateKey(): string {
