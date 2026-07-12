@@ -9,8 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title follows conventional commits
+        env:
+          # Pass the title through the environment, never inline it into the
+          # script body — a title containing backticks or $(...) would otherwise
+          # be shell-evaluated by ${{ }} template expansion (command injection).
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
           PATTERN='^(feat|fix|perf|refactor|docs|chore|test|ci|build|style|revert)(\(.+\))?!?: .+'
           if [[ ! "$TITLE" =~ $PATTERN ]]; then
             echo "::error::PR title must follow conventional commits format: type(scope): description"
