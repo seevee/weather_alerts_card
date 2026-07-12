@@ -21,7 +21,7 @@ const {
   mdiSnowflake, mdiLandslide, mdiWeatherWindy, mdiFire, mdiWeatherSunnyAlert,
   mdiWeatherFog, mdiWeatherHurricane, mdiAlertCircleOutline, mdiWeatherSunny,
   mdiChevronDown, mdiOpenInNew, mdiCheckDecagram, mdiEyeCheck,
-  mdiHelpCircleOutline, mdiBullseyeArrow, mdiMapMarker,
+  mdiHelpCircleOutline, mdiBullseyeArrow, mdiMapMarker, mdiAlertOutline,
 } = require('@mdi/js');
 
 const MDI_ICONS = {
@@ -37,6 +37,7 @@ const MDI_ICONS = {
   'mdi:weather-fog': mdiWeatherFog,
   'mdi:weather-hurricane': mdiWeatherHurricane,
   'mdi:alert-circle-outline': mdiAlertCircleOutline,
+  'mdi:alert-outline': mdiAlertOutline,
   'mdi:weather-sunny': mdiWeatherSunny,
   'mdi:chevron-down': mdiChevronDown,
   'mdi:open-in-new': mdiOpenInNew,
@@ -282,7 +283,10 @@ const PORT = 3742;
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-unavailable.html`,
       canvasId: 'unavailable-canvas',
       cardIds: [
-        'card-unavail-message', 'card-unavail-compact', 'card-unavail-hide',
+        'card-u-r1-msg', 'card-u-r1-cmp', 'card-u-r1-hide',
+        'card-u-r2-msg', 'card-u-r2-cmp', 'card-u-r2-hide',
+        'card-u-r3-msg', 'card-u-r3-cmp', 'card-u-r3-hide',
+        'card-u-r4-msg', 'card-u-r4-cmp', 'card-u-r4-hide',
       ],
       variants: [
         { theme: 'theme-light', label: 'unavail light', out: 'img/unavailable-light.png' },

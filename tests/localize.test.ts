@@ -49,6 +49,20 @@ describe('t()', () => {
     expect(t('card.zone_count_singular', 'en', { count: 1 })).toBe('1 zone');
   });
 
+  it('interpolates the degraded-badge named string (en + de)', () => {
+    expect(t('card.sources_unavailable_named', 'en', { name: 'NWS Boulder' }))
+      .toBe('NWS Boulder unavailable');
+    expect(t('card.sources_unavailable_named', 'de', { name: 'NWS Boulder' }))
+      .toBe('NWS Boulder nicht verfügbar');
+  });
+
+  it('interpolates the degraded-badge count string (en + fr)', () => {
+    expect(t('card.sources_unavailable_count', 'en', { count: 2 }))
+      .toBe('2 sources unavailable');
+    expect(t('card.sources_unavailable_count', 'fr', { count: 2 }))
+      .toBe('2 sources indisponibles');
+  });
+
   it('handles case-insensitive language codes', () => {
     expect(t('card.no_alerts', 'FR')).toBe('Aucune alerte active.');
   });

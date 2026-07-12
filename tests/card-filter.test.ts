@@ -105,10 +105,18 @@ describe('minSeverity filter', () => {
   });
 });
 
-describe('unavailable banner', () => {
+describe('degraded badge (#201)', () => {
+  const root = (card: CardInternals): ShadowRoot => {
+    const r = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!r) throw new Error('no shadowRoot');
+    return r;
+  };
+  const badgeText = (card: CardInternals): string =>
+    (root(card).querySelector('.degraded-badge')?.textContent || '').trim();
+
   // A cap_alerts per-alert sensor can report state "unknown" while its
-  // attributes carry a fully valid alert. It must render the alert, not be
-  // dropped as a broken data source.
+  // attributes carry a fully valid alert. It must render the alert and NOT be
+  // counted as a broken data source.
   function capUnknownStateHass(): HomeAssistant {
     return {
       states: {
@@ -130,31 +138,14 @@ describe('unavailable banner', () => {
     } as unknown as HomeAssistant;
   }
 
-  it('renders a CAP alert whose sensor sits at state "unknown"', async () => {
+  it('renders a CAP alert whose sensor sits at state "unknown" and shows no badge', async () => {
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', entity: 'sensor.cap_alerts_beach_hazards' } as WeatherAlertsCardConfig,
       capUnknownStateHass(),
     );
-    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
-    if (!root) throw new Error('no shadowRoot');
     expect(alertTitles(card)).toContain('Beach Hazards Statement');
-    // The broken-sensor banner must NOT appear when valid alert data is present.
-    expect(root.querySelector('.sensor-unavailable')).toBeNull();
-    cleanup();
-  });
-
-  it('still shows the broken-sensor banner when an unknown sensor has no alert data', async () => {
-    const hass = {
-      states: { 'sensor.nws_alerts': { state: 'unavailable', attributes: {} } },
-      locale: { language: 'en' },
-    } as unknown as HomeAssistant;
-    const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' } as WeatherAlertsCardConfig,
-      hass,
-    );
-    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
-    if (!root) throw new Error('no shadowRoot');
-    expect(root.querySelector('.sensor-unavailable')).not.toBeNull();
+    // The unknown-with-valid-alert sensor is not broken → no degraded badge.
+    expect(root(card).querySelector('.degraded-badge')).toBeNull();
     cleanup();
   });
 
@@ -166,63 +157,173 @@ describe('unavailable banner', () => {
     } as unknown as HomeAssistant;
   }
 
-  it('all-broken + hide fully suppresses the card', async () => {
-    const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'hide' } as WeatherAlertsCardConfig,
-      brokenSensorHass(),
-    );
-    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
-    if (!root) throw new Error('no shadowRoot');
-    expect((card as unknown as HTMLElement).style.display).toBe('none');
-    expect(root.querySelector('.sensor-unavailable')).toBeNull();
-    cleanup();
-  });
-
-  it('all-broken + compact renders the muted one-liner', async () => {
-    const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'compact' } as WeatherAlertsCardConfig,
-      brokenSensorHass(),
-    );
-    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
-    if (!root) throw new Error('no shadowRoot');
-    expect(root.querySelector('.sensor-unavailable.compact')).not.toBeNull();
-    cleanup();
-  });
-
-  it('all-broken + default (message) renders the full notice without the compact class', async () => {
+  it('all-broken + default (message) shows the badge, card visible, no all-clear', async () => {
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' } as WeatherAlertsCardConfig,
       brokenSensorHass(),
     );
-    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
-    if (!root) throw new Error('no shadowRoot');
-    expect(root.querySelector('.sensor-unavailable')).not.toBeNull();
-    expect(root.querySelector('.sensor-unavailable.compact')).toBeNull();
+    expect(root(card).querySelector('.degraded-badge')).not.toBeNull();
+    expect(root(card).querySelector('.degraded-badge.icon-only')).toBeNull();
+    expect(root(card).querySelector('.no-alerts')).toBeNull();
+    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
     cleanup();
   });
 
-  // Guard the all-broken predicate: 'hide' must NOT fire when only some
-  // entities are broken (a working sensor must never be masked). Partial
-  // breakage falls through to normal rendering here; richer partial handling
-  // is tracked in issue #201.
-  it('hide does not suppress the card when only some entities are broken', async () => {
-    const hass = {
+  it('all-broken + compact shows an icon-only badge with no visible text', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'compact' } as WeatherAlertsCardConfig,
+      brokenSensorHass(),
+    );
+    const badge = root(card).querySelector('.degraded-badge.icon-only');
+    expect(badge).not.toBeNull();
+    expect(badge!.querySelector('span')).toBeNull();
+    // The accessible label is still carried on the icon.
+    expect(badge!.querySelector('ha-icon')?.getAttribute('title')).toBeTruthy();
+    cleanup();
+  });
+
+  it('all-broken + hide alone does NOT hide the card (needs hideNoAlerts too)', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'hide' } as WeatherAlertsCardConfig,
+      brokenSensorHass(),
+    );
+    // Badge suppressed, but hideNoAlerts is off → the empty state shows.
+    expect(root(card).querySelector('.degraded-badge')).toBeNull();
+    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
+    expect(root(card).querySelector('.no-alerts')).not.toBeNull();
+    cleanup();
+  });
+
+  it('all-broken + hide + hideNoAlerts fully hides the card', async () => {
+    const { card, cleanup } = await mountCard(
+      {
+        type: 'custom:weather-alerts-card',
+        entity: 'sensor.nws_alerts',
+        unavailableBehavior: 'hide',
+        hideNoAlerts: true,
+      } as WeatherAlertsCardConfig,
+      brokenSensorHass(),
+    );
+    expect((card as unknown as HTMLElement).style.display).toBe('none');
+    expect(root(card).querySelector('.degraded-badge')).toBeNull();
+    cleanup();
+  });
+
+  // Partial breakage: one source down, one quiet. The working source must never
+  // be masked, and the badge must warn a source is dark.
+  function partialHass(): HomeAssistant {
+    return {
       states: {
         'sensor.nws_broken': { state: 'unavailable', attributes: {} },
         'sensor.nws_quiet': { state: '0', attributes: { Alerts: [] } },
       },
       locale: { language: 'en' },
     } as unknown as HomeAssistant;
+  }
+  const partialConfig = (extra: Partial<WeatherAlertsCardConfig>): WeatherAlertsCardConfig => ({
+    type: 'custom:weather-alerts-card',
+    entity: 'sensor.nws_broken',
+    entities: ['sensor.nws_quiet'],
+    ...extra,
+  } as WeatherAlertsCardConfig);
+
+  it('partial (0 alerts) + default shows the badge and suppresses the all-clear', async () => {
+    const { card, cleanup } = await mountCard(partialConfig({}), partialHass());
+    expect(root(card).querySelector('.degraded-badge')).not.toBeNull();
+    expect(root(card).querySelector('.no-alerts')).toBeNull();
+    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
+    cleanup();
+  });
+
+  it('partial + hideNoAlerts still shows the badge (breakage overrides the hide)', async () => {
+    const { card, cleanup } = await mountCard(partialConfig({ hideNoAlerts: true }), partialHass());
+    expect(root(card).querySelector('.degraded-badge')).not.toBeNull();
+    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
+    cleanup();
+  });
+
+  it('partial + hide restores prior behavior (no badge, all-clear shown)', async () => {
+    const { card, cleanup } = await mountCard(partialConfig({ unavailableBehavior: 'hide' }), partialHass());
+    expect(root(card).querySelector('.degraded-badge')).toBeNull();
+    expect(root(card).querySelector('.no-alerts')).not.toBeNull();
+    cleanup();
+  });
+
+  it('partial + hide + hideNoAlerts hides the card', async () => {
     const { card, cleanup } = await mountCard(
-      {
-        type: 'custom:weather-alerts-card',
-        entity: 'sensor.nws_broken',
-        entities: ['sensor.nws_quiet'],
-        unavailableBehavior: 'hide',
-      } as WeatherAlertsCardConfig,
+      partialConfig({ unavailableBehavior: 'hide', hideNoAlerts: true }),
+      partialHass(),
+    );
+    expect((card as unknown as HTMLElement).style.display).toBe('none');
+    cleanup();
+  });
+
+  it('partial with an active alert shows the badge above the rendered alert', async () => {
+    const hass = {
+      states: {
+        'sensor.nws_broken': { state: 'unavailable', attributes: {} },
+        'sensor.nws_active': { state: '1', attributes: { Alerts: [nwsAlert('Tornado Warning', 'Extreme')] } },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+    const { card, cleanup } = await mountCard(
+      partialConfig({ entity: 'sensor.nws_broken', entities: ['sensor.nws_active'] }),
       hass,
     );
-    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
+    expect(root(card).querySelector('.degraded-badge')).not.toBeNull();
+    expect(alertTitles(card)).toContain('Tornado Warning');
+    cleanup();
+  });
+
+  it('row 4 (all up, 0 alerts) shows no badge and the normal empty state', async () => {
+    const hass = {
+      states: {
+        'sensor.nws_quiet': { state: '0', attributes: { Alerts: [] } },
+        'sensor.nws_quiet_2': { state: '0', attributes: { Alerts: [] } },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_quiet', entities: ['sensor.nws_quiet_2'] } as WeatherAlertsCardConfig,
+      hass,
+    );
+    expect(root(card).querySelector('.degraded-badge')).toBeNull();
+    expect(root(card).querySelector('.no-alerts')).not.toBeNull();
+    cleanup();
+  });
+
+  it('names the broken source by friendly_name, else the entity id', async () => {
+    const named = {
+      states: {
+        'sensor.nws_broken': { state: 'unavailable', attributes: { friendly_name: 'NWS Boulder' } },
+        'sensor.nws_quiet': { state: '0', attributes: { Alerts: [] } },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+    const r1 = await mountCard(partialConfig({}), named);
+    expect(badgeText(r1.card)).toContain('NWS Boulder');
+    r1.cleanup();
+
+    // Empty attrs (#187) → fall back to the entity id.
+    const r2 = await mountCard(partialConfig({}), partialHass());
+    expect(badgeText(r2.card)).toContain('sensor.nws_broken');
+    r2.cleanup();
+  });
+
+  it('counts broken sources when more than one is down', async () => {
+    const hass = {
+      states: {
+        'sensor.nws_broken': { state: 'unavailable', attributes: {} },
+        'sensor.dwd_broken': { state: 'unknown', attributes: {} },
+        'sensor.nws_quiet': { state: '0', attributes: { Alerts: [] } },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+    const { card, cleanup } = await mountCard(
+      partialConfig({ entities: ['sensor.dwd_broken', 'sensor.nws_quiet'] }),
+      hass,
+    );
+    expect(badgeText(card)).toContain('2');
     cleanup();
   });
 });

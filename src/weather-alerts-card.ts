@@ -410,7 +410,10 @@ export class WeatherAlertsCard extends LitElement {
     // state mutations as a side effect.
     const alerts = this._getAlerts(false);
     const perAlert = this._isCompact ? 1 : 3;
-    return Math.max(1, alerts.length * perAlert);
+    // A badge-only card (broken source, zero alerts) still occupies a row.
+    const behavior = this._config?.unavailableBehavior || 'message';
+    const badgeOnly = alerts.length === 0 && behavior !== 'hide' && this._brokenIds().length > 0;
+    return Math.max(1, alerts.length * perAlert + (badgeOnly ? 1 : 0));
   }
 
   public static getConfigElement(): HTMLElement {
@@ -901,14 +904,45 @@ export class WeatherAlertsCard extends LitElement {
     return t('card.open_source', this._lang, { provider: label });
   }
 
-  private _renderUnavailable(compact: boolean, stateVal: string): TemplateResult {
+  // A resolved entity is "broken" when it is unavailable/unknown AND carries no
+  // parseable alert. CAP per-alert sensors can report state "unknown" while
+  // their attributes hold a fully valid alert (e.g. an NWS Beach Hazards
+  // Statement) — those must still render, not be dropped as a broken source.
+  // Shared by render() and getCardSize() so both agree on the predicate.
+  private _isBroken(e: HassEntity): boolean {
+    return (e.state === 'unavailable' || e.state === 'unknown')
+      && getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length === 0;
+  }
+
+  // The resolved entities that are currently broken (see _isBroken). Drives the
+  // degraded badge, which warns that some — or all — configured sources are dark.
+  private _brokenIds(): string[] {
+    if (!this.hass) return [];
+    return this._getAllEntities().filter(id => {
+      const e = this.hass.states[id];
+      return !!e && this._isBroken(e);
+    });
+  }
+
+  private _friendlyName(id: string): string {
+    return (this.hass?.states[id]?.attributes?.friendly_name as string | undefined) || id;
+  }
+
+  // Availability channel: a warning strip above the card content shown whenever
+  // some (or all) configured sources are broken, unless unavailableBehavior is
+  // 'hide'. 'message' names the broken source (counts when >1); 'compact' is an
+  // icon-only reduction that keeps the same string as an accessible/title label.
+  private _renderDegradedBadge(brokenIds: string[], behavior: 'message' | 'compact' | 'hide'): TemplateResult {
+    const lang = this._lang;
+    const label = brokenIds.length === 1
+      ? t('card.sources_unavailable_named', lang, { name: this._friendlyName(brokenIds[0]) })
+      : t('card.sources_unavailable_count', lang, { count: brokenIds.length });
+    const iconOnly = behavior === 'compact';
     return html`
-      <ha-card .header=${this._config!.title || ''}>
-        <div class="sensor-unavailable ${compact ? 'compact' : ''}">
-          <ha-icon icon="mdi:alert-circle-outline"></ha-icon>
-          ${t('card.sensor_unavailable', this._lang, { state: stateVal })}
-        </div>
-      </ha-card>
+      <div class="degraded-badge ${iconOnly ? 'icon-only' : ''}">
+        <ha-icon icon="mdi:alert-outline" title=${label} aria-label=${label}></ha-icon>
+        ${iconOnly ? nothing : html`<span>${label}</span>`}
+      </div>
     `;
   }
 
@@ -930,32 +964,25 @@ export class WeatherAlertsCard extends LitElement {
       return this._renderPreview();
     }
 
-    // A sensor is "broken" when it is unavailable/unknown AND carries no
-    // parseable alert. CAP per-alert sensors can report state "unknown" while
-    // their attributes hold a fully valid alert (e.g. an NWS Beach Hazards
-    // Statement) — those must still render, not be dropped as a broken source.
-    const isBroken = (e: HassEntity): boolean =>
-      (e.state === 'unavailable' || e.state === 'unknown')
-      && getAdapter(this._config!.provider, e.attributes).parseAlerts(e.attributes).length === 0;
+    // Availability is its own display channel, independent of the alert list: a
+    // degraded badge above the content whenever some — or all — configured
+    // sources are broken. unavailableBehavior governs only the badge now
+    // ('message': name the source, 'compact': icon-only, 'hide': no badge); the
+    // former full-card takeover is gone. Breakage keeps the card visible (badge
+    // showing) even under hideNoAlerts, so a dark source is never silently
+    // masked by the empty-state hide.
+    const brokenIds = this._brokenIds();
+    const broken = brokenIds.length > 0;
     const behavior = this._config.unavailableBehavior || 'message';
-
-    // Every resolved entity is broken: honor the configured behavior. 'hide'
-    // fully suppresses the card (render-only display:none); otherwise show the
-    // notice. Partial breakage (some but not all entities broken) is
-    // deliberately NOT special-cased here — tracked separately in issue #201.
-    const allUnavailable = resolvedEntities.length > 0 && resolvedEntities.every(isBroken);
-    if (allUnavailable) {
-      if (behavior === 'hide') {
-        this.style.display = 'none';
-        return html``;
-      }
-      this.style.display = '';
-      return this._renderUnavailable(behavior === 'compact', resolvedEntities[0].state);
-    }
+    const badgeShown = broken && behavior !== 'hide';
 
     const alerts = this._getAlerts();
 
-    if (alerts.length === 0 && this._config.hideNoAlerts) {
+    // Fully hide the card only when there is nothing to show and the user has
+    // opted into it: no alerts, hideNoAlerts set, and either nothing is broken
+    // or the badge was explicitly turned off ('hide'). A visible badge always
+    // keeps the card on screen.
+    if (alerts.length === 0 && this._config.hideNoAlerts && (behavior === 'hide' || !broken)) {
       this.style.display = 'none';
       return html``;
     }
@@ -966,8 +993,9 @@ export class WeatherAlertsCard extends LitElement {
 
     return html`
       <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
+        ${badgeShown ? this._renderDegradedBadge(brokenIds, behavior) : nothing}
         ${alerts.length === 0
-        ? this._renderNoAlerts()
+        ? (badgeShown ? nothing : this._renderNoAlerts())
         : alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
     `;

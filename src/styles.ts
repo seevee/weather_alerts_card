@@ -36,23 +36,27 @@ export const cardStyles = css`
     color: var(--error-color, red);
   }
 
-  .sensor-unavailable {
-    padding: 16px;
+  /* Availability channel: a warning strip above the card content flagging that
+     some (or all) configured sources are broken. Distinct from severity colors
+     below so it reads as a card-level state, not another alert. */
+  .degraded-badge {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--secondary-text-color);
-    font-style: italic;
-  }
-
-  .sensor-unavailable.compact {
-    padding: 6px 16px;
     gap: 8px;
+    padding: 8px 16px;
+    color: var(--warning-color);
     font-size: 0.85em;
+    border-bottom: 1px solid var(--divider-color);
   }
 
-  .sensor-unavailable.compact ha-icon {
+  .degraded-badge ha-icon {
     --mdc-icon-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .degraded-badge.icon-only {
+    justify-content: center;
+    padding: 6px 16px;
   }
 
   /* --- COLOR MAPPING --- */

@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Partial multi-source breakage now surfaces a degraded badge above the card content instead of being silently ignored (#201). `unavailableBehavior` is repurposed to govern this badge for both partial and all-down breakage: `'message'` (default) names the broken source (counts when more than one), `'compact'` shows an icon-only badge, `'hide'` shows no badge. The former full-card "unavailable" takeover is removed.
+  - **Default-affecting:** a broken source now keeps the card visible (badge showing) even with `hideNoAlerts: true`; the card hides completely only when there are no alerts **and** `hideNoAlerts` is set **and** (`unavailableBehavior: 'hide'` **or** nothing is broken). Set `unavailableBehavior: 'hide'` to opt back out — but note this can present an all-clear while a source is blind.
+  - The badge reflects the instantaneous sensor state with no debounce, so a flapping source will flash it; `'compact'` or `'hide'` mitigate the noise.
+
 ## 3.2.0-alpha.5 — 2026-07-12
 
 ### Added
