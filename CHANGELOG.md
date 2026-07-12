@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## 3.2.0-alpha.5 — 2026-07-12
 
 ### Added
-- NSW RFS (Rural Fire Service) alert provider — surfaces bushfire/grass-fire/hazard-reduction incidents from the built-in `nsw_rural_fire_service_feed` `geo_location` integration; severity maps from the incident `category` (Australian Warning System ladder), no progress bar (incidents have no expiry), RFS-only fields synthesised into the detail description (#178)
-- `sources` config option — auto-collects every entity whose `source` attribute matches a per-incident feed (e.g. `sources: [nsw_rural_fire_service_feed]`), re-scanned each render so volatile `geo_location.*` incidents appear and vanish with the live feed. Decoupled from `provider` (each collected entity auto-detects its adapter); dismissal scope keys on the stable `source:<name>` token. In the editor, an "Auto-collect from installed feeds" picker surfaces only feeds whose integration is actually present, and warns when a configured feed has no live data (#178)
+- Add NSW RFS bushfire alert provider (#178) (#208) (971572d…)
+
+### Documentation
+- Document the sources feed auto-collection config key (#209) (13b43a3…)
 
 ## 3.2.0-alpha.4 — 2026-07-12
 
