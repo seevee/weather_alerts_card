@@ -51,6 +51,7 @@ Then click the Download button, and click Reload when prompted.
 | `entity` | *(required, unless `device` is set)* | Alert sensor entity |
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape. Can be combined with `entity`/`entities` or used on its own. |
+| `sources` | — | Feed `source` attribute values to auto-collect (e.g. `['nsw_rural_fire_service_feed']`). Harvests **every** entity whose `source` attribute matches, re-scanning each render so per-incident entities appear and vanish with the live feed — no volatile `geo_location.*` ids to hand-list. Independent of `provider` (each collected entity still auto-detects its adapter). Can be used on its own or combined with `entity`/`entities`/`device`. |
 | `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
@@ -174,15 +175,23 @@ colorTheme: eccc
 **NSW RFS (Australian bushfire)**
 
 The `nsw_rural_fire_service_feed` integration creates one `geo_location.*` entity
-per active incident, so list them under `entities:` (or group them with a
-`device:`) rather than a single primary `entity:`:
+per active incident, and that set churns constantly as fires start and clear.
+Rather than hand-list volatile entity ids, point the card at the feed with
+`sources:` — it auto-collects every current incident and keeps up as they come
+and go:
 
 ```yaml
 type: custom:weather-alerts-card
-entities:
-  - geo_location.bush_fire_wollemi_national_park
-  - geo_location.grass_fire_dubbo
+sources:
+  - nsw_rural_fire_service_feed
 ```
+
+`nsw_rural_fire_service_feed` is the `source` state attribute each incident entity
+carries, so the value maps one-to-one to what you see on the entity. In the visual
+editor this is the **Auto-collect from installed feeds** checkbox, which only
+appears when the integration is actually installed. (You can still hand-list
+specific incidents under `entities:` or group them with a `device:` if you want a
+fixed subset instead.)
 
 Severity comes straight from the incident `category` (Emergency Warning / Watch
 and Act / Advice — the Australian Warning System ladder). Incidents have no real
@@ -281,7 +290,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) — point the card at `sensor.weather_warnings_at_<postcode>` |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
-| NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; add them via `entities:` or a `device:` grouping |
+| NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; auto-collect the whole feed with `sources: [nsw_rural_fire_service_feed]` |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
