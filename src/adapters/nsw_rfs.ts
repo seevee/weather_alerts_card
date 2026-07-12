@@ -54,6 +54,12 @@ function buildDescription(inc: NswRfsIncident): string {
 export class NswRfsAdapter implements AlertAdapter {
   provider: AlertProvider = 'nsw_rfs';
 
+  // The nsw_rural_fire_service_feed geo_location platform stamps this `source`
+  // on every per-incident entity. Selecting the nsw_rfs provider auto-collects
+  // all of them by source (see the card's source collection), so users never
+  // hand-list the incident entities, whose ids churn as fires come and go.
+  feedSources = ['nsw_rural_fire_service_feed'];
+
   canHandle(attributes: Record<string, unknown>): boolean {
     return typeof attributes['category'] === 'string'
       && typeof attributes['status'] === 'string'

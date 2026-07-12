@@ -142,6 +142,10 @@ const en: TranslationMap = {
   'editor.entity_warning': 'Selected entity does not appear to contain weather alert data.',
   'editor.no_entities_hint': 'No supported weather alert entities found. A provider integration (e.g. NWS Alerts) must be installed first.',
   'editor.no_entities_hint_link': 'Supported providers',
+  'editor.feeds': 'Auto-collect from installed feeds',
+  'editor.feeds_helper': 'Detected integration feeds. Check one to include every live incident it reports — no per-incident entities to list. Requires the integration to be set up in Home Assistant.',
+  'editor.source_hint': 'Auto-collecting {count} live incident(s) from the feed — no entities to list manually.',
+  'editor.feeds_missing_warning': 'No live data for {feeds}. This feed is enabled but nothing is providing it — is the integration set up in Home Assistant?',
   'editor.no_device_alerts_hint': 'No active alert sensors found under this device yet. The card will populate automatically when CAP Alerts publishes alerts.',
 
   // Editor section labels
@@ -302,6 +306,10 @@ const fr: TranslationMap = {
   'editor.entity_warning': 'L\'entite selectionnee ne semble pas contenir de donnees d\'alerte meteo.',
   'editor.no_entities_hint': 'Aucune entite d\'alerte meteo compatible trouvee. Une integration (ex. NWS Alerts) doit etre installee.',
   'editor.no_entities_hint_link': 'Fournisseurs supportes',
+  'editor.feeds': 'Collecte automatique des flux installes',
+  'editor.feeds_helper': 'Flux d\'integration detectes. Cochez-en un pour inclure chaque incident en direct qu\'il signale — aucune entite par incident a lister. Necessite que l\'integration soit configuree dans Home Assistant.',
+  'editor.source_hint': 'Collecte automatique de {count} incident(s) en direct du flux — aucune entite a lister manuellement.',
+  'editor.feeds_missing_warning': 'Aucune donnee en direct pour {feeds}. Ce flux est active mais rien ne l\'alimente — l\'integration est-elle configuree dans Home Assistant ?',
   'editor.no_device_alerts_hint': 'Aucun capteur d\'alerte actif trouve sous cet appareil pour le moment. La carte se remplira automatiquement lorsque CAP Alerts publiera des alertes.',
 
   // Editor section labels
@@ -462,6 +470,10 @@ const es: TranslationMap = {
   'editor.entity_warning': 'La entidad seleccionada no parece contener datos de alerta meteorologica.',
   'editor.no_entities_hint': 'No se encontraron entidades de alerta meteorologica compatibles. Se debe instalar una integracion (ej. NWS Alerts).',
   'editor.no_entities_hint_link': 'Proveedores compatibles',
+  'editor.feeds': 'Recopilar feeds instalados automaticamente',
+  'editor.feeds_helper': 'Feeds de integracion detectados. Marca uno para incluir cada incidente en vivo que reporta — sin entidades por incidente que listar. Requiere que la integracion este configurada en Home Assistant.',
+  'editor.source_hint': 'Recopilando automaticamente {count} incidente(s) en vivo del feed — sin entidades que listar manualmente.',
+  'editor.feeds_missing_warning': 'Sin datos en vivo para {feeds}. Este feed esta habilitado pero nada lo proporciona — ¿esta la integracion configurada en Home Assistant?',
   'editor.no_device_alerts_hint': 'Aun no se encontraron sensores de alerta activos bajo este dispositivo. La tarjeta se rellenara automaticamente cuando CAP Alerts publique alertas.',
 
   // Editor section labels
@@ -622,6 +634,10 @@ const it: TranslationMap = {
   'editor.entity_warning': 'L\'entità selezionata non sembra contenere dati di allerta meteo.',
   'editor.no_entities_hint': 'Nessuna entita di allerta meteo compatibile trovata. Un\'integrazione (es. NWS Alerts) deve essere installata.',
   'editor.no_entities_hint_link': 'Provider supportati',
+  'editor.feeds': 'Raccolta automatica dai feed installati',
+  'editor.feeds_helper': 'Feed di integrazione rilevati. Selezionane uno per includere ogni incidente in tempo reale che segnala — nessuna entita per incidente da elencare. Richiede che l\'integrazione sia configurata in Home Assistant.',
+  'editor.source_hint': 'Raccolta automatica di {count} incident(i) in tempo reale dal feed — nessuna entita da elencare manualmente.',
+  'editor.feeds_missing_warning': 'Nessun dato in tempo reale per {feeds}. Questo feed e abilitato ma nulla lo fornisce — l\'integrazione e configurata in Home Assistant?',
   'editor.no_device_alerts_hint': 'Nessun sensore di allerta attivo trovato sotto questo dispositivo per ora. La scheda si popolera automaticamente quando CAP Alerts pubblichera delle allerte.',
 
   // Editor section labels
@@ -782,6 +798,10 @@ const de: TranslationMap = {
   'editor.entity_warning': 'Die ausgewählte Entität scheint keine Wetterwarnungsdaten zu enthalten.',
   'editor.no_entities_hint': 'Keine kompatiblen Wetterwarnungs-Entitaten gefunden. Eine Integration (z.B. NWS Alerts) muss installiert sein.',
   'editor.no_entities_hint_link': 'Unterstutzte Anbieter',
+  'editor.feeds': 'Automatisch aus installierten Feeds erfassen',
+  'editor.feeds_helper': 'Erkannte Integrations-Feeds. Wahlen Sie einen aus, um jedes gemeldete Live-Ereignis einzuschliessen — keine Entitaten pro Ereignis aufzulisten. Erfordert, dass die Integration in Home Assistant eingerichtet ist.',
+  'editor.source_hint': 'Automatische Erfassung von {count} Live-Ereignis(sen) aus dem Feed — keine Entitaten manuell aufzulisten.',
+  'editor.feeds_missing_warning': 'Keine Live-Daten fur {feeds}. Dieser Feed ist aktiviert, aber nichts liefert Daten — ist die Integration in Home Assistant eingerichtet?',
   'editor.no_device_alerts_hint': 'Noch keine aktiven Warnsensoren unter diesem Gerat gefunden. Die Karte fullt sich automatisch, sobald CAP Alerts Warnungen veroffentlicht.',
 
   // Editor section labels

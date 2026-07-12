@@ -276,11 +276,11 @@ describe('WeatherAlertsCard.setConfig', () => {
     expect(card._config?.entity).toBe('sensor.a');
   });
 
-  it('throws when entity, entities, and device are all absent', () => {
+  it('throws when entity, entities, device, and sources are all absent', () => {
     const card = makeCard();
     expect(() =>
       card.setConfig({ type: 'custom:weather-alerts-card' } as WeatherAlertsCardConfig),
-    ).toThrow(/entity or device/);
+    ).toThrow(/entity, device, or feed/);
   });
 });
 

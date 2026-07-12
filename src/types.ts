@@ -43,6 +43,7 @@ export interface WeatherAlertsCardConfig {
   entity: string;
   entities?: string[];           // additional entities to merge alerts from
   device?: string;               // HA device_id — auto-discovers per-alert sensors under it. Provider-agnostic; currently only the CAP Alerts integration produces this shape.
+  sources?: string[];            // geo_location feed `source` attribute values (e.g. ["nsw_rural_fire_service_feed"]) — auto-collects EVERY entity carrying that source, so per-incident providers (NSW RFS) never need hand-listed, churning entity ids. Usually auto-filled by selecting the matching provider.
   title?: string;
   zones?: string[];
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
@@ -128,6 +129,12 @@ export interface AlertAdapter {
   provider: AlertProvider;
   canHandle(attributes: Record<string, unknown>): boolean;
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[];
+  // Per-incident providers (e.g. NSW RFS) explode a feed into many
+  // dynamically-named entities, each carrying a `source` state attribute. An
+  // adapter lists those source values here so the card can auto-collect every
+  // matching entity by source instead of relying on hand-listed entity ids.
+  // Absent/empty for providers backed by a single stable sensor.
+  feedSources?: string[];
 }
 
 // Raw NWS alert shape from the nws_alerts integration (v6.1+)

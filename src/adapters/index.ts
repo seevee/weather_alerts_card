@@ -34,6 +34,23 @@ export function canHandleAny(attributes: Record<string, unknown>): boolean {
   return adapters.some(a => a.canHandle(attributes));
 }
 
+/**
+ * Every per-incident feed `source` an adapter can auto-collect, paired with the
+ * provider that parses it (for labelling the editor's feed picker). Independent
+ * of the `provider` *override* — collection by source leaves the adapter to
+ * auto-detection so mixed-provider cards (e.g. RFS feed + a BoM sensor) keep
+ * routing each entity to its own adapter.
+ */
+export function knownFeedSources(): { source: string; provider: AlertProvider }[] {
+  const out: { source: string; provider: AlertProvider }[] = [];
+  for (const a of adapters) {
+    for (const source of a.feedSources ?? []) {
+      out.push({ source, provider: a.provider });
+    }
+  }
+  return out;
+}
+
 export function getAdapter(
   provider: AlertProvider | undefined,
   attributes: Record<string, unknown>,
