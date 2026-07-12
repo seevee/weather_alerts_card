@@ -1202,10 +1202,12 @@ export class WeatherAlertsCard extends LitElement {
       <div class="details-content">
         ${this._config?.showMetadata !== false ? html`
         <div class="meta-grid">
+          ${progress.sentTs > 100 ? html`
           <div class="meta-item">
             <span class="meta-label">${t('detail.issued', lang)}</span>
             <span class="meta-value">${formatLocalTimestamp(progress.sentTs, this._locale, lang)}</span>
           </div>
+          ` : nothing}
           <div class="meta-item">
             <span class="meta-label">${t('detail.onset', lang)}</span>
             <span class="meta-value">${formatLocalTimestamp(progress.onsetTs, this._locale, lang)}</span>
@@ -1213,10 +1215,10 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           <div class="meta-item">
             <span class="meta-label">${progress.isExpired ? t('progress.expired_label', lang) : t('detail.expires', lang)}</span>
-            <span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
             ${progress.hasEndTime
-          ? html`<span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
-          : nothing}
+          ? html`<span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
+            <span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
+          : html`<span class="meta-value">${progress.isActive ? t('progress.ongoing', lang) : t('progress.tbd', lang)}</span>`}
           </div>
           ${alert.areaDesc ? html`
             <div class="meta-item" style="grid-column: 1 / -1;">

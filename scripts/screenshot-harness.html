@@ -59,9 +59,12 @@
 <body>
 
   <!--
-    Two card instances (Playwright clicks "Read Details" for the details screenshots):
+    Three card instances (Playwright clicks "Read Details" for the details screenshots):
     1. card-severity-open: default layout, severity colors, all alerts collapsed.
     2. card-nws-compact: compact layout, NWS event colors, all alerts collapsed.
+    3. card-meteoswiss-sparse: default layout, a MeteoSwiss open-ended warning with
+       no issued/expiry time — shows the sparse metadata grid (no Issued row, End
+       row reads "Ongoing").
   -->
 
   <div class="card-wrapper">
@@ -70,10 +73,13 @@
   <div class="card-wrapper">
     <weather-alerts-card id="card-nws-compact"></weather-alerts-card>
   </div>
+  <div class="card-wrapper">
+    <weather-alerts-card id="card-meteoswiss-sparse"></weather-alerts-card>
+  </div>
 
   <script type="module">
     import '/dist/weather-alerts-card.js';
-    import { ALERTS } from '/scripts/screenshot-fixtures.js';
+    import { ALERTS, METEOSWISS_SPARSE_ATTRS } from '/scripts/screenshot-fixtures.js';
 
     // ---- ha-card stub ----
     // Shadow DOM with <slot> — matches HA's real <ha-card> structure.
@@ -140,6 +146,10 @@
           state: String(ALERTS.length),
           attributes: { Alerts: ALERTS },
         },
+        'sensor.weather_warnings_at_8000': {
+          state: String(METEOSWISS_SPARSE_ATTRS.warning_types.length),
+          attributes: METEOSWISS_SPARSE_ATTRS,
+        },
       },
     };
 
@@ -154,6 +164,11 @@
     const nwsCompact = document.getElementById('card-nws-compact');
     nwsCompact.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts_alerts', animations: false, colorTheme: 'nws', layout: 'compact' });
     nwsCompact.hass = MOCK_HASS;
+
+    // Default layout, MeteoSwiss open-ended warning — the sparse metadata grid.
+    const meteoswissSparse = document.getElementById('card-meteoswiss-sparse');
+    meteoswissSparse.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.weather_warnings_at_8000', animations: false, colorTheme: 'severity' });
+    meteoswissSparse.hass = MOCK_HASS;
   </script>
 </body>
 </html>

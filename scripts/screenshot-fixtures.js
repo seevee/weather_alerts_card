@@ -331,6 +331,26 @@ export const CAP_GEOMETRY_STUB = {
   ],
 };
 
+// MeteoSwiss aggregate warning with the sparsest possible metadata: the feed
+// publishes no issued time (sentTs stays 0) and this warning is open-ended
+// (warning_valid_to: null → an active, "Ongoing" warning). Exercises the
+// metadata-grid seam that omits the Issued row and renders the End row as
+// "Ongoing" instead of "N/A" (#186). warning_links supplies the working source
+// link. Placeholder content per the card-preview philosophy above.
+export const METEOSWISS_SPARSE_ATTRS = {
+  attribution: 'Source: MeteoSwiss',
+  warning_types: ['Heat wave'],
+  warning_levels: ['Moderate hazard'],
+  warning_levels_numeric: [2],
+  warning_valid_from: [iso(-3 * H)],
+  warning_valid_to: [null],
+  warning_texts: [
+    'A pleasantly warm spell has settled in with no clear end in sight. ' +
+    'Sample data for the card preview — no real action is needed.',
+  ],
+  warning_links: ['https://example.com/meteoswiss/screenshot-sparse'],
+};
+
 // PirateWeather-format duplicates of some NWS alerts (for cross-provider dedup demos).
 // Uses the PirateWeather indexed attribute format (title_0, severity_0, etc.)
 // with matching event names and expiry times so the card's dedup logic merges them.

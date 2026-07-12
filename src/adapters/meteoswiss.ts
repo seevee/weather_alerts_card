@@ -1,10 +1,16 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
 import { parseTimestamp } from '../utils';
 
-// MeteoSwiss has no per-alert deep link in the aggregate sensor, so we point
-// at the official warnings overview page (same approach as DWD).
+// Last-resort fallback when the sensor exposes no per-warning deep link. The
+// integration's own `warning_links` are the primary source (mapped per-alert
+// in parseAlerts); this constant is only reached when that array is empty,
+// which in practice happens only at zero warnings (no alerts emitted). Points
+// at the interactive severe-weather warnings map (the English-host mirror of
+// meteoschweiz.admin.ch/.../gefahren.html) with the severe-weather tab
+// pre-selected. It is a client-routed SPA, so the base path resolves (200) but
+// only renders in a real browser.
 const METEOSWISS_WARNINGS_URL =
-  'https://www.meteoswiss.admin.ch/services-and-publications/service/warnings.html';
+  'https://www.meteoswiss.admin.ch/services-and-publications/applications/hazards.html#tab=severe-weather-map&weather-tab=all';
 
 // Map the integration's numeric WarningLevel (0-5) to the card's severity tier.
 // Mirrors MeteoAlarm's color semantics (the other European provider): red/
@@ -45,6 +51,20 @@ export class MeteoSwissAdapter implements AlertAdapter {
     const validFrom = arr('warning_valid_from');
     const validTo = arr('warning_valid_to');
     const texts = arr('warning_texts');
+    const links = arr('warning_links');
+
+    // `warning_links` is a flat, warning-ordered array carrying a consistent
+    // number of links per warning (observed: 2/warning, lead link = the
+    // type-specific natural-hazards page). Even-divide grouping picks each
+    // warning's lead link for any consistent N:1 ratio; otherwise fall back to
+    // the first real link, then the overview constant.
+    const linkFor = (i: number): string => {
+      if (types.length > 0 && links.length > 0 && links.length % types.length === 0) {
+        return String(links[i * (links.length / types.length)]);
+      }
+      if (links.length > 0) return String(links[0]);
+      return METEOSWISS_WARNINGS_URL;
+    };
 
     const alerts: WeatherAlert[] = [];
 
@@ -72,7 +92,7 @@ export class MeteoSwissAdapter implements AlertAdapter {
         endsTs,
         description: String(texts[i] ?? ''),
         instruction: '',
-        url: METEOSWISS_WARNINGS_URL,
+        url: linkFor(i),
         headline: '',
         areaDesc: '',
         zones: [],
