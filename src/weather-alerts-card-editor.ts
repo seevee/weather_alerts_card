@@ -120,7 +120,9 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._cachedConfigKey = configKey;
     const ids: string[] = [];
     for (const [id, entity] of Object.entries(this.hass.states)) {
-      if (!id.startsWith('sensor.') && !id.startsWith('binary_sensor.')) continue;
+      // geo_location.* is admitted for per-incident providers (NSW RFS); the
+      // canHandleAny test below keeps it provider-specific (no broad name pattern).
+      if (!id.startsWith('sensor.') && !id.startsWith('binary_sensor.') && !id.startsWith('geo_location.')) continue;
       if (ENTITY_NAME_PATTERNS.some(p => p.test(id)) || canHandleAny(entity.attributes)) {
         ids.push(id);
       }
@@ -820,6 +822,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoswiss">${t('editor.provider_meteoswiss', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="eccc">${t('editor.provider_eccc', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="nsw_rfs">${t('editor.provider_nsw_rfs', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>
         </ha-select>

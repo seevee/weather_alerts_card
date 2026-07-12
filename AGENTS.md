@@ -4,7 +4,7 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), MeteoSwiss (Switzerland — via the HACS [`izacus/hass-swissweather`](https://github.com/izacus/hass-swissweather) custom integration), ECCC (Environment and Climate Change Canada — via the HACS [`environment_canada`](https://github.com/michaeldavie/environment_canada_hacs) custom component, *not* the bundled HA core integration), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
+A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), MeteoSwiss (Switzerland — via the HACS [`izacus/hass-swissweather`](https://github.com/izacus/hass-swissweather) custom integration), ECCC (Environment and Climate Change Canada — via the HACS [`environment_canada`](https://github.com/michaeldavie/environment_canada_hacs) custom component, *not* the bundled HA core integration), NSW RFS (NSW Rural Fire Service bushfire incidents — via the built-in [`nsw_rural_fire_service_feed`](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) geo_location integration), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
 
 ## Build Commands
 
@@ -24,7 +24,7 @@ Always run `npm run lint` and `npm run test` before committing.
 |------|---------|
 | `src/weather-alerts-card.ts` | Main LitElement card class. Implements HA card contract: `setConfig()`, `hass` property, `getCardSize()`, `getStubConfig()`, `window.customCards` registration. Wraps output in `<ha-card>`. Consumes normalized `WeatherAlert` objects. |
 | `src/weather-alerts-card-editor.ts` | Visual configuration editor. |
-| `src/types.ts` | TypeScript interfaces: `WeatherAlert` (normalized, provider-agnostic), `WeatherAlertsCardConfig`, `AlertAdapter`, `NwsAlert` (raw NWS shape), `BomWarning` (raw BoM shape), `AlertProgress`. |
+| `src/types.ts` | TypeScript interfaces: `WeatherAlert` (normalized, provider-agnostic), `WeatherAlertsCardConfig`, `AlertAdapter`, `NwsAlert` (raw NWS shape), `BomWarning` (raw BoM shape), `NswRfsIncident` (raw NSW RFS geo_location shape), `AlertProgress`. |
 | `src/adapters/index.ts` | Adapter registry with auto-detection. Exports `getAdapter(provider, attributes)`. |
 | `src/adapters/nws.ts` | NWS adapter: parses `attributes.Alerts` → `WeatherAlert[]`. |
 | `src/adapters/bom.ts` | BoM adapter: parses `attributes.warnings` → `WeatherAlert[]`. Filters cancelled warnings, maps severity from `type` + `warning_group_type`. |
@@ -34,6 +34,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/pirateweather.ts` | PirateWeather adapter: parses Pirate Weather integration attributes → `WeatherAlert[]`. Detects via attribution string. |
 | `src/adapters/cap.ts` | CAP Alerts adapter: each `sensor.cap_alert_*` entity carries one alert as flat CAP 1.2 attributes. Detects via `incident_platform_version`. Thin passthrough — normalisation happens in the integration. |
 | `src/adapters/eccc.ts` | ECCC adapter: parses the HACS `environment_canada` custom component's `attributes.alerts` array → `WeatherAlert[]`. Detects via Environment Canada attribution (English or French). Severity is synthesised as the max of `color`/`type`/`impact`. |
+| `src/adapters/nsw_rfs.ts` | NSW RFS adapter: each `nsw_rural_fire_service_feed` `geo_location.*` entity carries one incident as flat attributes → single-element `WeatherAlert[]`. Detects via `category` + `status` + `responsible_agency`. Severity maps from `category` (Australian Warning System ladder); `endsTs:0` (no expiry, honest "ongoing"); RFS-only fields synthesised into the description. |
 | `src/localize.ts` | i18n system with 5 languages (en, fr, es, it, de). Exports `t(key, lang, params?)`. |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
@@ -42,11 +43,12 @@ Always run `npm run lint` and `npm run test` before committing.
 ## Key Patterns
 
 - The card uses an **adapter pattern** to support multiple alert providers. Each adapter converts raw entity attributes into a normalized `WeatherAlert[]` array.
-- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'` | `'meteoswiss'` | `'cap'` | `'eccc'`) or auto-detected from entity attributes.
+- Provider can be set explicitly via `config.provider` (`'nws'` | `'bom'` | `'meteoalarm'` | `'pirateweather'` | `'dwd'` | `'meteoswiss'` | `'cap'` | `'eccc'` | `'nsw_rfs'`) or auto-detected from entity attributes.
 - **NWS adapter**: reads `attributes.Alerts` array (NWS Alerts integration v6.1+). Zones extracted from `AffectedZones` URLs and `Geocode.UGC`.
 - **BoM adapter**: reads `attributes.warnings` array (bureau_of_meteorology or ha_bom_australia integration). Filters cancelled warnings. Maps severity from `type` string + `warning_group_type`. Uses `issue_time` as onset (BoM issues when threat is imminent). Maps `area_id` to `zones` for zone-based filtering.
 - **MeteoAlarm adapter**: reads flat attributes from a `binary_sensor` entity (MeteoAlarm integration). Maps `awareness_level` (semicolon-delimited "level; color; label") to severity. Falls back to CAP `severity` attribute. Returns a single alert per entity (upstream library limitation). CAP fields (`certainty`, `urgency`, `description`, `instruction`) are passed through directly.
 - **CAP Alerts adapter**: each `sensor.cap_alert_*` entity exposes a single alert as flat CAP 1.2 attributes; the integration handles upstream fan-out (NWS / ECCC / MeteoAlarm). Detects via `incident_platform_version`. Severity is consumed pre-normalised from `severity_normalized`. Recommended setup: configure `device: <device_id>` (CAP Alerts device picker in the editor) — the card walks `hass.entities` and pulls every `sensor.cap_alert_*` child of that device automatically, so dynamically added/removed alert entities surface without re-editing the card. Manual `entities: [...]` listing is also supported but requires updates whenever the alert set changes.
+- **NSW RFS adapter**: reads a single `nsw_rural_fire_service_feed` `geo_location.*` entity (one incident per entity, like CAP's fan-in). Detects via `category` + `status` + `responsible_agency` all being strings. Maps `category` (Emergency Warning / Watch and Act / Advice / Planned Burn — the Australian Warning System ladder) to severity; `endsTs:0` (no expiry → honest "ongoing", no progress bar); `providerIcon: 'mdi:fire'`; RFS-only fields (status/type/location/council/size/agency) synthesised into the description. Editor entity discovery admits `geo_location.` prefixes (gated by `canHandleAny`).
 - The card UI only consumes normalized `WeatherAlert` objects — never raw provider data.
 - Severity levels map to CSS classes: `severity-extreme`, `severity-severe`, `severity-moderate`, `severity-minor`, `severity-unknown`, each with `--color` and `--color-rgb` custom properties.
 - Progress bars use inverted fill logic: the filled portion represents remaining time, positioned from the elapsed percentage.
@@ -72,7 +74,7 @@ interface WeatherAlertsCardConfig {
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   colorTheme?: 'severity' | 'nws' | 'meteoalarm';
   enhanceContrast?: 'off' | 'subtle' | 'strict';  // undefined/'subtle': per-event/per-theme WCAG boost, two tiers — text (icon/label, fails ~2:1) and progress-bar fill (stricter ~1.3:1); 'strict' tightens both tiers (text ~3:1, progress ~2:1) toward WCAG AA; 'off': raw theme hex. Applies to nws + meteoalarm themes.
-  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' — undefined: auto-detect
+  provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'meteoswiss' | 'eccc' | 'nsw_rfs' | 'cap' — undefined: auto-detect
   deduplicate?: boolean;       // undefined/true: dedup on; false: off
   deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all
   reformatText?: boolean;      // undefined/true: strip hard line wraps from alert text; false: preserve raw

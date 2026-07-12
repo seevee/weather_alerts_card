@@ -133,6 +133,22 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('eccc');
   });
 
+  it('returns NSW RFS adapter for explicit nsw_rfs provider', () => {
+    const adapter = getAdapter('nsw_rfs', {});
+    expect(adapter.provider).toBe('nsw_rfs');
+  });
+
+  it('auto-detects NSW RFS from category + status + responsible_agency', () => {
+    const adapter = getAdapter(undefined, {
+      category: 'Advice',
+      status: 'Being controlled',
+      responsible_agency: 'Rural Fire Service',
+      type: 'Bush Fire',
+      external_id: 'https://www.rfs.nsw.gov.au/incident/1234',
+    });
+    expect(adapter.provider).toBe('nsw_rfs');
+  });
+
   it('defaults to NWS when attributes are ambiguous', () => {
     const adapter = getAdapter(undefined, {});
     expect(adapter.provider).toBe('nws');
@@ -186,6 +202,18 @@ describe('canHandleAny', () => {
       warning_levels_numeric: [],
       warning_valid_from: [],
     })).toBe(true);
+  });
+
+  it('returns true for NSW RFS attributes', () => {
+    expect(canHandleAny({
+      category: 'Advice',
+      status: 'Being controlled',
+      responsible_agency: 'Rural Fire Service',
+    })).toBe(true);
+  });
+
+  it('returns false for a generic geo_location quake entity', () => {
+    expect(canHandleAny({ external_id: 'us7000abcd', magnitude: 5.1 })).toBe(false);
   });
 
   it('returns false for unrelated attributes', () => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- NSW RFS (Rural Fire Service) alert provider — surfaces bushfire/grass-fire/hazard-reduction incidents from the built-in `nsw_rural_fire_service_feed` `geo_location` integration; severity maps from the incident `category` (Australian Warning System ladder), no progress bar (incidents have no expiry), RFS-only fields synthesised into the detail description (#178)
+
 ## 3.2.0-alpha.4 — 2026-07-12
 
 ### Fixed

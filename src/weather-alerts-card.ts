@@ -72,6 +72,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   eccc: 'Environment Canada',
   pirateweather: 'Pirate Weather',
   cap: 'CAP',
+  nsw_rfs: 'NSW RFS',
 };
 
 const PROVIDER_SHORT: Record<string, string> = {
@@ -83,6 +84,7 @@ const PROVIDER_SHORT: Record<string, string> = {
   eccc: 'EC',
   pirateweather: 'PW',
   cap: 'CAP',
+  nsw_rfs: 'RFS',
 };
 
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS).

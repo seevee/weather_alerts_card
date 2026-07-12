@@ -35,7 +35,7 @@ export interface EntityRegistryDisplayEntry {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 export interface WeatherAlertsCardConfig {
@@ -212,6 +212,23 @@ export interface MeteoSwissWarning {
   validFrom: string | null; // ISO 8601
   validTo: string | null;   // ISO 8601
   text: string;
+}
+
+// Raw NSW RFS incident shape from the nsw_rural_fire_service_feed integration.
+// The integration explodes each GeoJSON feature into one geo_location entity
+// whose attributes are the fields below (the entity state is distance in km).
+// All optional/defensive — a name drift degrades gracefully rather than throws.
+export interface NswRfsIncident {
+  external_id?: string;        // stable feed id, e.g. a GUID/URL
+  category?: string;           // Australian Warning System ladder, e.g. "Advice", "Emergency Warning"
+  status?: string;             // e.g. "Under control", "Being controlled", "Out of control"
+  type?: string;               // e.g. "Bush Fire", "Grass Fire", "Hazard Reduction"
+  location?: string;           // free-text location string
+  council_area?: string;       // e.g. "Blue Mountains"
+  size?: string | number;      // burnt area, e.g. "5 ha" or a bare number
+  fire?: boolean;              // true when the incident is a fire
+  responsible_agency?: string; // e.g. "Rural Fire Service"
+  publication_date?: string;   // ISO 8601 timestamp
 }
 
 export interface AlertProgress {
