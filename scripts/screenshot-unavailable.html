@@ -24,6 +24,7 @@
         0px 1px 3px 0px rgba(0, 0, 0, 0.12);
       --canvas-bg: #f0f0f0;
       --label-color: rgba(0, 0, 0, 0.45);
+      --group-color: rgba(0, 0, 0, 0.62);
       --empty-color: rgba(0, 0, 0, 0.28);
       --empty-border: rgba(0, 0, 0, 0.14);
     }
@@ -45,6 +46,7 @@
         0px 1px 3px 0px rgba(0, 0, 0, 0.3);
       --canvas-bg: #0d1117;
       --label-color: rgba(255, 255, 255, 0.45);
+      --group-color: rgba(255, 255, 255, 0.68);
       --empty-color: rgba(255, 255, 255, 0.28);
       --empty-border: rgba(255, 255, 255, 0.14);
     }
@@ -60,88 +62,151 @@
 
     .unavailable-canvas {
       background: var(--canvas-bg);
-      padding: 36px 28px 28px;
-      display: flex;
-      gap: 24px;
-      width: 1180px;
+      padding: 32px 28px 28px;
+      width: 1300px;
     }
 
-    .showcase {
-      flex: 1;
-      min-width: 0;
+    /* Behavior matrix: columns = the three unavailableBehavior modes; rows are
+       grouped into two regimes because the presentation form is determined by
+       whether there is an alert to anchor to. Regime A (no alerts) collapses
+       message/compact to the same caveat; regime B (active alert) is where they
+       diverge into strip vs corner chip. Every cell is populated. */
+    .matrix {
+      display: grid;
+      grid-template-columns: 190px 1fr 1fr 1fr;
+      column-gap: 24px;
+      row-gap: 22px;
+      align-items: start;
+    }
+
+    .corner { }
+
+    /* Regime divider spanning the full grid width. */
+    .section-head {
+      grid-column: 1 / -1;
+      margin-top: 16px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--divider-color);
+      color: var(--group-color);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .col-head {
       display: flex;
       flex-direction: column;
+      gap: 2px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--divider-color);
     }
-
-    .section-label {
+    .col-head .mode {
+      color: var(--group-color);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .col-head .desc {
       color: var(--label-color);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
       text-transform: uppercase;
-      margin-bottom: 10px;
     }
 
-    .card-wrapper {
-      flex: 1;
-      min-height: 96px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
+    .row-head {
+      padding-top: 14px;
+      color: var(--group-color);
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.4;
     }
-    .card-inner {
+    .row-head small {
+      display: block;
+      color: var(--label-color);
+      font-size: 11px;
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    .cell {
+      min-width: 0;
+      position: relative;
+    }
+    .cell .card-inner {
       width: 100%;
+      position: relative;
+      z-index: 1;
     }
 
-    /* Placeholder shown behind the `hide` card so its column reads as an
-       intentional absence, not a broken render. The card sets host
-       display:none, revealing this label underneath. */
+    /* Placeholder behind a card that hides itself (host display:none), so the
+       cell reads as an intentional absence rather than a broken render. */
+    .cell.stack { min-height: 76px; }
     .empty-hint {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 72px;
+      min-height: 76px;
       border: 1px dashed var(--empty-border);
       border-radius: 12px;
       color: var(--empty-color);
       font-size: 13px;
       font-style: italic;
     }
-    .card-inner { position: relative; z-index: 1; }
   </style>
 </head>
 <body>
 
   <div class="unavailable-canvas" id="unavailable-canvas">
+    <div class="matrix">
 
-    <div class="showcase">
-      <div class="section-label">Message &middot; full notice</div>
-      <div class="card-wrapper">
-        <div class="card-inner">
-          <weather-alerts-card id="card-unavail-message"></weather-alerts-card>
-        </div>
+      <!-- Column headers: the three modes. Subtitles are regime-neutral because
+           message/compact only diverge (strip vs chip) when an alert is present;
+           with no alert both collapse to the same caveat. -->
+      <div class="corner"></div>
+      <div class="col-head"><span class="mode">Message</span><span class="desc">Full text</span></div>
+      <div class="col-head"><span class="mode">Compact</span><span class="desc">Minimal</span></div>
+      <div class="col-head"><span class="mode">Hide</span><span class="desc">Opt-out</span></div>
+
+      <!-- Regime A: no active alerts, but a source is offline. message/compact
+           collapse to the same qualified empty state; only 'hide' drops it. -->
+      <div class="section-head">No active alerts · a source is offline</div>
+
+      <div class="row-head">One source offline<small>names the source</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na1-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na1-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na1-hide"></weather-alerts-card></div></div>
+
+      <div class="row-head">Two sources offline<small>counts them</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na2-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na2-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na2-hide"></weather-alerts-card></div></div>
+
+      <div class="row-head">hideNoAlerts set<small>signal overrides the hide</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-nah-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-nah-cmp"></weather-alerts-card></div></div>
+      <div class="cell stack">
+        <div class="empty-hint">Card hidden</div>
+        <div class="card-inner"><weather-alerts-card id="card-u-nah-hide"></weather-alerts-card></div>
       </div>
-    </div>
 
-    <div class="showcase">
-      <div class="section-label">Compact &middot; muted one-liner</div>
-      <div class="card-wrapper">
-        <div class="card-inner">
-          <weather-alerts-card id="card-unavail-compact"></weather-alerts-card>
-        </div>
-      </div>
-    </div>
+      <!-- Regime B: an active alert is showing and a source is offline. The
+           modes take their anchored forms: strip / corner chip / nothing. -->
+      <div class="section-head">Active alert · a source is offline</div>
 
-    <div class="showcase">
-      <div class="section-label">Hide &middot; card removed</div>
-      <div class="card-wrapper">
-        <div class="empty-hint">Card hidden (all sensors broken)</div>
-        <div class="card-inner">
-          <weather-alerts-card id="card-unavail-hide"></weather-alerts-card>
-        </div>
-      </div>
-    </div>
+      <div class="row-head">Default<small>strip vs corner chip</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-act-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-act-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-act-hide"></weather-alerts-card></div></div>
 
+      <div class="row-head">With a card title<small>chip vs header bar</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-actt-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-actt-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-actt-hide"></weather-alerts-card></div></div>
+
+    </div>
   </div>
 
   <script type="module">
@@ -149,7 +214,14 @@
 
     // ---- ha-card stub ----
     class HaCard extends HTMLElement {
-      set header(v) {}
+      // Mirror real ha-card: render a header bar when a non-empty header is set,
+      // so title-vs-content interactions (e.g. the compact corner dot) are
+      // represented rather than silently dropped.
+      set header(v) {
+        if (!this._h) return;
+        this._h.textContent = v || '';
+        this._h.style.display = v ? 'block' : 'none';
+      }
       constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -158,13 +230,27 @@
             :host {
               display: block;
               background: var(--ha-card-background, var(--card-background-color, white));
+              /* Real ha-card sets this; without it slotted text falls back to
+                 the browser default (black) and reads as illegible on the dark
+                 canvas. Keep in sync so screenshots represent production. */
+              color: var(--primary-text-color);
               border-radius: var(--ha-card-border-radius, 12px);
               box-shadow: var(--ha-card-box-shadow);
               overflow: hidden;
             }
+            .card-header {
+              display: none;
+              padding: 12px 16px 16px;
+              font-size: 24px;
+              font-weight: 400;
+              line-height: 1.2;
+              color: var(--primary-text-color);
+            }
           </style>
+          <div class="card-header"></div>
           <slot></slot>
         `;
+        this._h = this.shadowRoot.querySelector('.card-header');
       }
     }
     customElements.define('ha-card', HaCard);
@@ -199,15 +285,44 @@
     }
     customElements.define('ha-icon', HaIcon);
 
-    // ---- Mock states ----
-    // A broken sensor: unavailable + no parseable alert attributes.
-    const BROKEN = { state: 'unavailable', attributes: {} };
+    // ---- Deterministic timestamps (must match SCREENSHOT_NOW in screenshot.js) ----
+    const NOW = Date.UTC(2025, 5, 15, 20, 0, 0);
+    const H = 3600 * 1000;
+    const iso = (offsetMs) => new Date(NOW + offsetMs).toISOString();
 
+    // An obviously-fake active alert (card-preview philosophy — no real event
+    // names or alarming language). Renders in Row 3 so the availability signal
+    // (strip for 'message', corner dot for 'compact') is shown anchored to live
+    // content.
+    const ACTIVE_ALERT = {
+      ID: 'urn:oid:2.49.0.1.840.0.screenshot-unavail-1',
+      Event: 'Tornado of Compliments',
+      Severity: 'Extreme',
+      Certainty: 'Observed',
+      Urgency: 'Immediate',
+      Sent: iso(-2 * H),
+      Onset: iso(-2 * H),
+      Ends: iso(1.5 * H),
+      Expires: iso(1.5 * H),
+      Headline: 'SWIRLING WAVE OF KIND WORDS EXPECTED THROUGH THIS AFTERNOON',
+      AreaDesc: 'Pleasantville; Sunnyside',
+      Description: 'A swirling wave of kind words was observed near Pleasantville. This is sample data for the card preview.',
+      Instruction: 'Stay calm and enjoy the show! No real action is needed.',
+      URL: '',
+      AffectedZones: ['https://api.weather.gov/zones/county/SAM001'],
+    };
+
+    // ---- Mock states ----
+    // Broken sensors: unavailable/unknown + no parseable alert. friendly_name
+    // drives the "named" badge; falling back to the entity id otherwise.
     const MOCK_HASS = {
       locale: { language: 'en', time_format: '12', date_format: 'MDY' },
       config: { time_zone: 'America/Denver' },
       states: {
-        'sensor.nws_broken': BROKEN,
+        'sensor.nws_alerts':   { state: 'unavailable', attributes: { friendly_name: 'Sample County NWS' } },
+        'sensor.dwd_warnings': { state: 'unknown',     attributes: { friendly_name: 'Demo Region DWD' } },
+        'sensor.nws_quiet':    { state: '0', attributes: { Alerts: [], friendly_name: 'Backup Sensor' } },
+        'sensor.nws_active':   { state: '1', attributes: { Alerts: [ACTIVE_ALERT], friendly_name: 'Primary NWS' } },
       },
     };
 
@@ -215,7 +330,6 @@
       const card = document.getElementById(id);
       card.setConfig({
         type: 'custom:weather-alerts-card',
-        entity: 'sensor.nws_broken',
         animations: false,
         ...config,
       });
@@ -223,14 +337,39 @@
       return card;
     }
 
-    // Message (default) — full notice
-    wire('card-unavail-message', {});
+    // Regime A — no active alerts, a source offline.
+    // na1: one source down, one quiet → the caveat names the source.
+    const na1 = { entity: 'sensor.nws_alerts', entities: ['sensor.nws_quiet'] };
+    wire('card-u-na1-msg',  { ...na1 });
+    wire('card-u-na1-cmp',  { ...na1, unavailableBehavior: 'compact' });
+    wire('card-u-na1-hide', { ...na1, unavailableBehavior: 'hide' });
 
-    // Compact — muted one-liner
-    wire('card-unavail-compact', { unavailableBehavior: 'compact' });
+    // na2: two sources down, one quiet → the caveat counts them.
+    const na2 = { entity: 'sensor.nws_alerts', entities: ['sensor.dwd_warnings', 'sensor.nws_quiet'] };
+    wire('card-u-na2-msg',  { ...na2 });
+    wire('card-u-na2-cmp',  { ...na2, unavailableBehavior: 'compact' });
+    wire('card-u-na2-hide', { ...na2, unavailableBehavior: 'hide' });
 
-    // Hide — nothing renders; host display:none reveals the empty-hint underneath
-    wire('card-unavail-hide', { unavailableBehavior: 'hide' });
+    // nah: hideNoAlerts + two sources down. The visible caveat overrides the
+    // hide (message/compact stay on screen); only `hide` removes the card.
+    const nah = { entity: 'sensor.nws_alerts', entities: ['sensor.dwd_warnings'], hideNoAlerts: true };
+    wire('card-u-nah-msg',  { ...nah });
+    wire('card-u-nah-cmp',  { ...nah, unavailableBehavior: 'compact' });
+    wire('card-u-nah-hide', { ...nah, unavailableBehavior: 'hide' });
+
+    // Regime B — an active alert is showing, a source offline.
+    // act: strip ('message') vs corner chip ('compact') vs nothing ('hide').
+    const act = { entity: 'sensor.nws_alerts', entities: ['sensor.nws_active'] };
+    wire('card-u-act-msg',  { ...act });
+    wire('card-u-act-cmp',  { ...act, unavailableBehavior: 'compact' });
+    wire('card-u-act-hide', { ...act, unavailableBehavior: 'hide' });
+
+    // actt: same, with a card title set — shows the compact chip against the
+    // header bar (no collision with a normal-length title).
+    const actt = { ...act, title: 'Severe Weather' };
+    wire('card-u-actt-msg',  { ...actt });
+    wire('card-u-actt-cmp',  { ...actt, unavailableBehavior: 'compact' });
+    wire('card-u-actt-hide', { ...actt, unavailableBehavior: 'hide' });
   </script>
 </body>
 </html>

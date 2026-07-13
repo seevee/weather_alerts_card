@@ -31,28 +31,69 @@ export const cardStyles = css`
     display: block;
   }
 
+  /* Positioning context for the degraded corner dot (see .degraded-dot). */
+  ha-card {
+    position: relative;
+  }
+
   .error {
     padding: 16px;
     color: var(--error-color, red);
   }
 
-  .sensor-unavailable {
-    padding: 16px;
+  /* Availability channel: how the card signals that some (or all) configured
+     sources are dark, independent of the alert list. Two anchored forms — a
+     full-width strip above real alert content ('message'), or a corner dot
+     floating over it ('compact', at zero layout cost). With no alerts to anchor
+     to, neither renders; the empty state carries the caveat instead (see
+     .no-alerts-caveat), so a bare all-clear never sits next to a stale source. */
+  .degraded-badge {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: var(--secondary-text-color);
-    font-style: italic;
-  }
-
-  .sensor-unavailable.compact {
-    padding: 6px 16px;
     gap: 8px;
+    padding: 8px 16px;
+    /* Warning wash carries the tone; text stays on a legible token so it passes
+       contrast on a white card (raw --warning-color as text does not). Derived
+       from --warning-color via color-mix (the codebase's tint idiom) so a
+       custom theme's warning color is always respected — the icon, dot, and this
+       wash share one source. Unsupported engines just drop the tint. */
+    background: color-mix(in srgb, var(--warning-color) 14%, transparent);
+    color: var(--primary-text-color);
     font-size: 0.85em;
+    border-bottom: 1px solid var(--divider-color);
   }
 
-  .sensor-unavailable.compact ha-icon {
+  .degraded-badge ha-icon {
+    color: var(--warning-color);
     --mdc-icon-size: 18px;
+    flex-shrink: 0;
+  }
+
+  /* Corner warning badge for 'compact' — an annotation on the alert(s) beneath
+     it, so it is positioned against the ha-card box and ringed in the card
+     background to stay legible over any underlying content, in either theme.
+     An inverted alert glyph (white on the amber disc) conveys "unavailable"
+     where a bare dot would not. */
+  .degraded-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--warning-color);
+    box-shadow: 0 0 0 2px var(--card-background-color, #fff);
+    z-index: 2;
+  }
+
+  .degraded-dot ha-icon {
+    /* Punch the glyph to the card background, matching how the pill badges sit
+       their content on a colored chip rather than plain white. */
+    color: var(--card-background-color, #fff);
+    --mdc-icon-size: 12px;
   }
 
   /* --- COLOR MAPPING --- */
@@ -775,11 +816,36 @@ export const cardStyles = css`
   /* --- EMPTY STATE --- */
   .no-alerts {
     padding: 20px;
-    opacity: 0.6;
     text-align: center;
     font-style: italic;
+    /* Explicit muted token rather than opacity: keeps the all-clear legible in
+       both themes (opacity of inherited text can wash out on dark) and, unlike
+       opacity, does not dim the availability caveat nested below. */
+    color: var(--secondary-text-color);
   }
   .no-alerts ha-icon {
     margin-bottom: 10px;
+  }
+
+  /* Availability caveat under the all-clear, shown when there are no alerts but
+     a source is dark: "No active alerts" is qualified, never asserted alone. */
+  .no-alerts-caveat {
+    /* Block flow (not inline-flex) so the caveat always drops onto its own
+       centered line under the all-clear, regardless of length — a short
+       "2 sources unavailable" must not ride up beside "No active alerts." the
+       way a long single-source name wraps away from it. */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-style: normal;
+    font-size: 0.9em;
+    color: var(--primary-text-color);
+  }
+  .no-alerts-caveat ha-icon {
+    color: var(--warning-color);
+    --mdc-icon-size: 16px;
+    margin-bottom: 0;
   }
 `;

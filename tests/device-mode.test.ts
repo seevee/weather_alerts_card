@@ -61,6 +61,7 @@ function capAlertAttrs(extra: Record<string, unknown> = {}): Record<string, unkn
 function makeHass(
   entities: EntityRegistryDisplayEntry[],
   states: Record<string, { state: string; attributes: Record<string, unknown> }>,
+  devices?: Record<string, { id: string; name?: string | null; name_by_user?: string | null }>,
 ): HomeAssistant {
   const reg: Record<string, EntityRegistryDisplayEntry> = {};
   for (const e of entities) reg[e.entity_id] = e;
@@ -68,6 +69,7 @@ function makeHass(
     states,
     locale: { language: 'en' },
     entities: reg,
+    ...(devices ? { devices } : {}),
   } as unknown as HomeAssistant;
 }
 
@@ -166,6 +168,7 @@ type CardInternals = WeatherAlertsCard & {
   _deviceHasAnyEntity(deviceId: string): boolean;
   _getAlerts(): unknown[];
   _onDismiss(alert: unknown): void;
+  _brokenSources(): { name: string | null }[];
 };
 
 function makeCard(): CardInternals {
@@ -569,5 +572,143 @@ describe('WeatherAlertsCard dismissal scope stability across registry churn', ()
     window.dispatchEvent(new CustomEvent(DISMISSALS_CHANGED_EVENT, { detail: { scope } }));
 
     expect(card._dismissals.size).toBe(1);
+  });
+});
+
+describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', () => {
+  const COUNT_ID = 'sensor.cap_alerts_meteoalarm_alert_count';
+  const UPDATED_ID = 'sensor.cap_alerts_meteoalarm_last_updated';
+  const ALERT_ID = 'sensor.cap_alerts_meteoalarm_cap_alert_moderate_thunderstorms_warning_bec19817';
+
+  // A cap_alerts device gone dark: HA restored its entities from their last
+  // state, but the integration hasn't re-provided them, so they sit at
+  // `unavailable` with the CAP attributes stripped — exactly the live shape
+  // that made the alert-resolution path (canHandle-filtered) blind to them.
+  const restored = (): Record<string, unknown> => ({
+    restored: true, friendly_name: 'Restored', supported_features: 0,
+  });
+  const DEVICE_NAME = 'MeteoAlarm Germany';
+  // A dark device as the frontend hass object presents it: the device registry
+  // carries a name even though its entities are unavailable/stripped.
+  function darkDeviceHass(withName = true): HomeAssistant {
+    return makeHass(
+      [entry(COUNT_ID), entry(UPDATED_ID), entry(ALERT_ID)],
+      {
+        [COUNT_ID]: { state: 'unavailable', attributes: restored() },
+        [UPDATED_ID]: { state: 'unavailable', attributes: restored() },
+        [ALERT_ID]: { state: 'unavailable', attributes: restored() },
+      },
+      withName ? { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } } : undefined,
+    );
+  }
+  const caveat = (card: CardInternals): string =>
+    (shadow(card).querySelector('.no-alerts-caveat')?.textContent || '').trim();
+
+  it('a fully-dark device surfaces the caveat instead of a bare all-clear', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      darkDeviceHass(),
+    );
+    // Previously this was a plain "No active alerts." — the false all-clear #201
+    // set out to kill, but which device mode still produced.
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(true);
+    cleanup();
+  });
+
+  it("message mode names the dark device (shows *which* source)", async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      darkDeviceHass(),
+    );
+    // The whole promise of 'message': name the source, not a generic string.
+    expect(caveat(card)).toContain(`${DEVICE_NAME} unavailable`);
+    cleanup();
+  });
+
+  it('falls back to a generic singular when the device has no registry name', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      darkDeviceHass(false),
+    );
+    expect(caveat(card).toLowerCase()).toContain('a source is unavailable');
+    cleanup();
+  });
+
+  it('_brokenSources names a dark device from the device registry', () => {
+    const card = makeCard();
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.hass = darkDeviceHass();
+    expect(card._brokenSources()).toEqual([{ name: DEVICE_NAME }]);
+  });
+
+  it('a dark device stays visible even under hideNoAlerts', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE, hideNoAlerts: true } as WeatherAlertsCardConfig,
+      darkDeviceHass(),
+    );
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(true);
+    expect((card as unknown as HTMLElement).style.display).not.toBe('none');
+    cleanup();
+  });
+
+  it('unavailableBehavior:hide opts a dark device back out (no caveat)', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE, unavailableBehavior: 'hide' } as WeatherAlertsCardConfig,
+      darkDeviceHass(),
+    );
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(false);
+    cleanup();
+  });
+
+  it('a device serving an active alert is not flagged dark, even with an unavailable diagnostic', async () => {
+    const hass = makeHass(
+      [entry(ALERT_ID), entry(COUNT_ID)],
+      {
+        [ALERT_ID]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Frost' }) },
+        [COUNT_ID]: { state: 'unavailable', attributes: restored() },
+      },
+    );
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      hass,
+    );
+    expect(hasEl(card, '.alert-card')).toBe(true);
+    expect(hasEl(card, '.degraded-badge')).toBe(false);
+    expect(hasEl(card, '.degraded-dot')).toBe(false);
+    cleanup();
+  });
+
+  it('an unknown-state sensor that still carries a valid alert is not dark', async () => {
+    // CAP can report state "unknown" while attributes hold a full alert.
+    const hass = makeHass(
+      [entry(ALERT_ID)],
+      { [ALERT_ID]: { state: 'unknown', attributes: capAlertAttrs({ event: 'Beach Hazards' }) } },
+    );
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      hass,
+    );
+    expect(hasEl(card, '.alert-card')).toBe(true);
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(false);
+    cleanup();
+  });
+
+  it('a healthy idle device (no alerts, nothing errored) shows a bare all-clear', async () => {
+    const hass = makeHass(
+      [entry(COUNT_ID), entry(UPDATED_ID)],
+      {
+        [COUNT_ID]: { state: '0', attributes: { friendly_name: 'Alert count' } },
+        [UPDATED_ID]: { state: '2026-04-26T01:55:00+00:00', attributes: {} },
+      },
+    );
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      hass,
+    );
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(false);
+    cleanup();
   });
 });

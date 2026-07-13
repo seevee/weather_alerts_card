@@ -78,7 +78,7 @@ Then click the Download button, and click Reload when prompted.
 | `showSourceLink` | `true` | Show "Open Source" link (`false` for kiosk mode) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |
-| `unavailableBehavior` | `'message'` | How a broken alert sensor is shown. `'message'`: full notice; `'compact'`: muted one-liner; `'hide'`: hide the card when *every* configured sensor is unavailable (**not recommended — a broken sensor is not proof of safety**) |
+| `unavailableBehavior` | `'message'` | Degraded badge shown above the card content whenever *some or all* configured sources are broken (unavailable/unknown with no parseable alert). `'message'`: badge names the broken source (counts when >1); `'compact'`: icon-only badge; `'hide'`: no badge (**not recommended — a broken source is not proof of safety**). A visible badge keeps the card on screen even under `hideNoAlerts`; the card only hides completely when there are no alerts **and** `hideNoAlerts` is set **and** (`unavailableBehavior: 'hide'` **or** nothing is broken). |
 | `fontSize` | `'default'` | `'small'`, `'default'`, `'large'`, `'x-large'` — scales text and icons |
 | `reformatText` | `true` | Strip hard line wraps from alert text (NWS 69-char teletype breaks) while preserving paragraph breaks |
 | `layout` | `'default'` | `'default'` or `'compact'` |

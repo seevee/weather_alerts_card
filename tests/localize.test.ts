@@ -41,12 +41,26 @@ describe('t()', () => {
   });
 
   it('interpolates named parameters in French', () => {
-    expect(t('card.sensor_unavailable', 'fr', { state: 'indisponible' }))
-      .toBe("Le capteur d'alerte est indisponible.");
+    expect(t('card.sources_unavailable_named', 'fr', { name: 'NWS Boulder' }))
+      .toBe('NWS Boulder indisponible');
   });
 
   it('interpolates singular zone count', () => {
     expect(t('card.zone_count_singular', 'en', { count: 1 })).toBe('1 zone');
+  });
+
+  it('interpolates the degraded-badge named string (en + de)', () => {
+    expect(t('card.sources_unavailable_named', 'en', { name: 'NWS Boulder' }))
+      .toBe('NWS Boulder unavailable');
+    expect(t('card.sources_unavailable_named', 'de', { name: 'NWS Boulder' }))
+      .toBe('NWS Boulder nicht verfügbar');
+  });
+
+  it('interpolates the degraded-badge count string (en + fr)', () => {
+    expect(t('card.sources_unavailable_count', 'en', { count: 2 }))
+      .toBe('2 sources unavailable');
+    expect(t('card.sources_unavailable_count', 'fr', { count: 2 }))
+      .toBe('2 sources indisponibles');
   });
 
   it('handles case-insensitive language codes', () => {
@@ -152,7 +166,9 @@ describe('t()', () => {
   it('all en keys exist in fr', () => {
     // Access translations indirectly through t()
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -196,7 +212,9 @@ describe('t()', () => {
 
   it('all en keys exist in es', () => {
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -236,7 +254,9 @@ describe('t()', () => {
 
   it('all en keys exist in it', () => {
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -276,7 +296,9 @@ describe('t()', () => {
 
   it('all en keys exist in de', () => {
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',

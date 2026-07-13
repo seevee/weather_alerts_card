@@ -37,6 +37,33 @@ export function resolveDeviceAlertEntities(
 }
 
 /**
+ * Returns ALL entity IDs registered to the given device, unfiltered.
+ *
+ * Unlike `resolveDeviceAlertEntities`, this does NOT filter by `canHandle`.
+ * When a source (e.g. a CAP Alerts device) goes `unavailable`/`unknown` its
+ * per-alert sensors lose their alert attributes, so `canHandle` rejects them
+ * and they vanish from the alert-resolution path — which is why the degraded
+ * signal was blind to a dark device. Availability detection must look at the
+ * whole device, including entities that no longer parse.
+ *
+ * @internal exported for testing
+ */
+export function deviceEntityIds(
+  hass: HomeAssistant,
+  deviceId: string,
+  registryEntries?: EntityRegistryDisplayEntry[] | null,
+): string[] {
+  const entries: EntityRegistryDisplayEntry[] | null = registryEntries
+    ?? (hass.entities ? Object.values(hass.entities) : null);
+  if (!entries) return [];
+  const ids: string[] = [];
+  for (const entry of entries) {
+    if (entry?.device_id === deviceId && entry.entity_id) ids.push(entry.entity_id);
+  }
+  return ids;
+}
+
+/**
  * Returns true if any entity in the registry (cached or fallback) belongs
  * to the given device. Used by the card to decide between "device exists
  * but has no alerts yet" (preview) and "device totally absent" (preview).

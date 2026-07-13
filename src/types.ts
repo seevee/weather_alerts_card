@@ -16,8 +16,17 @@ export interface HomeAssistant {
   };
   // Entity registry, keyed by entity_id. Available in HA 2023.4+.
   entities?: Record<string, EntityRegistryDisplayEntry>;
+  // Device registry, keyed by device id. Used to name a dark device source
+  // (message mode shows *which* source). Best-effort: absent on very old cores.
+  devices?: Record<string, DeviceRegistryDisplayEntry>;
   // Live WS connection — used to subscribe to entity_registry updates.
   connection?: Connection;
+}
+
+export interface DeviceRegistryDisplayEntry {
+  id: string;
+  name?: string | null;
+  name_by_user?: string | null;
 }
 
 export interface HassEntity {
@@ -60,7 +69,7 @@ export interface WeatherAlertsCardConfig {
   deduplicateHeadlines?: boolean; // undefined/true: filter redundant headlines; false: show all verbatim
   hideExpired?: boolean;     // undefined/true: hide expired alerts; false: show them (dimmed)
   hideNoAlerts?: boolean;    // undefined/false: show "No active alerts" banner; true: hide it
-  unavailableBehavior?: 'message' | 'compact' | 'hide'; // how a broken alert sensor (unavailable/unknown + zero parseable alerts) is shown when EVERY resolved entity is broken. undefined/'message': full notice banner; 'compact': muted one-liner; 'hide': hide the card entirely. Has no effect on partial breakage (some but not all entities broken), which falls through to normal rendering.
+  unavailableBehavior?: 'message' | 'compact' | 'hide'; // how a dark source (unavailable/unknown + zero parseable alerts, for SOME or ALL resolved entities) is signalled. The form depends on whether alerts exist to anchor to: with alerts, undefined/'message' shows an in-flow strip above them (names the source, counts when >1) and 'compact' floats a corner dot over them (label retained as accessible/title text); with no alerts, both collapse into a qualified empty state ("No active alerts" + caveat) — no strip or dot. 'hide': no signal at all. Any signal keeps the card on screen even under hideNoAlerts; the card fully hides only when there are no alerts AND hideNoAlerts is set AND (unavailableBehavior is 'hide' OR nothing is broken).
   showDetails?: boolean;     // undefined/true: show expandable detail panel; false: hide entirely
   expandDetails?: boolean;   // undefined/false: details collapsed behind toggle; true: details always visible, toggle removed
   showMetadata?: boolean;    // undefined/true: show metadata grid in details; false: hide
