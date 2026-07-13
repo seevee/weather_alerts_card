@@ -41,8 +41,8 @@ describe('t()', () => {
   });
 
   it('interpolates named parameters in French', () => {
-    expect(t('card.sensor_unavailable', 'fr', { state: 'indisponible' }))
-      .toBe("Le capteur d'alerte est indisponible.");
+    expect(t('card.sources_unavailable_named', 'fr', { name: 'NWS Boulder' }))
+      .toBe('NWS Boulder indisponible');
   });
 
   it('interpolates singular zone count', () => {
@@ -166,7 +166,7 @@ describe('t()', () => {
   it('all en keys exist in fr', () => {
     // Access translations indirectly through t()
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -210,7 +210,7 @@ describe('t()', () => {
 
   it('all en keys exist in es', () => {
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -250,7 +250,7 @@ describe('t()', () => {
 
   it('all en keys exist in it', () => {
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -290,7 +290,7 @@ describe('t()', () => {
 
   it('all en keys exist in de', () => {
     const enKeys = [
-      'card.no_alerts', 'card.sensor_unavailable', 'card.preview', 'card.read_details',
+      'card.no_alerts', 'card.preview', 'card.read_details',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',

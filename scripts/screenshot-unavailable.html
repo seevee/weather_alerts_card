@@ -66,9 +66,11 @@
       width: 1300px;
     }
 
-    /* Full behavior matrix: rows = breakage condition, columns = the three
-       unavailableBehavior modes. Every cell is populated so the grid reads as
-       exhaustive. */
+    /* Behavior matrix: columns = the three unavailableBehavior modes; rows are
+       grouped into two regimes because the presentation form is determined by
+       whether there is an alert to anchor to. Regime A (no alerts) collapses
+       message/compact to the same caveat; regime B (active alert) is where they
+       diverge into strip vs corner chip. Every cell is populated. */
     .matrix {
       display: grid;
       grid-template-columns: 190px 1fr 1fr 1fr;
@@ -78,6 +80,18 @@
     }
 
     .corner { }
+
+    /* Regime divider spanning the full grid width. */
+    .section-head {
+      grid-column: 1 / -1;
+      margin-top: 16px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--divider-color);
+      color: var(--group-color);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
 
     .col-head {
       display: flex;
@@ -148,39 +162,49 @@
   <div class="unavailable-canvas" id="unavailable-canvas">
     <div class="matrix">
 
-      <!-- Header row -->
+      <!-- Column headers: the three modes. Subtitles are regime-neutral because
+           message/compact only diverge (strip vs chip) when an alert is present;
+           with no alert both collapse to the same caveat. -->
       <div class="corner"></div>
-      <div class="col-head"><span class="mode">Message</span><span class="desc">Names the source</span></div>
-      <div class="col-head"><span class="mode">Compact</span><span class="desc">Icon only</span></div>
-      <div class="col-head"><span class="mode">Hide</span><span class="desc">Indicator off (opt-out)</span></div>
+      <div class="col-head"><span class="mode">Message</span><span class="desc">Full text</span></div>
+      <div class="col-head"><span class="mode">Compact</span><span class="desc">Minimal</span></div>
+      <div class="col-head"><span class="mode">Hide</span><span class="desc">Opt-out</span></div>
 
-      <!-- Row 1: one source down, no active alerts -->
-      <div class="row-head">One source down<small>no active alerts</small></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r1-msg"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r1-cmp"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r1-hide"></weather-alerts-card></div></div>
+      <!-- Regime A: no active alerts, but a source is offline. message/compact
+           collapse to the same qualified empty state; only 'hide' drops it. -->
+      <div class="section-head">No active alerts · a source is offline</div>
 
-      <!-- Row 2: two sources down, no active alerts (count badge) -->
-      <div class="row-head">Two sources down<small>no active alerts</small></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r2-msg"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r2-cmp"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r2-hide"></weather-alerts-card></div></div>
+      <div class="row-head">One source offline<small>names the source</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na1-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na1-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na1-hide"></weather-alerts-card></div></div>
 
-      <!-- Row 3: one source down AND an active alert (row 3) -->
-      <div class="row-head">Source down<small>active alert present</small></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r3-msg"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r3-cmp"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r3-hide"></weather-alerts-card></div></div>
+      <div class="row-head">Two sources offline<small>counts them</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na2-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na2-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-na2-hide"></weather-alerts-card></div></div>
 
-      <!-- Row 4: hideNoAlerts + two sources down — badge overrides the hide;
-           only `hide` removes the card entirely. -->
-      <div class="row-head">hideNoAlerts set<small>two sources down</small></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r4-msg"></weather-alerts-card></div></div>
-      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-r4-cmp"></weather-alerts-card></div></div>
+      <div class="row-head">hideNoAlerts set<small>signal overrides the hide</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-nah-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-nah-cmp"></weather-alerts-card></div></div>
       <div class="cell stack">
         <div class="empty-hint">Card hidden</div>
-        <div class="card-inner"><weather-alerts-card id="card-u-r4-hide"></weather-alerts-card></div>
+        <div class="card-inner"><weather-alerts-card id="card-u-nah-hide"></weather-alerts-card></div>
       </div>
+
+      <!-- Regime B: an active alert is showing and a source is offline. The
+           modes take their anchored forms: strip / corner chip / nothing. -->
+      <div class="section-head">Active alert · a source is offline</div>
+
+      <div class="row-head">Default<small>strip vs corner chip</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-act-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-act-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-act-hide"></weather-alerts-card></div></div>
+
+      <div class="row-head">With a card title<small>chip vs header bar</small></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-actt-msg"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-actt-cmp"></weather-alerts-card></div></div>
+      <div class="cell"><div class="card-inner"><weather-alerts-card id="card-u-actt-hide"></weather-alerts-card></div></div>
 
     </div>
   </div>
@@ -190,7 +214,14 @@
 
     // ---- ha-card stub ----
     class HaCard extends HTMLElement {
-      set header(v) {}
+      // Mirror real ha-card: render a header bar when a non-empty header is set,
+      // so title-vs-content interactions (e.g. the compact corner dot) are
+      // represented rather than silently dropped.
+      set header(v) {
+        if (!this._h) return;
+        this._h.textContent = v || '';
+        this._h.style.display = v ? 'block' : 'none';
+      }
       constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -199,13 +230,27 @@
             :host {
               display: block;
               background: var(--ha-card-background, var(--card-background-color, white));
+              /* Real ha-card sets this; without it slotted text falls back to
+                 the browser default (black) and reads as illegible on the dark
+                 canvas. Keep in sync so screenshots represent production. */
+              color: var(--primary-text-color);
               border-radius: var(--ha-card-border-radius, 12px);
               box-shadow: var(--ha-card-box-shadow);
               overflow: hidden;
             }
+            .card-header {
+              display: none;
+              padding: 12px 16px 16px;
+              font-size: 24px;
+              font-weight: 400;
+              line-height: 1.2;
+              color: var(--primary-text-color);
+            }
           </style>
+          <div class="card-header"></div>
           <slot></slot>
         `;
+        this._h = this.shadowRoot.querySelector('.card-header');
       }
     }
     customElements.define('ha-card', HaCard);
@@ -246,8 +291,9 @@
     const iso = (offsetMs) => new Date(NOW + offsetMs).toISOString();
 
     // An obviously-fake active alert (card-preview philosophy — no real event
-    // names or alarming language). Renders in Row 3 so the degraded badge is
-    // shown sitting above live content.
+    // names or alarming language). Renders in Row 3 so the availability signal
+    // (strip for 'message', corner dot for 'compact') is shown anchored to live
+    // content.
     const ACTIVE_ALERT = {
       ID: 'urn:oid:2.49.0.1.840.0.screenshot-unavail-1',
       Event: 'Tornado of Compliments',
@@ -291,30 +337,39 @@
       return card;
     }
 
-    // Row 1 — one source down, one quiet, no active alerts.
-    const down1 = { entity: 'sensor.nws_alerts', entities: ['sensor.nws_quiet'] };
-    wire('card-u-r1-msg',  { ...down1 });
-    wire('card-u-r1-cmp',  { ...down1, unavailableBehavior: 'compact' });
-    wire('card-u-r1-hide', { ...down1, unavailableBehavior: 'hide' });
+    // Regime A — no active alerts, a source offline.
+    // na1: one source down, one quiet → the caveat names the source.
+    const na1 = { entity: 'sensor.nws_alerts', entities: ['sensor.nws_quiet'] };
+    wire('card-u-na1-msg',  { ...na1 });
+    wire('card-u-na1-cmp',  { ...na1, unavailableBehavior: 'compact' });
+    wire('card-u-na1-hide', { ...na1, unavailableBehavior: 'hide' });
 
-    // Row 2 — two sources down, one quiet, no active alerts (count badge).
-    const down2 = { entity: 'sensor.nws_alerts', entities: ['sensor.dwd_warnings', 'sensor.nws_quiet'] };
-    wire('card-u-r2-msg',  { ...down2 });
-    wire('card-u-r2-cmp',  { ...down2, unavailableBehavior: 'compact' });
-    wire('card-u-r2-hide', { ...down2, unavailableBehavior: 'hide' });
+    // na2: two sources down, one quiet → the caveat counts them.
+    const na2 = { entity: 'sensor.nws_alerts', entities: ['sensor.dwd_warnings', 'sensor.nws_quiet'] };
+    wire('card-u-na2-msg',  { ...na2 });
+    wire('card-u-na2-cmp',  { ...na2, unavailableBehavior: 'compact' });
+    wire('card-u-na2-hide', { ...na2, unavailableBehavior: 'hide' });
 
-    // Row 3 — one source down + one source carrying an active alert (row 3).
-    const withAlert = { entity: 'sensor.nws_alerts', entities: ['sensor.nws_active'] };
-    wire('card-u-r3-msg',  { ...withAlert });
-    wire('card-u-r3-cmp',  { ...withAlert, unavailableBehavior: 'compact' });
-    wire('card-u-r3-hide', { ...withAlert, unavailableBehavior: 'hide' });
+    // nah: hideNoAlerts + two sources down. The visible caveat overrides the
+    // hide (message/compact stay on screen); only `hide` removes the card.
+    const nah = { entity: 'sensor.nws_alerts', entities: ['sensor.dwd_warnings'], hideNoAlerts: true };
+    wire('card-u-nah-msg',  { ...nah });
+    wire('card-u-nah-cmp',  { ...nah, unavailableBehavior: 'compact' });
+    wire('card-u-nah-hide', { ...nah, unavailableBehavior: 'hide' });
 
-    // Row 4 — hideNoAlerts + two sources down. A visible badge overrides the
-    // empty-state hide (message/compact stay on screen); only `hide` removes it.
-    const down2Hidden = { entity: 'sensor.nws_alerts', entities: ['sensor.dwd_warnings'], hideNoAlerts: true };
-    wire('card-u-r4-msg',  { ...down2Hidden });
-    wire('card-u-r4-cmp',  { ...down2Hidden, unavailableBehavior: 'compact' });
-    wire('card-u-r4-hide', { ...down2Hidden, unavailableBehavior: 'hide' });
+    // Regime B — an active alert is showing, a source offline.
+    // act: strip ('message') vs corner chip ('compact') vs nothing ('hide').
+    const act = { entity: 'sensor.nws_alerts', entities: ['sensor.nws_active'] };
+    wire('card-u-act-msg',  { ...act });
+    wire('card-u-act-cmp',  { ...act, unavailableBehavior: 'compact' });
+    wire('card-u-act-hide', { ...act, unavailableBehavior: 'hide' });
+
+    // actt: same, with a card title set — shows the compact chip against the
+    // header bar (no collision with a normal-length title).
+    const actt = { ...act, title: 'Severe Weather' };
+    wire('card-u-actt-msg',  { ...actt });
+    wire('card-u-actt-cmp',  { ...actt, unavailableBehavior: 'compact' });
+    wire('card-u-actt-hide', { ...actt, unavailableBehavior: 'hide' });
   </script>
 </body>
 </html>

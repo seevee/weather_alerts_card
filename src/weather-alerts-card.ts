@@ -410,10 +410,10 @@ export class WeatherAlertsCard extends LitElement {
     // state mutations as a side effect.
     const alerts = this._getAlerts(false);
     const perAlert = this._isCompact ? 1 : 3;
-    // A badge-only card (broken source, zero alerts) still occupies a row.
-    const behavior = this._config?.unavailableBehavior || 'message';
-    const badgeOnly = alerts.length === 0 && behavior !== 'hide' && this._brokenIds().length > 0;
-    return Math.max(1, alerts.length * perAlert + (badgeOnly ? 1 : 0));
+    // Availability signalling never adds a row: the strip is a thin band over
+    // alerts, the dot is an overlay, and the zero-alert caveat rides inside the
+    // empty state — all of which the max(1, …) empty-state floor already covers.
+    return Math.max(1, alerts.length * perAlert);
   }
 
   public static getConfigElement(): HTMLElement {
@@ -928,21 +928,39 @@ export class WeatherAlertsCard extends LitElement {
     return (this.hass?.states[id]?.attributes?.friendly_name as string | undefined) || id;
   }
 
-  // Availability channel: a warning strip above the card content shown whenever
-  // some (or all) configured sources are broken, unless unavailableBehavior is
-  // 'hide'. 'message' names the broken source (counts when >1); 'compact' is an
-  // icon-only reduction that keeps the same string as an accessible/title label.
-  private _renderDegradedBadge(brokenIds: string[], behavior: 'message' | 'compact' | 'hide'): TemplateResult {
-    const lang = this._lang;
-    const label = brokenIds.length === 1
-      ? t('card.sources_unavailable_named', lang, { name: this._friendlyName(brokenIds[0]) })
-      : t('card.sources_unavailable_count', lang, { count: brokenIds.length });
-    const iconOnly = behavior === 'compact';
+  // Human-readable availability caption: names the source when exactly one is
+  // dark, otherwise counts them. Shared by the strip, the dot, and the empty-
+  // state caveat so all three phrasings stay identical.
+  private _degradedLabel(brokenIds: string[]): string {
+    return brokenIds.length === 1
+      ? t('card.sources_unavailable_named', this._lang, { name: this._friendlyName(brokenIds[0]) })
+      : t('card.sources_unavailable_count', this._lang, { count: brokenIds.length });
+  }
+
+  // 'message' form of the availability channel: an in-flow strip above real
+  // alert content. Only rendered when alerts exist to anchor it (see render());
+  // with no alerts the caveat moves into the empty state instead.
+  private _renderDegradedStrip(brokenIds: string[]): TemplateResult {
+    const label = this._degradedLabel(brokenIds);
     return html`
-      <div class="degraded-badge ${iconOnly ? 'icon-only' : ''}">
-        <ha-icon icon="mdi:alert-outline" title=${label} aria-label=${label}></ha-icon>
-        ${iconOnly ? nothing : html`<span>${label}</span>`}
+      <div class="degraded-badge">
+        <ha-icon icon="mdi:alert-outline"></ha-icon>
+        <span>${label}</span>
       </div>
+    `;
+  }
+
+  // 'compact' form: a corner warning badge floating over the alert(s) at zero
+  // layout cost. An overlay is an annotation on a host, so — like the strip — it
+  // renders only when alerts exist. Carries the same mdi:alert-outline as the
+  // strip and caveat (inverted: white glyph on the amber disc) so all three
+  // forms read as one family; the label rides along as title/aria.
+  private _renderDegradedDot(brokenIds: string[]): TemplateResult {
+    const label = this._degradedLabel(brokenIds);
+    return html`
+      <span class="degraded-dot" role="img" title=${label} aria-label=${label}>
+        <ha-icon icon="mdi:alert-outline"></ha-icon>
+      </span>
     `;
   }
 
@@ -964,25 +982,29 @@ export class WeatherAlertsCard extends LitElement {
       return this._renderPreview();
     }
 
-    // Availability is its own display channel, independent of the alert list: a
-    // degraded badge above the content whenever some — or all — configured
-    // sources are broken. unavailableBehavior governs only the badge now
-    // ('message': name the source, 'compact': icon-only, 'hide': no badge); the
-    // former full-card takeover is gone. Breakage keeps the card visible (badge
-    // showing) even under hideNoAlerts, so a dark source is never silently
-    // masked by the empty-state hide.
+    // Availability is its own display channel, independent of the alert list.
+    // unavailableBehavior governs how a dark source is surfaced, and the form
+    // depends on whether there is alert content to anchor to:
+    //   with alerts    → 'message': in-flow strip above them; 'compact': corner
+    //                    dot floating over them at zero layout cost.
+    //   without alerts → both collapse into a qualified empty state ("No active
+    //                    alerts · N unavailable"). An overlay has no host and a
+    //                    bare all-clear would be a false assertion, so the
+    //                    caveat lives in the empty state itself.
+    //   'hide'         → no availability signal in any case.
+    // Signalling keeps the card visible even under hideNoAlerts, so a dark
+    // source is never silently masked by the empty-state hide.
     const brokenIds = this._brokenIds();
-    const broken = brokenIds.length > 0;
     const behavior = this._config.unavailableBehavior || 'message';
-    const badgeShown = broken && behavior !== 'hide';
+    const signalAvailability = brokenIds.length > 0 && behavior !== 'hide';
 
     const alerts = this._getAlerts();
+    const hasAlerts = alerts.length > 0;
 
-    // Fully hide the card only when there is nothing to show and the user has
-    // opted into it: no alerts, hideNoAlerts set, and either nothing is broken
-    // or the badge was explicitly turned off ('hide'). A visible badge always
-    // keeps the card on screen.
-    if (alerts.length === 0 && this._config.hideNoAlerts && (behavior === 'hide' || !broken)) {
+    // Fully hide the card only when there is genuinely nothing to show and the
+    // user opted into it: no alerts, hideNoAlerts set, and no availability
+    // signal to surface. Any signal keeps the card on screen.
+    if (!hasAlerts && this._config.hideNoAlerts && !signalAvailability) {
       this.style.display = 'none';
       return html``;
     }
@@ -991,12 +1013,17 @@ export class WeatherAlertsCard extends LitElement {
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
 
+    // The strip and dot are anchored forms — they only render over real alerts.
+    const strip = signalAvailability && hasAlerts && behavior === 'message';
+    const dot = signalAvailability && hasAlerts && behavior === 'compact';
+
     return html`
       <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
-        ${badgeShown ? this._renderDegradedBadge(brokenIds, behavior) : nothing}
-        ${alerts.length === 0
-        ? (badgeShown ? nothing : this._renderNoAlerts())
-        : alerts.map(alert => this._renderAlert(alert))}
+        ${dot ? this._renderDegradedDot(brokenIds) : nothing}
+        ${strip ? this._renderDegradedStrip(brokenIds) : nothing}
+        ${hasAlerts
+        ? alerts.map(alert => this._renderAlert(alert))
+        : this._renderNoAlerts(signalAvailability ? brokenIds : [])}
       </ha-card>
     `;
   }
@@ -1014,11 +1041,19 @@ export class WeatherAlertsCard extends LitElement {
     `;
   }
 
-  private _renderNoAlerts(): TemplateResult {
+  // The empty state. When brokenIds is non-empty a source is dark, so the
+  // all-clear is qualified by an availability caveat rather than asserted alone
+  // — the zero-alert form of the availability channel (no strip, no dot).
+  private _renderNoAlerts(brokenIds: string[] = []): TemplateResult {
     return html`
       <div class="no-alerts">
         <ha-icon icon="mdi:weather-sunny"></ha-icon><br>
         ${t('card.no_alerts', this._lang)}
+        ${brokenIds.length > 0
+        ? html`<div class="no-alerts-caveat">
+            <ha-icon icon="mdi:alert-outline"></ha-icon>${this._degradedLabel(brokenIds)}
+          </div>`
+        : nothing}
       </div>
     `;
   }

@@ -3,7 +3,6 @@ type TranslationMap = Record<string, string>;
 const en: TranslationMap = {
   // Card UI
   'card.no_alerts': 'No active alerts.',
-  'card.sensor_unavailable': 'Alert sensor is {state}.',
   'card.sources_unavailable_named': '{name} unavailable',
   'card.sources_unavailable_count': '{count} sources unavailable',
   'card.preview': 'Sample Data',
@@ -130,7 +129,7 @@ const en: TranslationMap = {
   'editor.hide_no_alerts': 'Hide card when there are no active alerts',
   'editor.unavailable_behavior': 'When a source is unavailable',
   'editor.unavailable_message': 'Show which source',
-  'editor.unavailable_compact': 'Show icon only',
+  'editor.unavailable_compact': 'Show a compact indicator',
   'editor.unavailable_hide': 'Hide indicator (not recommended)',
   'editor.unavailable_hide_warning': 'Hiding the indicator can present an all-clear while a source is blind — an unavailable sensor is not proof of safety.',
   'editor.allow_dismiss': 'Allow dismissing alerts',
@@ -169,7 +168,6 @@ const en: TranslationMap = {
 const fr: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Aucune alerte active.',
-  'card.sensor_unavailable': 'Le capteur d\'alerte est {state}.',
   'card.sources_unavailable_named': '{name} indisponible',
   'card.sources_unavailable_count': '{count} sources indisponibles',
   'card.preview': 'Donnees d\'exemple',
@@ -296,7 +294,7 @@ const fr: TranslationMap = {
   'editor.hide_no_alerts': 'Masquer la carte sans alertes',
   'editor.unavailable_behavior': "Quand une source est indisponible",
   'editor.unavailable_message': 'Afficher la source concernée',
-  'editor.unavailable_compact': "Afficher l'icône seule",
+  'editor.unavailable_compact': 'Afficher un indicateur compact',
   'editor.unavailable_hide': "Masquer l'indicateur (déconseillé)",
   'editor.unavailable_hide_warning': "Masquer l'indicateur peut présenter une absence d'alerte alors qu'une source est aveugle — un capteur indisponible n'est pas une preuve de sécurité.",
   'editor.allow_dismiss': 'Permettre d\'ignorer les alertes',
@@ -335,7 +333,6 @@ const fr: TranslationMap = {
 const es: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Sin alertas activas.',
-  'card.sensor_unavailable': 'El sensor de alertas esta {state}.',
   'card.sources_unavailable_named': '{name} no disponible',
   'card.sources_unavailable_count': '{count} fuentes no disponibles',
   'card.preview': 'Datos de ejemplo',
@@ -462,7 +459,7 @@ const es: TranslationMap = {
   'editor.hide_no_alerts': 'Ocultar tarjeta sin alertas',
   'editor.unavailable_behavior': 'Cuando una fuente no está disponible',
   'editor.unavailable_message': 'Mostrar qué fuente',
-  'editor.unavailable_compact': 'Mostrar solo icono',
+  'editor.unavailable_compact': 'Mostrar un indicador compacto',
   'editor.unavailable_hide': 'Ocultar indicador (no recomendado)',
   'editor.unavailable_hide_warning': 'Ocultar el indicador puede presentar una calma total mientras una fuente está ciega: un sensor no disponible no es prueba de seguridad.',
   'editor.allow_dismiss': 'Permitir descartar alertas',
@@ -501,7 +498,6 @@ const es: TranslationMap = {
 const it: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Nessuna allerta attiva.',
-  'card.sensor_unavailable': 'Il sensore di allerta è {state}.',
   'card.sources_unavailable_named': '{name} non disponibile',
   'card.sources_unavailable_count': '{count} fonti non disponibili',
   'card.preview': 'Dati di esempio',
@@ -628,7 +624,7 @@ const it: TranslationMap = {
   'editor.hide_no_alerts': 'Nascondi scheda senza allerte',
   'editor.unavailable_behavior': 'Quando una fonte non è disponibile',
   'editor.unavailable_message': 'Mostra quale fonte',
-  'editor.unavailable_compact': 'Mostra solo icona',
+  'editor.unavailable_compact': 'Mostra un indicatore compatto',
   'editor.unavailable_hide': 'Nascondi indicatore (sconsigliato)',
   'editor.unavailable_hide_warning': "Nascondere l'indicatore può presentare un cessato allarme mentre una fonte è cieca: un sensore non disponibile non è prova di sicurezza.",
   'editor.allow_dismiss': 'Consenti di ignorare le allerte',
@@ -667,7 +663,6 @@ const it: TranslationMap = {
 const de: TranslationMap = {
   // Card UI
   'card.no_alerts': 'Keine aktiven Warnungen.',
-  'card.sensor_unavailable': 'Der Warnsensor ist {state}.',
   'card.sources_unavailable_named': '{name} nicht verfügbar',
   'card.sources_unavailable_count': '{count} Quellen nicht verfügbar',
   'card.preview': 'Beispieldaten',
@@ -794,7 +789,7 @@ const de: TranslationMap = {
   'editor.hide_no_alerts': 'Karte ohne aktive Warnungen ausblenden',
   'editor.unavailable_behavior': 'Wenn eine Quelle nicht verfügbar ist',
   'editor.unavailable_message': 'Betroffene Quelle anzeigen',
-  'editor.unavailable_compact': 'Nur Symbol anzeigen',
+  'editor.unavailable_compact': 'Kompakten Hinweis anzeigen',
   'editor.unavailable_hide': 'Anzeige ausblenden (nicht empfohlen)',
   'editor.unavailable_hide_warning': 'Das Ausblenden der Anzeige kann Entwarnung signalisieren, während eine Quelle blind ist — ein nicht verfügbarer Sensor ist kein Beweis für Sicherheit.',
   'editor.allow_dismiss': 'Warnungen ausblendbar machen',
