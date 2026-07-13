@@ -167,6 +167,8 @@ describe('t()', () => {
     // Access translations indirectly through t()
     const enKeys = [
       'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -211,6 +213,8 @@ describe('t()', () => {
   it('all en keys exist in es', () => {
     const enKeys = [
       'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -251,6 +255,8 @@ describe('t()', () => {
   it('all en keys exist in it', () => {
     const enKeys = [
       'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
@@ -291,6 +297,8 @@ describe('t()', () => {
   it('all en keys exist in de', () => {
     const enKeys = [
       'card.no_alerts', 'card.preview', 'card.read_details',
+      'card.sources_unavailable_named', 'card.sources_unavailable_count',
+      'card.sources_unavailable_one',
       'card.open_source', 'card.zones_count',
       'card.zone_count_singular',
       'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',

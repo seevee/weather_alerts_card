@@ -16,8 +16,17 @@ export interface HomeAssistant {
   };
   // Entity registry, keyed by entity_id. Available in HA 2023.4+.
   entities?: Record<string, EntityRegistryDisplayEntry>;
+  // Device registry, keyed by device id. Used to name a dark device source
+  // (message mode shows *which* source). Best-effort: absent on very old cores.
+  devices?: Record<string, DeviceRegistryDisplayEntry>;
   // Live WS connection — used to subscribe to entity_registry updates.
   connection?: Connection;
+}
+
+export interface DeviceRegistryDisplayEntry {
+  id: string;
+  name?: string | null;
+  name_by_user?: string | null;
 }
 
 export interface HassEntity {

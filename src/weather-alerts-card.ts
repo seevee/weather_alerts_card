@@ -5,11 +5,20 @@ import type { Connection } from 'home-assistant-js-websocket';
 import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry, HassEntity } from './types';
 import {
   resolveDeviceAlertEntities,
+  deviceEntityIds,
   deviceHasAnyEntity,
   subscribeEntityRegistry,
 } from './registry';
 // Re-export for existing test imports.
 export { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
+
+// A configured source that is currently dark. `name` is the entity
+// friendly_name for an explicitly-listed entity, or the device registry name
+// for a device — null only when no name can be resolved, in which case the
+// caption falls back to a generic singular instead of naming it.
+interface BrokenSource {
+  name: string | null;
+}
 import {
   loadDismissals,
   saveDismissals,
@@ -908,40 +917,86 @@ export class WeatherAlertsCard extends LitElement {
   // parseable alert. CAP per-alert sensors can report state "unknown" while
   // their attributes hold a fully valid alert (e.g. an NWS Beach Hazards
   // Statement) — those must still render, not be dropped as a broken source.
-  // Shared by render() and getCardSize() so both agree on the predicate.
   private _isBroken(e: HassEntity): boolean {
     return (e.state === 'unavailable' || e.state === 'unknown')
       && getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length === 0;
-  }
-
-  // The resolved entities that are currently broken (see _isBroken). Drives the
-  // degraded badge, which warns that some — or all — configured sources are dark.
-  private _brokenIds(): string[] {
-    if (!this.hass) return [];
-    return this._getAllEntities().filter(id => {
-      const e = this.hass.states[id];
-      return !!e && this._isBroken(e);
-    });
   }
 
   private _friendlyName(id: string): string {
     return (this.hass?.states[id]?.attributes?.friendly_name as string | undefined) || id;
   }
 
+  // Display name of a device from the device registry, so 'message' mode can
+  // name a dark device ("show which source"). Null when the registry or the
+  // device's name is unavailable — the caller then falls back to a generic
+  // singular rather than a wrong entity-derived name.
+  private _deviceName(deviceId: string): string | null {
+    const d = this.hass?.devices?.[deviceId];
+    return (d?.name_by_user || d?.name) || null;
+  }
+
+  // The configured sources that are currently dark — drives the degraded signal.
+  // A "source" is either an explicitly-listed entity or a whole device:
+  //   - entity/entities: each id that is itself broken (see _isBroken), named by
+  //     its friendly_name.
+  //   - device: ONE source, dark when it is registered, yields no parseable
+  //     alert across ANY of its entities, and has at least one entity in an
+  //     error state. Detection reads the UNFILTERED device entities, not the
+  //     canHandle-filtered alert list (_getAllEntities): an unavailable source
+  //     loses its alert attributes, so the alert list can no longer see it —
+  //     the exact reason a dark cap_alerts device previously showed a false
+  //     all-clear. Named from the device registry (see _deviceName) so 'message'
+  //     mode can show *which* source; falls back to a generic singular only when
+  //     the registry has no name for it.
+  private _brokenSources(): BrokenSource[] {
+    if (!this.hass) return [];
+    const sources: BrokenSource[] = [];
+
+    const seen = new Set<string>();
+    for (const id of [this._config?.entity, ...(this._config?.entities || [])]) {
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      const e = this.hass.states[id];
+      if (e && this._isBroken(e)) sources.push({ name: this._friendlyName(id) });
+    }
+
+    if (this._config?.device) {
+      let hasParseable = false;
+      let hasErrored = false;
+      for (const id of deviceEntityIds(this.hass, this._config.device, this._registryEntries)) {
+        const e = this.hass.states[id];
+        if (!e) continue;
+        const parses = getAdapter(this._config.provider, e.attributes).parseAlerts(e.attributes).length > 0;
+        if (parses) hasParseable = true;
+        else if (e.state === 'unavailable' || e.state === 'unknown') hasErrored = true;
+      }
+      if (!hasParseable && hasErrored) sources.push({ name: this._deviceName(this._config.device) });
+    }
+
+    return sources;
+  }
+
   // Human-readable availability caption: names the source when exactly one is
-  // dark, otherwise counts them. Shared by the strip, the dot, and the empty-
-  // state caveat so all three phrasings stay identical.
-  private _degradedLabel(brokenIds: string[]): string {
-    return brokenIds.length === 1
-      ? t('card.sources_unavailable_named', this._lang, { name: this._friendlyName(brokenIds[0]) })
-      : t('card.sources_unavailable_count', this._lang, { count: brokenIds.length });
+  // dark AND it has a resolvable name; otherwise counts them. Shared by the
+  // strip, the dot, and the empty-state caveat so all three phrasings stay
+  // identical.
+  private _degradedLabel(sources: BrokenSource[]): string {
+    if (sources.length === 1) {
+      // One dark source: name it when we can, else a generic singular — some
+      // devices have no registry name, and "1 sources unavailable" from the
+      // count string reads wrong.
+      return sources[0].name
+        ? t('card.sources_unavailable_named', this._lang, { name: sources[0].name })
+        : t('card.sources_unavailable_one', this._lang);
+    }
+    return t('card.sources_unavailable_count', this._lang, { count: sources.length });
   }
 
   // 'message' form of the availability channel: an in-flow strip above real
   // alert content. Only rendered when alerts exist to anchor it (see render());
   // with no alerts the caveat moves into the empty state instead.
-  private _renderDegradedStrip(brokenIds: string[]): TemplateResult {
-    const label = this._degradedLabel(brokenIds);
+  private _renderDegradedStrip(sources: BrokenSource[]): TemplateResult {
+    const label = this._degradedLabel(sources);
     return html`
       <div class="degraded-badge">
         <ha-icon icon="mdi:alert-outline"></ha-icon>
@@ -955,8 +1010,8 @@ export class WeatherAlertsCard extends LitElement {
   // renders only when alerts exist. Carries the same mdi:alert-outline as the
   // strip and caveat (inverted: white glyph on the amber disc) so all three
   // forms read as one family; the label rides along as title/aria.
-  private _renderDegradedDot(brokenIds: string[]): TemplateResult {
-    const label = this._degradedLabel(brokenIds);
+  private _renderDegradedDot(sources: BrokenSource[]): TemplateResult {
+    const label = this._degradedLabel(sources);
     return html`
       <span class="degraded-dot" role="img" title=${label} aria-label=${label}>
         <ha-icon icon="mdi:alert-outline"></ha-icon>
@@ -994,9 +1049,9 @@ export class WeatherAlertsCard extends LitElement {
     //   'hide'         → no availability signal in any case.
     // Signalling keeps the card visible even under hideNoAlerts, so a dark
     // source is never silently masked by the empty-state hide.
-    const brokenIds = this._brokenIds();
+    const brokenSources = this._brokenSources();
     const behavior = this._config.unavailableBehavior || 'message';
-    const signalAvailability = brokenIds.length > 0 && behavior !== 'hide';
+    const signalAvailability = brokenSources.length > 0 && behavior !== 'hide';
 
     const alerts = this._getAlerts();
     const hasAlerts = alerts.length > 0;
@@ -1019,11 +1074,11 @@ export class WeatherAlertsCard extends LitElement {
 
     return html`
       <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
-        ${dot ? this._renderDegradedDot(brokenIds) : nothing}
-        ${strip ? this._renderDegradedStrip(brokenIds) : nothing}
+        ${dot ? this._renderDegradedDot(brokenSources) : nothing}
+        ${strip ? this._renderDegradedStrip(brokenSources) : nothing}
         ${hasAlerts
         ? alerts.map(alert => this._renderAlert(alert))
-        : this._renderNoAlerts(signalAvailability ? brokenIds : [])}
+        : this._renderNoAlerts(signalAvailability ? brokenSources : [])}
       </ha-card>
     `;
   }
@@ -1041,17 +1096,17 @@ export class WeatherAlertsCard extends LitElement {
     `;
   }
 
-  // The empty state. When brokenIds is non-empty a source is dark, so the
+  // The empty state. When sources is non-empty a source is dark, so the
   // all-clear is qualified by an availability caveat rather than asserted alone
   // — the zero-alert form of the availability channel (no strip, no dot).
-  private _renderNoAlerts(brokenIds: string[] = []): TemplateResult {
+  private _renderNoAlerts(sources: BrokenSource[] = []): TemplateResult {
     return html`
       <div class="no-alerts">
         <ha-icon icon="mdi:weather-sunny"></ha-icon><br>
         ${t('card.no_alerts', this._lang)}
-        ${brokenIds.length > 0
+        ${sources.length > 0
         ? html`<div class="no-alerts-caveat">
-            <ha-icon icon="mdi:alert-outline"></ha-icon>${this._degradedLabel(brokenIds)}
+            <ha-icon icon="mdi:alert-outline"></ha-icon>${this._degradedLabel(sources)}
           </div>`
         : nothing}
       </div>
