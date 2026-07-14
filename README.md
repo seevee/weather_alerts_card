@@ -11,10 +11,12 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
+- **Affected-area mini-map (CAP)** — optional inline outline of the alert's polygon, with an opt-in raster-tile basemap for geographic context (`showGeometry`)
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
-- **Zone filtering (BoM)** — show only alerts for specific `area_id` zones
+- **Zone filtering** — show only alerts for specific zone codes (CAP Alerts geocodes, BoM `area_id`); see the `zones` note for provider support
 - **Dismissable alerts** — optional per-alert dismiss (button or swipe) with undo and a restore-all control, stored browser-locally
+- **Broken-source safety badge** — when a configured sensor goes unavailable/unknown, a degraded indicator names the broken source instead of silently showing "no alerts" (a dead feed is never treated as proof of safety) (`unavailableBehavior`)
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display (unclassified alerts always shown)
 - **Localized UI** — English, French, Spanish, Italian, and German; auto-detected from Home Assistant locale
@@ -54,7 +56,7 @@ Then click the Download button, and click Reload when prompted.
 | `sources` | — | Feed `source` attribute values to auto-collect (e.g. `['nsw_rural_fire_service_feed']`). Harvests **every** entity whose `source` attribute matches, re-scanning each render so per-incident entities appear and vanish with the live feed — no volatile `geo_location.*` ids to hand-list. Independent of `provider` (each collected entity still auto-detects its adapter). Can be used on its own or combined with `entity`/`entities`/`device`. |
 | `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
-| `zones` | — | BoM `area_id` codes to filter (e.g. `NSW_FL049`) |
+| `zones` | — | Restrict to specific zone codes, matched against each alert's zone list. Populated by CAP Alerts (UGC/SAME/EMMA_ID/NUTS and any other geocode scheme) and BoM (`area_id`, e.g. `NSW_FL049`; fork-dependent — the `safepay/ha_bom_australia` fork emits it). The recommended NWS integration doesn't emit zone codes, so this doesn't apply to it. **Alerts with no matching zone are hidden**, so setting `zones` on a provider that carries none hides everything |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'`. Alerts whose severity is unknown/unclassified are always shown, regardless of this threshold |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — `'eccc'` uses ECCC's published `red`/`orange`/`yellow`/`grey` palette (matches weather.gc.ca); falls back to the canonical severity tier for non-ECCC alerts displayed under this theme |
