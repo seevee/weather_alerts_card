@@ -26,6 +26,75 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 [![Severity, NWS, and MeteoAlarm color themes](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-light.png)
 
+### Surface theming (`--wac-*` tokens)
+
+The card exposes a small, stable set of CSS custom properties for its surfaces.
+Set them from theme YAML, [card-mod](https://github.com/thomasloven/lovelace-card-mod),
+or a dashboard `style:` block — no card config needed. Unset, every token falls
+back to the value the card has always used, so the default look is unchanged.
+
+The outer `<ha-card>` is the single painted surface; each alert box defaults to a
+**transparent** fill and reveals it. That means a translucent theme
+(`--ha-card-background: rgba(...)`) renders its alpha exactly once, instead of
+compounding into a "solid" look on the alert bodies. The standard
+`--ha-card-background`, `--ha-card-border-radius`, and `--ha-card-box-shadow` also
+work as expected.
+
+| Token | Default | Controls |
+|-------|---------|----------|
+| `--wac-card-background` | `var(--ha-card-background, var(--card-background-color))` | Outer card wrapper fill |
+| `--wac-alert-background` | `transparent` | Per-alert box fill (reveals the outer surface) |
+| `--wac-alert-border-radius` | `12px` (full) / `8px` (compact) | Per-alert corner radius |
+| `--wac-alert-border` | `1px solid var(--divider-color)` | Per-alert border |
+| `--wac-alert-shadow` | `var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1))` | Per-alert shadow |
+| `--wac-alert-gap` | `16px` (full) / `4px` (compact) | Vertical gap between alerts |
+
+<details>
+<summary>Show card-mod examples</summary>
+
+**Translucent theme** — set a translucent card background and let the alert boxes
+inherit it (this is the default, shown here for a per-card override):
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+provider: nws
+card_mod:
+  style: |
+    ha-card {
+      --ha-card-background: rgba(40, 40, 40, 0.6);
+      --wac-alert-background: transparent; /* default; alert bodies stay translucent */
+    }
+```
+
+**Pill / chip look** — filled alert boxes on a transparent wrapper, built entirely
+from the stable tokens (approximates a [Bubble Card](https://github.com/Clooos/Bubble-Card)
+style; contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144)):
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+sortOrder: severity
+layout: compact
+provider: nws
+card_mod:
+  style: |
+    ha-card {
+      --wac-card-background: transparent;
+      --wac-alert-background: rgb(40, 40, 40);
+      --wac-alert-border: none;
+      --wac-alert-border-radius: 28px;
+      --wac-alert-shadow: none;
+      --wac-alert-gap: 8px;
+    }
+```
+
+Deeper layout tweaks (row height, icon chip size) still require reaching into the
+card's internal class names, which are **not** a stable public API and may change
+between releases. Prefer the tokens above where they suffice.
+
+</details>
+
 ## Quick Start
 
 1. Install a weather alerts integration for your region (see [Supported Providers](#supported-providers))
@@ -47,6 +116,8 @@ Then click the Download button, and click Reload when prompted.
 3. Add as resource: **Settings → Dashboards → Resources** → URL: `/local/weather-alerts-card.js`, Type: JavaScript Module
 
 ## Configuration
+
+> Surface appearance — backgrounds, borders, corners, shadows, translucency — isn't configured here; it's themed via CSS. See [Surface theming (`--wac-*` tokens)](#surface-theming---wac--tokens).
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -222,74 +293,7 @@ device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
 Pick the device from the editor's CAP Alerts device selector to avoid hand-typing
 the id. `device` can also coexist with `entities:` for mixed setups.
 
-**Theming the card surface (`--wac-*` tokens)**
-
-<details>
-<summary>Show tokens & examples</summary>
-
-The card exposes a small set of CSS custom properties for its surfaces. Set them
-from theme YAML, [card-mod](https://github.com/thomasloven/lovelace-card-mod), or
-a dashboard `style:` block — no card config needed. Unset, every token falls back
-to the value the card has always used, so the default look is unchanged.
-
-The outer `<ha-card>` is the single painted surface; each alert box defaults to a
-**transparent** fill and reveals it. That means a translucent theme
-(`--ha-card-background: rgba(...)`) now renders its alpha exactly once, instead of
-compounding into a "solid" look on the alert bodies. The standard
-`--ha-card-background`, `--ha-card-border-radius`, and `--ha-card-box-shadow` also
-work as expected.
-
-| Token | Default | Controls |
-|-------|---------|----------|
-| `--wac-card-background` | `var(--ha-card-background, var(--card-background-color))` | Outer card wrapper fill |
-| `--wac-alert-background` | `transparent` | Per-alert box fill (reveals the outer surface) |
-| `--wac-alert-border-radius` | `12px` (full) / `8px` (compact) | Per-alert corner radius |
-| `--wac-alert-border` | `1px solid var(--divider-color)` | Per-alert border |
-| `--wac-alert-shadow` | `var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1))` | Per-alert shadow |
-| `--wac-alert-gap` | `16px` (full) / `4px` (compact) | Vertical gap between alerts |
-
-**Translucent theme** — set a translucent card background and let the alert boxes
-inherit it (this is the default, shown here for a per-card override):
-
-```yaml
-type: custom:weather-alerts-card
-entity: sensor.nws_alerts_alerts
-provider: nws
-card_mod:
-  style: |
-    ha-card {
-      --ha-card-background: rgba(40, 40, 40, 0.6);
-      --wac-alert-background: transparent; /* default; alert bodies stay translucent */
-    }
-```
-
-**Pill / chip look** — filled alert boxes on a transparent wrapper, built entirely
-from the stable tokens (approximates a [Bubble Card](https://github.com/Clooos/Bubble-Card)
-style; contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144)):
-
-```yaml
-type: custom:weather-alerts-card
-entity: sensor.nws_alerts_alerts
-sortOrder: severity
-layout: compact
-provider: nws
-card_mod:
-  style: |
-    ha-card {
-      --wac-card-background: transparent;
-      --wac-alert-background: rgb(40, 40, 40);
-      --wac-alert-border: none;
-      --wac-alert-border-radius: 28px;
-      --wac-alert-shadow: none;
-      --wac-alert-gap: 8px;
-    }
-```
-
-Deeper layout tweaks (row height, icon chip size) still require reaching into the
-card's internal class names, which are **not** a stable public API and may change
-between releases. Prefer the tokens above where they suffice.
-
-</details>
+**Theming the card surface** — see [Surface theming (`--wac-*` tokens)](#surface-theming---wac--tokens) under Themes for the token table and card-mod examples (translucent theme, pill/chip look).
 
 </details>
 
