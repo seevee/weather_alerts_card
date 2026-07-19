@@ -222,12 +222,50 @@ device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
 Pick the device from the editor's CAP Alerts device selector to avoid hand-typing
 the id. `device` can also coexist with `entities:` for mixed setups.
 
-**Match Bubble Card styling (requires [card-mod](https://github.com/thomasloven/lovelace-card-mod))**
+**Theming the card surface (`--wac-*` tokens)**
 
 <details>
-<summary>Show snippet</summary>
+<summary>Show tokens & examples</summary>
 
-Styles this card to visually match [Bubble Card](https://github.com/Clooos/Bubble-Card)'s large layout — 28px corners, 56px rows, 42×42 icon chip. Note: the selectors below reach into this card's internal CSS class names, which aren't a stable public API and may change between releases. Contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144).
+The card exposes a small set of CSS custom properties for its surfaces. Set them
+from theme YAML, [card-mod](https://github.com/thomasloven/lovelace-card-mod), or
+a dashboard `style:` block — no card config needed. Unset, every token falls back
+to the value the card has always used, so the default look is unchanged.
+
+The outer `<ha-card>` is the single painted surface; each alert box defaults to a
+**transparent** fill and reveals it. That means a translucent theme
+(`--ha-card-background: rgba(...)`) now renders its alpha exactly once, instead of
+compounding into a "solid" look on the alert bodies. The standard
+`--ha-card-background`, `--ha-card-border-radius`, and `--ha-card-box-shadow` also
+work as expected.
+
+| Token | Default | Controls |
+|-------|---------|----------|
+| `--wac-card-background` | `var(--ha-card-background, var(--card-background-color))` | Outer card wrapper fill |
+| `--wac-alert-background` | `transparent` | Per-alert box fill (reveals the outer surface) |
+| `--wac-alert-border-radius` | `12px` (full) / `8px` (compact) | Per-alert corner radius |
+| `--wac-alert-border` | `1px solid var(--divider-color)` | Per-alert border |
+| `--wac-alert-shadow` | `var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1))` | Per-alert shadow |
+| `--wac-alert-gap` | `16px` (full) / `4px` (compact) | Vertical gap between alerts |
+
+**Translucent theme** — set a translucent card background and let the alert boxes
+inherit it (this is the default, shown here for a per-card override):
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+provider: nws
+card_mod:
+  style: |
+    ha-card {
+      --ha-card-background: rgba(40, 40, 40, 0.6);
+      --wac-alert-background: transparent; /* default; alert bodies stay translucent */
+    }
+```
+
+**Pill / chip look** — filled alert boxes on a transparent wrapper, built entirely
+from the stable tokens (approximates a [Bubble Card](https://github.com/Clooos/Bubble-Card)
+style; contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144)):
 
 ```yaml
 type: custom:weather-alerts-card
@@ -238,43 +276,18 @@ provider: nws
 card_mod:
   style: |
     ha-card {
-      background: transparent !important;
-      border: none !important;
-      border-radius: 28px !important;
-      box-shadow: none !important;
-    }
-    .alert-card {
-      background: rgb(40, 40, 40) !important;
-      border: none !important;
-      border-radius: 28px !important;
-      box-shadow: none !important;
-      overflow: hidden !important;
-      min-height: 56px !important;
-      margin: 0 0 8px !important;
-    }
-    .alert-card:last-child {
-      margin-bottom: 0 !important;
-    }
-    .alert-header-row {
-      min-height: 0 !important;
-      height: 56px !important;
-      padding: 0 12px 0 8px !important;
-    }
-    .icon-box {
-      width: 42px !important;
-      height: 42px !important;
-      flex: 0 0 42px !important;
-      --mdc-icon-size: 24px !important;
-    }
-    .icon-box ha-icon {
-      --mdc-icon-size: 24px !important;
-      width: 24px !important;
-      height: 24px !important;
-    }
-    .compact-time {
-      font-size: 13px !important;
+      --wac-card-background: transparent;
+      --wac-alert-background: rgb(40, 40, 40);
+      --wac-alert-border: none;
+      --wac-alert-border-radius: 28px;
+      --wac-alert-shadow: none;
+      --wac-alert-gap: 8px;
     }
 ```
+
+Deeper layout tweaks (row height, icon chip size) still require reaching into the
+card's internal class names, which are **not** a stable public API and may change
+between releases. Prefer the tokens above where they suffice.
 
 </details>
 
