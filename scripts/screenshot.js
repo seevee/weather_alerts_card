@@ -234,6 +234,16 @@ const PORT = 3742;
       },
     },
     {
+      name: 'translucent',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-translucent.html`,
+      canvasId: 'translucent-canvas',
+      cardIds: ['card-translucent-before', 'card-translucent-after'],
+      variants: [
+        { theme: 'theme-light', label: 'translu light', out: 'img/translucent-light.png' },
+        { theme: 'theme-dark',  label: 'translu dark ', out: 'img/translucent-dark.png' },
+      ],
+    },
+    {
       name: 'geometry',
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry.html`,
       canvasId: 'geometry-canvas',
