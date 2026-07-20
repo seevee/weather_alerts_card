@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import { canHandleAny, ENTITY_NAME_PATTERNS, knownFeedSources } from './adapters';
 import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
@@ -12,6 +12,9 @@ export class WeatherAlertsCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _showPreview = false;
+  // Local UI: whether the collapsible per-phase progress/icon styling group is
+  // open. Not persisted to config — purely an editor disclosure.
+  @state() private _showStyling = false;
   private _subscribedDismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
 
@@ -766,6 +769,49 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  // Per-phase progress-bar decoration. On the phase default, delete the phase
+  // key and prune an emptied progressStyle object so configs stay minimal
+  // (mirrors _fontSizeChanged); otherwise write the chosen decoration.
+  private _progressStyleChanged(phase: DecoPhase, ev: CustomEvent): void {
+    const value = ev.detail.value as ProgressDecoration;
+    const current = this._config.progressStyle?.[phase] ?? PROGRESS_DECO_DEFAULTS[phase];
+    if (value === current) return;
+    const newConfig = { ...this._config };
+    const progressStyle: ProgressStyleConfig = { ...(newConfig.progressStyle ?? {}) };
+    if (value === PROGRESS_DECO_DEFAULTS[phase]) {
+      delete progressStyle[phase];
+    } else {
+      progressStyle[phase] = value;
+    }
+    if (Object.keys(progressStyle).length === 0) {
+      delete newConfig.progressStyle;
+    } else {
+      newConfig.progressStyle = progressStyle;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  // Per-phase icon-ring border style; same default-detection / pruning as
+  // _progressStyleChanged.
+  private _iconBorderStyleChanged(phase: DecoPhase, ev: CustomEvent): void {
+    const value = ev.detail.value as IconBorderStyle;
+    const current = this._config.iconBorderStyle?.[phase] ?? ICON_BORDER_DEFAULTS[phase];
+    if (value === current) return;
+    const newConfig = { ...this._config };
+    const iconBorderStyle: IconBorderStyleConfig = { ...(newConfig.iconBorderStyle ?? {}) };
+    if (value === ICON_BORDER_DEFAULTS[phase]) {
+      delete iconBorderStyle[phase];
+    } else {
+      iconBorderStyle[phase] = value;
+    }
+    if (Object.keys(iconBorderStyle).length === 0) {
+      delete newConfig.iconBorderStyle;
+    } else {
+      newConfig.iconBorderStyle = iconBorderStyle;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _timezoneChanged(ev: CustomEvent): void {
     const value = ev.detail.value as 'server' | 'browser';
     if (value === (this._config.timezone || 'server')) return;
@@ -1000,6 +1046,51 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
+        <!-- Per-phase progress/icon styling: power-user knobs with good
+             defaults, collapsed by default so they cost one row until opened.
+             Open state is local UI (not stored in config). -->
+        <div
+          class="section-label section-toggle ${this._config.progressStyle || this._config.iconBorderStyle ? 'section-toggle-set' : ''}"
+          @click=${() => { this._showStyling = !this._showStyling; }}
+        >
+          <span>${t('editor.styling_section', lang)}</span>
+          <ha-icon
+            icon="mdi:chevron-down"
+            class="section-chevron ${this._showStyling ? 'expanded' : ''}"
+          ></ha-icon>
+        </div>
+        ${this._showStyling ? html`
+          <div class="sub-label">${t('editor.progress_style', lang)}</div>
+          <div class="phase-row">
+            ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
+              <ha-select
+                .label=${t('editor.progress_style_' + phase, lang)}
+                .value=${this._config.progressStyle?.[phase] || PROGRESS_DECO_DEFAULTS[phase]}
+                @selected=${(ev: CustomEvent) => this._progressStyleChanged(phase, ev)}
+              >
+                <ha-dropdown-item value="solid">${t('editor.deco_solid', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="striped">${t('editor.deco_striped', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="shimmer">${t('editor.deco_shimmer', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="pulse">${t('editor.deco_pulse', lang)}</ha-dropdown-item>
+              </ha-select>
+            `)}
+          </div>
+
+          <div class="sub-label">${t('editor.icon_border_style', lang)}</div>
+          <div class="phase-row">
+            ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
+              <ha-select
+                .label=${t('editor.progress_style_' + phase, lang)}
+                .value=${this._config.iconBorderStyle?.[phase] || ICON_BORDER_DEFAULTS[phase]}
+                @selected=${(ev: CustomEvent) => this._iconBorderStyleChanged(phase, ev)}
+              >
+                <ha-dropdown-item value="dashed">${t('editor.icon_border_dashed', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="solid">${t('editor.icon_border_solid', lang)}</ha-dropdown-item>
+              </ha-select>
+            `)}
+          </div>
+        ` : nothing}
+
         <ha-formfield .label=${t('editor.reformat_text', lang)}>
           <ha-switch
             .checked=${this._config.reformatText !== false}
@@ -1218,6 +1309,45 @@ export class WeatherAlertsCardEditor extends LitElement {
       border-bottom: 1px solid var(--divider-color);
       padding-bottom: 4px;
       margin-top: 8px;
+    }
+    /* Clickable disclosure header for the collapsible styling group. */
+    .section-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    /* Marks the collapsed group when non-default overrides are set, so a closed
+       section never hides that styling has been customized. */
+    .section-toggle-set > span::after {
+      content: '•';
+      margin-left: 6px;
+      color: var(--primary-color);
+    }
+    .section-chevron {
+      --mdc-icon-size: 20px;
+      transition: transform 0.2s;
+      color: var(--secondary-text-color);
+    }
+    .section-chevron.expanded {
+      transform: rotate(180deg);
+    }
+    /* Sub-heading inside the disclosure (lighter than a section-label). */
+    .sub-label {
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }
+    /* Three phase selects on one row; wrap to stacked on a narrow panel. */
+    .phase-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .phase-row ha-select {
+      flex: 1 1 110px;
+      min-width: 110px;
     }
     .preview-hint,
     .preview-nudge {

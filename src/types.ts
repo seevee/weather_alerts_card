@@ -47,6 +47,50 @@ export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unkno
 export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
+// Progress-bar decoration (pattern) applied to a temporal phase's fill. Direction
+// is intrinsic to the phase (not chosen here) — any decoration adopts its phase's
+// flow. `solid` = no texture/animation. See ProgressStyleConfig.
+export type ProgressDecoration = 'solid' | 'striped' | 'shimmer' | 'pulse';
+
+// Per-phase progress-bar decoration overrides. Every key optional; omitting a key
+// keeps that phase's default (preparation: striped, active: shimmer, ongoing:
+// pulse), reproducing today's rendering exactly. `expired` is not configurable
+// (always a dimmed solid bar).
+export interface ProgressStyleConfig {
+  preparation?: ProgressDecoration; // default 'striped'
+  active?: ProgressDecoration;      // default 'shimmer'
+  ongoing?: ProgressDecoration;     // default 'pulse'
+}
+
+// Icon-ring border style per temporal phase. Every key optional; omitting a key
+// keeps that phase's default (preparation: dashed, active: solid, ongoing: solid),
+// reproducing today's rendering exactly. `expired` is not configurable (always a
+// dimmed solid ring).
+export type IconBorderStyle = 'dashed' | 'solid';
+export interface IconBorderStyleConfig {
+  preparation?: IconBorderStyle; // default 'dashed'
+  active?: IconBorderStyle;      // default 'solid'
+  ongoing?: IconBorderStyle;     // default 'solid'
+}
+
+// Configurable temporal phases for progress/icon decoration (expired is fixed,
+// always dimmed-solid, so it is never a configurable phase).
+export type DecoPhase = 'preparation' | 'active' | 'ongoing';
+
+// Per-phase defaults reproducing today's rendering when config is omitted.
+// Shared by the card (class resolution) and the editor (default detection /
+// key pruning) so the two can never drift.
+export const PROGRESS_DECO_DEFAULTS: Record<DecoPhase, ProgressDecoration> = {
+  preparation: 'striped',
+  active: 'shimmer',
+  ongoing: 'pulse',
+};
+export const ICON_BORDER_DEFAULTS: Record<DecoPhase, IconBorderStyle> = {
+  preparation: 'dashed',
+  active: 'solid',
+  ongoing: 'solid',
+};
+
 export interface WeatherAlertsCardConfig {
   type: string;
   entity: string;
@@ -60,6 +104,8 @@ export interface WeatherAlertsCardConfig {
   minSeverity?: AlertSeverity;
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
+  progressStyle?: ProgressStyleConfig; // per-phase progress-bar decoration; omit for defaults (prep striped, active shimmer, ongoing pulse)
+  iconBorderStyle?: IconBorderStyleConfig; // per-phase icon-ring border style; omit for defaults (prep dashed, active solid, ongoing solid)
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';

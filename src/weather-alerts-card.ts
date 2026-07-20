@@ -2,7 +2,7 @@ import { LitElement, html, svg, nothing, TemplateResult, PropertyValues } from '
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry, HassEntity } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry, HassEntity, DecoPhase, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import {
   resolveDeviceAlertEntities,
   deviceEntityIds,
@@ -880,6 +880,26 @@ export class WeatherAlertsCard extends LitElement {
     return classes.join(' ');
   }
 
+  // Resolves the alert's current temporal phase, or null when expired (expired
+  // is fixed dimmed-solid and takes no configurable decoration).
+  private _decoPhase(progress: AlertProgress): DecoPhase | null {
+    if (progress.isExpired) return null;
+    if (progress.isActive) return progress.hasEndTime ? 'active' : 'ongoing';
+    return 'preparation';
+  }
+
+  // Space-joined decoration classes for the alert-card root: the progress-bar
+  // pattern (deco-*) and icon-ring border (icon-border-*), each resolved from
+  // config for the alert's phase with a byte-identical default. Empty for
+  // expired alerts, which carry neither.
+  private _alertDecoClasses(progress: AlertProgress): string {
+    const phase = this._decoPhase(progress);
+    if (!phase) return '';
+    const deco = this._config?.progressStyle?.[phase] ?? PROGRESS_DECO_DEFAULTS[phase];
+    const icon = this._config?.iconBorderStyle?.[phase] ?? ICON_BORDER_DEFAULTS[phase];
+    return `deco-${deco} icon-border-${icon}`;
+  }
+
   // Resolves to 'light' or 'dark' so CSS boost rules only activate on the
   // matching side. Prefers HA's authoritative darkMode; falls back to
   // prefers-color-scheme when HA hasn't reported one yet (e.g., initial
@@ -1141,12 +1161,13 @@ export class WeatherAlertsCard extends LitElement {
           : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
     const ongoingClass = isOngoing ? 'ongoing' : '';
     const boostClasses = this._alertBoostClasses(alert);
+    const decoClasses = this._alertDecoClasses(progress);
     const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     const swipeClass = this._swipeCardClass(alert);
     const cardStyle = this._swipeCardStyle(alert, `${this._alertColorStyle(alert)} ${progressStyle}`);
     return html`
       <div
-        class="alert-card ${className} ${phaseClass} ${ongoingClass} ${boostClasses} ${swipeClass}"
+        class="alert-card ${className} ${phaseClass} ${ongoingClass} ${decoClasses} ${boostClasses} ${swipeClass}"
         style=${cardStyle}
         @pointerdown=${(e: PointerEvent) => this._onSwipePointerDown(alert, e)}
         @pointermove=${(e: PointerEvent) => this._onSwipePointerMove(alert, e)}
@@ -1218,11 +1239,12 @@ export class WeatherAlertsCard extends LitElement {
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
     const boostClasses = this._alertBoostClasses(alert);
+    const decoClasses = this._alertDecoClasses(progress);
     const swipeClass = this._swipeCardClass(alert);
     const cardStyle = this._swipeCardStyle(alert, this._alertColorStyle(alert));
     return html`
       <div
-        class="alert-card ${className} ${phaseClass} ${boostClasses} ${swipeClass}"
+        class="alert-card ${className} ${phaseClass} ${decoClasses} ${boostClasses} ${swipeClass}"
         style=${cardStyle}
         @pointerdown=${(e: PointerEvent) => this._onSwipePointerDown(alert, e)}
         @pointermove=${(e: PointerEvent) => this._onSwipePointerMove(alert, e)}
@@ -1469,13 +1491,14 @@ export class WeatherAlertsCard extends LitElement {
     const { isActive, progressPct, hasEndTime, onsetTs, endsTs, nowTs } = progress;
     const lang = this._lang;
 
-    const noAnim = !this._animationsEnabled;
+    // Ongoing positioning only (full width); the pulse animation comes from the
+    // deco-pulse class on the alert-card root (default for the ongoing phase),
+    // and the .no-animations rules freeze it when animations are off. No opacity
+    // dim — ongoing renders at full strength like active (see ongoing-pulse).
     const fillStyle = progress.isExpired
       ? 'left: 0; right: 0;'
       : isActive && !hasEndTime
-        ? noAnim
-          ? 'width: 100%; left: 0; opacity: 0.8;'
-          : 'width: 100%; left: 0; animation: ongoing-pulse 5s infinite; opacity: 0.8;'
+        ? 'width: 100%; left: 0;'
         : `left: ${progressPct}%; right: 0;`;
 
     return html`
