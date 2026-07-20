@@ -214,6 +214,11 @@
       entity: ENTITY,
       animations: false,
       colorTheme: 'severity',
+      // Compact here too, so the figure is a like-for-like comparison with the
+      // pill column at matching height (no lopsided backdrop). The transparency
+      // itself is layout-independent; the README YAML shows the full-layout form.
+      layout: 'compact',
+      sortOrder: 'severity',
     });
     translucent.hass = MOCK_HASS;
     translucent.style.setProperty('--ha-card-background', 'var(--demo-translucent-surface)');
