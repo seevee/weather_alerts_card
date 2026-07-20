@@ -712,6 +712,15 @@ export const cardStyles = css`
     border-radius: var(--wac-alert-border-radius, 8px);
   }
 
+  /* Re-assert the last-child gap reset for compact: the generic
+     .alert-card:last-child rule above has equal specificity but loses on
+     source order to .compact .alert-card, which would otherwise leave a
+     trailing --wac-alert-gap below the last chip (visible as stray bottom
+     margin, and previously hand-patched with margin-bottom:0 !important). */
+  .compact .alert-card:last-child {
+    margin-bottom: 0;
+  }
+
   .compact .alert-card::before {
     display: block;
     top: auto;

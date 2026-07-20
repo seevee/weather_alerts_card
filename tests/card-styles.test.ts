@@ -29,4 +29,12 @@ describe('cardStyles surface tokens', () => {
     // painted outer surface is exactly the compounding bug #215 removes.
     expect(css).not.toContain('background: var(--card-background-color);');
   });
+
+  it('resets the trailing gap on the last compact chip', () => {
+    // The generic `.alert-card:last-child { margin-bottom: 0 }` reset has equal
+    // specificity to `.compact .alert-card` and loses on source order, so
+    // compact needs its own last-child reset or the last chip keeps a stray
+    // --wac-alert-gap. Guard it: this rule is easy to drop when reordering.
+    expect(css).toContain('.compact .alert-card:last-child');
+  });
 });
