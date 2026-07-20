@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import { canHandleAny, ENTITY_NAME_PATTERNS, knownFeedSources } from './adapters';
 import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
@@ -766,6 +766,49 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  // Per-phase progress-bar decoration. On the phase default, delete the phase
+  // key and prune an emptied progressStyle object so configs stay minimal
+  // (mirrors _fontSizeChanged); otherwise write the chosen decoration.
+  private _progressStyleChanged(phase: DecoPhase, ev: CustomEvent): void {
+    const value = ev.detail.value as ProgressDecoration;
+    const current = this._config.progressStyle?.[phase] ?? PROGRESS_DECO_DEFAULTS[phase];
+    if (value === current) return;
+    const newConfig = { ...this._config };
+    const progressStyle: ProgressStyleConfig = { ...(newConfig.progressStyle ?? {}) };
+    if (value === PROGRESS_DECO_DEFAULTS[phase]) {
+      delete progressStyle[phase];
+    } else {
+      progressStyle[phase] = value;
+    }
+    if (Object.keys(progressStyle).length === 0) {
+      delete newConfig.progressStyle;
+    } else {
+      newConfig.progressStyle = progressStyle;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  // Per-phase icon-ring border style; same default-detection / pruning as
+  // _progressStyleChanged.
+  private _iconBorderStyleChanged(phase: DecoPhase, ev: CustomEvent): void {
+    const value = ev.detail.value as IconBorderStyle;
+    const current = this._config.iconBorderStyle?.[phase] ?? ICON_BORDER_DEFAULTS[phase];
+    if (value === current) return;
+    const newConfig = { ...this._config };
+    const iconBorderStyle: IconBorderStyleConfig = { ...(newConfig.iconBorderStyle ?? {}) };
+    if (value === ICON_BORDER_DEFAULTS[phase]) {
+      delete iconBorderStyle[phase];
+    } else {
+      iconBorderStyle[phase] = value;
+    }
+    if (Object.keys(iconBorderStyle).length === 0) {
+      delete newConfig.iconBorderStyle;
+    } else {
+      newConfig.iconBorderStyle = iconBorderStyle;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   private _timezoneChanged(ev: CustomEvent): void {
     const value = ev.detail.value as 'server' | 'browser';
     if (value === (this._config.timezone || 'server')) return;
@@ -999,6 +1042,32 @@ export class WeatherAlertsCardEditor extends LitElement {
             @change=${this._animationsChanged}
           ></ha-switch>
         </ha-formfield>
+
+        <div class="section-label">${t('editor.progress_style', lang)}</div>
+        ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
+          <ha-select
+            .label=${t('editor.progress_style_' + phase, lang)}
+            .value=${this._config.progressStyle?.[phase] || PROGRESS_DECO_DEFAULTS[phase]}
+            @selected=${(ev: CustomEvent) => this._progressStyleChanged(phase, ev)}
+          >
+            <ha-dropdown-item value="solid">${t('editor.deco_solid', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="striped">${t('editor.deco_striped', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="shimmer">${t('editor.deco_shimmer', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="pulse">${t('editor.deco_pulse', lang)}</ha-dropdown-item>
+          </ha-select>
+        `)}
+
+        <div class="section-label">${t('editor.icon_border_style', lang)}</div>
+        ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
+          <ha-select
+            .label=${t('editor.progress_style_' + phase, lang)}
+            .value=${this._config.iconBorderStyle?.[phase] || ICON_BORDER_DEFAULTS[phase]}
+            @selected=${(ev: CustomEvent) => this._iconBorderStyleChanged(phase, ev)}
+          >
+            <ha-dropdown-item value="dashed">${t('editor.icon_border_dashed', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="solid">${t('editor.icon_border_solid', lang)}</ha-dropdown-item>
+          </ha-select>
+        `)}
 
         <ha-formfield .label=${t('editor.reformat_text', lang)}>
           <ha-switch

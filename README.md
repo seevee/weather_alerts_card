@@ -145,7 +145,9 @@ Then click the Download button, and click Reload when prompted.
 | `timezone` | `'server'` | `'server'` or `'browser'` (client's local time) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that repeat the event name |
 | `deduplicate` | `true` | Collapse matching alerts across zones and providers |
-| `animations` | system | `true`, `false`, or respect `prefers-reduced-motion` |
+| `animations` | system | `true`, `false`, or respect `prefers-reduced-motion`. Gates *motion* only; `progressStyle` picks the pattern |
+| `progressStyle` | see below | Per-phase progress-bar decoration. An object with optional `preparation` / `active` / `ongoing` keys, each `'solid'` \| `'striped'` \| `'shimmer'` \| `'pulse'`. Defaults reproduce the current look: `preparation: striped`, `active: shimmer`, `ongoing: pulse` (`expired` is always a fixed dimmed solid bar and is not configurable). Flow direction is intrinsic to each phase — a texture keeps the phase's direction wherever it is placed (e.g. `active: striped` marches with the bar). **`ongoing: solid` caveat:** a static full-width ongoing bar no longer signals "indeterminate / no known end" and can read like a nearly-expired alert; the default stays `pulse`. |
+| `iconBorderStyle` | see below | Per-phase icon-ring border style. An object with optional `preparation` / `active` / `ongoing` keys, each `'dashed'` \| `'solid'`. Defaults reproduce the current look: `preparation: dashed`, `active: solid`, `ongoing: solid` (`expired` is a fixed dimmed solid ring and is not configurable). |
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
 | `showProvider` | `false` | Show provider label (e.g., NWS) above event title |
@@ -204,6 +206,17 @@ eventCodes:
   - TOR
   - SVR
 timezone: browser
+```
+
+**Custom progress-bar decoration and icon ring per phase**
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+progressStyle:
+  preparation: solid      # a straight (undecorated) pre-onset bar instead of diagonal dashes
+  active: striped         # stripes that march with the bar (right)
+iconBorderStyle:
+  preparation: solid      # solid pre-onset ring instead of the default dashed
 ```
 
 **European MeteoAlarm warnings with awareness colors**

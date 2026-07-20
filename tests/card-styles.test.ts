@@ -38,3 +38,55 @@ describe('cardStyles surface tokens', () => {
     expect(css).toContain('.compact .alert-card:last-child');
   });
 });
+
+// Guard for the configurable per-phase decoration refactor: decoration is now
+// carried by phase-independent .deco-* classes + per-phase --wac-flow, so the
+// default rendering must resolve byte-identically to the former phase-coupled
+// rules.
+describe('cardStyles progress decorations', () => {
+  const css = cardStyles.cssText;
+
+  it('defines each pattern class for both full and compact fills', () => {
+    for (const pattern of ['solid', 'striped', 'shimmer', 'pulse']) {
+      // Full-mode selector (.deco-x .progress-fill)
+      expect(css).toContain(`.deco-${pattern} .progress-fill`);
+      // Compact-mode selector (.compact .deco-x.alert-card::before)
+      expect(css).toContain(`.compact .deco-${pattern}.alert-card::before`);
+    }
+  });
+
+  it('retires the direction-specific stripe keyframes for one parametrized march', () => {
+    expect(css).not.toContain('stripe-march-sm');
+    expect(css).not.toContain('stripe-march-lg');
+    expect(css).toContain('@keyframes stripe-march');
+    // The march reads the phase's flow sign and tile size.
+    expect(css).toContain('var(--wac-flow, 1) * var(--wac-stripe-tile, 24px)');
+  });
+
+  it('pins the per-phase flow direction (preparation flows left, active/ongoing right)', () => {
+    // preparation is the only phase that reverses (--wac-flow: -1); active and
+    // ongoing use the default +1, so a reassigned texture marches with the bar.
+    expect(css).toContain('.preparation .progress-fill');
+    expect(css).toMatch(/\.preparation \.progress-fill\s*{[^}]*--wac-flow:\s*-1/);
+    expect(css).toMatch(/\.compact \.preparation\.alert-card::before\s*{[^}]*--wac-flow:\s*-1/);
+  });
+
+  it('keeps the expired fill as a fixed dimmed solid bar (no deco class)', () => {
+    expect(css).toContain('.expired .progress-fill');
+    expect(css).toMatch(/\.expired \.progress-fill\s*{\s*background-color:\s*var\(--divider-color\)/);
+  });
+
+  it('adds per-phase icon-ring border-style overrides', () => {
+    expect(css).toContain('.icon-border-dashed .icon-box');
+    expect(css).toContain('.icon-border-solid .icon-box');
+    // The default preparation dashed ring is retained.
+    expect(css).toContain('.preparation .icon-box');
+  });
+
+  it('freezes the shimmer sweep by decoration class when animations are off', () => {
+    // Retargeted from .active to .deco-shimmer so the freeze follows the pattern
+    // into any phase it is placed in.
+    expect(css).toContain('.no-animations .deco-shimmer .progress-fill');
+    expect(css).toContain('.no-animations.compact .deco-shimmer.alert-card::before');
+  });
+});
