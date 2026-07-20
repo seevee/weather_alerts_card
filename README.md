@@ -71,9 +71,12 @@ card_mod:
     }
 ```
 
-**Pill / chip look** — filled alert boxes on a transparent wrapper, built entirely
-from the stable tokens (approximates a [Bubble Card](https://github.com/Clooos/Bubble-Card)
-style; contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144)):
+**Pill / chip look** — filled alert boxes on a transparent wrapper, built from the
+surface tokens (approximates a [Bubble Card](https://github.com/Clooos/Bubble-Card)
+style; contributed in [#144](https://github.com/seevee/weather_alerts_card/issues/144)).
+Note the standard `--ha-card-box-shadow: none` alongside the tokens: with a
+transparent `--wac-card-background`, the outer `<ha-card>` would otherwise still
+cast its own shadow around the now-invisible wrapper.
 
 ```yaml
 type: custom:weather-alerts-card
@@ -85,6 +88,7 @@ card_mod:
   style: |
     ha-card {
       --wac-card-background: transparent;
+      --ha-card-box-shadow: none; /* flatten the now-invisible outer wrapper */
       --wac-alert-background: rgb(40, 40, 40);
       --wac-alert-border: none;
       --wac-alert-border-radius: 28px;

@@ -226,6 +226,7 @@
 
     // ---- Pill / chip look (README example 2) ----
     // card_mod: ha-card { --wac-card-background: transparent;
+    //                     --ha-card-box-shadow: none;
     //                     --wac-alert-background: rgb(40,40,40);
     //                     --wac-alert-border: none; --wac-alert-border-radius: 28px;
     //                     --wac-alert-shadow: none; --wac-alert-gap: 8px; }
@@ -240,6 +241,7 @@
     });
     pill.hass = MOCK_HASS;
     pill.style.setProperty('--wac-card-background', 'transparent');
+    pill.style.setProperty('--ha-card-box-shadow', 'none'); // flatten the invisible wrapper
     pill.style.setProperty('--wac-alert-background', 'var(--demo-pill-fill)');
     pill.style.setProperty('--wac-alert-border', 'none');
     pill.style.setProperty('--wac-alert-border-radius', '28px');
