@@ -108,6 +108,7 @@ export interface WeatherAlertsCardConfig {
   iconBorderStyle?: IconBorderStyleConfig; // per-phase icon-ring border style; omit for defaults (prep dashed, active solid, ongoing solid)
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
+  progressFill?: 'track' | 'background'; // undefined/'track': thin progress bar (full) / bottom mini-bar (compact); 'background': Bubble-Card-style whole-row low-opacity wash growing to --progress, behind the content (thin track hidden, labels kept)
   colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';
   enhanceContrast?: ContrastMode;  // undefined/'subtle': two-tier WCAG boost on NWS/MeteoAlarm colors — text tier (~2:1) darkens icon/label, progress tier (~1.3:1) darkens the progress-bar fill; 'strict': tighter thresholds (text ~3:1, progress ~2:1) for WCAG-AA-style accessibility; 'off': always render raw colors. Triggered per event + per theme mode against the active card background.
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes

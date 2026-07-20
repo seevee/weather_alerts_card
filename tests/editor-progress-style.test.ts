@@ -9,6 +9,7 @@ type EditorInternals = {
   _config: WeatherAlertsCardConfig;
   _progressStyleChanged(phase: 'preparation' | 'active' | 'ongoing', ev: CustomEvent): void;
   _iconBorderStyleChanged(phase: 'preparation' | 'active' | 'ongoing', ev: CustomEvent): void;
+  _progressFillChanged(ev: CustomEvent): void;
 };
 
 function makeEditor(config: Partial<WeatherAlertsCardConfig> = {}): {
@@ -74,5 +75,29 @@ describe('_iconBorderStyleChanged', () => {
     editor._iconBorderStyleChanged('active', sel('dashed'));
     expect(editor._config.iconBorderStyle).toEqual({ active: 'dashed' });
     expect(editor._config.progressStyle).toBeUndefined();
+  });
+});
+
+describe('_progressFillChanged', () => {
+  it('writes progressFill on selecting background and emits config-changed', () => {
+    const { editor, events } = makeEditor();
+    editor._progressFillChanged(sel('background'));
+    expect(editor._config.progressFill).toBe('background');
+    expect(events).toHaveLength(1);
+    expect(events[0].progressFill).toBe('background');
+  });
+
+  it('deletes the key on returning to the track default', () => {
+    const { editor, events } = makeEditor({ progressFill: 'background' });
+    editor._progressFillChanged(sel('track'));
+    expect(editor._config.progressFill).toBeUndefined();
+    expect(events).toHaveLength(1);
+  });
+
+  it('is a no-op when unchanged (default track, no event)', () => {
+    const { editor, events } = makeEditor();
+    editor._progressFillChanged(sel('track'));
+    expect(events).toHaveLength(0);
+    expect(editor._config.progressFill).toBeUndefined();
   });
 });

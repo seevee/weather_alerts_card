@@ -48,6 +48,9 @@ work as expected.
 | `--wac-alert-border` | `1px solid var(--divider-color)` | Per-alert border |
 | `--wac-alert-shadow` | `var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1))` | Per-alert shadow |
 | `--wac-alert-gap` | `16px` (full) / `4px` (compact) | Vertical gap between alerts |
+| `--wac-progress-fill-color` | `var(--wac-progress-fg)` | Wash color for `progressFill: background` (inherits the severity color + contrast boost) |
+| `--wac-progress-fill-opacity` | `0.10` (light) / `0.14` (dark) | Wash strength — kept low so alert text stays legible |
+| `--wac-progress-fill-expired-opacity` | `0.06` | Dimmer wash for expired rows |
 
 [![A translucent-surface card and a pill/chip card, built from the --wac-* tokens](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-light.png)
 
@@ -146,7 +149,7 @@ Then click the Download button, and click Reload when prompted.
 | `deduplicateHeadlines` | `true` | Suppress headlines that repeat the event name |
 | `deduplicate` | `true` | Collapse matching alerts across zones and providers |
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion`. Gates *motion* only; `progressStyle` picks the pattern |
-| `progressStyle` | see below | Per-phase progress-bar decoration. An object with optional `preparation` / `active` / `ongoing` keys, each `'solid'` \| `'striped'` \| `'shimmer'` \| `'pulse'`. Defaults reproduce the current look: `preparation: striped`, `active: shimmer`, `ongoing: pulse` (`expired` is always a fixed dimmed solid bar and is not configurable). Flow direction is intrinsic to each phase — a texture keeps the phase's direction wherever it is placed (e.g. `active: striped` marches with the bar). **`ongoing: solid` caveat:** a static full-width ongoing bar no longer signals "indeterminate / no known end" and can read like a nearly-expired alert; the default stays `pulse`. |
+| `progressStyle` | see below | Per-phase progress-bar decoration. An object with optional `preparation` / `active` / `ongoing` keys, each `'solid'` \| `'striped'` \| `'shimmer'` \| `'pulse'`. Defaults reproduce the current look: `preparation: striped`, `active: shimmer`, `ongoing: pulse` (`expired` is always a fixed dimmed solid bar and is not configurable). Flow direction is intrinsic to each phase — a texture keeps the phase's direction wherever it is placed (e.g. `active: striped` marches with the bar). **`ongoing: solid` caveat:** a static full-width ongoing bar no longer signals "indeterminate / no known end" and can read like a nearly-expired alert; the default stays `pulse`. **Has no effect when `progressFill: background`** — the thin track it decorates is hidden, and the low-opacity wash renders the texture invisible, so the wash is always solid. |
 | `iconBorderStyle` | see below | Per-phase icon-ring border style. An object with optional `preparation` / `active` / `ongoing` keys, each `'dashed'` \| `'solid'`. Defaults reproduce the current look: `preparation: dashed`, `active: solid`, `ongoing: solid` (`expired` is a fixed dimmed solid ring and is not configurable). |
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
@@ -163,6 +166,7 @@ Then click the Download button, and click Reload when prompted.
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |
 | `unavailableBehavior` | `'message'` | Degraded badge shown above the card content whenever *some or all* configured sources are broken (unavailable/unknown with no parseable alert). `'message'`: badge names the broken source (counts when >1); `'compact'`: icon-only badge; `'hide'`: no badge (**not recommended — a broken source is not proof of safety**). A visible badge keeps the card on screen even under `hideNoAlerts`; the card only hides completely when there are no alerts **and** `hideNoAlerts` is set **and** (`unavailableBehavior: 'hide'` **or** nothing is broken). |
 | `fontSize` | `'default'` | `'small'`, `'default'`, `'large'`, `'x-large'` — scales text and icons |
+| `progressFill` | `'track'` | Progress-indication surface. `'track'`: the thin progress bar (full) / bottom mini-bar (compact). `'background'`: a [Bubble Card](https://github.com/Clooos/Bubble-Card)-style whole-row wash — the entire alert row fills as a low-opacity tint of the alert color, growing to the current progress point behind the content (the thin track is hidden; the textual progress labels stay). Tune or disable the wash via the `--wac-progress-fill-*` [surface tokens](#surface-theming---wac--tokens). Note: `progressStyle` textures do not apply here — the wash is always solid (the thin track is hidden, and texture is imperceptible at the wash's legibility-safe opacity). |
 | `reformatText` | `true` | Strip hard line wraps from alert text (NWS 69-char teletype breaks) while preserving paragraph breaks |
 | `layout` | `'default'` | `'default'` or `'compact'` |
 | `allowDismiss` | `false` | Let users dismiss individual alerts (browser-local). Adds a × button and/or swipe gesture |

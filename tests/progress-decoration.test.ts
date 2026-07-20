@@ -138,6 +138,37 @@ describe('per-phase decoration class resolution', () => {
   });
 });
 
+describe('progressFill: background root class + full-mode --progress', () => {
+  function haCard(card: CardInternals): HTMLElement {
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot!;
+    return root.querySelector('ha-card') as HTMLElement;
+  }
+
+  it('adds fill-mode-background to the ha-card only when opted in', async () => {
+    const off = await mountCard(BASE, phasedHass());
+    expect(haCard(off.card).classList.contains('fill-mode-background')).toBe(false);
+    off.cleanup();
+
+    const on = await mountCard({ ...BASE, progressFill: 'background' }, phasedHass());
+    expect(haCard(on.card).classList.contains('fill-mode-background')).toBe(true);
+    on.cleanup();
+  });
+
+  it('gives full-mode alerts a --progress style so the wash can position, ongoing pinned to 0%', async () => {
+    const { card, cleanup } = await mountCard({ ...BASE, progressFill: 'background' }, phasedHass());
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot!;
+    const styleByTitle = (title: string) => {
+      const el = Array.from(root.querySelectorAll('.alert-card'))
+        .find(e => (e.querySelector('.alert-title')?.textContent || '').trim() === title);
+      return (el as HTMLElement | undefined)?.getAttribute('style') || '';
+    };
+    expect(styleByTitle('Active Warning')).toContain('--progress:');
+    // Ongoing fills full-width → --progress pinned to 0%.
+    expect(styleByTitle('Ongoing Warning')).toContain('--progress: 0%');
+    cleanup();
+  });
+});
+
 describe('ongoing progress-fill regression', () => {
   it('no longer emits an inline animation on the ongoing fill (motion via deco-pulse)', async () => {
     const { card, cleanup } = await mountCard({ ...BASE, expandDetails: true }, phasedHass());
