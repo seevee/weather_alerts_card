@@ -150,6 +150,13 @@ export const cardStyles = css`
        confuse them. */
     --wac-fg: var(--color);
     --wac-progress-fg: var(--color);
+    /* progressFill:background wash tokens (Bubble-Card-style whole-row fill).
+       Deliberately low-opacity so alert text stays legible over translucent
+       themes (#215); all three overridable via theme YAML / card_mod / --wac-*.
+       Only consumed by the .fill-mode-background rules — inert in track mode. */
+    --wac-progress-fill-color: var(--wac-progress-fg);
+    --wac-progress-fill-opacity: 0.10;
+    --wac-progress-fill-expired-opacity: 0.06;
     position: relative;
     margin-bottom: var(--wac-alert-gap, 16px);
     padding: 0;
@@ -179,6 +186,9 @@ export const cardStyles = css`
      --color-on-dark inline; this rule picks the right one per theme mode. */
   [data-theme-mode="light"] .alert-card { --color-on: var(--color-on-light, #ffffff); }
   [data-theme-mode="dark"]  .alert-card { --color-on: var(--color-on-dark,  #1a1a1a); }
+
+  /* Dark themes need a touch more wash to read at the same strength. */
+  [data-theme-mode="dark"] .alert-card { --wac-progress-fill-opacity: 0.14; }
 
   .alert-card:last-child {
     margin-bottom: 0;
@@ -883,6 +893,73 @@ export const cardStyles = css`
     /* Color longhand only, so a non-default ongoing pattern's background-image
        (from a .deco-* class) survives; the shorthand would reset it. */
     background-color: var(--wac-progress-fg);
+  }
+
+  /* --- PROGRESS FILL: whole-row wash (progressFill: background) ---
+     Opt-in Bubble-Card-style surface: instead of the thin track, the entire
+     alert row fills as a low-opacity wash of the progress color, behind the
+     content, growing to the --progress point (the exact geometry the thin
+     track uses today). Full mode paints the wash on .alert-card::after (::before
+     is the 6px accent bar); compact grows its existing ::before fill to full
+     height. Content wrappers are lifted to z-index:1 so text stays legible. */
+
+  /* Full-mode wash */
+  .fill-mode-background:not(.compact) .alert-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--progress, 0%);
+    right: 0;
+    z-index: 0;
+    background: var(--wac-progress-fill-color);
+    opacity: var(--wac-progress-fill-opacity);
+    transition: left 0.3s ease;
+    pointer-events: none;
+  }
+  .fill-mode-background:not(.compact) .expired.alert-card::after {
+    left: 0;
+    opacity: var(--wac-progress-fill-expired-opacity);
+  }
+  /* Hide the now-redundant thin track wherever it renders (the full-mode section
+     and the compact expanded section both draw one) — the textual progress
+     labels stay. */
+  .fill-mode-background .progress-track {
+    display: none;
+  }
+
+  /* Compact-mode wash: grow the existing ::before fill from a 4px bottom bar to
+     a full-height surface, recolor it to the wash token, drop the grey track
+     base (::after), and keep it a quiet solid (no per-phase deco texture). */
+  .fill-mode-background.compact .alert-card::before {
+    top: 0;
+    height: auto;
+    z-index: 0;
+    opacity: var(--wac-progress-fill-opacity);
+    background-image: none;
+    animation: none;
+  }
+  .fill-mode-background.compact .active.alert-card::before,
+  .fill-mode-background.compact .preparation.alert-card::before,
+  .fill-mode-background.compact .ongoing.alert-card::before {
+    background-color: var(--wac-progress-fill-color);
+  }
+  .fill-mode-background.compact .expired.alert-card::before {
+    left: 0;
+    background-color: var(--wac-progress-fill-color);
+    opacity: var(--wac-progress-fill-expired-opacity);
+  }
+  .fill-mode-background.compact .alert-card::after {
+    display: none;
+  }
+
+  /* Lift content above the z-index:0 wash so text/icons never sit under it. */
+  .fill-mode-background .alert-header-row,
+  .fill-mode-background .alert-expanded,
+  .fill-mode-background .progress-section,
+  .fill-mode-background .alert-details-section {
+    position: relative;
+    z-index: 1;
   }
 
   /* --- NO ANIMATIONS --- */

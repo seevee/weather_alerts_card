@@ -769,6 +769,20 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  // Progress-indication surface (track vs whole-row background wash). Default
+  // 'track' clears the key so configs stay minimal (mirrors _fontSizeChanged).
+  private _progressFillChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as string;
+    if (value === (this._config.progressFill || 'track')) return;
+    const newConfig = { ...this._config };
+    if (value === 'track') {
+      delete newConfig.progressFill;
+    } else {
+      newConfig.progressFill = value as 'background';
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
   // Per-phase progress-bar decoration. On the phase default, delete the phase
   // key and prune an emptied progressStyle object so configs stay minimal
   // (mirrors _fontSizeChanged); otherwise write the chosen decoration.
@@ -1050,7 +1064,7 @@ export class WeatherAlertsCardEditor extends LitElement {
              defaults, collapsed by default so they cost one row until opened.
              Open state is local UI (not stored in config). -->
         <div
-          class="section-label section-toggle ${this._config.progressStyle || this._config.iconBorderStyle ? 'section-toggle-set' : ''}"
+          class="section-label section-toggle ${this._config.progressFill || this._config.progressStyle || this._config.iconBorderStyle ? 'section-toggle-set' : ''}"
           @click=${() => { this._showStyling = !this._showStyling; }}
         >
           <span>${t('editor.styling_section', lang)}</span>
@@ -1060,7 +1074,19 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-icon>
         </div>
         ${this._showStyling ? html`
+          <ha-select
+            .label=${t('editor.progress_fill', lang)}
+            .value=${this._config.progressFill || 'track'}
+            @selected=${this._progressFillChanged}
+          >
+            <ha-dropdown-item value="track">${t('editor.progress_fill_track', lang)}</ha-dropdown-item>
+            <ha-dropdown-item value="background">${t('editor.progress_fill_background', lang)}</ha-dropdown-item>
+          </ha-select>
+
           <div class="sub-label">${t('editor.progress_style', lang)}</div>
+          ${this._config.progressFill === 'background'
+        ? html`<div class="preview-hint">${t('editor.progress_style_wash_note', lang)}</div>`
+        : nothing}
           <div class="phase-row">
             ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
               <ha-select

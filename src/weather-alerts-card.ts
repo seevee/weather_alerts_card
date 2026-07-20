@@ -1087,13 +1087,14 @@ export class WeatherAlertsCard extends LitElement {
 
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
+    const fillClass = this._config.progressFill === 'background' ? 'fill-mode-background' : '';
 
     // The strip and dot are anchored forms — they only render over real alerts.
     const strip = signalAvailability && hasAlerts && behavior === 'message';
     const dot = signalAvailability && hasAlerts && behavior === 'compact';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass} ${fillClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
         ${dot ? this._renderDegradedDot(brokenSources) : nothing}
         ${strip ? this._renderDegradedStrip(brokenSources) : nothing}
         ${hasAlerts
@@ -1107,9 +1108,10 @@ export class WeatherAlertsCard extends LitElement {
     const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true });
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._isCompact ? 'compact' : '';
+    const fillClass = this._config?.progressFill === 'background' ? 'fill-mode-background' : '';
 
     return html`
-      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
+      <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass} ${fillClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
         <div class="preview-label">${t('card.preview', this._lang)}</div>
         ${alerts.map(alert => this._renderAlert(alert))}
       </ha-card>
@@ -1241,7 +1243,12 @@ export class WeatherAlertsCard extends LitElement {
     const boostClasses = this._alertBoostClasses(alert);
     const decoClasses = this._alertDecoClasses(progress);
     const swipeClass = this._swipeCardClass(alert);
-    const cardStyle = this._swipeCardStyle(alert, this._alertColorStyle(alert));
+    // --progress positions the whole-row wash (progressFill:background); ongoing
+    // (active, no end time) fills full-width, so pin it to 0% (left:0). Inert in
+    // track mode. Mirrors the compact renderer.
+    const isOngoing = progress.isActive && !progress.hasEndTime;
+    const progressStyle = isOngoing ? '--progress: 0%;' : `--progress: ${progress.progressPct}%;`;
+    const cardStyle = this._swipeCardStyle(alert, `${this._alertColorStyle(alert)} ${progressStyle}`);
     return html`
       <div
         class="alert-card ${className} ${phaseClass} ${decoClasses} ${boostClasses} ${swipeClass}"

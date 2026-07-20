@@ -130,3 +130,51 @@ describe('cardStyles progress decorations', () => {
     expect(css).toContain('.no-animations.compact .deco-shimmer.alert-card::before');
   });
 });
+
+// Guard for the whole-row progress wash (progressFill: background). The wash is
+// a low-opacity surface behind content (#215 legibility), so these pin the
+// tokens, the per-layout fill elements, the expired dim, the hidden track, and
+// the content z-index lift.
+describe('cardStyles progress-fill wash', () => {
+  const css = cardStyles.cssText;
+
+  it('defines the three --wac-progress-fill-* tokens with their defaults', () => {
+    expect(css).toContain('--wac-progress-fill-color: var(--wac-progress-fg)');
+    expect(css).toContain('--wac-progress-fill-opacity: 0.10');
+    expect(css).toContain('--wac-progress-fill-expired-opacity: 0.06');
+    // Dark themes lift the wash strength.
+    expect(css).toMatch(/\[data-theme-mode="dark"\] \.alert-card\s*{[^}]*--wac-progress-fill-opacity:\s*0\.14/);
+  });
+
+  it('paints a full-height wash behind content in both layouts, positioned by --progress', () => {
+    // Full mode uses ::after (::before is the 6px accent bar); compact grows its
+    // existing ::before fill. Both sit at z-index:0 with the low-opacity token.
+    expect(css).toContain('.fill-mode-background:not(.compact) .alert-card::after');
+    expect(css).toMatch(/\.fill-mode-background:not\(\.compact\) \.alert-card::after\s*{[^}]*left:\s*var\(--progress, 0%\)/);
+    expect(css).toMatch(/\.fill-mode-background:not\(\.compact\) \.alert-card::after\s*{[^}]*opacity:\s*var\(--wac-progress-fill-opacity\)/);
+    expect(css).toContain('.fill-mode-background.compact .alert-card::before');
+    expect(css).toMatch(/\.fill-mode-background\.compact \.alert-card::before\s*{[^}]*top:\s*0/);
+  });
+
+  it('dims the expired wash to its own token in both layouts', () => {
+    expect(css).toMatch(/\.fill-mode-background:not\(\.compact\) \.expired\.alert-card::after\s*{[^}]*opacity:\s*var\(--wac-progress-fill-expired-opacity\)/);
+    expect(css).toMatch(/\.fill-mode-background\.compact \.expired\.alert-card::before\s*{[^}]*opacity:\s*var\(--wac-progress-fill-expired-opacity\)/);
+  });
+
+  it('hides the redundant thin track and grey base when the wash is on', () => {
+    expect(css).toMatch(/\.fill-mode-background \.progress-track\s*{\s*display:\s*none/);
+    expect(css).toMatch(/\.fill-mode-background\.compact \.alert-card::after\s*{\s*display:\s*none/);
+  });
+
+  it('lifts content wrappers above the z-index:0 wash', () => {
+    expect(css).toMatch(/\.fill-mode-background \.alert-header-row[\s\S]*?z-index:\s*1/);
+    expect(css).toContain('.fill-mode-background .progress-section');
+    expect(css).toContain('.fill-mode-background .alert-details-section');
+  });
+
+  it('leaves the default track-mode rules untouched', () => {
+    // The wash is strictly additive: the thin track and its fill still exist.
+    expect(css).toContain('.progress-track');
+    expect(css).toContain('.progress-fill');
+  });
+});
