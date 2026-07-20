@@ -71,6 +71,28 @@ describe('cardStyles progress decorations', () => {
     expect(css).toMatch(/\.compact \.preparation\.alert-card::before\s*{[^}]*--wac-flow:\s*-1/);
   });
 
+  it('gives every configurable phase a filled base so solid/shimmer are visible', () => {
+    // Regression: preparation was transparent (tuned for its default striped
+    // look), which made solid/shimmer render invisibly. Every configurable phase
+    // now fills with the progress color; only preparation+striped clears it.
+    expect(css).toMatch(/\.preparation \.progress-fill\s*{[^}]*background-color:\s*var\(--wac-progress-fg\)/);
+    expect(css).toMatch(/\.active \.progress-fill\s*{[^}]*background-color:\s*var\(--wac-progress-fg\)/);
+    // The one carve-out: striped-on-preparation reverts to the empty track.
+    expect(css).toMatch(/\.preparation\.deco-striped \.progress-fill\s*{[^}]*background-color:\s*transparent/);
+    expect(css).toContain('.compact .preparation.deco-striped.alert-card::before');
+  });
+
+  it('paints active/ongoing stripes in a contrasting highlight, not the fill color', () => {
+    // Regression: striped-on-active drew progress-color stripes over a
+    // progress-color fill (invisible). The active phase overrides the stripe
+    // paint to a translucent highlight so stripes read against the fill.
+    expect(css).toMatch(/\.active \.progress-fill\s*{[^}]*--wac-stripe-paint:/);
+    expect(css).toMatch(/\.compact \.active\.alert-card::before\s*{[^}]*--wac-stripe-paint:/);
+    // Preparation leaves the paint at its progress-color default (solid stripes
+    // on the empty track) — it must NOT set a highlight override.
+    expect(css).not.toMatch(/\.preparation \.progress-fill\s*{[^}]*--wac-stripe-paint:/);
+  });
+
   it('keeps the expired fill as a fixed dimmed solid bar (no deco class)', () => {
     expect(css).toContain('.expired .progress-fill');
     expect(css).toMatch(/\.expired \.progress-fill\s*{\s*background-color:\s*var\(--divider-color\)/);

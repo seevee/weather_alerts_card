@@ -412,12 +412,17 @@ export const cardStyles = css`
     transition: width 0.3s ease;
   }
 
-  /* Phase classes carry only base color / opacity / flow direction; the visible
-     texture + animation comes from the phase-independent .deco-* classes below,
-     resolved per-alert from progressStyle. --wac-flow (±1) is the phase's
-     intrinsic direction, consumed by the shared keyframes. */
+  /* Phase classes supply a FILLED base (progress color) + opacity + flow; the
+     .deco-* classes below add only the pattern/animation on top. A filled base
+     is what makes solid/shimmer/pulse visible in any phase. The one exception is
+     striped, whose default look is color stripes on an *empty* track — handled
+     by the .preparation.deco-striped override below. --wac-stripe-paint is the
+     color drawn in the stripe bands: it defaults to the progress color (solid
+     stripes on an empty track) and is overridden to a translucent highlight on
+     the filled active/ongoing bars so stripes read against the fill. */
   .active .progress-fill {
     background-color: var(--wac-progress-fg);
+    --wac-stripe-paint: rgba(255, 255, 255, 0.35);
   }
 
   .expired .progress-fill {
@@ -425,9 +430,14 @@ export const cardStyles = css`
   }
 
   .preparation .progress-fill {
-    background-color: transparent;
+    background-color: var(--wac-progress-fg);
     opacity: 0.6;
     --wac-flow: -1;
+  }
+  /* Preparation + striped keeps the canonical "solid color stripes on an empty
+     track" look: clear the fill and paint the stripes in the progress color. */
+  .preparation.deco-striped .progress-fill {
+    background-color: transparent;
   }
 
   /* --- PROGRESS DECORATIONS (pattern + animation, phase-independent) ---
@@ -847,15 +857,19 @@ export const cardStyles = css`
      flow only; the pattern + animation comes from the .deco-* classes above. */
   .compact .active.alert-card::before {
     background-color: var(--wac-progress-fg);
+    --wac-stripe-paint: rgba(255, 255, 255, 0.35);
   }
   .compact .expired.alert-card::before {
     background-color: var(--divider-color);
   }
   .compact .preparation.alert-card::before {
-    background-color: transparent;
+    background-color: var(--wac-progress-fg);
     --wac-flow: -1;
-    /* Compact prep stripes are pre-tinted (no fill opacity on a pseudo-element),
-       matching the former color-mix; full mode uses opacity on .progress-fill. */
+  }
+  /* Compact preparation + striped: empty track + pre-tinted stripes (no fill
+     opacity on a pseudo-element, so the tint stands in for full mode's 0.6). */
+  .compact .preparation.deco-striped.alert-card::before {
+    background-color: transparent;
     --wac-stripe-paint: color-mix(in srgb, var(--wac-progress-fg) 60%, transparent);
   }
   .compact .ongoing.alert-card::before {
