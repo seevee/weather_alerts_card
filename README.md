@@ -49,6 +49,10 @@ work as expected.
 | `--wac-alert-shadow` | `var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1))` | Per-alert shadow |
 | `--wac-alert-gap` | `16px` (full) / `4px` (compact) | Vertical gap between alerts |
 
+[![A translucent-surface card and a pill/chip card, built from the --wac-* tokens](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-light.png)
+
+*Left: a translucent theme (alert bodies transparent, so the surface alpha lands once). Right: a pill/chip look (transparent wrapper, filled boxes). Both come from the card-mod examples below.*
+
 <details>
 <summary>Show card-mod examples</summary>
 

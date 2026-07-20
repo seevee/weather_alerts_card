@@ -234,13 +234,13 @@ const PORT = 3742;
       },
     },
     {
-      name: 'translucent',
-      url: `http://127.0.0.1:${PORT}/scripts/screenshot-translucent.html`,
-      canvasId: 'translucent-canvas',
-      cardIds: ['card-translucent-before', 'card-translucent-after'],
+      name: 'surface-theming',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-surface-theming.html`,
+      canvasId: 'surface-canvas',
+      cardIds: ['card-surface-translucent', 'card-surface-pill'],
       variants: [
-        { theme: 'theme-light', label: 'translu light', out: 'img/translucent-light.png' },
-        { theme: 'theme-dark',  label: 'translu dark ', out: 'img/translucent-dark.png' },
+        { theme: 'theme-light', label: 'surface light', out: 'img/surface-theming-light.png' },
+        { theme: 'theme-dark',  label: 'surface dark ', out: 'img/surface-theming-dark.png' },
       ],
     },
     {
