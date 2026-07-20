@@ -58,6 +58,7 @@ import {
   DEFAULT_TILE_ATTRIBUTION,
   GeoJsonGeometry,
 } from './geometry';
+import { handleTapAction, hasTapAction } from './actions';
 import { t } from './localize';
 import { cardStyles } from './styles';
 import './weather-alerts-card-editor';
@@ -524,7 +525,9 @@ export class WeatherAlertsCard extends LitElement {
         seenProviders.add(adapter.provider);
         providerPriority.push(adapter.provider);
       }
-      allAlerts.push(...adapter.parseAlerts(entity.attributes));
+      const parsed = adapter.parseAlerts(entity.attributes);
+      for (const a of parsed) a.sourceEntityId = entityId;
+      allAlerts.push(...parsed);
     }
     let filtered = this._filterAndSort(allAlerts, { providerPriority });
     if (this._config.allowDismiss && !this._forcePreview && this._dismissals.size > 0) {
@@ -928,6 +931,27 @@ export class WeatherAlertsCard extends LitElement {
     }
   }
 
+  // Fire the configured tap_action for the tapped alert row. Resolves the
+  // more-info/toggle default entity per-alert: the tapped alert's own source
+  // sensor, falling back to the primary config entity.
+  private _onCardAction(alert: WeatherAlert): void {
+    // Swallow the click synthesized at the end of a swipe-dismiss drag, exactly
+    // as _toggleDetails does — the action must not fire on a swipe.
+    if (this._swipeJustDragged) {
+      this._swipeJustDragged = false;
+      return;
+    }
+    const cfg = this._config?.tap_action;
+    if (!cfg || cfg.action === 'none') return;
+    handleTapAction(this, this.hass, cfg, alert.sourceEntityId ?? this._config?.entity);
+  }
+
+  private _onCardActionKeydown(alert: WeatherAlert, e: KeyboardEvent): void {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    e.preventDefault();
+    this._onCardAction(alert);
+  }
+
   private _sourceLinkLabel(alert: WeatherAlert): string {
     const label = PROVIDER_LABELS[alert.provider] || 'Alert';
     return t('card.open_source', this._lang, { provider: label });
@@ -1166,19 +1190,25 @@ export class WeatherAlertsCard extends LitElement {
     const decoClasses = this._alertDecoClasses(progress);
     const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     const swipeClass = this._swipeCardClass(alert);
+    const tapAction = hasTapAction(this._config);
+    const actionable = tapAction && this._config!.tap_action!.action !== 'none';
     const cardStyle = this._swipeCardStyle(alert, `${this._alertColorStyle(alert)} ${progressStyle}`);
     return html`
       <div
-        class="alert-card ${className} ${phaseClass} ${ongoingClass} ${decoClasses} ${boostClasses} ${swipeClass}"
+        class="alert-card ${className} ${phaseClass} ${ongoingClass} ${decoClasses} ${boostClasses} ${swipeClass} ${actionable ? 'tappable' : ''}"
         style=${cardStyle}
+        role=${actionable ? 'button' : nothing}
+        tabindex=${actionable ? '0' : nothing}
         @pointerdown=${(e: PointerEvent) => this._onSwipePointerDown(alert, e)}
         @pointermove=${(e: PointerEvent) => this._onSwipePointerMove(alert, e)}
         @pointerup=${(e: PointerEvent) => this._onSwipePointerUp(alert, e)}
         @pointercancel=${(e: PointerEvent) => this._onSwipePointerCancel(alert, e)}
+        @click=${actionable ? () => this._onCardAction(alert) : nothing}
+        @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
       >
         <div
           class="alert-header-row compact-row"
-          @click=${() => this._toggleDetails(alert.id)}
+          @click=${tapAction ? nothing : () => this._toggleDetails(alert.id)}
         >
           <div class="icon-box">
             <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
@@ -1186,10 +1216,12 @@ export class WeatherAlertsCard extends LitElement {
           ${this._renderProviderHint(alert)}
           <span class="alert-title">${alert.event}</span>
           <span class="compact-time">${compactTimeLabel}</span>
+          ${tapAction ? nothing : html`
           <ha-icon
             icon="mdi:chevron-down"
             class="compact-chevron ${expanded ? 'expanded' : ''}"
           ></ha-icon>
+          `}
           ${this._renderDismissButton(alert)}
         </div>
         ${expanded ? this._renderExpandedContent(alert, progress) : nothing}
@@ -1243,6 +1275,8 @@ export class WeatherAlertsCard extends LitElement {
     const boostClasses = this._alertBoostClasses(alert);
     const decoClasses = this._alertDecoClasses(progress);
     const swipeClass = this._swipeCardClass(alert);
+    const tapAction = hasTapAction(this._config);
+    const actionable = tapAction && this._config!.tap_action!.action !== 'none';
     // --progress positions the whole-row wash (progressFill:background); ongoing
     // (active, no end time) fills full-width, so pin it to 0% (left:0). Inert in
     // track mode. Mirrors the compact renderer.
@@ -1251,12 +1285,16 @@ export class WeatherAlertsCard extends LitElement {
     const cardStyle = this._swipeCardStyle(alert, `${this._alertColorStyle(alert)} ${progressStyle}`);
     return html`
       <div
-        class="alert-card ${className} ${phaseClass} ${decoClasses} ${boostClasses} ${swipeClass}"
+        class="alert-card ${className} ${phaseClass} ${decoClasses} ${boostClasses} ${swipeClass} ${actionable ? 'tappable' : ''}"
         style=${cardStyle}
+        role=${actionable ? 'button' : nothing}
+        tabindex=${actionable ? '0' : nothing}
         @pointerdown=${(e: PointerEvent) => this._onSwipePointerDown(alert, e)}
         @pointermove=${(e: PointerEvent) => this._onSwipePointerMove(alert, e)}
         @pointerup=${(e: PointerEvent) => this._onSwipePointerUp(alert, e)}
         @pointercancel=${(e: PointerEvent) => this._onSwipePointerCancel(alert, e)}
+        @click=${actionable ? () => this._onCardAction(alert) : nothing}
+        @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
       >
         <div class="alert-header-row">
           <div class="icon-box">
@@ -1283,7 +1321,11 @@ export class WeatherAlertsCard extends LitElement {
 
         ${this._renderProgressSection(alert, progress)}
 
-        ${this._config?.showDetails !== false ? (this._config?.expandDetails ? html`
+        ${tapAction
+          ? (this._config?.showDetails !== false && this._config?.expandDetails
+            ? this._renderDetailsContent(alert, progress)
+            : nothing)
+          : (this._config?.showDetails !== false ? (this._config?.expandDetails ? html`
         ${this._renderDetailsContent(alert, progress)}
         ` : html`
         <div class="alert-details-section">
@@ -1299,7 +1341,7 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           ${expanded ? this._renderDetailsContent(alert, progress) : nothing}
         </div>
-        `) : nothing}
+        `) : nothing)}
       </div>
     `;
   }
@@ -1374,7 +1416,7 @@ export class WeatherAlertsCard extends LitElement {
     const lang = this._lang;
 
     return html`
-      <div class="details-content">
+      <div class="details-content" @click=${(e: Event) => e.stopPropagation()}>
         ${this._config?.showMetadata !== false ? html`
         <div class="meta-grid">
           ${progress.sentTs > 100 ? html`
