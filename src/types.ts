@@ -21,6 +21,39 @@ export interface HomeAssistant {
   devices?: Record<string, DeviceRegistryDisplayEntry>;
   // Live WS connection — used to subscribe to entity_registry updates.
   connection?: Connection;
+  // Fire a HA service call. Present on the real hass object; typed here as the
+  // subset used by tap_action dispatch (toggle / call-service).
+  callService?(
+    domain: string,
+    service: string,
+    data?: Record<string, unknown>,
+    target?: Record<string, unknown>,
+  ): Promise<unknown>;
+}
+
+// Standard Home-Assistant action config accepted by `tap_action`. `assist` is
+// intentionally excluded (it opens the voice-assistant dialog — meaningless on
+// an alert row). The index signature carries arbitrary `fire-dom-event` payloads.
+export interface ActionConfig {
+  action:
+    | 'more-info'
+    | 'navigate'
+    | 'url'
+    | 'toggle'
+    | 'call-service'
+    | 'perform-action'
+    | 'fire-dom-event'
+    | 'none';
+  entity?: string;
+  navigation_path?: string;
+  navigation_replace?: boolean;
+  url_path?: string;
+  service?: string;
+  perform_action?: string;
+  data?: Record<string, unknown>;
+  service_data?: Record<string, unknown>;
+  target?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface DeviceRegistryDisplayEntry {
@@ -106,6 +139,7 @@ export interface WeatherAlertsCardConfig {
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
   progressStyle?: ProgressStyleConfig; // per-phase progress-bar decoration; omit for defaults (prep striped, active shimmer, ongoing pulse)
   iconBorderStyle?: IconBorderStyleConfig; // per-phase icon-ring border style; omit for defaults (prep dashed, active solid, ongoing solid)
+  tap_action?: ActionConfig; // standard HA action fired when an alert row is tapped; presence replaces the inline expand/toggle affordance in both layouts. Absent = unchanged inline-expand behavior
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   progressFill?: 'track' | 'background'; // undefined/'track': thin progress bar (full) / bottom mini-bar (compact); 'background': Bubble-Card-style whole-row low-opacity wash growing to --progress, behind the content (thin track hidden, labels kept)
@@ -152,6 +186,7 @@ export interface DismissalRecord {
 // Normalized alert consumed by the card UI — provider-agnostic
 export interface WeatherAlert {
   id: string;
+  sourceEntityId?: string; // entity_id this alert was parsed from; stamped during collection, consumed for per-alert tap_action more-info/toggle targeting
   event: string;           // e.g. "Severe Thunderstorm Warning"
   severity: AlertSeverity;
   severityLabel: string;   // Human-readable severity label from provider (e.g. "Moderate", "Major")
