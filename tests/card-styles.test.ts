@@ -91,9 +91,24 @@ describe('cardStyles progress decorations', () => {
     expect(css).toContain('.compact .preparation.deco-striped.alert-card::before');
     // The former white-highlight stripe paint must be gone.
     expect(css).not.toContain('rgba(255, 255, 255, 0.35)');
-    // Stripe bands default to the progress color (only compact preparation
-    // pre-tints, via color-mix, to fake the missing fill opacity).
-    expect(css).toContain('var(--wac-stripe-paint, var(--wac-progress-fg))');
+    // Stripe bands are the progress color everywhere; the --wac-stripe-paint
+    // indirection (once used to pre-tint compact preparation) is gone.
+    expect(css).not.toContain('--wac-stripe-paint');
+    expect(css).toMatch(/\.deco-striped \.progress-fill,\s*\.compact \.deco-striped\.alert-card::before\s*{[^}]*var\(--wac-progress-fg\) 25%/);
+  });
+
+  it('renders every phase at full opacity (dimness is not a phase cue)', () => {
+    // Preparation no longer dims its fill (was opacity: 0.6), and the ongoing
+    // fill no longer carries an inline dim — phase is read from motion/labels,
+    // not brightness. (The .expired *card* still fades via a separate rule.)
+    expect(css).not.toMatch(/\.preparation \.progress-fill\s*{[^}]*opacity/);
+    expect(css).not.toMatch(/\.progress-fill\s*{[^}]*opacity:\s*0\.8/);
+  });
+
+  it('pulses the ongoing bar from full progress color (matches active brightness)', () => {
+    // The ongoing-pulse breathe now peaks at the solid progress color rather
+    // than a dimmed color-mix, so ongoing is never fainter than active.
+    expect(css).toMatch(/@keyframes ongoing-pulse\s*{[^}]*0%\s*{\s*background:\s*var\(--wac-progress-fg\)\s*;\s*}/);
   });
 
   it('keeps the expired fill as a fixed dimmed solid bar (no deco class)', () => {

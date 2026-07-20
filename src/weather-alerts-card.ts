@@ -1491,13 +1491,14 @@ export class WeatherAlertsCard extends LitElement {
     const { isActive, progressPct, hasEndTime, onsetTs, endsTs, nowTs } = progress;
     const lang = this._lang;
 
-    // Ongoing positioning only (width/opacity); the pulse animation now comes
-    // from the deco-pulse class on the alert-card root (default for the ongoing
-    // phase), and the .no-animations rules freeze it when animations are off.
+    // Ongoing positioning only (full width); the pulse animation comes from the
+    // deco-pulse class on the alert-card root (default for the ongoing phase),
+    // and the .no-animations rules freeze it when animations are off. No opacity
+    // dim — ongoing renders at full strength like active (see ongoing-pulse).
     const fillStyle = progress.isExpired
       ? 'left: 0; right: 0;'
       : isActive && !hasEndTime
-        ? 'width: 100%; left: 0; opacity: 0.8;'
+        ? 'width: 100%; left: 0;'
         : `left: ${progressPct}%; right: 0;`;
 
     return html`

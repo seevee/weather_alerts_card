@@ -7,10 +7,14 @@ export const cardStyles = css`
     100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wac-fg) 0%, transparent); }
   }
 
+  /* Indeterminate "ongoing" breathe. Peaks at the full progress color (same
+     brightness as an active bar) and eases down to a still-prominent ~70%, so
+     ongoing reads as full-strength-and-alive rather than dimmed — opacity is not
+     a phase cue here (direction/fill/labels carry the phase). */
   @keyframes ongoing-pulse {
-    0% { background: color-mix(in srgb, var(--wac-progress-fg) 80%, transparent); }
-    50% { background: color-mix(in srgb, var(--wac-progress-fg) 50%, transparent); }
-    100% { background: color-mix(in srgb, var(--wac-progress-fg) 80%, transparent); }
+    0% { background: var(--wac-progress-fg); }
+    50% { background: color-mix(in srgb, var(--wac-progress-fg) 70%, transparent); }
+    100% { background: var(--wac-progress-fg); }
   }
 
   /* Shared, direction-parametrized stripe march. --wac-flow (±1) is set by the
@@ -412,12 +416,14 @@ export const cardStyles = css`
     transition: width 0.3s ease;
   }
 
-  /* Phase classes supply a FILLED base (progress color) + opacity + flow; the
+  /* Phase classes supply a FILLED base (progress color) + flow direction; the
      .deco-* classes below add only the pattern/animation on top. A filled base
-     is what makes solid/shimmer/pulse visible in any phase. Striped is the one
-     decoration that is never a filled bar — it is a "barber pole" of solid color
-     stripes on an empty track in every phase (see the .deco-striped override
-     below), so --wac-stripe-paint stays at its progress-color default. */
+     is what makes solid/shimmer/pulse visible in any phase. Every phase renders
+     at full opacity — dimness is not a phase cue (phase is read from the stripe
+     flow direction, the fill behavior, the icon ring, and the labels). Striped
+     is the one decoration that is never a filled bar: it is a "barber pole" of
+     solid progress-color stripes on an empty track in every phase (see the
+     .deco-striped override below). */
   .active .progress-fill {
     background-color: var(--wac-progress-fg);
   }
@@ -428,13 +434,12 @@ export const cardStyles = css`
 
   .preparation .progress-fill {
     background-color: var(--wac-progress-fg);
-    opacity: 0.6;
     --wac-flow: -1;
   }
   /* Striped is a barber pole in every phase: solid color stripes on an empty
-     track, never a filled bar. Clear whatever fill the phase set; the stripe
-     paint keeps its progress-color default. Equal specificity to the phase
-     rules, placed after them so it wins on source order in full mode. */
+     track, never a filled bar. Clear whatever fill the phase set. Equal
+     specificity to the phase rules, placed after them so it wins on source
+     order in full mode. */
   .deco-striped .progress-fill {
     background-color: transparent;
   }
@@ -455,11 +460,11 @@ export const cardStyles = css`
   .compact .deco-striped.alert-card::before {
     background-image: linear-gradient(
       -45deg,
-      var(--wac-stripe-paint, var(--wac-progress-fg)) 25%,
+      var(--wac-progress-fg) 25%,
       transparent 25%,
       transparent 50%,
-      var(--wac-stripe-paint, var(--wac-progress-fg)) 50%,
-      var(--wac-stripe-paint, var(--wac-progress-fg)) 75%,
+      var(--wac-progress-fg) 50%,
+      var(--wac-progress-fg) 75%,
       transparent 75%
     );
     background-size: var(--wac-stripe-tile, 24px) var(--wac-stripe-tile, 24px);
@@ -866,13 +871,9 @@ export const cardStyles = css`
   }
   /* Compact striped: barber pole on an empty track (mirrors full mode). These
      phase+deco selectors outrank the compact phase rules above, so the fill is
-     cleared in either source order. Preparation pre-tints its stripes (no fill
-     opacity on a pseudo-element, so the tint stands in for full mode's 0.6);
-     active/ongoing keep the solid progress-color stripes. */
-  .compact .preparation.deco-striped.alert-card::before {
-    background-color: transparent;
-    --wac-stripe-paint: color-mix(in srgb, var(--wac-progress-fg) 60%, transparent);
-  }
+     cleared in either source order. All phases render full-strength progress-
+     color stripes — no dim tint. */
+  .compact .preparation.deco-striped.alert-card::before,
   .compact .active.deco-striped.alert-card::before,
   .compact .ongoing.deco-striped.alert-card::before {
     background-color: transparent;
@@ -881,7 +882,7 @@ export const cardStyles = css`
     left: 0;
     /* Color longhand only, so a non-default ongoing pattern's background-image
        (from a .deco-* class) survives; the shorthand would reset it. */
-    background-color: color-mix(in srgb, var(--wac-progress-fg) 80%, transparent);
+    background-color: var(--wac-progress-fg);
   }
 
   /* --- NO ANIMATIONS --- */
