@@ -12,6 +12,9 @@ export class WeatherAlertsCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _showPreview = false;
+  // Local UI: whether the collapsible per-phase progress/icon styling group is
+  // open. Not persisted to config — purely an editor disclosure.
+  @state() private _showStyling = false;
   private _subscribedDismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
 
@@ -1043,31 +1046,50 @@ export class WeatherAlertsCardEditor extends LitElement {
           ></ha-switch>
         </ha-formfield>
 
-        <div class="section-label">${t('editor.progress_style', lang)}</div>
-        ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
-          <ha-select
-            .label=${t('editor.progress_style_' + phase, lang)}
-            .value=${this._config.progressStyle?.[phase] || PROGRESS_DECO_DEFAULTS[phase]}
-            @selected=${(ev: CustomEvent) => this._progressStyleChanged(phase, ev)}
-          >
-            <ha-dropdown-item value="solid">${t('editor.deco_solid', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="striped">${t('editor.deco_striped', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="shimmer">${t('editor.deco_shimmer', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="pulse">${t('editor.deco_pulse', lang)}</ha-dropdown-item>
-          </ha-select>
-        `)}
+        <!-- Per-phase progress/icon styling: power-user knobs with good
+             defaults, collapsed by default so they cost one row until opened.
+             Open state is local UI (not stored in config). -->
+        <div
+          class="section-label section-toggle ${this._config.progressStyle || this._config.iconBorderStyle ? 'section-toggle-set' : ''}"
+          @click=${() => { this._showStyling = !this._showStyling; }}
+        >
+          <span>${t('editor.styling_section', lang)}</span>
+          <ha-icon
+            icon="mdi:chevron-down"
+            class="section-chevron ${this._showStyling ? 'expanded' : ''}"
+          ></ha-icon>
+        </div>
+        ${this._showStyling ? html`
+          <div class="sub-label">${t('editor.progress_style', lang)}</div>
+          <div class="phase-row">
+            ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
+              <ha-select
+                .label=${t('editor.progress_style_' + phase, lang)}
+                .value=${this._config.progressStyle?.[phase] || PROGRESS_DECO_DEFAULTS[phase]}
+                @selected=${(ev: CustomEvent) => this._progressStyleChanged(phase, ev)}
+              >
+                <ha-dropdown-item value="solid">${t('editor.deco_solid', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="striped">${t('editor.deco_striped', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="shimmer">${t('editor.deco_shimmer', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="pulse">${t('editor.deco_pulse', lang)}</ha-dropdown-item>
+              </ha-select>
+            `)}
+          </div>
 
-        <div class="section-label">${t('editor.icon_border_style', lang)}</div>
-        ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
-          <ha-select
-            .label=${t('editor.progress_style_' + phase, lang)}
-            .value=${this._config.iconBorderStyle?.[phase] || ICON_BORDER_DEFAULTS[phase]}
-            @selected=${(ev: CustomEvent) => this._iconBorderStyleChanged(phase, ev)}
-          >
-            <ha-dropdown-item value="dashed">${t('editor.icon_border_dashed', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="solid">${t('editor.icon_border_solid', lang)}</ha-dropdown-item>
-          </ha-select>
-        `)}
+          <div class="sub-label">${t('editor.icon_border_style', lang)}</div>
+          <div class="phase-row">
+            ${(['preparation', 'active', 'ongoing'] as DecoPhase[]).map(phase => html`
+              <ha-select
+                .label=${t('editor.progress_style_' + phase, lang)}
+                .value=${this._config.iconBorderStyle?.[phase] || ICON_BORDER_DEFAULTS[phase]}
+                @selected=${(ev: CustomEvent) => this._iconBorderStyleChanged(phase, ev)}
+              >
+                <ha-dropdown-item value="dashed">${t('editor.icon_border_dashed', lang)}</ha-dropdown-item>
+                <ha-dropdown-item value="solid">${t('editor.icon_border_solid', lang)}</ha-dropdown-item>
+              </ha-select>
+            `)}
+          </div>
+        ` : nothing}
 
         <ha-formfield .label=${t('editor.reformat_text', lang)}>
           <ha-switch
@@ -1287,6 +1309,45 @@ export class WeatherAlertsCardEditor extends LitElement {
       border-bottom: 1px solid var(--divider-color);
       padding-bottom: 4px;
       margin-top: 8px;
+    }
+    /* Clickable disclosure header for the collapsible styling group. */
+    .section-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    /* Marks the collapsed group when non-default overrides are set, so a closed
+       section never hides that styling has been customized. */
+    .section-toggle-set > span::after {
+      content: '•';
+      margin-left: 6px;
+      color: var(--primary-color);
+    }
+    .section-chevron {
+      --mdc-icon-size: 20px;
+      transition: transform 0.2s;
+      color: var(--secondary-text-color);
+    }
+    .section-chevron.expanded {
+      transform: rotate(180deg);
+    }
+    /* Sub-heading inside the disclosure (lighter than a section-label). */
+    .sub-label {
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+    }
+    /* Three phase selects on one row; wrap to stacked on a narrow panel. */
+    .phase-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .phase-row ha-select {
+      flex: 1 1 110px;
+      min-width: 110px;
     }
     .preview-hint,
     .preview-nudge {
