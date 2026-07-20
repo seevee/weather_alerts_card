@@ -31,9 +31,31 @@ export const cardStyles = css`
     display: block;
   }
 
-  /* Positioning context for the degraded corner dot (see .degraded-dot). */
+  /* Public surface-theming API (--wac-* custom properties). Set these from
+     theme YAML, card_mod, or a dashboard style: block. Each is applied inline
+     as var(--token, <default>) at its use site (no :host declaration), so one
+     token can drive both full and compact layouts while preserving each site's
+     current default when unset. Documented in the README token table.
+
+       --wac-card-background   outer wrapper fill.  default:
+                               var(--ha-card-background, var(--card-background-color))
+       --wac-alert-background  per-alert fill.       default: transparent
+                               (reveals the outer surface — no compounding)
+       --wac-alert-border-radius  per-alert corners. default: 12px full / 8px compact
+       --wac-alert-border      per-alert border.     default: 1px solid var(--divider-color)
+       --wac-alert-shadow      per-alert shadow.     default:
+                               var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1))
+       --wac-alert-gap         inter-alert vgap.     default: 16px full / 4px compact */
+
+  /* Positioning context for the degraded corner dot (see .degraded-dot).
+     The outer surface is the single painted layer: inner .alert-card boxes
+     default to transparent (see --wac-alert-background) and reveal this fill,
+     so a translucent theme renders its alpha exactly once. The fallback chain
+     mirrors HA's own default so an unset --wac-card-background is identical to
+     today's ha-card background. */
   ha-card {
     position: relative;
+    background: var(--wac-card-background, var(--ha-card-background, var(--card-background-color)));
   }
 
   .error {
@@ -85,6 +107,9 @@ export const cardStyles = css`
     height: 18px;
     border-radius: 50%;
     background: var(--warning-color);
+    /* Ring intentionally tracks the outer ha-card surface (--card-background-color),
+       not --wac-alert-background: the dot floats over the ha-card box, and
+       --wac-alert-background is transparent by default. */
     box-shadow: 0 0 0 2px var(--card-background-color, #fff);
     z-index: 2;
   }
@@ -118,12 +143,12 @@ export const cardStyles = css`
     --wac-fg: var(--color);
     --wac-progress-fg: var(--color);
     position: relative;
-    margin-bottom: 16px;
+    margin-bottom: var(--wac-alert-gap, 16px);
     padding: 0;
-    border-radius: 12px;
-    background: var(--card-background-color);
-    border: 1px solid var(--divider-color);
-    box-shadow: var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1));
+    border-radius: var(--wac-alert-border-radius, 12px);
+    background: var(--wac-alert-background, transparent);
+    border: var(--wac-alert-border, 1px solid var(--divider-color));
+    box-shadow: var(--wac-alert-shadow, var(--ha-card-box-shadow, 0 2px 5px rgba(0,0,0,0.1)));
     overflow: hidden;
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, transform 0.15s ease-out;
   }
@@ -683,8 +708,17 @@ export const cardStyles = css`
 
   /* --- COMPACT LAYOUT --- */
   .compact .alert-card {
-    margin-bottom: 4px;
-    border-radius: 8px;
+    margin-bottom: var(--wac-alert-gap, 4px);
+    border-radius: var(--wac-alert-border-radius, 8px);
+  }
+
+  /* Re-assert the last-child gap reset for compact: the generic
+     .alert-card:last-child rule above has equal specificity but loses on
+     source order to .compact .alert-card, which would otherwise leave a
+     trailing --wac-alert-gap below the last chip (visible as stray bottom
+     margin, and previously hand-patched with margin-bottom:0 !important). */
+  .compact .alert-card:last-child {
+    margin-bottom: 0;
   }
 
   .compact .alert-card::before {

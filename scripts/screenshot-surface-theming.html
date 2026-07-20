@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Alerts Card – Surface theming (--wac-* examples)</title>
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ----
+       This harness renders the two card-mod examples documented under
+       "Surface theming (--wac-* tokens)" in the README:
+         · Translucent theme — a see-through --ha-card-background with transparent
+           alert bodies, so the theme alpha lands once (the #215 fix).
+         · Pill / chip look   — a transparent wrapper with filled alert boxes,
+           built entirely from the stable tokens.
+       The example surface values (--demo-*) adapt per theme so the figure reads in
+       both modes; the README YAML shows the dark recipe as the canonical example.
+       --surface-bg is a vivid backdrop so the translucent surface and the pill's
+       transparent wrapper both visibly reveal what's behind them. */
+    .theme-light {
+      --primary-text-color: #1a1c22;
+      --secondary-text-color: #4a4e59;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: rgba(0, 0, 0, 0.08);
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.14);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 26, 28, 34;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      --demo-translucent-surface: rgba(255, 255, 255, 0.62);
+      --demo-pill-fill: #ffffff;
+      --surface-bg:
+        radial-gradient(circle at 18% 20%, #ffd36e 0%, transparent 46%),
+        radial-gradient(circle at 85% 25%, #7ec8ff 0%, transparent 46%),
+        radial-gradient(circle at 55% 92%, #7ef0c4 0%, transparent 52%),
+        repeating-linear-gradient(45deg, #eef1f6 0 22px, #e2e7f0 22px 44px);
+      --surface-label-color: rgba(0, 0, 0, 0.6);
+      --surface-caption-color: rgba(0, 0, 0, 0.5);
+    }
+    .theme-dark {
+      --primary-text-color: #f2f4f8;
+      --secondary-text-color: #b8c0cc;
+      --primary-background-color: #0b0e14;
+      --secondary-background-color: rgba(255, 255, 255, 0.10);
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(255, 255, 255, 0.16);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #6aa8ff;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 242, 244, 248;
+      --ha-card-box-shadow:
+        0px 8px 24px rgba(0, 0, 0, 0.35);
+      --demo-translucent-surface: rgba(40, 40, 40, 0.6);
+      --demo-pill-fill: rgb(40, 40, 40);
+      --surface-bg:
+        radial-gradient(circle at 18% 20%, #ff5f6d 0%, transparent 45%),
+        radial-gradient(circle at 85% 28%, #2ec5ff 0%, transparent 45%),
+        radial-gradient(circle at 55% 92%, #17e3a1 0%, transparent 50%),
+        repeating-linear-gradient(45deg, #12151c 0 22px, #191d27 22px 44px);
+      --surface-label-color: rgba(255, 255, 255, 0.92);
+      --surface-caption-color: rgba(255, 255, 255, 0.72);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    .surface-canvas {
+      background: var(--surface-bg);
+      padding: 32px 28px 28px;
+      display: flex;
+      gap: 28px;
+      width: 1080px;
+      align-items: flex-start;
+    }
+
+    .showcase {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section-label {
+      color: var(--surface-label-color);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    }
+
+    .section-caption {
+      color: var(--surface-caption-color);
+      font-size: 12px;
+      line-height: 1.4;
+      margin-bottom: 14px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-wrapper { width: 100%; }
+  </style>
+</head>
+<body>
+
+  <div class="surface-canvas" id="surface-canvas">
+
+    <!-- Translucent theme: see-through card surface, transparent alert bodies. -->
+    <div class="showcase">
+      <div class="section-label">Translucent theme</div>
+      <div class="section-caption">Translucent <code>--ha-card-background</code>; alert bodies stay transparent, so the theme alpha lands once.</div>
+      <div class="card-wrapper">
+        <weather-alerts-card id="card-surface-translucent"></weather-alerts-card>
+      </div>
+    </div>
+
+    <!-- Pill / chip look: transparent wrapper, filled alert boxes, all via tokens. -->
+    <div class="showcase">
+      <div class="section-label">Pill / chip look</div>
+      <div class="section-caption">Transparent <code>--wac-card-background</code>; filled <code>--wac-alert-background</code>, 28px corners, no border/shadow.</div>
+      <div class="card-wrapper">
+        <weather-alerts-card id="card-surface-pill"></weather-alerts-card>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+    import { ALERTS } from '/scripts/screenshot-fixtures.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {}
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+            }
+          </style>
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock hass ----
+    const ENTITY = 'sensor.nws_alerts_alerts';
+    const MOCK_HASS = {
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      states: {
+        [ENTITY]: {
+          state: String(ALERTS.length),
+          attributes: { Alerts: ALERTS },
+        },
+      },
+    };
+
+    // ---- Translucent theme (README example 1) ----
+    // card_mod: ha-card { --ha-card-background: rgba(40,40,40,0.6);
+    //                     --wac-alert-background: transparent; }
+    const translucent = document.getElementById('card-surface-translucent');
+    translucent.setConfig({
+      type: 'custom:weather-alerts-card',
+      entity: ENTITY,
+      animations: false,
+      colorTheme: 'severity',
+      // Compact here too, so the figure is a like-for-like comparison with the
+      // pill column at matching height (no lopsided backdrop). The transparency
+      // itself is layout-independent; the README YAML shows the full-layout form.
+      layout: 'compact',
+      sortOrder: 'severity',
+    });
+    translucent.hass = MOCK_HASS;
+    translucent.style.setProperty('--ha-card-background', 'var(--demo-translucent-surface)');
+    translucent.style.setProperty('--wac-alert-background', 'transparent');
+
+    // ---- Pill / chip look (README example 2) ----
+    // card_mod: ha-card { --wac-card-background: transparent;
+    //                     --ha-card-box-shadow: none;
+    //                     --wac-alert-background: rgb(40,40,40);
+    //                     --wac-alert-border: none; --wac-alert-border-radius: 28px;
+    //                     --wac-alert-shadow: none; --wac-alert-gap: 8px; }
+    const pill = document.getElementById('card-surface-pill');
+    pill.setConfig({
+      type: 'custom:weather-alerts-card',
+      entity: ENTITY,
+      animations: false,
+      colorTheme: 'severity',
+      layout: 'compact',
+      sortOrder: 'severity',
+    });
+    pill.hass = MOCK_HASS;
+    pill.style.setProperty('--wac-card-background', 'transparent');
+    pill.style.setProperty('--ha-card-box-shadow', 'none'); // flatten the invisible wrapper
+    pill.style.setProperty('--wac-alert-background', 'var(--demo-pill-fill)');
+    pill.style.setProperty('--wac-alert-border', 'none');
+    pill.style.setProperty('--wac-alert-border-radius', '28px');
+    pill.style.setProperty('--wac-alert-shadow', 'none');
+    pill.style.setProperty('--wac-alert-gap', '8px');
+  </script>
+</body>
+</html>

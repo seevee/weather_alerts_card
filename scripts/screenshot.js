@@ -234,6 +234,16 @@ const PORT = 3742;
       },
     },
     {
+      name: 'surface-theming',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-surface-theming.html`,
+      canvasId: 'surface-canvas',
+      cardIds: ['card-surface-translucent', 'card-surface-pill'],
+      variants: [
+        { theme: 'theme-light', label: 'surface light', out: 'img/surface-theming-light.png' },
+        { theme: 'theme-dark',  label: 'surface dark ', out: 'img/surface-theming-dark.png' },
+      ],
+    },
+    {
       name: 'geometry',
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry.html`,
       canvasId: 'geometry-canvas',
