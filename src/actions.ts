@@ -61,7 +61,7 @@ export function handleTapAction(
     }
     case 'url': {
       if (!action.url_path) return;
-      window.open(action.url_path);
+      window.open(action.url_path, '_blank', 'noopener');
       break;
     }
     case 'toggle': {

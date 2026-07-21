@@ -173,7 +173,7 @@ describe('handleTapAction dispatcher', () => {
   it('url opens window with url_path', () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     handleTapAction(node(), undefined, { action: 'url', url_path: 'https://example.test/' });
-    expect(open).toHaveBeenCalledWith('https://example.test/');
+    expect(open).toHaveBeenCalledWith('https://example.test/', '_blank', 'noopener');
     open.mockRestore();
   });
 
