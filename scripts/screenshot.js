@@ -289,6 +289,16 @@ const PORT = 3742;
       },
     },
     {
+      name: 'tap-action',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-tap-action.html`,
+      canvasId: 'tap-action-canvas',
+      cardIds: ['card-tap-chip', 'card-tap-popup'],
+      variants: [
+        { theme: 'theme-light', label: 'tap    light', out: 'img/tap-action-light.png' },
+        { theme: 'theme-dark',  label: 'tap    dark ', out: 'img/tap-action-dark.png' },
+      ],
+    },
+    {
       name: 'unavailable',
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-unavailable.html`,
       canvasId: 'unavailable-canvas',

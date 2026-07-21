@@ -104,6 +104,39 @@ Deeper layout tweaks (row height, icon chip size) still require reaching into th
 card's internal class names, which are **not** a stable public API and may change
 between releases. Prefer the tokens above where they suffice.
 
+**Bubble Card pop-up** — make a compact chip that opens a
+[Bubble Card](https://github.com/Clooos/Bubble-Card) pop-up instead of expanding
+inline. `tap_action` navigates to the pop-up's hash; the second card *is* the
+pop-up (Bubble listens for that hash and opens). Pair with `hideNoAlerts` so the
+chip vanishes when there's nothing to show.
+
+```yaml
+# 1) The chip: whole row taps through to the pop-up
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+provider: nws
+layout: compact
+hideNoAlerts: true
+tap_action:
+  action: navigate
+  navigation_path: '#weather-alerts'
+
+# 2) The pop-up: a full-detail card behind the hash
+type: custom:bubble-card
+card_type: pop-up
+hash: '#weather-alerts'
+card:
+  type: custom:weather-alerts-card
+  entity: sensor.nws_alerts_alerts
+  provider: nws
+  expandDetails: true
+```
+
+To open a `browser_mod`-style pop-up instead, use
+`tap_action: { action: fire-dom-event, browser_mod: { ... } }` — the card fires
+the standard `ll-custom` event `browser_mod` listens for. For an alert row that
+opens the sensor's more-info dialog, use `tap_action: { action: more-info }`.
+
 </details>
 
 ## Quick Start
@@ -173,6 +206,7 @@ Then click the Download button, and click Reload when prompted.
 | `dismissTrigger` | `'button'` | `'button'`, `'swipe'`, or `'both'` — how an alert is dismissed (swipe covers touch + mouse drag). Requires `allowDismiss` |
 | `dismissButtonStyle` | `'icon'` | `'icon'` or `'labeled'` (icon + "Dismiss" text). No effect when `dismissTrigger: 'swipe'`; compact layout is always icon-only |
 | `showDismissUndo` | `true` | Show an Undo toast when an alert is dismissed. No effect when `allowDismiss` is off |
+| `tap_action` | — | Standard Home Assistant action fired when an alert row is tapped. **When set, the inline expand affordance is replaced** — the whole row becomes the tap target and the compact chevron / "Read Details" toggle is removed (in the default layout, `expandDetails: true` still renders the always-on detail panel below the row). Supported actions: `more-info`, `navigate`, `url`, `toggle`, `call-service` (alias `perform-action`), `fire-dom-event`, `none` (`assist` is intentionally unsupported — it has no meaning on an alert row; `none` is an inert chip: the toggle is removed but tapping does nothing). For `more-info`/`toggle`, the default entity is resolved **per tapped alert** — `tap_action.entity` (explicit) → the alert's own source sensor → `entity` — so per-alert providers (CAP Alerts, NSW RFS) open *that* alert's sensor while aggregate providers (NWS, DWD, …) fall back to the aggregate sensor. `toggle` uses the generic `homeassistant.toggle` service. Absent = today's inline expand/toggle behavior, unchanged. |
 
 <details>
 <summary><strong>Examples</strong></summary>
