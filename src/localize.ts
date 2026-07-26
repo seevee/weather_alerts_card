@@ -1092,7 +1092,7 @@ const zhHans: TranslationMap = {
   'editor.dismiss_button_style_labeled': '图标加文字',
 };
 
-const translations: Record<string, TranslationMap> = { en, fr, es, zhHans, it, de};
+const translations: Record<string, TranslationMap> = { en, fr, es, 'zh': zhHans, 'zh-Hans': zhHans, it, de};
 
 export function t(key: string, lang: string, params?: Record<string, string | number>): string {
   const baseLang = lang.split('-')[0].toLowerCase();
