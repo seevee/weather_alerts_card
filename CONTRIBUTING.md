@@ -24,6 +24,32 @@ All PRs must pass:
 - `npm run build` — Rollup bundle
 - HACS validation
 
+## Translations
+
+User-facing strings live in `src/translations/`, one file per locale, registered
+in `src/translations/index.ts`. English (`en.ts`) is the source of truth — a PR
+that adds or renames a user-facing string must add the key to `en.ts`.
+
+Other locales are best-effort and **never block a PR**. `t()` falls back to the
+English string for any key a locale omits, so a lagging translation is cosmetic.
+When a locale falls behind, `tests/localize.test.ts` prints the exact missing
+keys and still passes:
+
+```bash
+npm run test              # drift appears as [i18n drift] notices
+I18N_STRICT=1 npm run test  # promotes drift to a failure, for an audit run
+```
+
+One thing *is* enforced for every locale: it must not declare a key absent from
+`en.ts`. A stale key left behind by a rename never renders, so it is dead weight
+— and unlike a missing translation, it is always fixable by whoever wrote it.
+
+New translations are welcome as standalone PRs — copy `en.ts` to
+`<code>.ts`, translate the values, leave the keys untouched, and add the locale
+to `index.ts`. Use the Home Assistant locale code (`nl`, `pt-BR`, `nb`, …), and
+keep any `{placeholder}` tokens intact. Add yourself to `.github/CODEOWNERS` so
+you are asked to review future edits to your file.
+
 ## Commit Messages
 
 Use conventional-style prefixes: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.

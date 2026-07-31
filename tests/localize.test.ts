@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { t } from '../src/localize';
+import { translations } from '../src/translations';
 
 describe('t()', () => {
   it('returns English string for known key', () => {
@@ -163,200 +164,45 @@ describe('t()', () => {
     expect(t('badge.certainty_unknown', 'de')).toBe('Unbekannt');
   });
 
-  it('all en keys exist in fr', () => {
-    // Access translations indirectly through t()
-    const enKeys = [
-      'card.no_alerts', 'card.preview', 'card.read_details',
-      'card.sources_unavailable_named', 'card.sources_unavailable_count',
-      'card.sources_unavailable_one',
-      'card.open_source', 'card.zones_count',
-      'card.zone_count_singular',
-      'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
-      'detail.description', 'detail.instructions',
-      'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.tbd', 'progress.na',
-      'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
-      'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
-      'editor.entities', 'editor.title', 'editor.provider', 'editor.provider_auto',
-      'editor.provider_nws', 'editor.provider_bom', 'editor.provider_meteoalarm',
-      'editor.provider_pirateweather', 'editor.provider_dwd', 'editor.provider_eccc',
-      'editor.provider_cap',
-      'editor.device', 'editor.device_helper',
-      'editor.zones', 'editor.zones_helper',
-      'editor.event_codes', 'editor.event_codes_helper', 'editor.sort_order',
-      'editor.sort_default', 'editor.sort_onset', 'editor.sort_severity',
-      'editor.unavailable_behavior', 'editor.unavailable_message',
-      'editor.unavailable_compact', 'editor.unavailable_hide',
-      'editor.unavailable_hide_warning',
-      'editor.color_theme', 'editor.color_severity', 'editor.color_nws',
-      'editor.timezone', 'editor.tz_server', 'editor.tz_browser',
-      'editor.min_severity', 'editor.severity_all', 'editor.severity_minor',
-      'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
-      'editor.animations', 'editor.deduplicate', 'editor.compact',
-      'editor.show_preview', 'editor.preview_hint',
-      'editor.styling_section',
-      'editor.progress_style', 'editor.progress_style_wash_note', 'editor.progress_style_preparation',
-      'editor.progress_style_active', 'editor.progress_style_ongoing',
-      'editor.deco_solid', 'editor.deco_striped', 'editor.deco_shimmer', 'editor.deco_pulse',
-      'editor.icon_border_style', 'editor.icon_border_dashed', 'editor.icon_border_solid',
-      'editor.progress_fill', 'editor.progress_fill_track', 'editor.progress_fill_background',
-      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
-      'badge.severity_minor', 'badge.severity_unknown',
-      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
-      'badge.certainty_unlikely', 'badge.certainty_unknown',
-    ];
+  // Parity is derived from the registry rather than a hardcoded key list. The
+  // previous version repeated ~95 of the 166 keys across four near-identical
+  // arrays, so every key added since drifted unguarded. Registering a locale in
+  // src/translations/index.ts now covers it here automatically.
+  const enKeys = Object.keys(translations.en);
+  const otherLocales = Object.keys(translations).filter((lang) => lang !== 'en');
 
-    for (const key of enKeys) {
-      const frValue = t(key, 'fr');
-      const enValue = t(key, 'en');
-      // fr should not fall back to en (i.e., they should differ or be intentionally the same)
-      expect(frValue).not.toBe(key, `Missing fr translation for: ${key}`);
-      // Sanity: en value exists
-      expect(enValue).not.toBe(key, `Missing en translation for: ${key}`);
-    }
+  it('discovers the locale registry', () => {
+    // Without this the per-locale checks below would vacuously pass on an
+    // empty list if the registry were moved or renamed.
+    expect(enKeys.length).toBeGreaterThan(0);
+    expect(otherLocales.length).toBeGreaterThan(0);
   });
 
-  it('all en keys exist in es', () => {
-    const enKeys = [
-      'card.no_alerts', 'card.preview', 'card.read_details',
-      'card.sources_unavailable_named', 'card.sources_unavailable_count',
-      'card.sources_unavailable_one',
-      'card.open_source', 'card.zones_count',
-      'card.zone_count_singular',
-      'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
-      'detail.description', 'detail.instructions',
-      'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.tbd', 'progress.na',
-      'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
-      'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
-      'editor.entities', 'editor.title', 'editor.provider', 'editor.provider_auto',
-      'editor.provider_nws', 'editor.provider_bom', 'editor.provider_meteoalarm',
-      'editor.provider_pirateweather', 'editor.provider_dwd', 'editor.provider_eccc',
-      'editor.provider_cap',
-      'editor.device', 'editor.device_helper',
-      'editor.zones', 'editor.zones_helper',
-      'editor.event_codes', 'editor.event_codes_helper', 'editor.sort_order',
-      'editor.sort_default', 'editor.sort_onset', 'editor.sort_severity',
-      'editor.unavailable_behavior', 'editor.unavailable_message',
-      'editor.unavailable_compact', 'editor.unavailable_hide',
-      'editor.unavailable_hide_warning',
-      'editor.color_theme', 'editor.color_severity', 'editor.color_nws',
-      'editor.timezone', 'editor.tz_server', 'editor.tz_browser',
-      'editor.min_severity', 'editor.severity_all', 'editor.severity_minor',
-      'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
-      'editor.animations', 'editor.deduplicate', 'editor.compact',
-      'editor.show_preview', 'editor.preview_hint',
-      'editor.styling_section',
-      'editor.progress_style', 'editor.progress_style_wash_note', 'editor.progress_style_preparation',
-      'editor.progress_style_active', 'editor.progress_style_ongoing',
-      'editor.deco_solid', 'editor.deco_striped', 'editor.deco_shimmer', 'editor.deco_pulse',
-      'editor.icon_border_style', 'editor.icon_border_dashed', 'editor.icon_border_solid',
-      'editor.progress_fill', 'editor.progress_fill_track', 'editor.progress_fill_background',
-      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
-      'badge.severity_minor', 'badge.severity_unknown',
-      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
-      'badge.certainty_unlikely', 'badge.certainty_unknown',
-    ];
-
-    for (const key of enKeys) {
-      const esValue = t(key, 'es');
-      expect(esValue).not.toBe(key, `Missing es translation for: ${key}`);
-    }
+  // Hard failure: a key absent from `en` is stale or misspelled, so it never
+  // renders — and it is always fixable by whoever introduced it.
+  it.each(otherLocales)('%s declares no keys unknown to en', (lang) => {
+    const unknown = Object.keys(translations[lang]).filter((key) => !(key in translations.en));
+    expect(
+      unknown,
+      `${lang}.ts declares keys absent from en.ts (stale or misspelled, and never rendered)`,
+    ).toEqual([]);
   });
 
-  it('all en keys exist in it', () => {
-    const enKeys = [
-      'card.no_alerts', 'card.preview', 'card.read_details',
-      'card.sources_unavailable_named', 'card.sources_unavailable_count',
-      'card.sources_unavailable_one',
-      'card.open_source', 'card.zones_count',
-      'card.zone_count_singular',
-      'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
-      'detail.description', 'detail.instructions',
-      'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.tbd', 'progress.na',
-      'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
-      'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
-      'editor.entities', 'editor.title', 'editor.provider', 'editor.provider_auto',
-      'editor.provider_nws', 'editor.provider_bom', 'editor.provider_meteoalarm',
-      'editor.provider_pirateweather', 'editor.provider_dwd', 'editor.provider_eccc',
-      'editor.provider_cap',
-      'editor.device', 'editor.device_helper',
-      'editor.zones', 'editor.zones_helper',
-      'editor.event_codes', 'editor.event_codes_helper', 'editor.sort_order',
-      'editor.sort_default', 'editor.sort_onset', 'editor.sort_severity',
-      'editor.unavailable_behavior', 'editor.unavailable_message',
-      'editor.unavailable_compact', 'editor.unavailable_hide',
-      'editor.unavailable_hide_warning',
-      'editor.color_theme', 'editor.color_severity', 'editor.color_nws',
-      'editor.timezone', 'editor.tz_server', 'editor.tz_browser',
-      'editor.min_severity', 'editor.severity_all', 'editor.severity_minor',
-      'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
-      'editor.animations', 'editor.deduplicate', 'editor.compact',
-      'editor.show_preview', 'editor.preview_hint',
-      'editor.styling_section',
-      'editor.progress_style', 'editor.progress_style_wash_note', 'editor.progress_style_preparation',
-      'editor.progress_style_active', 'editor.progress_style_ongoing',
-      'editor.deco_solid', 'editor.deco_striped', 'editor.deco_shimmer', 'editor.deco_pulse',
-      'editor.icon_border_style', 'editor.icon_border_dashed', 'editor.icon_border_solid',
-      'editor.progress_fill', 'editor.progress_fill_track', 'editor.progress_fill_background',
-      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
-      'badge.severity_minor', 'badge.severity_unknown',
-      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
-      'badge.certainty_unlikely', 'badge.certainty_unknown',
-    ];
+  // Warning, not failure: t() falls back to English per key, so a lagging
+  // locale is cosmetic, and the author of a feature PR is usually not the
+  // person able to translate it. Set I18N_STRICT=1 to promote to a failure for
+  // an audit run.
+  it.each(otherLocales)('%s is complete (drift warns, does not fail)', (lang) => {
+    const missing = enKeys.filter((key) => !(key in translations[lang]));
+    if (missing.length === 0) return;
 
-    for (const key of enKeys) {
-      const itValue = t(key, 'it');
-      expect(itValue).not.toBe(key, `Missing it translation for: ${key}`);
-    }
-  });
+    const message =
+      `${lang}.ts is missing ${missing.length} key(s) present in en.ts: ${missing.join(', ')}`;
+    if (process.env.I18N_STRICT) expect.fail(message);
 
-  it('all en keys exist in de', () => {
-    const enKeys = [
-      'card.no_alerts', 'card.preview', 'card.read_details',
-      'card.sources_unavailable_named', 'card.sources_unavailable_count',
-      'card.sources_unavailable_one',
-      'card.open_source', 'card.zones_count',
-      'card.zone_count_singular',
-      'detail.issued', 'detail.onset', 'detail.expires', 'detail.area',
-      'detail.description', 'detail.instructions',
-      'progress.start', 'progress.now', 'progress.end', 'progress.ongoing',
-      'progress.tbd', 'progress.na',
-      'time.just_now', 'time.in_less_than_1m', 'time.minutes_ago', 'time.in_minutes',
-      'time.hours_ago', 'time.in_hours', 'time.days_ago', 'time.in_days',
-      'editor.entities', 'editor.title', 'editor.provider', 'editor.provider_auto',
-      'editor.provider_nws', 'editor.provider_bom', 'editor.provider_meteoalarm',
-      'editor.provider_pirateweather', 'editor.provider_dwd', 'editor.provider_eccc',
-      'editor.provider_cap',
-      'editor.device', 'editor.device_helper',
-      'editor.zones', 'editor.zones_helper',
-      'editor.event_codes', 'editor.event_codes_helper', 'editor.sort_order',
-      'editor.sort_default', 'editor.sort_onset', 'editor.sort_severity',
-      'editor.unavailable_behavior', 'editor.unavailable_message',
-      'editor.unavailable_compact', 'editor.unavailable_hide',
-      'editor.unavailable_hide_warning',
-      'editor.color_theme', 'editor.color_severity', 'editor.color_nws',
-      'editor.timezone', 'editor.tz_server', 'editor.tz_browser',
-      'editor.min_severity', 'editor.severity_all', 'editor.severity_minor',
-      'editor.severity_moderate', 'editor.severity_severe', 'editor.severity_extreme',
-      'editor.animations', 'editor.deduplicate', 'editor.compact',
-      'editor.show_preview', 'editor.preview_hint',
-      'editor.styling_section',
-      'editor.progress_style', 'editor.progress_style_wash_note', 'editor.progress_style_preparation',
-      'editor.progress_style_active', 'editor.progress_style_ongoing',
-      'editor.deco_solid', 'editor.deco_striped', 'editor.deco_shimmer', 'editor.deco_pulse',
-      'editor.icon_border_style', 'editor.icon_border_dashed', 'editor.icon_border_solid',
-      'editor.progress_fill', 'editor.progress_fill_track', 'editor.progress_fill_background',
-      'badge.severity_extreme', 'badge.severity_severe', 'badge.severity_moderate',
-      'badge.severity_minor', 'badge.severity_unknown',
-      'badge.certainty_observed', 'badge.certainty_likely', 'badge.certainty_possible',
-      'badge.certainty_unlikely', 'badge.certainty_unknown',
-    ];
-
-    for (const key of enKeys) {
-      const deValue = t(key, 'de');
-      expect(deValue).not.toBe(key, `Missing de translation for: ${key}`);
-    }
+    // Written straight to stderr, not console.warn: vitest's default reporter
+    // buffers console output from *passing* tests and drops it when stdout is
+    // not a TTY — i.e. exactly in CI, where this notice is the only signal.
+    process.stderr.write(`[i18n drift] ${message}\n`);
   });
 });
