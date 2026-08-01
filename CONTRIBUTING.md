@@ -24,6 +24,45 @@ All PRs must pass:
 - `npm run build` — Rollup bundle
 - HACS validation
 
+## Translations
+
+User-facing strings live in `src/translations/`, one file per locale, registered
+in `src/translations/index.ts`. English (`en.ts`) is the source of truth — a PR
+that adds or renames a user-facing string must add the key to `en.ts`.
+
+Other locales are best-effort and **never block a PR**. `t()` falls back to the
+English string for any key a locale omits, so a lagging translation is cosmetic.
+When a locale falls behind, `tests/localize.test.ts` prints the exact missing
+keys and still passes:
+
+```bash
+npm run test              # drift appears as [i18n drift] notices
+I18N_STRICT=1 npm run test  # promotes drift to a failure, for an audit run
+```
+
+Two things *are* enforced for every locale, both on the same principle: unlike a
+missing translation, each is fixable by whoever wrote the line.
+
+- **No key absent from `en.ts`.** A stale key left behind by a rename never
+  renders, so it is dead weight.
+- **`{placeholder}` tokens matching the English value.** `t()` interpolates by
+  name, so a renamed token renders literally as `{numero}` and a dropped one
+  takes its value with it — `card.sources_unavailable_count` without `{count}`
+  reports that sources are unavailable without saying how many. Neither is
+  visible to the other two checks, since the key is present and spelled right.
+
+New translations are welcome as standalone PRs — copy `en.ts` to
+`<code>.ts`, translate the values, leave the keys untouched, and add the locale
+to `index.ts`. Use the Home Assistant locale code (`nl`, `pt-BR`, `nb`, …), and
+keep any `{placeholder}` tokens intact.
+
+Script- and region-qualified codes are matched most-specific-first, and a code
+with no exact entry falls back within its own language before it falls back to
+English: with only `pt-BR` registered, a `pt-PT` user gets Brazilian Portuguese
+rather than English. So a single variant is worth contributing even if you
+cannot cover the others. Add yourself to `.github/CODEOWNERS` so
+you are asked to review future edits to your file.
+
 ## Commit Messages
 
 Use conventional-style prefixes: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`.
