@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Alerts Card – tap_action → Bubble Card pop-up</title>
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ----
+       This harness renders the README's Bubble Card pop-up recipe as a single
+       scene: a dashboard with a compact, whole-row-tappable alert chip, dimmed
+       under a scrim, with a Bubble Card pop-up sheet risen over the bottom.
+
+         1. The chip  — layout: compact + tap_action: navigate → #weather-alerts,
+            hideNoAlerts. The whole row is the tap target; the inline chevron is
+            gone (tap_action replaces inline-expand).
+         2. The pop-up — a full-detail weather-alerts-card (expandDetails: true)
+            behind the hash. Bubble Card supplies the pop-up chrome; it is an
+            external card (not a dep here), so the sheet/grabber/scrim are mocked.
+
+       Deep integration is on the *card* side, not Bubble's: inside the sheet the
+       card is driven transparent + borderless via the #215 --wac-* surface
+       tokens (--wac-card-background / --wac-alert-border / --ha-card-box-shadow),
+       so it dissolves into the sheet instead of stacking a second bordered box.
+       The alert's severity — the red the card would otherwise paint as a full
+       perimeter border — is *promoted* to the sheet chrome (top accent + title
+       icon). The Bubble chrome itself is kept deliberately generic so the figure
+       doesn't imply one specific Bubble skin. */
+    .theme-light {
+      --primary-text-color: #1a1c22;
+      --secondary-text-color: #4a4e59;
+      --primary-background-color: #f2f4f8;
+      --secondary-background-color: rgba(0, 0, 0, 0.08);
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.14);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 26, 28, 34;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+      /* dashboard backdrop + Bubble sheet surfaces */
+      --stage-bg:
+        radial-gradient(circle at 18% 6%, #e2e9f6 0%, transparent 46%),
+        radial-gradient(circle at 90% 4%, #e9eef8 0%, transparent 42%),
+        #eef1f6;
+      --dummy-tile: #ffffff;
+      --dummy-line: rgba(0, 0, 0, 0.09);
+      --sheet-bg: #f6f8fb;
+      --sheet-grabber: rgba(0, 0, 0, 0.20);
+      --sheet-hairline: rgba(0, 0, 0, 0.10);
+      --scrim: rgba(18, 22, 31, 0.42);
+      --stage-title: rgba(0, 0, 0, 0.74);
+      --stage-caption: rgba(0, 0, 0, 0.52);
+      --pill-bg: rgba(255, 255, 255, 0.92);
+      --pill-fg: rgba(0, 0, 0, 0.68);
+      --pill-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      --flow-color: #4f86f7;
+      --sev: var(--error-color);
+    }
+    .theme-dark {
+      --primary-text-color: #f2f4f8;
+      --secondary-text-color: #b8c0cc;
+      --primary-background-color: #0b0e14;
+      --secondary-background-color: rgba(255, 255, 255, 0.10);
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(255, 255, 255, 0.16);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #6aa8ff;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 242, 244, 248;
+      --ha-card-box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.35);
+      --stage-bg:
+        radial-gradient(circle at 18% 6%, #17222f 0%, transparent 46%),
+        radial-gradient(circle at 90% 4%, #131c28 0%, transparent 42%),
+        #0b0e14;
+      --dummy-tile: #17181c;
+      --dummy-line: rgba(255, 255, 255, 0.10);
+      --sheet-bg: #17181d;
+      --sheet-grabber: rgba(255, 255, 255, 0.26);
+      --sheet-hairline: rgba(255, 255, 255, 0.12);
+      --scrim: rgba(0, 0, 0, 0.58);
+      --stage-title: rgba(255, 255, 255, 0.92);
+      --stage-caption: rgba(255, 255, 255, 0.6);
+      --pill-bg: rgba(28, 30, 36, 0.94);
+      --pill-fg: rgba(255, 255, 255, 0.8);
+      --pill-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+      --flow-color: #6aa8ff;
+      --sev: var(--error-color);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    /* ---- The scene: one dashboard viewport, dimmed, with a pop-up over it ---- */
+    .tap-canvas {
+      position: relative;
+      width: 1200px;
+      height: 1010px;
+      overflow: hidden;
+      border-radius: 22px;
+      background: var(--stage-bg);
+    }
+
+    /* ---- The dashboard behind the pop-up: multi-column masonry of dummy tiles,
+            with the real chip placed in the top-centre so it clears the sheet. */
+    .dashboard {
+      position: absolute;
+      inset: 0;
+      padding: 62px 40px 30px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: min-content;
+      gap: 16px;
+      align-content: start;
+    }
+    .dummy-tile {
+      background: var(--dummy-tile);
+      border-radius: 14px;
+      box-shadow: var(--ha-card-box-shadow);
+      padding: 15px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .dummy-tile.tall { padding-bottom: 34px; }
+    .dummy-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--dummy-line);
+      flex: 0 0 auto;
+    }
+    .dummy-bars { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+    .dummy-bar { height: 8px; border-radius: 4px; background: var(--dummy-line); }
+    .dummy-bar.short { width: 45%; }
+
+    /* The chip sits in the dashboard flow (top-centre column). A pointer + ripple
+       cue marks the tap; a small config pill names the recipe. */
+    .chip-slot { position: relative; }
+    .chip-slot .card-wrapper { position: relative; z-index: 1; }
+    .tap-ripple {
+      position: absolute;
+      right: 20px; bottom: -10px;
+      width: 48px; height: 48px;
+      border: 2px solid var(--flow-color);
+      border-radius: 50%;
+      opacity: 0.75;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .tap-cursor {
+      position: absolute;
+      right: 28px; bottom: -16px;
+      width: 30px; height: 30px;
+      color: var(--primary-text-color);
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+      z-index: 3;
+      pointer-events: none;
+    }
+    .config-pill {
+      position: absolute;
+      left: 0; top: -30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--pill-bg);
+      color: var(--pill-fg);
+      box-shadow: var(--pill-shadow);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-family: "Roboto Mono", ui-monospace, monospace;
+      font-size: 12px;
+      white-space: nowrap;
+      z-index: 4;
+    }
+    .config-pill .num {
+      font-family: Roboto, sans-serif;
+      font-weight: 700;
+      color: var(--flow-color);
+    }
+
+    /* ---- The scrim: dims the whole dashboard, below the sheet ---- */
+    .scrim {
+      position: absolute;
+      inset: 0;
+      background: var(--scrim);
+      z-index: 5;
+    }
+
+    /* ---- Scene caption (top-left, over the scrim) ---- */
+    .scene-title {
+      position: absolute;
+      left: 40px; top: 26px;
+      z-index: 8;
+      max-width: 340px;
+    }
+    .scene-title h2 {
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    /* ---- The Bubble Card pop-up sheet, risen over the bottom of the dashboard.
+            Generic chrome; severity is promoted here from the card. ---- */
+    /* Wrapper handles bottom-anchored centring; the sheet clips its own overflow
+       (rounded corners + spine), so the floating ② pill lives on the wrapper —
+       above the sheet — where the sheet's overflow:hidden can't clip it. */
+    .popup-wrap {
+      position: absolute;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 680px;
+      max-width: calc(100% - 96px);
+      z-index: 7;
+    }
+    .bubble-sheet {
+      position: relative;
+      width: 100%;
+      background: var(--sheet-bg);
+      border-radius: 28px 28px 0 0;
+      box-shadow: 0 -22px 70px rgba(0, 0, 0, 0.34);
+      padding-bottom: 24px;
+      overflow: hidden;
+    }
+    /* ② config pill, floating above the pop-up header (mirrors the ① chip pill) */
+    .popup-pill {
+      position: absolute;
+      left: 50%; top: -34px;
+      transform: translateX(-50%);
+      z-index: 8;
+    }
+    /* Promoted severity: a single full-height left spine on the pop-up itself.
+       It spans the whole sheet (header + content) and lines up flush with the
+       card's own content-region spine into one continuous status stripe — the
+       recognised "alert stripe" pattern, which reads on any surface without
+       double-framing. No horizontal top accent: the pop-up already has a header,
+       so a second horizontal bar would compete with it. */
+    .bubble-sheet::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 6px;
+      background: var(--sev);
+      z-index: 2;
+    }
+    .bubble-grabber {
+      width: 44px; height: 5px; border-radius: 3px;
+      background: var(--sheet-grabber);
+      margin: 11px auto 6px;
+    }
+    .bubble-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 12px;
+      border-bottom: 1px solid var(--sheet-hairline);
+    }
+    .bubble-title {
+      color: var(--primary-text-color);
+      font-size: 16px; font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+    }
+    /* title icon carries the promoted severity tint */
+    .bubble-title .b-icon { width: 22px; height: 22px; color: var(--sev); }
+    .bubble-close {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--secondary-background-color);
+      color: var(--secondary-text-color);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bubble-close svg { width: 16px; height: 16px; }
+
+    /* The card lives in the sheet, driven transparent via --wac-* tokens so it
+       reads as content on the sheet rather than a nested bordered card. Full-bleed
+       (no sheet-card padding) so the card's own severity left-spine sits flush to
+       the pop-up's left edge — no margin — pairing with the promoted top accent to
+       frame the whole pop-up as an extreme alert. The card supplies its own
+       internal padding, so text stays off the edge. */
+    .sheet-card {
+      padding: 4px 0 0;
+    }
+    .sheet-card .card-wrapper {
+      --wac-card-background: transparent;
+      --wac-alert-background: transparent;
+      --wac-alert-border: none;
+      --wac-alert-shadow: none;
+      --ha-card-box-shadow: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="tap-canvas" id="tap-action-canvas">
+
+    <!-- ===== Dashboard (dimmed, behind the pop-up) ===== -->
+    <div class="dashboard">
+      <!-- row 1: left tile · chip · right tile -->
+      <div class="dummy-tile">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar"></div><div class="dummy-bar short"></div></div>
+      </div>
+
+      <div class="chip-slot">
+        <div class="config-pill"><span class="num">1</span> tap_action → #weather-alerts</div>
+        <div class="card-wrapper">
+          <weather-alerts-card id="card-tap-chip"></weather-alerts-card>
+        </div>
+        <div class="tap-ripple"></div>
+        <svg class="tap-cursor" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 3l10.5 4.5-4.2 1.8 3.3 3.3-1.9 1.9-3.3-3.3-1.8 4.2z"/>
+        </svg>
+      </div>
+
+      <div class="dummy-tile">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar short"></div><div class="dummy-bar"></div></div>
+      </div>
+
+      <!-- row 2 -->
+      <div class="dummy-tile tall">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar"></div><div class="dummy-bar short"></div></div>
+      </div>
+      <div class="dummy-tile">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar short"></div><div class="dummy-bar"></div></div>
+      </div>
+      <div class="dummy-tile tall">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar"></div><div class="dummy-bar short"></div></div>
+      </div>
+
+      <!-- row 3 (mostly behind the sheet) -->
+      <div class="dummy-tile">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar short"></div><div class="dummy-bar"></div></div>
+      </div>
+      <div class="dummy-tile">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar"></div><div class="dummy-bar short"></div></div>
+      </div>
+      <div class="dummy-tile">
+        <div class="dummy-dot"></div>
+        <div class="dummy-bars"><div class="dummy-bar short"></div><div class="dummy-bar"></div></div>
+      </div>
+    </div>
+
+    <!-- ===== Scrim dims the dashboard ===== -->
+    <div class="scrim"></div>
+
+    <!-- ===== Scene caption ===== -->
+    <div class="scene-title">
+      <h2>Tap&nbsp;→ Bubble Card pop-up</h2>
+    </div>
+
+    <!-- ===== The Bubble Card pop-up sheet ===== -->
+    <div class="popup-wrap">
+      <div class="config-pill popup-pill"><span class="num">2</span> custom:bubble-card · pop-up · expandDetails: true</div>
+      <div class="bubble-sheet">
+        <div class="bubble-grabber"></div>
+        <div class="bubble-header">
+          <div class="bubble-title">
+            <svg class="b-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 4l7.5 13h-15L12 6zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+            Weather Alerts
+          </div>
+          <div class="bubble-close">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.4L17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+          </div>
+        </div>
+        <div class="sheet-card">
+          <div class="card-wrapper">
+            <weather-alerts-card id="card-tap-popup"></weather-alerts-card>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+    import { ALERTS } from '/scripts/screenshot-fixtures.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {}
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+            }
+          </style>
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock hass ----
+    // The chip and the pop-up show the *same* alert (Tornado of Compliments):
+    // the compact row is what you tap, the pop-up is the full detail it opens.
+    const ENTITY = 'sensor.nws_alerts_alerts';
+    const ALERT = [ALERTS[0]];
+    const hassFor = (alerts) => ({
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      states: {
+        [ENTITY]: { state: String(alerts.length), attributes: { Alerts: alerts } },
+      },
+    });
+
+    // ---- 1) The chip: compact + tap_action navigate, hideNoAlerts ----
+    const chip = document.getElementById('card-tap-chip');
+    chip.setConfig({
+      type: 'custom:weather-alerts-card',
+      entity: ENTITY,
+      provider: 'nws',
+      animations: false,
+      colorTheme: 'severity',
+      layout: 'compact',
+      hideNoAlerts: true,
+      tap_action: { action: 'navigate', navigation_path: '#weather-alerts' },
+    });
+    chip.hass = hassFor(ALERT);
+
+    // ---- 2) The pop-up: full layout, expandDetails ----
+    const popup = document.getElementById('card-tap-popup');
+    popup.setConfig({
+      type: 'custom:weather-alerts-card',
+      entity: ENTITY,
+      provider: 'nws',
+      animations: false,
+      colorTheme: 'severity',
+      sortOrder: 'severity',
+      expandDetails: true,
+    });
+    popup.hass = hassFor(ALERT);
+  </script>
+</body>
+</html>

@@ -194,6 +194,17 @@ export const cardStyles = css`
     margin-bottom: 0;
   }
 
+  /* tap_action: the whole row is a keyboard-operable action target (the inline
+     expand affordance is dropped). Only applied to actionable rows (present AND
+     not action:none); inert rows carry no cursor/role/focus. */
+  .alert-card.tappable {
+    cursor: pointer;
+  }
+  .alert-card.tappable:focus-visible {
+    outline: 2px solid var(--wac-focus-ring, var(--primary-color));
+    outline-offset: 2px;
+  }
+
   .alert-card::before {
     content: "";
     position: absolute;
