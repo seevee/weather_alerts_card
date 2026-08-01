@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { t } from '../src/localize';
-import { translations } from '../src/translations';
+import { translations, type TranslationMap } from '../src/translations';
 
 describe('t()', () => {
   it('returns English string for known key', () => {
@@ -162,6 +162,55 @@ describe('t()', () => {
     expect(t('badge.certainty_possible', 'de')).toBe('Möglich');
     expect(t('badge.certainty_unlikely', 'de')).toBe('Unwahrscheinlich');
     expect(t('badge.certainty_unknown', 'de')).toBe('Unbekannt');
+  });
+
+  // No registered locale is script- or region-qualified yet, so these register
+  // a stub to exercise those branches of the lookup. Safe to mutate: the parity
+  // checks below snapshot the registry at collection time, before any test body
+  // runs, so an injected locale never reaches them.
+  describe('script and region fallback', () => {
+    const stub = { 'card.no_alerts': 'STUB' } as TranslationMap;
+    const register = () => {
+      translations['pt-BR'] = stub;
+    };
+
+    afterEach(() => {
+      delete translations['pt-BR'];
+    });
+
+    it('matches an exact locale code ahead of the base subtag', () => {
+      register();
+      expect(t('card.no_alerts', 'pt-BR')).toBe('STUB');
+    });
+
+    it('matches a locale code case-insensitively', () => {
+      register();
+      expect(t('card.no_alerts', 'pt-br')).toBe('STUB');
+    });
+
+    // A pt-PT reader is better served pt-BR than English: same language, and
+    // closer to what they asked for than falling back to the source language.
+    it('falls back to a sibling locale sharing the base subtag', () => {
+      register();
+      expect(t('card.no_alerts', 'pt-PT')).toBe('STUB');
+    });
+
+    it('falls back to a sibling locale for the bare base subtag', () => {
+      register();
+      expect(t('card.no_alerts', 'pt')).toBe('STUB');
+    });
+
+    // Sibling matching picks the map; per-key English fallback still applies
+    // inside it, so an untranslated key is not left as a raw key name.
+    it('still falls back to English per key within a matched sibling', () => {
+      register();
+      expect(t('card.dismiss', 'pt-PT')).toBe('Dismiss');
+    });
+
+    it('does not treat an unrelated language as a sibling', () => {
+      register();
+      expect(t('card.no_alerts', 'ja')).toBe('No active alerts.');
+    });
   });
 
   // Parity is derived from the registry rather than a hardcoded key list. The

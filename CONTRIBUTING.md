@@ -47,7 +47,13 @@ One thing *is* enforced for every locale: it must not declare a key absent from
 New translations are welcome as standalone PRs — copy `en.ts` to
 `<code>.ts`, translate the values, leave the keys untouched, and add the locale
 to `index.ts`. Use the Home Assistant locale code (`nl`, `pt-BR`, `nb`, …), and
-keep any `{placeholder}` tokens intact. Add yourself to `.github/CODEOWNERS` so
+keep any `{placeholder}` tokens intact.
+
+Script- and region-qualified codes are matched most-specific-first, and a code
+with no exact entry falls back within its own language before it falls back to
+English: with only `pt-BR` registered, a `pt-PT` user gets Brazilian Portuguese
+rather than English. So a single variant is worth contributing even if you
+cannot cover the others. Add yourself to `.github/CODEOWNERS` so
 you are asked to review future edits to your file.
 
 ## Commit Messages
