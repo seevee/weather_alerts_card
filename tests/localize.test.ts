@@ -237,6 +237,32 @@ describe('t()', () => {
     ).toEqual([]);
   });
 
+  // Hard failure, for the same reason as a stale key: a present-but-wrong
+  // translation is invisible to both other checks. Drop the `{count}` from
+  // `card.sources_unavailable_count` and the key still exists, so completeness
+  // passes, but the string renders with no number in it. An invented token is
+  // worse — `t()` interpolates by name, so an unmatched one renders literally
+  // as `{foo}`. Either way it is fixable by whoever wrote the line.
+  //
+  // Compared as a set, not a sequence: a translation may legitimately use a
+  // token once where English uses it twice, or reorder them.
+  const placeholders = (value: string) =>
+    [...new Set([...value.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort();
+  const fmt = (tokens: string[]) => (tokens.length ? tokens.map((tok) => `{${tok}}`).join(' ') : 'none');
+
+  it.each(otherLocales)('%s preserves the placeholders en declares', (lang) => {
+    const mismatched = Object.keys(translations[lang])
+      .filter((key) => key in translations.en)
+      .map((key) => ({ key, want: placeholders(translations.en[key]), got: placeholders(translations[lang][key]) }))
+      .filter(({ want, got }) => want.join() !== got.join())
+      .map(({ key, want, got }) => `${key}: en has ${fmt(want)}, ${lang} has ${fmt(got)}`);
+
+    expect(
+      mismatched,
+      `${lang}.ts has values whose {placeholder} tokens differ from en.ts (renders a literal {token}, or silently drops one)`,
+    ).toEqual([]);
+  });
+
   // Warning, not failure: t() falls back to English per key, so a lagging
   // locale is cosmetic, and the author of a feature PR is usually not the
   // person able to translate it. Set I18N_STRICT=1 to promote to a failure for

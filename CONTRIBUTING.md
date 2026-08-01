@@ -40,9 +40,16 @@ npm run test              # drift appears as [i18n drift] notices
 I18N_STRICT=1 npm run test  # promotes drift to a failure, for an audit run
 ```
 
-One thing *is* enforced for every locale: it must not declare a key absent from
-`en.ts`. A stale key left behind by a rename never renders, so it is dead weight
-— and unlike a missing translation, it is always fixable by whoever wrote it.
+Two things *are* enforced for every locale, both on the same principle: unlike a
+missing translation, each is fixable by whoever wrote the line.
+
+- **No key absent from `en.ts`.** A stale key left behind by a rename never
+  renders, so it is dead weight.
+- **`{placeholder}` tokens matching the English value.** `t()` interpolates by
+  name, so a renamed token renders literally as `{numero}` and a dropped one
+  takes its value with it — `card.sources_unavailable_count` without `{count}`
+  reports that sources are unavailable without saying how many. Neither is
+  visible to the other two checks, since the key is present and spelled right.
 
 New translations are welcome as standalone PRs — copy `en.ts` to
 `<code>.ts`, translate the values, leave the keys untouched, and add the locale
