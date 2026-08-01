@@ -104,14 +104,26 @@ Deeper layout tweaks (row height, icon chip size) still require reaching into th
 card's internal class names, which are **not** a stable public API and may change
 between releases. Prefer the tokens above where they suffice.
 
-**Bubble Card pop-up** — make a compact chip that opens a
+**Bubble Card pop-up** — send the compact layout's rows to a
 [Bubble Card](https://github.com/Clooos/Bubble-Card) pop-up instead of expanding
 inline. `tap_action` navigates to the pop-up's hash; the second card *is* the
 pop-up (Bubble listens for that hash and opens). Pair with `hideNoAlerts` so the
-chip vanishes when there's nothing to show.
+entry rows vanish when there's nothing to show.
+
+Two things to know before wiring this up:
+
+- **The pop-up is shared, not per-alert.** A Bubble hash addresses one static
+  pop-up, so every row navigates to the same one and it shows *all* current
+  alerts in full detail — not only the alert you tapped. Per-alert scoping can't
+  be expressed with a hash. To open the tapped alert's own sensor instead, use
+  `tap_action: { action: more-info }`, which opens Home Assistant's native dialog
+  for it.
+- **`layout: compact` renders one row per alert**, not a single summary chip.
+  With three active alerts you get three entry rows, all tapping through to the
+  same pop-up.
 
 ```yaml
-# 1) The chip: whole row taps through to the pop-up
+# 1) The entry rows: each row taps through to the shared pop-up
 type: custom:weather-alerts-card
 entity: sensor.nws_alerts_alerts
 provider: nws
@@ -121,7 +133,7 @@ tap_action:
   action: navigate
   navigation_path: '#weather-alerts'
 
-# 2) The pop-up: a full-detail card behind the hash
+# 2) The pop-up: one full-detail card behind the hash, listing every current alert
 type: custom:bubble-card
 card_type: pop-up
 hash: '#weather-alerts'
@@ -134,8 +146,7 @@ card:
 
 To open a `browser_mod`-style pop-up instead, use
 `tap_action: { action: fire-dom-event, browser_mod: { ... } }` — the card fires
-the standard `ll-custom` event `browser_mod` listens for. For an alert row that
-opens the sensor's more-info dialog, use `tap_action: { action: more-info }`.
+the standard `ll-custom` event `browser_mod` listens for.
 
 </details>
 
