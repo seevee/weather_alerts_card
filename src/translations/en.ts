@@ -14,6 +14,7 @@ export const en: TranslationMap = {
   'card.dismiss': 'Dismiss',
   'card.dismissed_toast': 'Dismissed: {event}',
   'card.dismissed_toast_undo': 'Undo',
+  'card.close': 'Close',
 
   // Detail labels
   'detail.issued': 'Issued',

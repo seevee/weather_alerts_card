@@ -14,6 +14,7 @@ export const de: TranslationMap = {
   'card.dismiss': 'Ausblenden',
   'card.dismissed_toast': 'Ausgeblendet: {event}',
   'card.dismissed_toast_undo': 'Rückgängig',
+  'card.close': 'Schließen',
 
   // Detail labels
   'detail.issued': 'Ausgegeben',

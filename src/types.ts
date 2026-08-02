@@ -43,6 +43,10 @@ export interface ActionConfig {
     | 'call-service'
     | 'perform-action'
     | 'fire-dom-event'
+    // Card-owned, NOT a standard HA action: opens the tapped alert's
+    // expanded-details view in a modal dialog. Never reaches handleTapAction —
+    // the card intercepts it in _onCardAction (see plans/per-alert-detail-popup.md).
+    | 'details'
     | 'none';
   entity?: string;
   navigation_path?: string;

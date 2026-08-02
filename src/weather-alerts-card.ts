@@ -190,6 +190,8 @@ export class WeatherAlertsCard extends LitElement {
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
   @state() private _forcePreview = false;
+  /** Alert id whose detail pop-up is open (`tap_action: { action: details }`); null when closed. */
+  @state() private _detailPopupAlertId: string | null = null;
   @state() private _dismissals: Map<string, DismissalRecord> = new Map();
   private _dismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
@@ -268,6 +270,13 @@ export class WeatherAlertsCard extends LitElement {
     if ((changed.has('hass') || changed.has('_config')) && this.isConnected) {
       this._maybeSubscribeRegistry();
       this._maybeFetchGeometry();
+    }
+    // Auto-close the detail pop-up when its alert churns out of the feed (or
+    // the card drops to preview / hides itself). render() stays side-effect
+    // free, so it just renders nothing for an unresolvable id; the stale id is
+    // reconciled here, once, after the dialog is gone from the tree.
+    if (this._detailPopupAlertId && !this.shadowRoot?.querySelector('ha-dialog')) {
+      this._closeDetailPopup();
     }
   }
 
@@ -943,7 +952,27 @@ export class WeatherAlertsCard extends LitElement {
     }
     const cfg = this._config?.tap_action;
     if (!cfg || cfg.action === 'none') return;
+    // 'details' is card-owned: opening the pop-up needs card state and the
+    // in-hand alert object, so it is intercepted here rather than added to the
+    // deliberately dependency-free dispatcher (plans/per-alert-detail-popup.md, D3).
+    if (cfg.action === 'details') {
+      this._openDetailPopup(alert);
+      return;
+    }
     handleTapAction(this, this.hass, cfg, alert.sourceEntityId ?? this._config?.entity);
+  }
+
+  // The pop-up alternative to the inline expand: shows only the tapped alert's
+  // expanded-details view. Scoped by the in-hand alert object rather than by a
+  // re-query, so it is per-alert for aggregate providers (one sensor holding
+  // many alerts) exactly as it is for per-alert-entity ones.
+  // Reached only via _onCardAction, which has already swallowed a post-swipe click.
+  private _openDetailPopup(alert: WeatherAlert): void {
+    this._detailPopupAlertId = alert.id;
+  }
+
+  private _closeDetailPopup(): void {
+    this._detailPopupAlertId = null;
   }
 
   private _onCardActionKeydown(alert: WeatherAlert, e: KeyboardEvent): void {
@@ -1125,6 +1154,76 @@ export class WeatherAlertsCard extends LitElement {
         ? alerts.map(alert => this._renderAlert(alert))
         : this._renderNoAlerts(signalAvailability ? brokenSources : [])}
       </ha-card>
+      ${this._renderDetailPopup(alerts)}
+    `;
+  }
+
+  // Card-owned per-alert detail pop-up (tap_action: { action: details }) — the
+  // modal alternative to the inline expand. The body re-renders the same
+  // expanded content the inline expand shows, so showDetails / showMetadata /
+  // showGeometry / expandDetails all still govern it.
+  //
+  // Scoping is by the in-hand alert object, never a re-query, which is what
+  // makes it per-alert for aggregate providers (one sensor holding many alerts)
+  // exactly as it is for per-alert-entity ones.
+  //
+  // ha-dialog is an HA-internal element, but it ships with the frontend (so no
+  // bundle cost) and brings focus-trap, Esc, scrim, aria-modal and focus
+  // restoration for free. Only `open`, `.heading` and the `closed` event are
+  // consumed — its most stable surface (plans/per-alert-detail-popup.md, R2).
+  private _renderDetailPopup(alerts: WeatherAlert[]): TemplateResult | typeof nothing {
+    if (!this._detailPopupAlertId) return nothing;
+    // Re-resolved every render: a live feed can drop the open alert, in which
+    // case nothing renders and updated() clears the stale id.
+    const alert = alerts.find(a => a.id === this._detailPopupAlertId);
+    if (!alert) return nothing;
+
+    const progress = computeAlertProgress(alert);
+    const isOngoing = progress.isActive && !progress.hasEndTime;
+    // The inner row re-uses .alert-card only for its token block (--color,
+    // --wac-fg, --wac-progress-fg); styles.ts strips the row chrome. Mirrors
+    // _renderFullAlert's class/style computation minus the row-only concerns
+    // (swipe, tappable) and progressFill:background — the whole-row wash is a
+    // row treatment, so the dialog always shows the ordinary progress track.
+    const rowClasses = [
+      'alert-card',
+      `severity-${alert.severity}`,
+      progress.phaseText.toLowerCase(),
+      isOngoing ? 'ongoing' : '',
+      this._alertDecoClasses(progress),
+      this._alertBoostClasses(alert),
+    ].filter(Boolean).join(' ');
+    const rowStyle = `${this._alertColorStyle(alert)} --progress: ${isOngoing ? 0 : progress.progressPct}%;`;
+    const closeLabel = t('card.close', this._lang);
+
+    return html`
+      <ha-dialog
+        open
+        .heading=${alert.event}
+        @closed=${() => this._closeDetailPopup()}
+      >
+        <div class="detail-dialog-heading" slot="heading">
+          <span class="detail-dialog-title" title=${alert.event}>${alert.event}</span>
+          <button
+            type="button"
+            class="detail-dialog-close"
+            aria-label=${closeLabel}
+            title=${closeLabel}
+            @click=${() => this._closeDetailPopup()}
+          >
+            <ha-icon icon="mdi:close"></ha-icon>
+          </button>
+        </div>
+        <div
+          class="detail-dialog-body ${this._animationsEnabled ? '' : 'no-animations'}"
+          data-theme-mode=${this._themeMode}
+          style=${this._scaleStyle}
+        >
+          <div class=${rowClasses} style=${rowStyle}>
+            ${this._renderExpandedContent(alert, progress)}
+          </div>
+        </div>
+      </ha-dialog>
     `;
   }
 

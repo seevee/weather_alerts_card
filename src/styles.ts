@@ -318,12 +318,17 @@ export const cardStyles = css`
     overflow: hidden;
   }
 
-  /* Compact expanded headline + area-desc get consistent inner padding */
-  .compact .alert-expanded .alert-headline {
+  /* Compact expanded headline + area-desc get consistent inner padding. The
+     detail pop-up renders the same .alert-expanded body outside the compact
+     card, so it takes the identical padding (12px, matching the badges-row
+     below it) rather than a second set of values. */
+  .compact .alert-expanded .alert-headline,
+  .detail-dialog-body .alert-expanded .alert-headline {
     padding: 4px 12px 0;
     margin-bottom: 2px;
   }
-  .compact .alert-expanded .area-desc {
+  .compact .alert-expanded .area-desc,
+  .detail-dialog-body .alert-expanded .area-desc {
     padding: 4px 12px 0;
     margin-bottom: 4px;
   }
@@ -996,6 +1001,85 @@ export const cardStyles = css`
     color: var(--secondary-text-color);
     padding: 8px 16px 0;
     opacity: 0.7;
+  }
+
+  /* --- PER-ALERT DETAIL POP-UP (tap_action: { action: details }) --- */
+  /* The dialog renders as a sibling of <ha-card>, outside the context that
+     normally supplies the per-row tokens (data-theme-mode on the card root,
+     --color/--wac-fg on .alert-card). So .detail-dialog-body carries the former
+     and its inner row re-uses .alert-card for the latter — the row chrome is
+     then stripped below, because inside a dialog the alert *is* the surface.
+     Only the severity spine survives, as the one carry-over cue. */
+  ha-dialog {
+    --mdc-dialog-min-width: min(340px, 90vw);
+    --mdc-dialog-max-width: min(560px, 92vw);
+    --mdc-dialog-max-height: 86vh;
+    /* The expanded body brings its own inner padding (badges-row, progress
+       section, details content); the dialog must not add a second frame. */
+    --dialog-content-padding: 0;
+  }
+
+  .detail-dialog-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 12px 12px 20px;
+    border-bottom: 1px solid var(--divider-color);
+  }
+  .detail-dialog-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--primary-text-color);
+    /* Event names are unbounded ("Special Marine Warning") — wrap rather than
+       widen the dialog past --mdc-dialog-max-width. */
+    overflow-wrap: anywhere;
+  }
+  .detail-dialog-close {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+  }
+  .detail-dialog-close:hover {
+    background: var(--secondary-background-color);
+  }
+  .detail-dialog-close:focus-visible {
+    outline: 2px solid var(--wac-focus-ring, var(--primary-color));
+    outline-offset: 2px;
+  }
+  .detail-dialog-close ha-icon {
+    --mdc-icon-size: 20px;
+  }
+
+  /* A long description scrolls inside the dialog, never the dashboard behind
+     it (overscroll-behavior stops the scroll chaining at the edge). */
+  .detail-dialog-body {
+    max-height: min(70vh, 720px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .detail-dialog-body .alert-card {
+    margin-bottom: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    /* No pulse-border for extreme/severe: a modal already has the user's full
+       attention, and a pulsing frame around it only competes with the text. */
+    animation: none;
+  }
+  .detail-dialog-body .alert-expanded {
+    padding-top: 8px;
   }
 
   /* --- EMPTY STATE --- */
