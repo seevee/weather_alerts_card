@@ -467,7 +467,7 @@ describe('tap_action action:details', () => {
   const settle = (card: CardInternals) =>
     (card as unknown as { updateComplete: Promise<void> }).updateComplete;
 
-  const dialog = (card: CardInternals) => root(card).querySelector<HTMLElement>('ha-dialog');
+  const dialog = (card: CardInternals) => root(card).querySelector<HTMLDialogElement>('dialog.detail-dialog');
 
   // expandDetails keeps the description panel open inside the dialog, so the
   // assertions can read the alert's own text rather than a collapsed toggle.
@@ -484,9 +484,13 @@ describe('tap_action action:details', () => {
     expect(card._detailPopupAlertId).toBe('wind-severe');
     const d = dialog(card)!;
     expect(d).not.toBeNull();
-    expect(root(card).querySelector('.detail-dialog-title')!.textContent!.trim())
+    // The whole alert body renders inside, so the alert's own title is on
+    // screen (the reason the expanded-sub-block-only version was wrong).
+    expect(d.querySelector('.alert-title')!.textContent!.trim())
       .toBe('High Wind Warning');
-    expect(d.querySelector('.alert-expanded')).not.toBeNull();
+    expect(d.querySelector('.alert-header-row')).not.toBeNull();
+    expect(d.querySelector('.icon-box')).not.toBeNull();
+    expect(d.querySelector('.progress-section')).not.toBeNull();
     expect(d.textContent).toContain('Damaging winds.');
     cleanup();
   });
@@ -518,7 +522,7 @@ describe('tap_action action:details', () => {
 
     expect(card._detailPopupAlertId).toBe('flood-severe');
     const d = dialog(card)!;
-    expect(root(card).querySelector('.detail-dialog-title')!.textContent!.trim())
+    expect(d.querySelector('.alert-title')!.textContent!.trim())
       .toBe('Flash Flood Warning');
     expect(d.textContent).toContain('Rapid rises expected.');
     expect(d.textContent).not.toContain('Damaging winds.');
@@ -527,7 +531,7 @@ describe('tap_action action:details', () => {
     rows[0].click();
     await settle(card);
     expect(card._detailPopupAlertId).toBe('wind-severe');
-    expect(root(card).querySelectorAll('ha-dialog').length).toBe(1);
+    expect(root(card).querySelectorAll('dialog.detail-dialog').length).toBe(1);
     expect(dialog(card)!.textContent).toContain('Damaging winds.');
     cleanup();
   });
@@ -545,14 +549,14 @@ describe('tap_action action:details', () => {
     cleanup();
   });
 
-  // Esc and the scrim both surface as ha-dialog's `closed` event — the only
-  // dialog-internal contract the card consumes.
-  it('ha-dialog closed (Esc / scrim) clears the state', async () => {
+  // Esc and the scrim both surface as the native dialog's `close` event, the
+  // single path through which the pop-up state is cleared.
+  it('native dialog close (Esc / scrim) clears the state', async () => {
     const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
     root(card).querySelector<HTMLElement>('.alert-card')!.click();
     await settle(card);
 
-    dialog(card)!.dispatchEvent(new CustomEvent('closed', { detail: { action: 'close' } }));
+    dialog(card)!.dispatchEvent(new Event('close'));
     await settle(card);
 
     expect(card._detailPopupAlertId).toBeNull();

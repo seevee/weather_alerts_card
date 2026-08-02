@@ -318,17 +318,12 @@ export const cardStyles = css`
     overflow: hidden;
   }
 
-  /* Compact expanded headline + area-desc get consistent inner padding. The
-     detail pop-up renders the same .alert-expanded body outside the compact
-     card, so it takes the identical padding (12px, matching the badges-row
-     below it) rather than a second set of values. */
-  .compact .alert-expanded .alert-headline,
-  .detail-dialog-body .alert-expanded .alert-headline {
+  /* Compact expanded headline + area-desc get consistent inner padding */
+  .compact .alert-expanded .alert-headline {
     padding: 4px 12px 0;
     margin-bottom: 2px;
   }
-  .compact .alert-expanded .area-desc,
-  .detail-dialog-body .alert-expanded .area-desc {
+  .compact .alert-expanded .area-desc {
     padding: 4px 12px 0;
     margin-bottom: 4px;
   }
@@ -1010,41 +1005,37 @@ export const cardStyles = css`
      and its inner row re-uses .alert-card for the latter — the row chrome is
      then stripped below, because inside a dialog the alert *is* the surface.
      Only the severity spine survives, as the one carry-over cue. */
-  ha-dialog {
-    --mdc-dialog-min-width: min(340px, 90vw);
-    --mdc-dialog-max-width: min(560px, 92vw);
-    --mdc-dialog-max-height: 86vh;
-    /* The expanded body brings its own inner padding (badges-row, progress
-       section, details content); the dialog must not add a second frame. */
-    --dialog-content-padding: 0;
-  }
-
-  .detail-dialog-heading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 12px 12px 20px;
-    border-bottom: 1px solid var(--divider-color);
-  }
-  .detail-dialog-title {
-    flex: 1;
-    min-width: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 1.3;
+  /* A NATIVE <dialog>, not <ha-dialog>: HA changed that element's API
+     incompatibly in 2026.02 and the card spans both sides of the split. See
+     the comment on _renderDetailPopup. showModal() supplies the scrim, focus
+     trap and Esc, so only the surface is styled here. */
+  dialog.detail-dialog {
+    width: min(560px, 92vw);
+    max-width: min(560px, 92vw);
+    max-height: 86vh;
+    padding: 0;
+    border: none;
+    border-radius: var(--ha-card-border-radius, 12px);
+    background: var(--ha-card-background, var(--card-background-color, #fff));
     color: var(--primary-text-color);
-    /* Event names are unbounded ("Special Marine Warning") — wrap rather than
-       widen the dialog past --mdc-dialog-max-width. */
-    overflow-wrap: anywhere;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
   }
+  dialog.detail-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+  }
+  /* Sits in the alert header row where the dismiss button sits on a real row,
+     so it inherits that slot's alignment. A touch larger than .dismiss-button:
+     this is the modal's only pointer affordance besides the scrim. */
   .detail-dialog-close {
     flex: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: calc(32px * var(--wac-scale, 1));
+    height: calc(32px * var(--wac-scale, 1));
     padding: 0;
+    margin: 0;
     border: none;
     border-radius: 50%;
     background: transparent;
@@ -1059,13 +1050,14 @@ export const cardStyles = css`
     outline-offset: 2px;
   }
   .detail-dialog-close ha-icon {
-    --mdc-icon-size: 20px;
+    --mdc-icon-size: calc(20px * var(--wac-scale, 1));
   }
 
   /* A long description scrolls inside the dialog, never the dashboard behind
-     it (overscroll-behavior stops the scroll chaining at the edge). */
+     it (overscroll-behavior stops the scroll chaining at the edge). Matches the
+     dialog's own max-height, which has no padding of its own. */
   .detail-dialog-body {
-    max-height: min(70vh, 720px);
+    max-height: 86vh;
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -1077,9 +1069,6 @@ export const cardStyles = css`
     /* No pulse-border for extreme/severe: a modal already has the user's full
        attention, and a pulsing frame around it only competes with the text. */
     animation: none;
-  }
-  .detail-dialog-body .alert-expanded {
-    padding-top: 8px;
   }
 
   /* --- EMPTY STATE --- */
