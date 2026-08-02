@@ -32,6 +32,7 @@ interface CardInternals {
   shadowRoot: ShadowRoot | null;
   remove(): void;
   _swipeJustDragged: boolean;
+  _detailPopupAlertId: string | null;
 }
 
 // One aggregate NWS sensor — every parsed alert's sourceEntityId is this sensor.
@@ -55,6 +56,40 @@ function nwsHass(): HomeAssistant {
             URL: 'https://example.test/wind',
             Headline: '',
           }],
+        },
+      },
+    },
+    locale: { language: 'en' },
+  } as unknown as HomeAssistant;
+}
+
+// One aggregate NWS sensor holding TWO alerts. The decisive fixture for
+// action:details — per-alert scoping here cannot come from entity granularity,
+// because both alerts share a single source entity.
+function nwsTwoAlertHass(): HomeAssistant {
+  const now = Date.now();
+  const alert = (id: string, event: string, description: string) => ({
+    ID: id,
+    Event: event,
+    Severity: 'Severe',
+    Sent: new Date(now - 2 * HOUR).toISOString(),
+    Onset: new Date(now - 1 * HOUR).toISOString(),
+    Ends: new Date(now + 3 * HOUR).toISOString(),
+    Expires: new Date(now + 3 * HOUR).toISOString(),
+    Description: description,
+    Instruction: '',
+    URL: '',
+    Headline: '',
+  });
+  return {
+    states: {
+      'sensor.nws_alerts': {
+        state: '2',
+        attributes: {
+          Alerts: [
+            alert('wind-severe', 'High Wind Warning', 'Damaging winds.'),
+            alert('flood-severe', 'Flash Flood Warning', 'Rapid rises expected.'),
+          ],
         },
       },
     },
@@ -424,6 +459,175 @@ describe('dismiss button', () => {
     expect(btn).not.toBeNull();
     btn!.click();
     expect(seen).toEqual([]);
+    cleanup();
+  });
+});
+
+describe('tap_action action:details', () => {
+  const settle = (card: CardInternals) =>
+    (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+
+  const dialog = (card: CardInternals) => root(card).querySelector<HTMLDialogElement>('dialog.detail-dialog');
+
+  // expandDetails keeps the description panel open inside the dialog, so the
+  // assertions can read the alert's own text rather than a collapsed toggle.
+  const detailsConfig = (extra: Partial<WeatherAlertsCardConfig> = {}) =>
+    baseFull({ tap_action: { action: 'details' }, expandDetails: true, ...extra });
+
+  it('opens a dialog carrying only the tapped alert (full layout)', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
+    expect(dialog(card)).toBeNull();
+
+    root(card).querySelector<HTMLElement>('.alert-card')!.click();
+    await settle(card);
+
+    expect(card._detailPopupAlertId).toBe('wind-severe');
+    const d = dialog(card)!;
+    expect(d).not.toBeNull();
+    // The whole alert body renders inside, so the alert's own title is on
+    // screen (the reason the expanded-sub-block-only version was wrong).
+    expect(d.querySelector('.alert-title')!.textContent!.trim())
+      .toBe('High Wind Warning');
+    expect(d.querySelector('.alert-header-row')).not.toBeNull();
+    expect(d.querySelector('.icon-box')).not.toBeNull();
+    expect(d.querySelector('.progress-section')).not.toBeNull();
+    expect(d.textContent).toContain('Damaging winds.');
+    cleanup();
+  });
+
+  it('opens the dialog from the compact layout too', async () => {
+    const { card, cleanup } = await mountCard(
+      detailsConfig({ layout: 'compact' }), nwsHass(),
+    );
+    // Presence of tap_action still removes the inline expand affordance.
+    expect(root(card).querySelector('.compact-chevron')).toBeNull();
+
+    root(card).querySelector<HTMLElement>('.compact-row')!.click();
+    await settle(card);
+
+    expect(card._detailPopupAlertId).toBe('wind-severe');
+    expect(dialog(card)).not.toBeNull();
+    cleanup();
+  });
+
+  // The decisive case: one aggregate sensor, two alerts. Scoping comes from the
+  // in-hand alert object, not from per-alert entities.
+  it('scopes to the tapped alert on an aggregate sensor holding two alerts', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsTwoAlertHass());
+    const rows = root(card).querySelectorAll<HTMLElement>('.alert-card');
+    expect(rows.length).toBe(2);
+
+    rows[1].click();
+    await settle(card);
+
+    expect(card._detailPopupAlertId).toBe('flood-severe');
+    const d = dialog(card)!;
+    expect(d.querySelector('.alert-title')!.textContent!.trim())
+      .toBe('Flash Flood Warning');
+    expect(d.textContent).toContain('Rapid rises expected.');
+    expect(d.textContent).not.toContain('Damaging winds.');
+
+    // Re-tapping the first row swaps the dialog over to it, not adds a second.
+    rows[0].click();
+    await settle(card);
+    expect(card._detailPopupAlertId).toBe('wind-severe');
+    expect(root(card).querySelectorAll('dialog.detail-dialog').length).toBe(1);
+    expect(dialog(card)!.textContent).toContain('Damaging winds.');
+    cleanup();
+  });
+
+  it('the close button clears the state and removes the dialog', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
+    root(card).querySelector<HTMLElement>('.alert-card')!.click();
+    await settle(card);
+
+    root(card).querySelector<HTMLElement>('.detail-dialog-close')!.click();
+    await settle(card);
+
+    expect(card._detailPopupAlertId).toBeNull();
+    expect(dialog(card)).toBeNull();
+    cleanup();
+  });
+
+  // Esc and the scrim both surface as the native dialog's `close` event, the
+  // single path through which the pop-up state is cleared.
+  it('native dialog close (Esc / scrim) clears the state', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
+    root(card).querySelector<HTMLElement>('.alert-card')!.click();
+    await settle(card);
+
+    dialog(card)!.dispatchEvent(new Event('close'));
+    await settle(card);
+
+    expect(card._detailPopupAlertId).toBeNull();
+    expect(dialog(card)).toBeNull();
+    cleanup();
+  });
+
+  it('Enter and Space open the dialog from the keyboard', async () => {
+    for (const key of ['Enter', ' ']) {
+      const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
+      root(card).querySelector<HTMLElement>('.alert-card')!
+        .dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      await settle(card);
+
+      expect(card._detailPopupAlertId, key).toBe('wind-severe');
+      expect(dialog(card), key).not.toBeNull();
+      cleanup();
+    }
+  });
+
+  it('fires no HA action — the dispatcher is never reached', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
+    const seen: string[] = [];
+    const onMoreInfo = () => seen.push('more-info');
+    const onCustom = () => seen.push('ll-custom');
+    const onNav = () => seen.push('location-changed');
+    window.addEventListener('hass-more-info', onMoreInfo);
+    window.addEventListener('ll-custom', onCustom);
+    window.addEventListener('location-changed', onNav);
+
+    root(card).querySelector<HTMLElement>('.alert-card')!.click();
+    await settle(card);
+
+    expect(seen).toEqual([]);
+    expect(card._detailPopupAlertId).toBe('wind-severe');
+
+    window.removeEventListener('hass-more-info', onMoreInfo);
+    window.removeEventListener('ll-custom', onCustom);
+    window.removeEventListener('location-changed', onNav);
+    cleanup();
+  });
+
+  it('a click synthesized after a swipe drag does not open it', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsHass());
+    card._swipeJustDragged = true;
+    root(card).querySelector<HTMLElement>('.alert-card')!.click();
+    await settle(card);
+
+    expect(card._detailPopupAlertId).toBeNull();
+    expect(dialog(card)).toBeNull();
+    expect(card._swipeJustDragged).toBe(false);
+
+    // The next genuine click still opens it.
+    root(card).querySelector<HTMLElement>('.alert-card')!.click();
+    await settle(card);
+    expect(card._detailPopupAlertId).toBe('wind-severe');
+    cleanup();
+  });
+
+  it('auto-closes when the open alert churns out of the feed', async () => {
+    const { card, cleanup } = await mountCard(detailsConfig(), nwsTwoAlertHass());
+    root(card).querySelectorAll<HTMLElement>('.alert-card')[1].click();
+    await settle(card);
+    expect(card._detailPopupAlertId).toBe('flood-severe');
+
+    // The feed drops the open alert; the remaining one must not inherit the dialog.
+    card.hass = nwsHass();
+    await settle(card);
+
+    expect(dialog(card)).toBeNull();
+    expect(card._detailPopupAlertId).toBeNull();
     cleanup();
   });
 });

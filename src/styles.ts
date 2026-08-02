@@ -998,6 +998,79 @@ export const cardStyles = css`
     opacity: 0.7;
   }
 
+  /* --- PER-ALERT DETAIL POP-UP (tap_action: { action: details }) --- */
+  /* The dialog renders as a sibling of <ha-card>, outside the context that
+     normally supplies the per-row tokens (data-theme-mode on the card root,
+     --color/--wac-fg on .alert-card). So .detail-dialog-body carries the former
+     and its inner row re-uses .alert-card for the latter — the row chrome is
+     then stripped below, because inside a dialog the alert *is* the surface.
+     Only the severity spine survives, as the one carry-over cue. */
+  /* A NATIVE <dialog>, not <ha-dialog>: HA changed that element's API
+     incompatibly in 2026.02 and the card spans both sides of the split. See
+     the comment on _renderDetailPopup. showModal() supplies the scrim, focus
+     trap and Esc, so only the surface is styled here. */
+  dialog.detail-dialog {
+    width: min(560px, 92vw);
+    max-width: min(560px, 92vw);
+    max-height: 86vh;
+    padding: 0;
+    border: none;
+    border-radius: var(--ha-card-border-radius, 12px);
+    background: var(--ha-card-background, var(--card-background-color, #fff));
+    color: var(--primary-text-color);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+  }
+  dialog.detail-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+  }
+  /* Sits in the alert header row where the dismiss button sits on a real row,
+     so it inherits that slot's alignment. A touch larger than .dismiss-button:
+     this is the modal's only pointer affordance besides the scrim. */
+  .detail-dialog-close {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(32px * var(--wac-scale, 1));
+    height: calc(32px * var(--wac-scale, 1));
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+  }
+  .detail-dialog-close:hover {
+    background: var(--secondary-background-color);
+  }
+  .detail-dialog-close:focus-visible {
+    outline: 2px solid var(--wac-focus-ring, var(--primary-color));
+    outline-offset: 2px;
+  }
+  .detail-dialog-close ha-icon {
+    --mdc-icon-size: calc(20px * var(--wac-scale, 1));
+  }
+
+  /* A long description scrolls inside the dialog, never the dashboard behind
+     it (overscroll-behavior stops the scroll chaining at the edge). Matches the
+     dialog's own max-height, which has no padding of its own. */
+  .detail-dialog-body {
+    max-height: 86vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .detail-dialog-body .alert-card {
+    margin-bottom: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    /* No pulse-border for extreme/severe: a modal already has the user's full
+       attention, and a pulsing frame around it only competes with the text. */
+    animation: none;
+  }
+
   /* --- EMPTY STATE --- */
   .no-alerts {
     padding: 20px;

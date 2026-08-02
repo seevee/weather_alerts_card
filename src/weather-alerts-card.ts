@@ -190,6 +190,8 @@ export class WeatherAlertsCard extends LitElement {
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
   @state() private _forcePreview = false;
+  /** Alert id whose detail pop-up is open (`tap_action: { action: details }`); null when closed. */
+  @state() private _detailPopupAlertId: string | null = null;
   @state() private _dismissals: Map<string, DismissalRecord> = new Map();
   private _dismissalsScope = '';
   private _unsubscribeDismissals?: () => void;
@@ -268,6 +270,22 @@ export class WeatherAlertsCard extends LitElement {
     if ((changed.has('hass') || changed.has('_config')) && this.isConnected) {
       this._maybeSubscribeRegistry();
       this._maybeFetchGeometry();
+    }
+    // The detail pop-up is reconciled after render, never during it, so
+    // render() stays side-effect free:
+    //   - alert churned out of the feed (or the card dropped to preview /
+    //     hid itself): nothing rendered for the id, so clear the stale id.
+    //   - freshly rendered: promote it to a modal. showModal() is what buys
+    //     the focus trap, Esc and ::backdrop; a plain `open` attribute would
+    //     render the box non-modally with none of that.
+    const dialog = this._detailPopupEl;
+    if (this._detailPopupAlertId && !dialog) {
+      this._closeDetailPopup();
+    } else if (dialog && !dialog.open) {
+      // jsdom implements <dialog> but has historically shipped without
+      // showModal; degrade to a non-modal open rather than throwing in tests.
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
     }
   }
 
@@ -943,7 +961,27 @@ export class WeatherAlertsCard extends LitElement {
     }
     const cfg = this._config?.tap_action;
     if (!cfg || cfg.action === 'none') return;
+    // 'details' is card-owned: opening the pop-up needs card state and the
+    // in-hand alert object, so it is intercepted here rather than added to the
+    // deliberately dependency-free dispatcher (plans/per-alert-detail-popup.md, D3).
+    if (cfg.action === 'details') {
+      this._openDetailPopup(alert);
+      return;
+    }
     handleTapAction(this, this.hass, cfg, alert.sourceEntityId ?? this._config?.entity);
+  }
+
+  // The pop-up alternative to the inline expand: shows only the tapped alert's
+  // expanded-details view. Scoped by the in-hand alert object rather than by a
+  // re-query, so it is per-alert for aggregate providers (one sensor holding
+  // many alerts) exactly as it is for per-alert-entity ones.
+  // Reached only via _onCardAction, which has already swallowed a post-swipe click.
+  private _openDetailPopup(alert: WeatherAlert): void {
+    this._detailPopupAlertId = alert.id;
+  }
+
+  private _closeDetailPopup(): void {
+    this._detailPopupAlertId = null;
   }
 
   private _onCardActionKeydown(alert: WeatherAlert, e: KeyboardEvent): void {
@@ -1125,7 +1163,104 @@ export class WeatherAlertsCard extends LitElement {
         ? alerts.map(alert => this._renderAlert(alert))
         : this._renderNoAlerts(signalAvailability ? brokenSources : [])}
       </ha-card>
+      ${this._renderDetailPopup(alerts)}
     `;
+  }
+
+  // Card-owned per-alert detail pop-up (tap_action: { action: details }) — the
+  // modal alternative to the inline expand. The body re-renders the same
+  // expanded content the inline expand shows, so showDetails / showMetadata /
+  // showGeometry / expandDetails all still govern it.
+  //
+  // Scoping is by the in-hand alert object, never a re-query, which is what
+  // makes it per-alert for aggregate providers (one sensor holding many alerts)
+  // exactly as it is for per-alert-entity ones.
+  //
+  // Deliberately a NATIVE <dialog>, not <ha-dialog>. ha-dialog's API changed
+  // incompatibly in HA 2026.02 (mwc `heading` + slot="heading" → WebAwesome
+  // `header-title` / headerTitle / headerNavigationIcon slots), and the card
+  // supports HA versions on both sides of that line — one template cannot serve
+  // both, and an unassigned slot renders nothing at all rather than failing
+  // loudly. showModal() gives focus trap, Esc, ::backdrop and aria-modal from
+  // the platform, so nothing here is hand-rolled a11y and nothing tracks HA's
+  // component churn. (plans/per-alert-detail-popup.md R2, fallback D4(b).)
+  private _renderDetailPopup(alerts: WeatherAlert[]): TemplateResult | typeof nothing {
+    if (!this._detailPopupAlertId) return nothing;
+    // Re-resolved every render: a live feed can drop the open alert, in which
+    // case nothing renders and updated() clears the stale id.
+    const alert = alerts.find(a => a.id === this._detailPopupAlertId);
+    if (!alert) return nothing;
+
+    const progress = computeAlertProgress(alert);
+    const isOngoing = progress.isActive && !progress.hasEndTime;
+    // The inner row re-uses .alert-card only for its token block (--color,
+    // --wac-fg, --wac-progress-fg); styles.ts strips the row chrome. Mirrors
+    // _renderFullAlert's class/style computation minus the row-only concerns
+    // (swipe, tappable) and progressFill:background — the whole-row wash is a
+    // row treatment, so the dialog always shows the ordinary progress track.
+    const rowClasses = [
+      'alert-card',
+      `severity-${alert.severity}`,
+      progress.phaseText.toLowerCase(),
+      isOngoing ? 'ongoing' : '',
+      this._alertDecoClasses(progress),
+      this._alertBoostClasses(alert),
+    ].filter(Boolean).join(' ');
+    const rowStyle = `${this._alertColorStyle(alert)} --progress: ${isOngoing ? 0 : progress.progressPct}%;`;
+
+    return html`
+      <dialog
+        class="detail-dialog"
+        aria-label=${alert.event}
+        @close=${() => this._closeDetailPopup()}
+        @click=${this._onDetailPopupClick}
+      >
+        <div
+          class="detail-dialog-body ${this._animationsEnabled ? '' : 'no-animations'}"
+          data-theme-mode=${this._themeMode}
+          style=${this._scaleStyle}
+        >
+          <div class=${rowClasses} style=${rowStyle}>
+            ${this._renderAlertBody(alert, progress, { expanded: true, inPopup: true })}
+          </div>
+        </div>
+      </dialog>
+    `;
+  }
+
+  // A click whose target is the <dialog> itself landed on the ::backdrop —
+  // the content sits in child elements, so it can only be the scrim.
+  private _onDetailPopupClick(e: Event): void {
+    if (e.target === e.currentTarget) this._dismissDetailPopup(e.currentTarget as HTMLDialogElement);
+  }
+
+  // close() fires the dialog's `close` event, so Esc, the scrim and the close
+  // button all converge on the same single state-clearing path. jsdom ships
+  // <dialog> without close()/showModal(), so degrade to clearing state
+  // directly there rather than throwing.
+  private _dismissDetailPopup(dialog?: HTMLDialogElement | null): void {
+    const el = dialog ?? this._detailPopupEl;
+    if (el && typeof el.close === 'function') el.close();
+    else this._closeDetailPopup();
+  }
+
+  private _renderDetailPopupClose(): TemplateResult {
+    const label = t('card.close', this._lang);
+    return html`
+      <button
+        type="button"
+        class="detail-dialog-close"
+        aria-label=${label}
+        title=${label}
+        @click=${() => this._dismissDetailPopup()}
+      >
+        <ha-icon icon="mdi:close"></ha-icon>
+      </button>
+    `;
+  }
+
+  private get _detailPopupEl(): HTMLDialogElement | null {
+    return this.shadowRoot?.querySelector<HTMLDialogElement>('dialog.detail-dialog') ?? null;
   }
 
   private _renderPreview(): TemplateResult {
@@ -1296,53 +1431,74 @@ export class WeatherAlertsCard extends LitElement {
         @click=${actionable ? () => this._onCardAction(alert) : nothing}
         @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
       >
-        <div class="alert-header-row">
-          <div class="icon-box">
-            <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
-          </div>
-          <div class="info-box">
-            <div class="title-row">
-              ${this._renderProviderHint(alert)}
-              <span class="alert-title">${alert.event}</span>
-            </div>
-            ${this._renderHeadline(alert)}
-            ${alert.areaDesc ? html`
-              <div class="area-desc" title=${alert.areaDesc}>
-                <ha-icon icon="mdi:map-marker"></ha-icon>
-                <span class="area-desc-text">${alert.areaDesc}</span>
-              </div>
-            ` : nothing}
-            <div class="badges-row">
-              ${this._renderBadgesRow(alert, progress)}
-            </div>
-          </div>
-          ${this._renderDismissButton(alert)}
+        ${this._renderAlertBody(alert, progress, { expanded, inPopup: false })}
+      </div>
+    `;
+  }
+
+  // The full alert body — header row (icon, provider hint, title, headline,
+  // area, badges), progress section, details. Shared verbatim by the
+  // default-layout row and the detail pop-up so the two cannot drift; the row
+  // wrapper (swipe/tap/severity classes) stays with each caller.
+  private _renderAlertBody(
+    alert: WeatherAlert, progress: AlertProgress,
+    opts: { expanded: boolean; inPopup: boolean },
+  ): TemplateResult {
+    const tapAction = hasTapAction(this._config);
+    const showDetails = this._config?.showDetails !== false;
+    return html`
+      <div class="alert-header-row">
+        <div class="icon-box">
+          <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
         </div>
+        <div class="info-box">
+          <div class="title-row">
+            ${this._renderProviderHint(alert)}
+            <span class="alert-title">${alert.event}</span>
+          </div>
+          ${this._renderHeadline(alert)}
+          ${alert.areaDesc ? html`
+            <div class="area-desc" title=${alert.areaDesc}>
+              <ha-icon icon="mdi:map-marker"></ha-icon>
+              <span class="area-desc-text">${alert.areaDesc}</span>
+            </div>
+          ` : nothing}
+          <div class="badges-row">
+            ${this._renderBadgesRow(alert, progress)}
+          </div>
+        </div>
+        ${opts.inPopup ? this._renderDetailPopupClose() : this._renderDismissButton(alert)}
+      </div>
 
-        ${this._renderProgressSection(alert, progress)}
+      ${this._renderProgressSection(alert, progress)}
 
-        ${tapAction
-          ? (this._config?.showDetails !== false && this._config?.expandDetails
+      ${opts.inPopup
+        // The pop-up *is* the details view, so it never gates its own content
+        // behind a second toggle: showDetails still suppresses the panel, but
+        // expandDetails governs the row only. Opening a detail pop-up and
+        // having to click "Read Details" inside it was the rough edge here.
+        ? (showDetails ? this._renderDetailsContent(alert, progress) : nothing)
+        : (tapAction
+          ? (showDetails && this._config?.expandDetails
             ? this._renderDetailsContent(alert, progress)
             : nothing)
-          : (this._config?.showDetails !== false ? (this._config?.expandDetails ? html`
-        ${this._renderDetailsContent(alert, progress)}
-        ` : html`
-        <div class="alert-details-section">
-          <div
-            class="details-summary"
-            @click=${() => this._toggleDetails(alert.id)}
-          >
-            <span>${t('card.read_details', this._lang)}</span>
-            <ha-icon
-              icon="mdi:chevron-down"
-              class="chevron ${expanded ? 'expanded' : ''}"
-            ></ha-icon>
-          </div>
-          ${expanded ? this._renderDetailsContent(alert, progress) : nothing}
+          : (showDetails ? (this._config?.expandDetails ? html`
+      ${this._renderDetailsContent(alert, progress)}
+      ` : html`
+      <div class="alert-details-section">
+        <div
+          class="details-summary"
+          @click=${() => this._toggleDetails(alert.id)}
+        >
+          <span>${t('card.read_details', this._lang)}</span>
+          <ha-icon
+            icon="mdi:chevron-down"
+            class="chevron ${opts.expanded ? 'expanded' : ''}"
+          ></ha-icon>
         </div>
-        `) : nothing)}
+        ${opts.expanded ? this._renderDetailsContent(alert, progress) : nothing}
       </div>
+      `) : nothing))}
     `;
   }
 
