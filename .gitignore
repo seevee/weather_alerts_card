@@ -1,6 +1,28 @@
 # Build output (delivered via GitHub Release assets for HACS)
 dist/
 
+# Generated figures. The tracked set is exactly what README.md references and
+# nothing else: each figure is displayed as a theme-adaptive SVG and links
+# through to its light PNG.
+#
+# The link target must be the PNG. raw.githubusercontent.com serves SVG with
+# `Content-Security-Policy: default-src 'none'`, which permits style-src but
+# blocks img-src — and these SVGs contain nothing but two base64 <image>
+# elements, so navigating straight to one renders a blank page. Embedding via
+# <img> is unaffected, which is why the README displays fine while a direct
+# link would not.
+#
+# Everything else — dark PNGs, unreferenced figures, verification frames,
+# motion captures — is a build artifact, deterministically regenerable with
+# `npm run screenshot:hero`. See scripts/screenshot.js + encode-adaptive-svgs.sh.
+img/*
+!img/hero-adaptive.svg
+!img/hero-light.png
+!img/themes-adaptive.svg
+!img/themes-light.png
+!img/surface-theming-adaptive.svg
+!img/surface-theming-light.png
+
 # Dependencies
 node_modules/
 
