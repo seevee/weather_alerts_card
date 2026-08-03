@@ -29,7 +29,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display (unclassified alerts always shown)
 - **Localized UI** — English, French, Spanish, Italian, German, and Simplified Chinese; auto-detected from Home Assistant locale
-- **Visual config** — no YAML editing required
+- **Visual config** — the visual editor covers everyday configuration, including tap actions. A few advanced settings stay YAML-only: custom basemap tiles (`geometryTileUrl` / `geometryTileAttribution`) and the payloads carried by the `perform-action` and `fire-dom-event` tap actions
 
 ## Themes
 
