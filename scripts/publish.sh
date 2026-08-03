@@ -106,30 +106,3 @@ else
     $([ "$PRERELEASE" = true ] && echo "--prerelease")
   echo "Release $TAG published"
 fi
-
-# Storefront figures, attached as release assets.
-#
-# These three are the ones consumed outside the repo: the README embeds all
-# three, and the HA Community thread embeds hero + themes. Serving them from
-# /releases/latest/download/<name> gives a permanent URL that survives a history
-# rewrite (release assets live outside git objects) and only changes when a
-# release is cut, so a bad figure can never reach either surface mid-cycle.
-#
-# release.sh has already regenerated them via `npm run screenshot:hero`.
-# Deliberately outside the guard above so re-running publish.sh refreshes the
-# assets on an existing release.
-MEDIA=(
-  img/hero-adaptive.svg
-  img/themes-adaptive.svg
-  img/surface-theming-adaptive.svg
-)
-
-for f in "${MEDIA[@]}"; do
-  if [ ! -f "$f" ]; then
-    echo "Missing $f — run 'npm run screenshot:hero', then re-run publish.sh $VERSION"
-    exit 1
-  fi
-done
-
-gh release upload "$TAG" "${MEDIA[@]}" --clobber
-echo "Storefront figures attached to $TAG"
