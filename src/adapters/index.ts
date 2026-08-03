@@ -8,10 +8,11 @@ import { PirateWeatherAdapter } from './pirateweather';
 import { CapAdapter } from './cap';
 import { EcccAdapter } from './eccc';
 import { NswRfsAdapter } from './nsw_rfs';
+import { NinaAdapter } from './nina';
 
 // CAP comes first so its `incident_platform_version` marker wins detection
 // over any upstream-shaped attributes that the integration may surface.
-const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new NswRfsAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
+const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new NswRfsAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
@@ -27,6 +28,12 @@ export const ENTITY_NAME_PATTERNS: RegExp[] = [
   // siblings don't contain `cap_alert_` (singular + underscore), so they're
   // excluded.
   /^sensor\..*cap_alert_/i,
+  // NINA warning slots: `binary_sensor.<region>_warning_<n>`, slugged from the
+  // entity name HA translated at creation time (German instances get
+  // `..._warnung_1`). An idle slot publishes no attributes for `canHandleAny`
+  // to recognise, so without this pattern the editor's picker would hide the
+  // very entities a user needs to select *before* a warning ever lands.
+  /^binary_sensor\..*_warn(?:ing|ung)_\d+$/i,
 ];
 
 /** Returns true if any adapter recognises the given attributes. */

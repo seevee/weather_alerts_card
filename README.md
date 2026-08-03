@@ -1,6 +1,6 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region).
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.webp)
 
@@ -15,7 +15,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region) with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region) with auto-detection
 - **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
@@ -216,7 +216,7 @@ Then click the Download button, and click Reload when prompted.
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape. Can be combined with `entity`/`entities` or used on its own. |
 | `sources` | — | Feed `source` attribute values to auto-collect (e.g. `['nsw_rural_fire_service_feed']`). Harvests **every** entity whose `source` attribute matches, re-scanning each render so per-incident entities appear and vanish with the live feed — no volatile `geo_location.*` ids to hand-list. Independent of `provider` (each collected entity still auto-detects its adapter). Can be used on its own or combined with `entity`/`entities`/`device`. |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list. Populated by CAP Alerts (UGC/SAME/EMMA_ID/NUTS and any other geocode scheme) and BoM (`area_id`, e.g. `NSW_FL049`; fork-dependent — the `safepay/ha_bom_australia` fork emits it). The recommended NWS integration doesn't emit zone codes, so this doesn't apply to it. **Alerts with no matching zone are hidden**, so setting `zones` on a provider that carries none hides everything |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
@@ -332,6 +332,23 @@ entities:
   - sensor.dwd_weather_warnings_advance
 ```
 
+**NINA (German civil protection)**
+
+NINA pre-creates one `binary_sensor` per region per message slot, and the slots sit
+empty until a warning lands. Point the card at the NINA *device* so it picks each slot
+up as it fills and drops it again when it clears:
+
+```yaml
+type: custom:weather-alerts-card
+device: 8f2c1e04a9b7d3651fa0c8e29d47b5a3
+```
+
+Listing slot entities directly works too. An empty slot reads as "no active alerts",
+never as an unavailable source, and the per-slot diagnostic sensors the integration also
+creates (`sensor.*_headline_1`, …) are ignored. See
+[Providers](https://seevee.github.io/weather_alerts_card/providers#nina-german-civil-protection)
+for details — including the HA 2026.11 attribute removal that this support depends on.
+
 **MeteoSwiss (Switzerland)**
 ```yaml
 type: custom:weather-alerts-card
@@ -413,6 +430,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
+| NINA | Germany (civil protection) | Built-in [nina](https://www.home-assistant.io/integrations/nina/) — one `binary_sensor` per region per message slot; point the card at the NINA **device** so slots are picked up as warnings land in them. Carries DWD weather, LHP flood and MoWaS/KATWARN/BIWAPP civil-protection messages alike |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) — point the card at `sensor.weather_warnings_at_<postcode>` |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; auto-collect the whole feed with `sources: [nsw_rural_fire_service_feed]` |
@@ -473,6 +491,7 @@ Severity and certainty badges are always localized to your configured language. 
 | BoM | Inferred (parsed from title/type/group) | Absent |
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
 | DWD | Raw (from integer `level`) | Absent |
+| NINA | Raw (CAP vocabulary from `severity`) | Absent |
 | MeteoSwiss | Raw (from integer level) | Absent |
 | ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
 | NSW RFS | Raw (from `category` — the Australian Warning System ladder) | Absent |

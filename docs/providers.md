@@ -10,6 +10,7 @@ below lists the ones that are actually tested.
 | BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
+| NINA | Germany (civil protection) | Built-in [nina](https://www.home-assistant.io/integrations/nina/) — see [the note below](#nina-german-civil-protection) |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — see [below](#canada-eccc-via-cap-alerts) |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) |
@@ -21,8 +22,8 @@ below lists the ones that are actually tested.
 Each provider has an **adapter** that converts raw entity attributes into one normalized
 alert shape, which is all the card UI ever consumes. Detection is by attribute
 signature — NWS by its `Alerts` array, BoM by `warnings`, DWD by `warning_count` plus
-`region_name`, MeteoAlarm by its awareness-level attribute, PirateWeather by its
-attribution string, and so on.
+`region_name`, MeteoAlarm by its awareness-level attribute, NINA by `recommended_actions`
+plus `affected_areas`, PirateWeather by its attribution string, and so on.
 
 Set `provider:` explicitly only if you have a reason to override this.
 
@@ -88,6 +89,55 @@ entity: sensor.dwd_weather_warnings_current
 entities:
   - sensor.dwd_weather_warnings_advance
 ```
+
+### NINA (German civil protection)
+
+NINA is the BBK's national warning app. It carries far more than weather: DWD storm and
+heat warnings, LHP flood warnings, and MoWaS / KATWARN / BIWAPP civil-protection messages
+(evacuations, hazmat, utility outages) all arrive on the same feed.
+
+The integration creates one `binary_sensor` per region **per message slot**, and the slots
+are pre-created empty. Point the card at the NINA **device** rather than hand-listing
+slots — it picks up each slot as a warning lands in it and drops it again when the slot
+clears:
+
+```yaml
+type: custom:weather-alerts-card
+device: 8f2c1e04a9b7d3651fa0c8e29d47b5a3
+```
+
+Listing the slot entities directly works too, and is what you want if you only care about
+the first slot or two:
+
+```yaml
+type: custom:weather-alerts-card
+entity: binary_sensor.mittelfranken_warnung_1
+entities:
+  - binary_sensor.mittelfranken_warnung_2
+  - binary_sensor.mittelfranken_warnung_3
+```
+
+An empty slot reports `off` with no attributes, which the card reads as "no active alerts"
+— an all-quiet NINA region is never flagged as an unavailable source. The per-slot
+diagnostic sensors the integration also creates (`sensor.*_headline_1`,
+`sensor.*_severity_1`, …) hold one value each and are ignored.
+
+Severity is the CAP vocabulary verbatim, so badges render without the inferred-value
+tilde, and real `start` / `expires` timestamps drive the progress bar. Row titles are
+lifted out of the DWD headline template — "Amtliche WARNUNG vor extremer HITZE" titles
+the row "Extremer Hitze" and keeps the full headline underneath. Headlines from the
+non-DWD senders are free prose and pass through unchanged. NINA publishes no geometry, so
+`showGeometry` has nothing to draw.
+
+::: warning Attribute removal in HA 2026.11
+Everything the card reads apart from `id` is deprecated on the NINA binary sensor and
+scheduled for removal in Home Assistant 2026.11
+([core#161882](https://github.com/home-assistant/core/pull/161882)). The replacement is
+the per-field diagnostic sensors plus a `nina.get_details` action; `description` and
+`recommended_actions` got no sensor at all. Card support as described here is correct
+through HA 2026.10 and will need reworking after that — tracked in
+[#234](https://github.com/seevee/weather_alerts_card/issues/234).
+:::
 
 ### MeteoSwiss (Switzerland)
 
@@ -206,6 +256,7 @@ badges reflect real provider data.
 | BoM | Inferred (parsed from title/type/group) | Absent |
 | MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
 | DWD | Raw (from integer `level`) | Absent |
+| NINA | Raw (CAP vocabulary from `severity`) | Absent |
 | MeteoSwiss | Raw (from integer level) | Absent |
 | ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three are absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
 | NSW RFS | Raw (from `category`) | Absent |

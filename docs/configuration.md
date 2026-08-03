@@ -19,7 +19,7 @@ required; they can be combined freely.
 | `entities` | — | Additional alert entities to merge (e.g. DWD current + advance) |
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device, and re-discovers as alerts come and go. Currently only the CAP Alerts integration uses this shape |
 | `sources` | — | Feed `source` attribute values to auto-collect, e.g. `['nsw_rural_fire_service_feed']` |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
 
 ### Collecting a whole feed with `sources`
 

@@ -81,7 +81,7 @@ export interface EntityRegistryDisplayEntry {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs' | 'nina';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 // Progress-bar decoration (pattern) applied to a temporal phase's fill. Direction
