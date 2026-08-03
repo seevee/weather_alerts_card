@@ -23,6 +23,13 @@ img/*
 !img/surface-theming-adaptive.svg
 !img/surface-theming-light.webp
 
+# Docs site build output. Docs figures are regenerated from the harnesses on
+# every Pages build (scripts/build-docs-media.sh), so docs/public/img/ is a
+# build artifact too — the only committed figures are the six above.
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/public/img/
+
 # Dependencies
 node_modules/
 
