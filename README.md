@@ -19,7 +19,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 - **Broken-source safety badge** — when a configured sensor goes unavailable/unknown, a degraded indicator names the broken source instead of silently showing "no alerts" (a dead feed is never treated as proof of safety) (`unavailableBehavior`)
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display (unclassified alerts always shown)
-- **Localized UI** — English, French, Spanish, Italian, and German; auto-detected from Home Assistant locale
+- **Localized UI** — English, French, Spanish, Italian, German, and Simplified Chinese; auto-detected from Home Assistant locale
 - **Visual config** — no YAML editing required
 
 ## Themes
