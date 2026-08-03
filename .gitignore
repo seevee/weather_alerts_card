@@ -17,11 +17,11 @@ dist/
 # `npm run screenshot:hero`. See scripts/screenshot.js + encode-adaptive-svgs.sh.
 img/*
 !img/hero-adaptive.svg
-!img/hero-light.png
+!img/hero-light.webp
 !img/themes-adaptive.svg
-!img/themes-light.png
+!img/themes-light.webp
 !img/surface-theming-adaptive.svg
-!img/surface-theming-light.png
+!img/surface-theming-light.webp
 
 # Dependencies
 node_modules/

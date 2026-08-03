@@ -2,7 +2,7 @@
 
 A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region).
 
-[![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.png)
+[![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.webp)
 
 ## Features
 
@@ -24,7 +24,7 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 ## Themes
 
-[![Severity, NWS, and MeteoAlarm color themes](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-light.png)
+[![Severity, NWS, and MeteoAlarm color themes](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/themes-light.webp)
 
 ### Surface theming (`--wac-*` tokens)
 
@@ -52,7 +52,7 @@ work as expected.
 | `--wac-progress-fill-opacity` | `0.10` (light) / `0.14` (dark) | Wash strength — kept low so alert text stays legible |
 | `--wac-progress-fill-expired-opacity` | `0.06` | Dimmer wash for expired rows |
 
-[![A translucent-surface card and a pill/chip card, built from the --wac-* tokens](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-light.png)
+[![A translucent-surface card and a pill/chip card, built from the --wac-* tokens](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/surface-theming-light.webp)
 
 *Left: a translucent theme (alert bodies transparent, so the surface alpha lands once). Right: a pill/chip look (transparent wrapper, filled boxes). Both come from the card-mod examples below.*
 
