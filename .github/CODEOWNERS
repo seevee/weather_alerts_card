@@ -1,7 +1,0 @@
-# Review is auto-requested from the owner when a matching file changes.
-# Locale files are owned by their translator so edits reach someone who reads
-# the language. Deliberately scoped to the individual locale file rather than
-# src/translations/, which would ping translators on every feature PR that adds
-# an English key.
-
-/src/translations/it.ts @fragolinux

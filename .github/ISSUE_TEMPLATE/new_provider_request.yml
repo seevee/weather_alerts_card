@@ -1,0 +1,84 @@
+name: New Provider Request
+description: Request support for a weather alert source the card doesn't handle yet
+labels: [enhancement, provider]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The card renders alerts out of Home Assistant entities — it never talks to a
+        weather service directly. Supporting a new provider therefore needs two things:
+        an integration that already brings the alerts into Home Assistant, and a sample
+        of what that entity's attributes look like.
+
+        The attribute dump is the one that matters. It is what an adapter gets written
+        and tested against, and without it a request usually can't be acted on, however
+        well documented the underlying feed is.
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+      description: Name and the country or region it covers, e.g. "JMA (Japan)"
+    validations:
+      required: true
+  - type: dropdown
+    id: integration
+    attributes:
+      label: Is there a Home Assistant integration for this provider?
+      options:
+        - Yes — a core integration
+        - Yes — a HACS or custom component
+        - "No, or I'm not sure"
+    validations:
+      required: true
+  - type: input
+    id: integration-link
+    attributes:
+      label: Integration link
+      description: Docs or repo for that integration. Leave blank if there isn't one.
+  - type: input
+    id: entity-id
+    attributes:
+      label: Entity ID
+      description: >-
+        e.g. sensor.jma_alerts or geo_location.some_incident. The domain matters — some
+        feeds expose one entity holding every alert, others one entity per incident.
+    validations:
+      required: true
+  - type: textarea
+    id: attributes
+    attributes:
+      label: Entity attributes
+      description: >-
+        From a Home Assistant install receiving these alerts: Developer Tools → States →
+        select the entity → copy the attributes pane. Best captured while an alert is
+        actually active, since most feeds sit empty most of the time. Redact any
+        location detail you'd rather not post publicly.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: severity
+    attributes:
+      label: How does this provider express severity?
+      description: >-
+        Named levels, colors, numeric grades, CAP severity/urgency/certainty, or
+        nothing at all. The card normalizes everything to minor / moderate / severe /
+        extreme / unknown, and this is usually the fiddliest part of an adapter.
+  - type: input
+    id: feed-docs
+    attributes:
+      label: Feed or API documentation
+      description: Link to the provider's official feed or API docs, if any are published.
+  - type: dropdown
+    id: testing
+    attributes:
+      label: Can you help test?
+      description: >-
+        Regional feeds are hard to verify from outside the region. An adapter usually
+        can't be finished without somebody who actually sees live alerts from it.
+      options:
+        - Yes — I have a live install and can test builds
+        - Yes — I can send attribute dumps when alerts fire
+        - "No"
+    validations:
+      required: true
