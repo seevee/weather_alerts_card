@@ -1,5 +1,28 @@
 # Changelog
 
+## 3.3.0-alpha.2 — 2026-08-03
+
+### Added
+- Configurable per-phase progress decoration + icon-ring border (#219) (1084a0e…)
+- Bubble-style whole-row progress fill (progressFill: background) (#220) (567770b…)
+- Configurable tap_action per alert row (replaces inline-expand) (#221) (bbeff49…)
+- Per-alert detail pop-up (tap_action: { action: details }) (#224) (8c04042…)
+- Add Chinese translations (#225) (1677d9a…)
+
+### Documentation
+- Commit the tap_action motion capture prototype (#228) (082f2fd…)
+- Add a VitePress documentation site on GitHub Pages (#233) (6c8b9d6…)
+
+### Maintenance
+- Remove local slash commands now tracked in dotfiles (#218) (fc5b721…)
+- Split locales per-file and add parity guard (#223) (c1f3ba9…)
+- Enforce LF line endings via .gitattributes (#226) (4433462…)
+- Add provider request template, translation PR ergonomics, remove CODEOWNERS (#227) (80fdcfe…)
+- Attach storefront figures as release assets (#229) (1fe4be8…)
+- Untrack generated figures, keep only the six README references (#230) (e13eca4…)
+- Pick the image codec per figure instead of PNG for everything (#231) (7b55a4d…)
+- Drop the release-asset media upload from #229 (#232) (7dc51cd…)
+
 ## 3.3.0-alpha.1 — 2026-07-20
 
 ### Added
