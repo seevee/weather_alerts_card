@@ -12,7 +12,11 @@
     "test:watch": "vitest",
     "screenshot": "node scripts/screenshot.js",
     "screenshot:update": "npm run build && npm run screenshot",
-    "screenshot:hero": "npm run build && npm run screenshot && bash scripts/encode-adaptive-svgs.sh"
+    "screenshot:hero": "npm run build && npm run screenshot && bash scripts/encode-adaptive-svgs.sh",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:media": "bash scripts/build-docs-media.sh"
   },
   "keywords": [
     "home-assistant",
@@ -43,6 +47,7 @@
     "rollup-plugin-typescript2": "^0.37.0",
     "semver": "^7.7.4",
     "typescript": "^6.0.3",
+    "vitepress": "^1.6.4",
     "vitest": "^4.0.18"
   },
   "dependencies": {

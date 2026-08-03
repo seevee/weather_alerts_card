@@ -4,6 +4,15 @@ A custom Home Assistant Lovelace card for displaying weather alerts with severit
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.webp)
 
+## Documentation
+
+📖 **[Full documentation →](https://seevee.github.io/weather_alerts_card/)** — getting
+started, the complete configuration reference, theming, per-provider notes, and pop-up
+recipes.
+
+This README covers everything you need to install and configure the card. The docs site
+is the same material with more room to breathe, plus per-provider setup detail.
+
 ## Features
 
 - **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region) with auto-detection

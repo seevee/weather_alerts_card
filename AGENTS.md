@@ -139,6 +139,62 @@ The card needs the `sensor.nws_alerts_alerts` entity which comes from the [NWS A
 
    **Important**: zone codes must be comma-delimited with **no spaces** (e.g. `COC059,COZ039,COZ239`). Adding spaces after commas (e.g. `COC059, COZ039`) causes the integration to silently return no alerts. Find your zone codes at https://alerts.weather.gov/.
 
+## Documentation Site
+
+A [VitePress](https://vitepress.dev) site under `docs/`, deployed to GitHub Pages at
+`https://seevee.github.io/weather_alerts_card/`.
+
+```bash
+npm run docs:media    # regenerate figures → docs/public/img/ (scripts/build-docs-media.sh)
+npm run docs:dev      # dev server with hot reload
+npm run docs:build    # production build → docs/.vitepress/dist/
+npm run docs:preview  # serve the production build
+```
+
+| File | Purpose |
+|------|---------|
+| `docs/.vitepress/config.mts` | Site config. **Must be `.mts`** — this package is CJS (no `"type": "module"`), so a `.ts` config is loaded as CommonJS and fails on VitePress's ESM-only export, same reason `rollup.config.mjs` is `.mjs`. |
+| `docs/*.md`, `docs/recipes/*.md` | Content: overview, getting-started, configuration, theming, providers, two recipe pages, development. |
+| `scripts/build-docs-media.sh` | Builds `dist/`, runs `screenshot.js` + `encode-adaptive-svgs.sh`, copies `img/` output into `docs/public/img/`. |
+| `.github/workflows/docs.yml` | Pages build + deploy on push to `main` and `workflow_dispatch`. Installs Playwright Chromium; `build.yml`/`release.yml` stay Playwright-free. |
+
+Conventions that are load-bearing:
+
+- **`base` is `/weather_alerts_card/`.** Project Pages serve under the repo name; a wrong
+  base 404s every asset. In Markdown, reference figures as `/img/<name>` — VitePress
+  prepends the base itself, so writing the base explicitly doubles it.
+- **Docs figures are not committed.** They are regenerated on every Pages build, and
+  `docs/public/img/` plus `docs/.vitepress/{dist,cache}/` are gitignored. The only
+  tracked figures are the six the README embeds.
+- **`docs:media` must run before `docs:build`** on a fresh clone — VitePress hard-fails on
+  an unresolvable image rather than warning.
+- **`docs:media` dirties the six tracked figures.** Scene content is deterministic (frozen
+  clock, fixed fixtures) but encoded bytes are not portable across Chromium/ImageMagick
+  versions. `git restore img/` after a local run; refreshing the storefront is a
+  release-time job. Harmless in CI, which commits nothing.
+- **The motion capture is gated behind `DOCS_MOTION=1`,** off by default — still being
+  tuned, and it needs both `ffmpeg` and `ffprobe` (`capture-tap-action.js` probes only for
+  `ffmpeg`, so a runner with one and not the other throws rather than degrading).
+- **VitePress is pinned to 1.x.** 2.0 requires Node 22+ and all three workflows run Node
+  20; the migration is mostly that Node bump.
+
+Three surfaces consume these figures, which is why the pipeline looks the way it does:
+
+1. **README** (the HACS storefront) — `hacs.json` sets `render_readme: true` and HACS
+   validation requires the README to contain images, so it must stay self-sufficient. The
+   docs site duplicates its content deliberately; do not thin the README to remove the
+   duplication.
+2. **The HA Community thread** — renders only Markdown `![alt|WxH](url)`. No `<picture>`,
+   no `prefers-color-scheme`, no HTML.
+3. **The docs site.**
+
+Because of (2), the **adaptive SVGs must not be "optimized" into `<picture>` elements** —
+a single self-adapting URL is the only way to get a theme-aware figure onto the forum.
+And never link a reader *directly* at one: `raw.githubusercontent.com` serves SVG under
+`default-src 'none'`, which blocks `img-src`, and these SVGs are nothing but two base64
+`<image>` elements, so a direct link renders blank. Display the SVG, link to the light
+WebP.
+
 ## Agent Rules
 
 These rules apply to all autonomous agent skills (`/explore`, `/plan`, `/implement`, `/fix`, `/review`).
