@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a problem with the NWS Alerts Card
+description: Report a problem with the Weather Alerts Card
 labels: [bug]
 body:
   - type: textarea
