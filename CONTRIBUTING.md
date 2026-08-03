@@ -56,6 +56,14 @@ New translations are welcome as standalone PRs — copy `en.ts` to
 to `index.ts`. Use the Home Assistant locale code (`nl`, `pt-BR`, `nb`, …), and
 keep any `{placeholder}` tokens intact.
 
+There is a shorter PR template for translation-only changes. GitHub cannot offer
+it as a choice, so it has to be requested in the URL — append
+`?template=translation.md` when you open the pull request, or use
+[this link](https://github.com/seevee/weather_alerts_card/compare?template=translation.md).
+The default template asks you to confirm the build and tests, which a
+translation-only PR does not need: CI runs both, and you do not need a local
+checkout to contribute a locale.
+
 Script- and region-qualified codes are matched most-specific-first, and a code
 with no exact entry falls back within its own language before it falls back to
 English: with only `pt-BR` registered, a `pt-PT` user gets Brazilian Portuguese
