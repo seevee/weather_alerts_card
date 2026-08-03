@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, ActionConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import { canHandleAny, ENTITY_NAME_PATTERNS, knownFeedSources } from './adapters';
 import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
@@ -757,6 +757,55 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  // Tap action. `tap_action` is *presence*-based in the card — `{action:'none'}`
+  // is an inert row that still replaces the inline expand, which is a different
+  // state from "unset". The 'default' sentinel deletes the key (mirrors
+  // _fontSizeChanged); every other value spreads the existing object so
+  // YAML-authored payloads (fire-dom-event `browser_mod`, service `data`,
+  // `target`, …) survive an action switch untouched.
+  private _tapActionChanged(ev: CustomEvent): void {
+    const value = ev.detail.value as string;
+    if (value === (this._config.tap_action?.action ?? 'default')) return;
+    const newConfig = { ...this._config };
+    if (value === 'default') {
+      delete newConfig.tap_action;
+    } else {
+      const next: ActionConfig = {
+        ...(newConfig.tap_action ?? {}),
+        action: value as ActionConfig['action'],
+      };
+      // Drop only the sub-keys the incoming action cannot use. Anything else,
+      // including `entity` and unknown index-signature keys, is preserved.
+      if (value !== 'navigate') delete next.navigation_path;
+      if (value !== 'url') delete next.url_path;
+      newConfig.tap_action = next;
+    }
+    this._fireConfigChanged(newConfig);
+  }
+
+  private _tapNavigationPathChanged(ev: Event): void {
+    this._tapSubFieldChanged('navigation_path', (ev.target as HTMLInputElement).value);
+  }
+
+  private _tapUrlPathChanged(ev: Event): void {
+    this._tapSubFieldChanged('url_path', (ev.target as HTMLInputElement).value);
+  }
+
+  // Shared by the two text sub-fields (mirrors _titleChanged): an empty value
+  // clears just that key, never `tap_action` itself.
+  private _tapSubFieldChanged(key: 'navigation_path' | 'url_path', value: string): void {
+    const current = this._config.tap_action;
+    if (!current) return;
+    if (value === ((current[key] as string | undefined) || '')) return;
+    const next: ActionConfig = { ...current };
+    if (value) {
+      next[key] = value;
+    } else {
+      delete next[key];
+    }
+    this._fireConfigChanged({ ...this._config, tap_action: next });
+  }
+
   private _fontSizeChanged(ev: CustomEvent): void {
     const value = ev.detail.value as string;
     if (value === (this._config.fontSize || 'default')) return;
@@ -1198,6 +1247,48 @@ export class WeatherAlertsCardEditor extends LitElement {
         <div class="section-label">${t('editor.section_behavior', lang)}</div>
 
         <ha-select
+          .label=${t('editor.tap_action', lang)}
+          .value=${this._config.tap_action?.action ?? 'default'}
+          @selected=${this._tapActionChanged}
+        >
+          <ha-dropdown-item value="default">${t('editor.tap_default', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="details">${t('editor.tap_details', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="more-info">${t('editor.tap_more_info', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="navigate">${t('editor.tap_navigate', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="url">${t('editor.tap_url', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="toggle">${t('editor.tap_toggle', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="perform-action">${t('editor.tap_perform_action', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="fire-dom-event">${t('editor.tap_fire_dom_event', lang)}</ha-dropdown-item>
+          ${this._config.tap_action?.action === 'call-service'
+        ? html`<ha-dropdown-item value="call-service">${t('editor.tap_call_service', lang)}</ha-dropdown-item>`
+        : ''}
+          <ha-dropdown-item value="none">${t('editor.tap_none', lang)}</ha-dropdown-item>
+        </ha-select>
+        <div class="helper-text">${t('editor.tap_action_helper', lang)}</div>
+        ${this._config.tap_action?.action === 'navigate'
+        ? html`<ha-textfield
+            .label=${t('editor.tap_navigation_path', lang)}
+            .value=${this._config.tap_action.navigation_path || ''}
+            @change=${this._tapNavigationPathChanged}
+          ></ha-textfield>`
+        : ''}
+        ${this._config.tap_action?.action === 'url'
+        ? html`<ha-textfield
+            .label=${t('editor.tap_url_path', lang)}
+            .value=${this._config.tap_action.url_path || ''}
+            @change=${this._tapUrlPathChanged}
+          ></ha-textfield>`
+        : ''}
+        ${this._config.tap_action?.action === 'perform-action'
+        || this._config.tap_action?.action === 'call-service'
+        || this._config.tap_action?.action === 'fire-dom-event'
+        ? html`<ha-alert alert-type="info">${t('editor.tap_yaml_managed', lang)}</ha-alert>`
+        : ''}
+        ${this._config.tap_action?.action === 'details' && this._config.expandDetails !== true
+        ? html`<ha-alert alert-type="info">${t('editor.tap_details_expand_hint', lang)}</ha-alert>`
+        : ''}
+
+        <ha-select
           .label=${t('editor.sort_order', lang)}
           .value=${this._config.sortOrder || 'default'}
           @selected=${this._sortOrderChanged}
@@ -1389,6 +1480,11 @@ export class WeatherAlertsCardEditor extends LitElement {
       font-size: 0.85rem;
       color: var(--secondary-text-color);
       padding-left: 48px;
+    }
+    .helper-text {
+      font-size: 0.8rem;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
     }
     .restore-link {
       color: var(--primary-color);
