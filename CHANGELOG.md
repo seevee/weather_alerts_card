@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.3.0-alpha.3 — 2026-08-03
+
+### Added
+- Add a tap_action control to the visual editor (#236) (d168c74…)
+
+### Documentation
+- Qualify the visual-config claim with the YAML-only settings (#237) (61753bd…)
+
 ## 3.3.0-alpha.2 — 2026-08-03
 
 ### Added
