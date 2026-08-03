@@ -1,6 +1,6 @@
 name: New Provider Request
 description: Request support for a weather alert source the card doesn't handle yet
-labels: [enhancement]
+labels: [enhancement, provider]
 body:
   - type: markdown
     attributes:
