@@ -68,8 +68,13 @@ Script- and region-qualified codes are matched most-specific-first, and a code
 with no exact entry falls back within its own language before it falls back to
 English: with only `pt-BR` registered, a `pt-PT` user gets Brazilian Portuguese
 rather than English. So a single variant is worth contributing even if you
-cannot cover the others. Add yourself to `.github/CODEOWNERS` so
-you are asked to review future edits to your file.
+cannot cover the others.
+
+This repository does not use `CODEOWNERS` to route locale reviews. GitHub only
+honors a `CODEOWNERS` entry for accounts with write access to the repository,
+which contributing a translation does not confer and which is not something we
+hand out for a single file. If you would like to be asked about future changes
+to a locale you contributed, say so on your PR and you will be tagged by hand.
 
 ## Commit Messages
 
