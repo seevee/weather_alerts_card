@@ -57,12 +57,19 @@ to `index.ts`. Use the Home Assistant locale code (`nl`, `pt-BR`, `nb`, …), an
 keep any `{placeholder}` tokens intact.
 
 There is a shorter PR template for translation-only changes. GitHub cannot offer
-it as a choice, so it has to be requested in the URL — append
-`?template=translation.md` when you open the pull request, or use
-[this link](https://github.com/seevee/weather_alerts_card/compare?template=translation.md).
-The default template asks you to confirm the build and tests, which a
-translation-only PR does not need: CI runs both, and you do not need a local
-checkout to contribute a locale.
+it as a choice, so it has to be requested in the URL: once you are on the compare
+page for your own branch, append `&template=translation.md` and reload.
+
+```
+https://github.com/seevee/weather_alerts_card/compare/main...<you>:<branch>?expand=1&template=translation.md
+```
+
+That cannot be shortened to a link you can follow from here — the parameter fills
+in a pull request body, so it does nothing on a bare `/compare` page, and picking
+the branches from the dropdowns navigates to a fresh URL without it. The default
+template asks you to confirm the build and tests, which a translation-only PR
+does not need: CI runs both, and you do not need a local checkout to contribute
+a locale.
 
 Script- and region-qualified codes are matched most-specific-first, and a code
 with no exact entry falls back within its own language before it falls back to
