@@ -1,0 +1,71 @@
+name: Translation Request
+description: Request a language the card doesn't speak yet, or offer to contribute one
+labels: [enhancement, translation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The card ships English plus a handful of community-contributed locales. A
+        translation is one file of about 180 short strings, and no local checkout is
+        needed — both files you touch are editable in GitHub's web editor.
+
+        **If you'd like to write it yourself:** copy `src/translations/en.ts` to
+        `<code>.ts`, translate the values, leave the keys exactly as they are, then add
+        the locale to `src/translations/index.ts` (an import plus one line in the map).
+        [CONTRIBUTING.md](https://github.com/seevee/weather_alerts_card/blob/main/CONTRIBUTING.md#translations)
+        has the full detail. Two things worth knowing up front:
+
+        - Keep the `{placeholder}` tokens spelled the same as in English. That is the
+          one thing the tests actually fail on — everything else is advisory.
+        - Partial is fine. Any key you leave out falls back to English, so there's no
+          need to do all 183 in one sitting.
+
+        There's a shorter PR template for translation-only changes, which skips the
+        build-and-test checklist. GitHub can't offer it as a choice, so once you're on
+        the compare page for your own branch, append `&template=translation.md` and
+        reload:
+
+        ```
+        https://github.com/seevee/weather_alerts_card/compare/main...<you>:<branch>?expand=1&template=translation.md
+        ```
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Including the region if it matters, e.g. "Dutch" or "Portuguese (Brazil)"
+    validations:
+      required: true
+  - type: input
+    id: locale-code
+    attributes:
+      label: Home Assistant locale code
+      description: >-
+        e.g. nl, pt-BR, nb, zh-Hans. It becomes the filename, and it has to match what
+        Home Assistant reports or the card won't pick the locale up. Leave blank if
+        you're not sure — it can be worked out from the language.
+  - type: dropdown
+    id: can-help
+    attributes:
+      label: Can you provide the translation?
+      description: >-
+        A locale can't be written without somebody who speaks the language, so this is
+        the answer that decides whether the request can be acted on. Machine translation
+        is fine as a starting point — these strings are the chrome around the alert, not
+        the alert itself, which arrives already in the provider's own language. Human
+        translation is preferred where you can manage it, and the ten `badge.*` severity
+        and certainty labels are the ones worth a second look: they're a ladder, so
+        Severe has to keep reading as stronger than Moderate and weaker than Extreme.
+      options:
+        - Yes — I'll open a pull request
+        - Yes — but I'd rather send the strings than use git
+        - "No — requesting only"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: >-
+        Anything else worth knowing — a regional variant you'd want covered, strings
+        that don't carry over cleanly, or whether you'd like to be tagged on future
+        changes to this locale.
