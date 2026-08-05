@@ -72,6 +72,7 @@ export const es: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm (Europa)',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD (Alemania)',
+  'editor.provider_nina': 'NINA (Alemania, protección civil)',
   'editor.provider_meteoswiss': 'MeteoSwiss (Suiza)',
   'editor.provider_eccc': 'ECCC (Canadá)',
   'editor.provider_nsw_rfs': 'NSW RFS (Australia)',

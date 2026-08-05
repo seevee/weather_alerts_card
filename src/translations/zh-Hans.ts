@@ -72,6 +72,7 @@ export const zhHans: TranslationMap = {
   'editor.provider_meteoalarm': 'MeteoAlarm（欧洲）',
   'editor.provider_pirateweather': 'PirateWeather',
   'editor.provider_dwd': 'DWD（德国）',
+  'editor.provider_nina': 'NINA（德国民防预警）',
   'editor.provider_meteoswiss': 'MeteoSwiss（瑞士）',
   'editor.provider_eccc': 'ECCC（加拿大）',
   'editor.provider_nsw_rfs': 'NSW RFS（澳大利亚）',

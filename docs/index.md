@@ -21,7 +21,7 @@ hero:
 
 features:
   - title: Multi-provider
-    details: NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss, ECCC (Canada), NSW RFS, PirateWeather and CAP Alerts — with auto-detection from entity attributes.
+    details: NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), NINA (German civil protection), MeteoSwiss, ECCC (Canada), NSW RFS, PirateWeather and CAP Alerts — with auto-detection from entity attributes.
   - title: Color themes
     details: Severity-based by default, or the official NWS event, MeteoAlarm awareness-level, or ECCC public-alert palettes — with per-event contrast correction.
   - title: Time progress bars

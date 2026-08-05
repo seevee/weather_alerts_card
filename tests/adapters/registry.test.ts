@@ -149,6 +149,21 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('nsw_rfs');
   });
 
+  it('returns NINA adapter for explicit nina provider', () => {
+    const adapter = getAdapter('nina', {});
+    expect(adapter.provider).toBe('nina');
+  });
+
+  it('auto-detects NINA from recommended_actions + affected_areas + id', () => {
+    const adapter = getAdapter(undefined, {
+      headline: 'Amtliche WARNUNG vor extremer HITZE',
+      recommended_actions: 'Trinken Sie ausreichend Wasser.',
+      affected_areas: 'Stadt Roßwein, Gemeinde Rossau und 1144 weitere.',
+      id: 'dwd.2.49.0.0.276.0.DWD.PVW.1785741840000.081e027b.MUL',
+    });
+    expect(adapter.provider).toBe('nina');
+  });
+
   it('defaults to NWS when attributes are ambiguous', () => {
     const adapter = getAdapter(undefined, {});
     expect(adapter.provider).toBe('nws');
@@ -212,6 +227,20 @@ describe('canHandleAny', () => {
     })).toBe(true);
   });
 
+  it('returns true for NINA attributes', () => {
+    expect(canHandleAny({
+      recommended_actions: 'Trinken Sie ausreichend Wasser.',
+      affected_areas: 'Stadt Roßwein und 1144 weitere.',
+      id: 'dwd.2.49.0.0.276.0.DWD.PVW.1785741840000.081e027b.MUL',
+    })).toBe(true);
+  });
+
+  it('returns false for an idle NINA warning slot', () => {
+    // Empty attributes must stay unrecognised so device-mode collection reads
+    // an all-idle NINA region as "no active alerts", not as a dark source.
+    expect(canHandleAny({})).toBe(false);
+  });
+
   it('returns false for a generic geo_location quake entity', () => {
     expect(canHandleAny({ external_id: 'us7000abcd', magnitude: 5.1 })).toBe(false);
   });
@@ -239,6 +268,21 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
   it('matches MeteoAlarm binary sensor', () => {
     expect(matches('binary_sensor.meteoalarm_wind')).toBe(true);
+  });
+
+  it('matches NINA warning slots in both name languages', () => {
+    // HA slugs the entity_id from the name it translated at creation time, so
+    // the slot reads `warning_1` on an English instance and `warnung_1` on a
+    // German one. Idle slots publish no attributes, so this pattern is the only
+    // thing keeping them selectable in the editor before a warning lands.
+    expect(matches('binary_sensor.mittelfranken_warning_1')).toBe(true);
+    expect(matches('binary_sensor.mittelfranken_warnung_1')).toBe(true);
+    expect(matches('binary_sensor.stadt_und_landkreis_hof_warnung_10')).toBe(true);
+  });
+
+  it('does not match the NINA per-field diagnostic sensors', () => {
+    expect(matches('sensor.mittelfranken_headline_1')).toBe(false);
+    expect(matches('sensor.mittelfranken_severity_1')).toBe(false);
   });
 
   it('does not match unrelated sensors', () => {

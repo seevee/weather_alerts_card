@@ -1014,6 +1014,7 @@ export class WeatherAlertsCardEditor extends LitElement {
           <ha-dropdown-item value="bom">${t('editor.provider_bom', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
+          <ha-dropdown-item value="nina">${t('editor.provider_nina', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="meteoswiss">${t('editor.provider_meteoswiss', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="eccc">${t('editor.provider_eccc', lang)}</ha-dropdown-item>
           <ha-dropdown-item value="nsw_rfs">${t('editor.provider_nsw_rfs', lang)}</ha-dropdown-item>
