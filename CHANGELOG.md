@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.3.0-alpha.4 — 2026-08-05
+
+### Added
+- Add a NINA adapter for German civil-protection warnings (#240) (7f82d11…)
+
+### Documentation
+- Fix the unusable translation-only PR template link (#242) (1b1b257…)
+
+### Maintenance
+- Add a translation request issue template (#243) (bef87ff…)
+
 ## 3.3.0-alpha.3 — 2026-08-03
 
 ### Added
