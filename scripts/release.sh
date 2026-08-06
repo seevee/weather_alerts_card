@@ -149,14 +149,30 @@ else
 fi
 
 # -------------------------
-# Determine cliff flags for note generation
-# GA releases ignore prerelease tags to collapse alpha/beta/rc into one section
+# Determine cliff flags
+#
+# Two surfaces want two different tag sets, so they get two flag sets:
+#
+#   Release notes describe what is new since the last tag of any kind, so a
+#   prerelease needs prerelease tags visible or the notes restate the whole
+#   cycle. A GA release ignores them to collapse its alphas into one section.
+#
+#   CHANGELOG.md is the permanent record and only ever lists GA releases, so
+#   a prerelease must not touch it at all. Sharing one flag set meant an alpha
+#   run regenerated the file over the full history WITH prerelease tags, which
+#   rewrote every past GA section into its constituent alphas — 3.2.0 dropped
+#   out of the file entirely — until the next GA release put it back.
 # -------------------------
 
-CLIFF_FLAGS=()
+STABLE_TAGS=(--tag-pattern "^v[0-9]+\.[0-9]+\.[0-9]+$")
 
-if [[ ! "$VERSION" =~ -(alpha|beta|rc)\. ]]; then
-  CLIFF_FLAGS+=(--tag-pattern "^v[0-9]+\.[0-9]+\.[0-9]+$")
+IS_PRERELEASE=false
+NOTES_FLAGS=()
+
+if [[ "$VERSION" =~ -(alpha|beta|rc)\. ]]; then
+  IS_PRERELEASE=true
+else
+  NOTES_FLAGS+=("${STABLE_TAGS[@]}")
 fi
 
 # -------------------------
@@ -171,7 +187,7 @@ if [ "$DRY_RUN" = true ]; then
   npx git-cliff \
     --config cliff.toml \
     --tag "v$VERSION" \
-    "${CLIFF_FLAGS[@]}" \
+    "${NOTES_FLAGS[@]}" \
     --unreleased \
     --strip header \
     "$BASE_REF"
@@ -212,7 +228,15 @@ fi
 # Generate changelog
 # -------------------------
 
-npx git-cliff --config cliff.toml --tag "v$VERSION" "${CLIFF_FLAGS[@]}" --output CHANGELOG.md
+# A prerelease contributes no section: its commits land in the GA section that
+# eventually ships, so the file stays byte-identical to its last GA shape.
+# git-cliff has no inverse of `--unreleased`, so regenerating without a --tag
+# would emit the pending commits as a headless block above the newest release.
+if [ "$IS_PRERELEASE" = true ]; then
+  echo "Prerelease: leaving CHANGELOG.md at its last GA shape"
+else
+  npx git-cliff --config cliff.toml --tag "v$VERSION" "${STABLE_TAGS[@]}" --output CHANGELOG.md
+fi
 
 git add CHANGELOG.md package.json package-lock.json img/
 
@@ -240,7 +264,7 @@ fi
 NOTES=$(npx git-cliff \
   --config cliff.toml \
   --tag "v$VERSION" \
-  "${CLIFF_FLAGS[@]}" \
+  "${NOTES_FLAGS[@]}" \
   --unreleased \
   --strip header)
 
