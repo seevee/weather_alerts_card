@@ -4,6 +4,7 @@ import { fr } from './fr';
 import { es } from './es';
 import { it } from './it';
 import { de } from './de';
+import { nl } from './nl';
 import { zhHans } from './zh-Hans';
 
 // Keyed by Home Assistant locale code. Use the bare language subtag when there
@@ -19,6 +20,7 @@ export const translations: Record<string, TranslationMap> = {
   es,
   it,
   de,
+  nl,
   'zh-Hans': zhHans,
 };
 
