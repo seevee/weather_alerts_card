@@ -92,6 +92,46 @@ export class WeatherAlertsCardEditor extends LitElement {
     return this.hass?.locale?.language || 'en';
   }
 
+  // HA 2026.02 swapped the MWC component system for WebAwesome: `ha-list-item`
+  // became `ha-dropdown-item`, and `selected` moved its payload from the target
+  // element to `ev.detail`. Emitting only the new form leaves every dropdown in
+  // this editor inert on older cores (#239) — the items render as unknown
+  // elements and nothing is selectable — so pick the shape from what is
+  // actually registered rather than parsing a version string.
+  private static _webAwesome?: boolean;
+
+  private get _useWebAwesome(): boolean {
+    if (WeatherAlertsCardEditor._webAwesome !== undefined) {
+      return WeatherAlertsCardEditor._webAwesome;
+    }
+    const wa = !!customElements.get('ha-dropdown-item');
+    const mwc = !!customElements.get('ha-list-item');
+    // Cache only a definite answer. HA lazy-loads components, so on the first
+    // render neither element may be defined yet; caching that guess would pin
+    // the editor to the wrong system for the whole session. While it's still
+    // ambiguous, assume current HA and re-check on the next render — `hass`
+    // updates land continually, so the window is short.
+    if (wa || mwc) {
+      WeatherAlertsCardEditor._webAwesome = wa;
+      return wa;
+    }
+    return true;
+  }
+
+  // MWC fires `selected` with `detail: { index }` — a detail object, but no
+  // `value` — so this reads through to the target rather than testing `detail`
+  // for existence.
+  private _selectValue(ev: Event): string {
+    const detail = (ev as CustomEvent).detail as { value?: string } | undefined;
+    return detail?.value ?? (ev.target as HTMLSelectElement | null)?.value ?? '';
+  }
+
+  private _renderSelectItem(value: string, label: string): TemplateResult {
+    return this._useWebAwesome
+      ? html`<ha-dropdown-item value=${value}>${label}</ha-dropdown-item>`
+      : html`<ha-list-item value=${value}>${label}</ha-list-item>`;
+  }
+
   public setConfig(config: WeatherAlertsCardConfig): void {
     this._config = config;
     this._showPreview = !!config._preview;
@@ -292,7 +332,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _providerChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as string;
+    const value = this._selectValue(ev) as string;
     if (value === (this._config.provider || 'auto')) return;
     // `provider` is a pure parsing *override* — it forces one adapter for every
     // resolved entity. It is deliberately decoupled from feed collection (the
@@ -320,7 +360,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _enhanceContrastChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as ContrastMode;
+    const value = this._selectValue(ev) as ContrastMode;
     if (value === (this._config.enhanceContrast || 'subtle')) return;
     const newConfig = { ...this._config };
     if (value === 'subtle') {
@@ -450,7 +490,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _geometryStyleChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'shape' | 'map';
+    const value = this._selectValue(ev) as 'shape' | 'map';
     if (value === (this._config.geometryStyle || 'shape')) return;
     const newConfig = { ...this._config };
     if (value === 'shape') {
@@ -527,7 +567,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _dismissTriggerChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'button' | 'swipe' | 'both';
+    const value = this._selectValue(ev) as 'button' | 'swipe' | 'both';
     if (value === (this._config.dismissTrigger || 'button')) return;
     const newConfig = { ...this._config };
     if (value === 'button') {
@@ -539,7 +579,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _dismissButtonStyleChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'icon' | 'labeled';
+    const value = this._selectValue(ev) as 'icon' | 'labeled';
     if (value === (this._config.dismissButtonStyle || 'icon')) return;
     const newConfig = { ...this._config };
     if (value === 'icon') {
@@ -722,7 +762,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _sortOrderChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'default' | 'onset' | 'severity';
+    const value = this._selectValue(ev) as 'default' | 'onset' | 'severity';
     if (value === (this._config.sortOrder || 'default')) return;
     const newConfig = { ...this._config };
     if (value === 'default') {
@@ -734,7 +774,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _unavailableBehaviorChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'message' | 'compact' | 'hide';
+    const value = this._selectValue(ev) as 'message' | 'compact' | 'hide';
     if (value === (this._config.unavailableBehavior || 'message')) return;
     const newConfig = { ...this._config };
     if (value === 'message') {
@@ -746,7 +786,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _colorThemeChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'severity' | 'nws' | 'meteoalarm' | 'eccc';
+    const value = this._selectValue(ev) as 'severity' | 'nws' | 'meteoalarm' | 'eccc';
     if (value === (this._config.colorTheme || 'severity')) return;
     const newConfig = { ...this._config };
     if (value === 'severity') {
@@ -764,7 +804,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   // YAML-authored payloads (fire-dom-event `browser_mod`, service `data`,
   // `target`, …) survive an action switch untouched.
   private _tapActionChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as string;
+    const value = this._selectValue(ev) as string;
     if (value === (this._config.tap_action?.action ?? 'default')) return;
     const newConfig = { ...this._config };
     if (value === 'default') {
@@ -807,7 +847,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _fontSizeChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as string;
+    const value = this._selectValue(ev) as string;
     if (value === (this._config.fontSize || 'default')) return;
     const newConfig = { ...this._config };
     if (value === 'default') {
@@ -821,7 +861,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   // Progress-indication surface (track vs whole-row background wash). Default
   // 'track' clears the key so configs stay minimal (mirrors _fontSizeChanged).
   private _progressFillChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as string;
+    const value = this._selectValue(ev) as string;
     if (value === (this._config.progressFill || 'track')) return;
     const newConfig = { ...this._config };
     if (value === 'track') {
@@ -836,7 +876,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   // key and prune an emptied progressStyle object so configs stay minimal
   // (mirrors _fontSizeChanged); otherwise write the chosen decoration.
   private _progressStyleChanged(phase: DecoPhase, ev: CustomEvent): void {
-    const value = ev.detail.value as ProgressDecoration;
+    const value = this._selectValue(ev) as ProgressDecoration;
     const current = this._config.progressStyle?.[phase] ?? PROGRESS_DECO_DEFAULTS[phase];
     if (value === current) return;
     const newConfig = { ...this._config };
@@ -857,7 +897,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   // Per-phase icon-ring border style; same default-detection / pruning as
   // _progressStyleChanged.
   private _iconBorderStyleChanged(phase: DecoPhase, ev: CustomEvent): void {
-    const value = ev.detail.value as IconBorderStyle;
+    const value = this._selectValue(ev) as IconBorderStyle;
     const current = this._config.iconBorderStyle?.[phase] ?? ICON_BORDER_DEFAULTS[phase];
     if (value === current) return;
     const newConfig = { ...this._config };
@@ -876,7 +916,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _timezoneChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as 'server' | 'browser';
+    const value = this._selectValue(ev) as 'server' | 'browser';
     if (value === (this._config.timezone || 'server')) return;
     const newConfig = { ...this._config };
     if (value === 'server') {
@@ -888,7 +928,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _minSeverityChanged(ev: CustomEvent): void {
-    const value = ev.detail.value as AlertSeverity | 'all';
+    const value = this._selectValue(ev) as AlertSeverity | 'all';
     if (value === (this._config.minSeverity || 'all')) return;
     const newConfig = { ...this._config };
     if (value !== 'all') {
@@ -915,6 +955,10 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (!this.hass || !this._config) return html``;
 
     const lang = this._lang;
+    // MWC's ha-select renders its menu inside the editor panel's stacking
+    // context, so it needs both attributes to escape; WebAwesome's warns on
+    // them. A false boolean binding removes the attribute outright.
+    const legacyMenu = !this._useWebAwesome;
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
     const eventCodesStr = this._config.eventCodes ? this._config.eventCodes.join(', ') : '';
     const excludeEventCodesStr = this._config.excludeEventCodes ? this._config.excludeEventCodes.join(', ') : '';
@@ -1008,18 +1052,20 @@ export class WeatherAlertsCardEditor extends LitElement {
           .label=${t('editor.provider', lang)}
           .value=${this._config.provider || 'auto'}
           @selected=${this._providerChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="auto">${t('editor.provider_auto', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="nws">${t('editor.provider_nws', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="bom">${t('editor.provider_bom', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="meteoalarm">${t('editor.provider_meteoalarm', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="dwd">${t('editor.provider_dwd', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="nina">${t('editor.provider_nina', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="meteoswiss">${t('editor.provider_meteoswiss', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="eccc">${t('editor.provider_eccc', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="nsw_rfs">${t('editor.provider_nsw_rfs', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="pirateweather">${t('editor.provider_pirateweather', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="cap">${t('editor.provider_cap', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('auto', t('editor.provider_auto', lang))}
+          ${this._renderSelectItem('nws', t('editor.provider_nws', lang))}
+          ${this._renderSelectItem('bom', t('editor.provider_bom', lang))}
+          ${this._renderSelectItem('meteoalarm', t('editor.provider_meteoalarm', lang))}
+          ${this._renderSelectItem('dwd', t('editor.provider_dwd', lang))}
+          ${this._renderSelectItem('nina', t('editor.provider_nina', lang))}
+          ${this._renderSelectItem('meteoswiss', t('editor.provider_meteoswiss', lang))}
+          ${this._renderSelectItem('eccc', t('editor.provider_eccc', lang))}
+          ${this._renderSelectItem('nsw_rfs', t('editor.provider_nsw_rfs', lang))}
+          ${this._renderSelectItem('pirateweather', t('editor.provider_pirateweather', lang))}
+          ${this._renderSelectItem('cap', t('editor.provider_cap', lang))}
         </ha-select>
 
         <!-- Filtering -->
@@ -1053,12 +1099,14 @@ export class WeatherAlertsCardEditor extends LitElement {
           .label=${t('editor.min_severity', lang)}
           .value=${this._config.minSeverity || 'all'}
           @selected=${this._minSeverityChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="all">${t('editor.severity_all', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="minor">${t('editor.severity_minor', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="moderate">${t('editor.severity_moderate', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="severe">${t('editor.severity_severe', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="extreme">${t('editor.severity_extreme', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('all', t('editor.severity_all', lang))}
+          ${this._renderSelectItem('minor', t('editor.severity_minor', lang))}
+          ${this._renderSelectItem('moderate', t('editor.severity_moderate', lang))}
+          ${this._renderSelectItem('severe', t('editor.severity_severe', lang))}
+          ${this._renderSelectItem('extreme', t('editor.severity_extreme', lang))}
         </ha-select>
 
         <!-- Appearance -->
@@ -1075,32 +1123,38 @@ export class WeatherAlertsCardEditor extends LitElement {
           .label=${t('editor.color_theme', lang)}
           .value=${this._config.colorTheme || 'severity'}
           @selected=${this._colorThemeChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="severity">${t('editor.color_severity', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="nws">${t('editor.color_nws', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="meteoalarm">${t('editor.color_meteoalarm', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="eccc">${t('editor.color_eccc', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('severity', t('editor.color_severity', lang))}
+          ${this._renderSelectItem('nws', t('editor.color_nws', lang))}
+          ${this._renderSelectItem('meteoalarm', t('editor.color_meteoalarm', lang))}
+          ${this._renderSelectItem('eccc', t('editor.color_eccc', lang))}
         </ha-select>
 
         <ha-select
           .label=${t('editor.enhance_contrast', lang)}
           .value=${this._config.enhanceContrast || 'subtle'}
           @selected=${this._enhanceContrastChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="off">${t('editor.enhance_contrast_off', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="subtle">${t('editor.enhance_contrast_subtle', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="strict">${t('editor.enhance_contrast_strict', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('off', t('editor.enhance_contrast_off', lang))}
+          ${this._renderSelectItem('subtle', t('editor.enhance_contrast_subtle', lang))}
+          ${this._renderSelectItem('strict', t('editor.enhance_contrast_strict', lang))}
         </ha-select>
 
         <ha-select
           .label=${t('editor.font_size', lang)}
           .value=${this._config.fontSize || 'default'}
           @selected=${this._fontSizeChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="small">${t('editor.font_size_small', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="default">${t('editor.font_size_default', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="large">${t('editor.font_size_large', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="x-large">${t('editor.font_size_x_large', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('small', t('editor.font_size_small', lang))}
+          ${this._renderSelectItem('default', t('editor.font_size_default', lang))}
+          ${this._renderSelectItem('large', t('editor.font_size_large', lang))}
+          ${this._renderSelectItem('x-large', t('editor.font_size_x_large', lang))}
         </ha-select>
 
         <ha-formfield .label=${t('editor.animations', lang)}>
@@ -1128,9 +1182,11 @@ export class WeatherAlertsCardEditor extends LitElement {
             .label=${t('editor.progress_fill', lang)}
             .value=${this._config.progressFill || 'track'}
             @selected=${this._progressFillChanged}
+            ?fixedMenuPosition=${legacyMenu}
+            ?naturalMenuWidth=${legacyMenu}
           >
-            <ha-dropdown-item value="track">${t('editor.progress_fill_track', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="background">${t('editor.progress_fill_background', lang)}</ha-dropdown-item>
+            ${this._renderSelectItem('track', t('editor.progress_fill_track', lang))}
+            ${this._renderSelectItem('background', t('editor.progress_fill_background', lang))}
           </ha-select>
 
           <div class="sub-label">${t('editor.progress_style', lang)}</div>
@@ -1143,11 +1199,13 @@ export class WeatherAlertsCardEditor extends LitElement {
                 .label=${t('editor.progress_style_' + phase, lang)}
                 .value=${this._config.progressStyle?.[phase] || PROGRESS_DECO_DEFAULTS[phase]}
                 @selected=${(ev: CustomEvent) => this._progressStyleChanged(phase, ev)}
+                ?fixedMenuPosition=${legacyMenu}
+                ?naturalMenuWidth=${legacyMenu}
               >
-                <ha-dropdown-item value="solid">${t('editor.deco_solid', lang)}</ha-dropdown-item>
-                <ha-dropdown-item value="striped">${t('editor.deco_striped', lang)}</ha-dropdown-item>
-                <ha-dropdown-item value="shimmer">${t('editor.deco_shimmer', lang)}</ha-dropdown-item>
-                <ha-dropdown-item value="pulse">${t('editor.deco_pulse', lang)}</ha-dropdown-item>
+                ${this._renderSelectItem('solid', t('editor.deco_solid', lang))}
+                ${this._renderSelectItem('striped', t('editor.deco_striped', lang))}
+                ${this._renderSelectItem('shimmer', t('editor.deco_shimmer', lang))}
+                ${this._renderSelectItem('pulse', t('editor.deco_pulse', lang))}
               </ha-select>
             `)}
           </div>
@@ -1159,9 +1217,11 @@ export class WeatherAlertsCardEditor extends LitElement {
                 .label=${t('editor.progress_style_' + phase, lang)}
                 .value=${this._config.iconBorderStyle?.[phase] || ICON_BORDER_DEFAULTS[phase]}
                 @selected=${(ev: CustomEvent) => this._iconBorderStyleChanged(phase, ev)}
+                ?fixedMenuPosition=${legacyMenu}
+                ?naturalMenuWidth=${legacyMenu}
               >
-                <ha-dropdown-item value="dashed">${t('editor.icon_border_dashed', lang)}</ha-dropdown-item>
-                <ha-dropdown-item value="solid">${t('editor.icon_border_solid', lang)}</ha-dropdown-item>
+                ${this._renderSelectItem('dashed', t('editor.icon_border_dashed', lang))}
+                ${this._renderSelectItem('solid', t('editor.icon_border_solid', lang))}
               </ha-select>
             `)}
           </div>
@@ -1230,9 +1290,11 @@ export class WeatherAlertsCardEditor extends LitElement {
             .value=${this._config.geometryStyle || 'shape'}
             .disabled=${this._config.showDetails === false}
             @selected=${this._geometryStyleChanged}
+            ?fixedMenuPosition=${legacyMenu}
+            ?naturalMenuWidth=${legacyMenu}
           >
-            <ha-dropdown-item value="shape">${t('editor.geometry_style_shape', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="map">${t('editor.geometry_style_map', lang)}</ha-dropdown-item>
+            ${this._renderSelectItem('shape', t('editor.geometry_style_shape', lang))}
+            ${this._renderSelectItem('map', t('editor.geometry_style_map', lang))}
           </ha-select>
         ` : nothing}
 
@@ -1251,19 +1313,21 @@ export class WeatherAlertsCardEditor extends LitElement {
           .label=${t('editor.tap_action', lang)}
           .value=${this._config.tap_action?.action ?? 'default'}
           @selected=${this._tapActionChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="default">${t('editor.tap_default', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="details">${t('editor.tap_details', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="more-info">${t('editor.tap_more_info', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="navigate">${t('editor.tap_navigate', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="url">${t('editor.tap_url', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="toggle">${t('editor.tap_toggle', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="perform-action">${t('editor.tap_perform_action', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="fire-dom-event">${t('editor.tap_fire_dom_event', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('default', t('editor.tap_default', lang))}
+          ${this._renderSelectItem('details', t('editor.tap_details', lang))}
+          ${this._renderSelectItem('more-info', t('editor.tap_more_info', lang))}
+          ${this._renderSelectItem('navigate', t('editor.tap_navigate', lang))}
+          ${this._renderSelectItem('url', t('editor.tap_url', lang))}
+          ${this._renderSelectItem('toggle', t('editor.tap_toggle', lang))}
+          ${this._renderSelectItem('perform-action', t('editor.tap_perform_action', lang))}
+          ${this._renderSelectItem('fire-dom-event', t('editor.tap_fire_dom_event', lang))}
           ${this._config.tap_action?.action === 'call-service'
-        ? html`<ha-dropdown-item value="call-service">${t('editor.tap_call_service', lang)}</ha-dropdown-item>`
+        ? this._renderSelectItem('call-service', t('editor.tap_call_service', lang))
         : ''}
-          <ha-dropdown-item value="none">${t('editor.tap_none', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('none', t('editor.tap_none', lang))}
         </ha-select>
         <div class="helper-text">${t('editor.tap_action_helper', lang)}</div>
         ${this._config.tap_action?.action === 'navigate'
@@ -1293,19 +1357,23 @@ export class WeatherAlertsCardEditor extends LitElement {
           .label=${t('editor.sort_order', lang)}
           .value=${this._config.sortOrder || 'default'}
           @selected=${this._sortOrderChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="default">${t('editor.sort_default', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="onset">${t('editor.sort_onset', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="severity">${t('editor.sort_severity', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('default', t('editor.sort_default', lang))}
+          ${this._renderSelectItem('onset', t('editor.sort_onset', lang))}
+          ${this._renderSelectItem('severity', t('editor.sort_severity', lang))}
         </ha-select>
 
         <ha-select
           .label=${t('editor.timezone', lang)}
           .value=${this._config.timezone || 'server'}
           @selected=${this._timezoneChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="server">${t('editor.tz_server', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="browser">${t('editor.tz_browser', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('server', t('editor.tz_server', lang))}
+          ${this._renderSelectItem('browser', t('editor.tz_browser', lang))}
         </ha-select>
 
         <ha-formfield .label=${t('editor.deduplicate', lang)}>
@@ -1340,10 +1408,12 @@ export class WeatherAlertsCardEditor extends LitElement {
           .label=${t('editor.unavailable_behavior', lang)}
           .value=${this._config.unavailableBehavior || 'message'}
           @selected=${this._unavailableBehaviorChanged}
+          ?fixedMenuPosition=${legacyMenu}
+          ?naturalMenuWidth=${legacyMenu}
         >
-          <ha-dropdown-item value="message">${t('editor.unavailable_message', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="compact">${t('editor.unavailable_compact', lang)}</ha-dropdown-item>
-          <ha-dropdown-item value="hide">${t('editor.unavailable_hide', lang)}</ha-dropdown-item>
+          ${this._renderSelectItem('message', t('editor.unavailable_message', lang))}
+          ${this._renderSelectItem('compact', t('editor.unavailable_compact', lang))}
+          ${this._renderSelectItem('hide', t('editor.unavailable_hide', lang))}
         </ha-select>
         ${this._config.unavailableBehavior === 'hide'
         ? html`<ha-alert alert-type="warning">${t('editor.unavailable_hide_warning', lang)}</ha-alert>`
@@ -1364,10 +1434,12 @@ export class WeatherAlertsCardEditor extends LitElement {
             .label=${t('editor.dismiss_trigger', lang)}
             .value=${this._config.dismissTrigger || 'button'}
             @selected=${this._dismissTriggerChanged}
+            ?fixedMenuPosition=${legacyMenu}
+            ?naturalMenuWidth=${legacyMenu}
           >
-            <ha-dropdown-item value="button">${t('editor.dismiss_trigger_button', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="swipe">${t('editor.dismiss_trigger_swipe', lang)}</ha-dropdown-item>
-            <ha-dropdown-item value="both">${t('editor.dismiss_trigger_both', lang)}</ha-dropdown-item>
+            ${this._renderSelectItem('button', t('editor.dismiss_trigger_button', lang))}
+            ${this._renderSelectItem('swipe', t('editor.dismiss_trigger_swipe', lang))}
+            ${this._renderSelectItem('both', t('editor.dismiss_trigger_both', lang))}
           </ha-select>
 
           ${this._config.dismissTrigger !== 'swipe' ? html`
@@ -1375,9 +1447,11 @@ export class WeatherAlertsCardEditor extends LitElement {
               .label=${t('editor.dismiss_button_style', lang)}
               .value=${this._config.dismissButtonStyle || 'icon'}
               @selected=${this._dismissButtonStyleChanged}
+              ?fixedMenuPosition=${legacyMenu}
+              ?naturalMenuWidth=${legacyMenu}
             >
-              <ha-dropdown-item value="icon">${t('editor.dismiss_button_style_icon', lang)}</ha-dropdown-item>
-              <ha-dropdown-item value="labeled">${t('editor.dismiss_button_style_labeled', lang)}</ha-dropdown-item>
+              ${this._renderSelectItem('icon', t('editor.dismiss_button_style_icon', lang))}
+              ${this._renderSelectItem('labeled', t('editor.dismiss_button_style_labeled', lang))}
             </ha-select>
           ` : nothing}
         ` : nothing}
