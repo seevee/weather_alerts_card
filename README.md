@@ -28,7 +28,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 - **Broken-source safety badge** — when a configured sensor goes unavailable/unknown, a degraded indicator names the broken source instead of silently showing "no alerts" (a dead feed is never treated as proof of safety) (`unavailableBehavior`)
 - **Sort order** — default, onset time, or severity
 - **Severity threshold** — minimum severity to display (unclassified alerts always shown)
-- **Localized UI** — English, French, Spanish, Italian, German, and Simplified Chinese; auto-detected from Home Assistant locale
+- **Localized UI** — English, French, Spanish, Italian, German, Dutch, and Simplified Chinese; auto-detected from Home Assistant locale
 - **Visual config** — the visual editor covers everyday configuration, including tap actions. A few advanced settings stay YAML-only: custom basemap tiles (`geometryTileUrl` / `geometryTileAttribution`) and the payloads carried by the `perform-action` and `fire-dom-event` tap actions
 
 ## Themes
