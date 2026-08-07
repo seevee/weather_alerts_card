@@ -1,5 +1,41 @@
 # Changelog
 
+## 3.3.0 — 2026-08-07
+
+### Added
+- Transparency-by-default + --wac-* surface token API (#215) (#216) (1a4505c…)
+- Configurable per-phase progress decoration + icon-ring border (#219) (1084a0e…)
+- Bubble-style whole-row progress fill (progressFill: background) (#220) (567770b…)
+- Configurable tap_action per alert row (replaces inline-expand) (#221) (bbeff49…)
+- Per-alert detail pop-up (tap_action: { action: details }) (#224) (8c04042…)
+- Add Chinese translations (#225) (1677d9a…)
+- Add a tap_action control to the visual editor (#236) (d168c74…)
+- Add a NINA adapter for German civil-protection warnings (#240) (7f82d11…)
+- Add Dutch translations (#247) (29c6267…)
+
+### Documentation
+- Surface broken-source badge + mini-map, correct zone-filtering scope (#214) (a770055…)
+- Commit the tap_action motion capture prototype (#228) (082f2fd…)
+- Add a VitePress documentation site on GitHub Pages (#233) (6c8b9d6…)
+- Qualify the visual-config claim with the YAML-only settings (#237) (61753bd…)
+- Fix the unusable translation-only PR template link (#242) (1b1b257…)
+- List Dutch in the localized-UI blurbs (#250) (d7d8dde…)
+
+### Fixed
+- Stop prereleases from rewriting the changelog (#248) (5a1e888…)
+- Select dropdown items by component system, not HA version (#249) (5ad1ded…)
+
+### Maintenance
+- Remove local slash commands now tracked in dotfiles (#218) (fc5b721…)
+- Split locales per-file and add parity guard (#223) (c1f3ba9…)
+- Enforce LF line endings via .gitattributes (#226) (4433462…)
+- Add provider request template, translation PR ergonomics, remove CODEOWNERS (#227) (80fdcfe…)
+- Attach storefront figures as release assets (#229) (1fe4be8…)
+- Untrack generated figures, keep only the six README references (#230) (e13eca4…)
+- Pick the image codec per figure instead of PNG for everything (#231) (7b55a4d…)
+- Drop the release-asset media upload from #229 (#232) (7dc51cd…)
+- Add a translation request issue template (#243) (bef87ff…)
+
 ## 3.2.0 — 2026-07-14
 
 ### Added
