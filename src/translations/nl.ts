@@ -53,8 +53,8 @@ export const nl: TranslationMap = {
   // Badge labels
   'badge.severity_extreme': 'Extreem',
   'badge.severity_severe': 'Ernstig',
-  'badge.severity_moderate': 'Moderate',
-  'badge.severity_minor': 'Minor',
+  'badge.severity_moderate': 'Matig',
+  'badge.severity_minor': 'Licht',
   'badge.severity_unknown': 'Onbekend',
   'badge.certainty_observed': 'Waargenomen',
   'badge.certainty_likely': 'Waarschijnlijk',
