@@ -711,4 +711,60 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
     expect(hasEl(card, '.no-alerts-caveat')).toBe(false);
     cleanup();
   });
+
+  // A never-pressed refresh button reads `unknown` — its idle state, not a
+  // fault. Counting it as an error state made every zero-alert cap_alerts
+  // device look dark, which a GDACS entry (globally filtered, so usually at
+  // zero) hit on essentially every render.
+  const BUTTON_ID = 'button.cap_alerts_meteoalarm_refresh';
+
+  it('an unpressed refresh button does not make an idle device dark', async () => {
+    const hass = makeHass(
+      [entry(COUNT_ID), entry(UPDATED_ID), entry(BUTTON_ID)],
+      {
+        [COUNT_ID]: { state: '0', attributes: { friendly_name: 'Alert count' } },
+        [UPDATED_ID]: { state: '2026-04-26T01:55:00+00:00', attributes: {} },
+        [BUTTON_ID]: { state: 'unknown', attributes: { friendly_name: 'Refresh' } },
+      },
+      { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } },
+    );
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      hass,
+    );
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(false);
+    cleanup();
+  });
+
+  it('_brokenSources ignores command entities on an idle device', () => {
+    const card = makeCard();
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.hass = makeHass(
+      [entry(COUNT_ID), entry(BUTTON_ID)],
+      {
+        [COUNT_ID]: { state: '0', attributes: { friendly_name: 'Alert count' } },
+        [BUTTON_ID]: { state: 'unknown', attributes: { friendly_name: 'Refresh' } },
+      },
+      { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } },
+    );
+    expect(card._brokenSources()).toEqual([]);
+  });
+
+  it('a genuinely dark device is still flagged when it also has a button', () => {
+    // The exclusion must not swallow the real signal: the data entities are
+    // unavailable here, and the button's presence changes nothing.
+    const card = makeCard();
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.hass = makeHass(
+      [entry(COUNT_ID), entry(UPDATED_ID), entry(BUTTON_ID)],
+      {
+        [COUNT_ID]: { state: 'unavailable', attributes: restored() },
+        [UPDATED_ID]: { state: 'unavailable', attributes: restored() },
+        [BUTTON_ID]: { state: 'unknown', attributes: { friendly_name: 'Refresh' } },
+      },
+      { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } },
+    );
+    expect(card._brokenSources()).toEqual([{ name: DEVICE_NAME }]);
+  });
 });

@@ -99,6 +99,14 @@ const PROVIDER_SHORT: Record<string, string> = {
   nina: 'NINA',
 };
 
+// Domains whose entities issue a command rather than report data, so they are
+// skipped when judging whether a device has gone dark (_brokenSources). A
+// button sits at state `unknown` until the first time it is pressed — its
+// healthy resting state, not a fault — and cap_alerts keeps its refresh button
+// off the coordinator precisely so a failing update cannot take it away. Left
+// in, an unpressed button marks every zero-alert device unavailable.
+const COMMAND_DOMAINS = new Set(['button', 'scene', 'script', 'input_button']);
+
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS).
 // Registry helpers (resolveDeviceAlertEntities, deviceHasAnyEntity,
 // subscribeEntityRegistry) live in ./registry and are re-exported above.
@@ -1032,6 +1040,9 @@ export class WeatherAlertsCard extends LitElement {
   //     all-clear. Named from the device registry (see _deviceName) so 'message'
   //     mode can show *which* source; falls back to a generic singular only when
   //     the registry has no name for it.
+  //
+  // Command entities are excluded from the device scan (see COMMAND_DOMAINS):
+  // they carry no data, and their idle state is `unknown`.
   private _brokenSources(): BrokenSource[] {
     if (!this.hass) return [];
     const sources: BrokenSource[] = [];
@@ -1048,6 +1059,7 @@ export class WeatherAlertsCard extends LitElement {
       let hasParseable = false;
       let hasErrored = false;
       for (const id of deviceEntityIds(this.hass, this._config.device, this._registryEntries)) {
+        if (COMMAND_DOMAINS.has(id.split('.', 1)[0])) continue;
         const e = this.hass.states[id];
         if (!e) continue;
         const parses = getAdapter(this._config.provider, e.attributes).parseAlerts(e.attributes).length > 0;
