@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.3.1 — 2026-08-08
+
+### Fixed
+- Stop an unpressed button from darkening a device (#252) (6a49f7e…)
+
 ## 3.3.0 — 2026-08-07
 
 ### Added
