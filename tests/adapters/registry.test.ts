@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getAdapter, canHandleAny, ENTITY_NAME_PATTERNS } from '../../src/adapters';
+import { getAdapter, canHandleAny, ENTITY_NAME_PATTERNS, pointCapableProviders } from '../../src/adapters';
 
 describe('getAdapter', () => {
   it('returns NWS adapter for explicit nws provider', () => {
@@ -316,5 +316,11 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
   it('does not match metadata entities with alert in the middle', () => {
     expect(matches('sensor.nws_alerts_last_updated')).toBe(false);
+  });
+});
+
+describe('pointCapableProviders', () => {
+  it('lists exactly the adapters that can populate WeatherAlert.point', () => {
+    expect([...pointCapableProviders()].sort()).toEqual(['nsw_rfs']);
   });
 });

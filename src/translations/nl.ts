@@ -103,6 +103,8 @@ export const nl: TranslationMap = {
   'editor.severity_moderate': 'Matig of hoger',
   'editor.severity_severe': 'Ernstig of hoger',
   'editor.severity_extreme': 'Alleen extreem',
+  'editor.max_distance': 'Maximale afstand ({unit})',
+  'editor.max_distance_helper': 'Toon alleen incidenten binnen deze afstand van de locatie van je Home Assistant. Geldt voor feeds met losse incidenten (NSW RFS) — gebiedswaarschuwingen hebben geen afstand en worden nooit gefilterd.',
   'editor.animations': 'Animaties inschakelen',
   'editor.enhance_contrast': 'Contrast verbeteren',
   'editor.enhance_contrast_off': 'Uit',

@@ -2,7 +2,8 @@ import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { Connection } from 'home-assistant-js-websocket';
 import { HomeAssistant, WeatherAlertsCardConfig, AlertSeverity, ContrastMode, EntityRegistryDisplayEntry, AlertProvider, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, ActionConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
-import { canHandleAny, ENTITY_NAME_PATTERNS, knownFeedSources } from './adapters';
+import { canHandleAny, ENTITY_NAME_PATTERNS, getAdapter, knownFeedSources, pointCapableProviders } from './adapters';
+import { LengthUnit, displayToKm, kmToDisplay } from './utils';
 import { resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
 import { scopeHashForConfig, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
@@ -939,6 +940,53 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
+  /** Display unit for the radius control. km is the fallback for any absent or
+   *  unrecognised value, so the widget only switches to miles on a core that
+   *  explicitly reports a US-customary length unit. The stored config value is
+   *  always km regardless. */
+  private _lengthUnit(): LengthUnit {
+    return this.hass?.config?.unit_system?.length === 'mi' ? 'mi' : 'km';
+  }
+
+  /** Whether to offer the radius control. A permanently inert field in front of
+   *  the CAP/NWS majority is worse than a hidden one, and re-resolving devices
+   *  + running adapters on every render to know for sure is too expensive — so
+   *  gate on declared adapter capability across the ways an RFS-style setup is
+   *  expressed, plus "already set" so a YAML-authored value is never orphaned.
+   *  Only the *selected* entity ids are probed (no parseAlerts, no device or
+   *  source re-resolution). The YAML key works either way. */
+  private _showsRadiusControl(): boolean {
+    if (this._config?.maxDistanceKm !== undefined) return true;
+    const capable = pointCapableProviders();
+    if (this._config?.provider && capable.has(this._config.provider)) return true;
+    const selectedSources = new Set(this._config?.sources ?? []);
+    if (knownFeedSources().some(f => selectedSources.has(f.source) && capable.has(f.provider))) return true;
+    for (const id of this._getSelectedEntities()) {
+      const state = this.hass?.states[id];
+      if (!state) continue;
+      if (capable.has(getAdapter(this._config?.provider, state.attributes ?? {}).provider)) return true;
+    }
+    return false;
+  }
+
+  private _maxDistanceChanged(ev: Event): void {
+    const raw = (ev.target as HTMLInputElement).value;
+    const newConfig = { ...this._config };
+    if (raw.trim() === '') {
+      if (this._config.maxDistanceKm === undefined) return;
+      delete newConfig.maxDistanceKm;
+      this._fireConfigChanged(newConfig);
+      return;
+    }
+    const n = Number(raw);
+    // Never write an invalid radius, and never clobber the saved one with it.
+    if (!Number.isFinite(n) || n <= 0) return;
+    const km = displayToKm(n, this._lengthUnit());
+    if (km === this._config.maxDistanceKm) return;
+    newConfig.maxDistanceKm = km;
+    this._fireConfigChanged(newConfig);
+  }
+
   private _previewChanged(ev: Event): void {
     const target = ev.target as HTMLInputElement;
     this._showPreview = target.checked;
@@ -955,6 +1003,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (!this.hass || !this._config) return html``;
 
     const lang = this._lang;
+    const unit = this._lengthUnit();
     // MWC's ha-select renders its menu inside the editor panel's stacking
     // context, so it needs both attributes to escape; WebAwesome's warns on
     // them. A false boolean binding removes the attribute outright.
@@ -1108,6 +1157,19 @@ export class WeatherAlertsCardEditor extends LitElement {
           ${this._renderSelectItem('severe', t('editor.severity_severe', lang))}
           ${this._renderSelectItem('extreme', t('editor.severity_extreme', lang))}
         </ha-select>
+
+        ${this._showsRadiusControl() ? html`
+          <ha-textfield
+            type="number"
+            min="1"
+            step="1"
+            .label=${t('editor.max_distance', lang, { unit })}
+            .value=${this._config.maxDistanceKm !== undefined ? String(kmToDisplay(this._config.maxDistanceKm, unit)) : ''}
+            .helper=${t('editor.max_distance_helper', lang)}
+            .helperPersistent=${true}
+            @change=${this._maxDistanceChanged}
+          ></ha-textfield>
+        ` : nothing}
 
         <!-- Appearance -->
         <div class="section-label">${t('editor.section_appearance', lang)}</div>

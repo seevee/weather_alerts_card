@@ -15,6 +15,8 @@ function makeIncident(overrides: Partial<NswRfsIncident> = {}): Record<string, u
     fire: true,
     responsible_agency: 'Rural Fire Service',
     publication_date: '2026-01-08T03:30:00Z',
+    latitude: -33.7,
+    longitude: 150.3,
   };
   return { ...defaults, ...overrides } as Record<string, unknown>;
 }
@@ -148,6 +150,39 @@ describe('NswRfsAdapter', () => {
       expect(reflowed).toContain('Responsible agency: Rural Fire Service');
       // Field labels must not be merged onto a single line
       expect(reflowed).not.toMatch(/Being controlled Type:/);
+    });
+  });
+
+  describe('point (radius filter contract)', () => {
+    it('declares the point capability', () => {
+      expect(adapter.carriesPoint).toBe(true);
+    });
+
+    it('emits a lon-first point from the incident coordinates', () => {
+      const [alert] = adapter.parseAlerts(makeIncident());
+      expect(alert.point).toEqual([150.3, -33.7]);
+    });
+
+    it('omits the key entirely when coordinates are absent', () => {
+      const [alert] = adapter.parseAlerts(makeIncident({ latitude: undefined, longitude: undefined }));
+      expect('point' in alert).toBe(false);
+    });
+
+    const malformed: Array<[string, Partial<NswRfsIncident>]> = [
+      ['non-numeric latitude', { latitude: 'abc' as unknown as number }],
+      ['null longitude', { longitude: null as unknown as number }],
+      ['out-of-range latitude', { latitude: 999 }],
+    ];
+    for (const [label, overrides] of malformed) {
+      it(`omits the key for ${label}`, () => {
+        const [alert] = adapter.parseAlerts(makeIncident(overrides));
+        expect('point' in alert).toBe(false);
+      });
+    }
+
+    it('still emits no bbox — a point must not synthesize a geometry frame', () => {
+      const [alert] = adapter.parseAlerts(makeIncident());
+      expect(alert.bbox).toBeUndefined();
     });
   });
 

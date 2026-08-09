@@ -103,6 +103,8 @@ export const zhHans: TranslationMap = {
   'editor.severity_moderate': '中度及以上',
   'editor.severity_severe': '严重及以上',
   'editor.severity_extreme': '仅极端',
+  'editor.max_distance': '最大距离（{unit}）',
+  'editor.max_distance_helper': '仅显示距离 Home Assistant 家庭位置在此范围内的事件。适用于逐个事件的订阅源（NSW RFS）——区域性警报没有距离信息，永远不会被过滤。',
   'editor.animations': '启用动画',
   'editor.enhance_contrast': '增强对比度',
   'editor.enhance_contrast_off': '关闭',

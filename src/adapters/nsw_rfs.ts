@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, NswRfsIncident, WeatherAlert } from '../types';
-import { parseTimestamp } from '../utils';
+import { extractPoint, parseTimestamp } from '../utils';
 
 // Public overview page (Fires Near Me NSW). The geo_location entity carries no
 // per-incident deep link, so v1 uses this single static URL for every incident.
@@ -60,6 +60,10 @@ export class NswRfsAdapter implements AlertAdapter {
   // hand-list the incident entities, whose ids churn as fires come and go.
   feedSources = ['nsw_rural_fire_service_feed'];
 
+  // Every incident carries its own coordinates, so the editor offers the
+  // maxDistanceKm radius control for cards fed by this provider.
+  carriesPoint = true;
+
   canHandle(attributes: Record<string, unknown>): boolean {
     return typeof attributes['category'] === 'string'
       && typeof attributes['status'] === 'string'
@@ -80,6 +84,10 @@ export class NswRfsAdapter implements AlertAdapter {
     const location = str(inc.location);
     const type = str(inc.type);
     const event = type ? titleCase(type) : (location || 'Fire Incident');
+    // The incident location, for the maxDistanceKm filter. Deliberately not
+    // mirrored into `bbox` — a degenerate point frame would regress
+    // showGeometry from rendering nothing to rendering an empty box (#206).
+    const point = extractPoint(inc.latitude, inc.longitude);
 
     return {
       id: str(inc.external_id) || `nsw_rfs_${slug(location)}_${sentTs}`,
@@ -103,6 +111,7 @@ export class NswRfsAdapter implements AlertAdapter {
       severityInferred: inferred,
       certaintyInferred: false,
       providerIcon: 'mdi:fire', // all RFS incident types are fire-related; bypasses the icon dictionary
+      ...(point !== undefined && { point }),
     };
   }
 }

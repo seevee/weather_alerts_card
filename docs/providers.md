@@ -175,6 +175,17 @@ ladder (Emergency Warning / Watch and Act / Advice). Two consequences worth know
 - `showGeometry` is unavailable — the entity carries only a point, not the fire-ground
   polygon.
 
+That point does drive one thing: `maxDistanceKm` trims a statewide feed to incidents
+within a given number of kilometres of your Home Assistant home location. It is opt-in,
+always expressed in km in YAML, and has no effect on area-warning providers.
+
+```yaml
+type: custom:weather-alerts-card
+sources:
+  - nsw_rural_fire_service_feed
+maxDistanceKm: 50
+```
+
 ### PirateWeather
 
 ```yaml

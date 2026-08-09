@@ -302,6 +302,48 @@ export function parseTimestamp(raw: string | undefined | null): number {
   return isNaN(d.getTime()) ? 0 : d.getTime() / 1000;
 }
 
+// Great-circle distance in km on a sphere (R = 6371). Lon-first parameter order
+// so a `point` tuple destructures straight into it. Spherical, not WGS84: the
+// error is under ~0.5%, immaterial for a user-set "within N km" threshold.
+export function haversineKm(lon1: number, lat1: number, lon2: number, lat2: number): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+// Shared constructor for `WeatherAlert.point`. Takes coordinate *values*, not
+// attribute names, so any provider can reuse it, and returns lon-first to match
+// the bbox convention. Malformed or out-of-range coords degrade to "no point"
+// (⇒ the alert is never distance-filtered) rather than a garbage distance.
+export function extractPoint(lat: unknown, lon: unknown): [number, number] | undefined {
+  if (typeof lat !== 'number' || typeof lon !== 'number') return undefined;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return undefined;
+  if (Math.abs(lat) > 90 || Math.abs(lon) > 180) return undefined;
+  return [lon, lat];
+}
+
+export type LengthUnit = 'km' | 'mi';
+
+const KM_PER_MILE = 1.609344; // exact, by definition
+
+// Config is always canonical km; only the editor widget converts. Rounding is
+// asymmetric on purpose: the km path is an identity so merely opening the editor
+// can never rewrite a hand-authored YAML value, while the miles path — which has
+// to convert anyway — rounds to keep a mi→km→mi round trip from drifting.
+export function kmToDisplay(km: number, unit: LengthUnit): number {
+  if (unit !== 'mi') return km;
+  return Math.round((km / KM_PER_MILE) * 100) / 100;
+}
+
+export function displayToKm(value: number, unit: LengthUnit): number {
+  if (unit !== 'mi') return value;
+  return Math.round(value * KM_PER_MILE * 1000) / 1000;
+}
+
 export function computeAlertProgress(alert: WeatherAlert): AlertProgress {
   const nowTs = Date.now() / 1000;
 

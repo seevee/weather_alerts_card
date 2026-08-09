@@ -10,6 +10,9 @@ export interface HomeAssistant {
   };
   config?: {
     time_zone?: string;  // IANA tz name, e.g. "America/Denver"
+    latitude?: number;   // HA home-zone coordinates — the origin the maxDistanceKm
+    longitude?: number;  // filter measures point-incident alerts against.
+    unit_system?: { length?: string };  // 'km' | 'mi' on a real core; drives the editor's display unit only (config is always km)
   };
   themes?: {
     darkMode?: boolean;
@@ -139,6 +142,7 @@ export interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
   excludeEventCodes?: string[]; // NWS event codes to exclude, e.g. ["SCY"] — empty/omitted = none excluded
   minSeverity?: AlertSeverity;
+  maxDistanceKm?: number;      // kilometres from the HA home location (hass.config.latitude/longitude), whatever the install's unit system. Only excludes alerts carrying a `point` (point-incident providers like NSW RFS); area warnings have no distance and are never filtered. Omitted/non-positive/non-numeric = no filtering.
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
   progressStyle?: ProgressStyleConfig; // per-phase progress-bar decoration; omit for defaults (prep striped, active shimmer, ongoing pulse)
@@ -217,6 +221,7 @@ export interface WeatherAlert {
   severityBadgeLabel?: string; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
   bbox?: [number, number, number, number]; // [minlon, minlat, maxlon, maxlat] (lon-first); synchronous from cap_alerts attributes. Drives the geometry mini-map frame.
   geometryRef?: string;    // Opaque handle for the out-of-band cap_alerts geometry fetch (full polygon). Empty/absent when unavailable.
+  point?: [number, number]; // [lon, lat] (lon-first, same convention as bbox) — where the incident IS, for point-incident providers; absent for area warnings. Never the centre of an affected area. Consumed by the maxDistanceKm filter.
 }
 
 // Adapter contract: converts raw entity attributes → WeatherAlert[]
@@ -230,6 +235,10 @@ export interface AlertAdapter {
   // matching entity by source instead of relying on hand-listed entity ids.
   // Absent/empty for providers backed by a single stable sensor.
   feedSources?: string[];
+  // This adapter can populate `WeatherAlert.point`, so the editor offers the
+  // radius control. Read by the editor only — the filter itself is data-driven
+  // (it tests for a point on the alert), never provider-gated.
+  carriesPoint?: boolean;
 }
 
 // Raw NWS alert shape from the nws_alerts integration (v6.1+)
@@ -331,6 +340,12 @@ export interface NswRfsIncident {
   fire?: boolean;              // true when the incident is a fire
   responsible_agency?: string; // e.g. "Rural Fire Service"
   publication_date?: string;   // ISO 8601 timestamp
+  // A geo_location platform guarantee: every incident entity carries its
+  // coordinates. The entity *state* (distance from home in km) is deliberately
+  // unused — it is provider-specific, and the card computes distance itself so
+  // the same filter works for any point-carrying source.
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface AlertProgress {

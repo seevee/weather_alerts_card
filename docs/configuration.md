@@ -45,6 +45,7 @@ checkbox, which appears only when a matching integration is installed.
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
+| `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the HA home location. Point-incident providers only (NSW RFS) |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
@@ -62,6 +63,16 @@ emit zone codes.
 
 `minSeverity` never hides an alert whose severity is unknown or unclassified — those are
 always shown, on the principle that an unrankable alert must not be silently dropped.
+
+`maxDistanceKm` measures from your Home Assistant home location (Settings → System →
+General) and applies **only to providers that publish a per-incident point** — currently
+NSW RFS. Area warnings (NWS, CAP Alerts, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC,
+PirateWeather) either cover your home point or they don't, so a radius has no meaning for
+them and they are never filtered, even on a mixed card. If the home location is unset, the
+filter is skipped rather than hiding everything. The YAML value is always kilometres,
+whatever your unit system; on a US-customary install the visual editor labels the field in
+miles and converts to km when saving, so the stored config means the same distance on every
+install and flipping HA's unit system never changes what the card hides.
 
 ## Presentation
 
@@ -308,6 +319,7 @@ interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // event codes to include — empty/omitted = all
   excludeEventCodes?: string[]; // event codes to exclude — empty/omitted = none
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
+  maxDistanceKm?: number;      // km from the HA home location; point-incident providers only
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;        // undefined: respect prefers-reduced-motion; true/false: force
   layout?: 'default' | 'compact';

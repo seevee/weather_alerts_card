@@ -15,6 +15,10 @@ import {
   parseTimestamp,
   getDisplayHeadline,
   reflowAlertText,
+  haversineKm,
+  extractPoint,
+  kmToDisplay,
+  displayToKm,
 } from '../src/utils';
 import type { WeatherAlert, AlertProvider } from '../src/types';
 
@@ -981,3 +985,85 @@ describe('reflowAlertText', () => {
   });
 });
 
+
+describe('haversineKm', () => {
+  // lon-first, matching the WeatherAlert.point tuple order
+  const SYDNEY: [number, number] = [151.2093, -33.8688];
+  const MELBOURNE: [number, number] = [144.9631, -37.8136];
+  const BRISBANE: [number, number] = [153.0251, -27.4698];
+
+  it('returns 0 for identical points', () => {
+    expect(haversineKm(...SYDNEY, ...SYDNEY)).toBe(0);
+  });
+
+  it('measures Sydney → Melbourne at ~713 km', () => {
+    expect(Math.abs(haversineKm(...SYDNEY, ...MELBOURNE) - 713)).toBeLessThan(5);
+  });
+
+  it('handles southern/negative latitudes (Sydney → Brisbane ~732 km)', () => {
+    expect(Math.abs(haversineKm(...SYDNEY, ...BRISBANE) - 732)).toBeLessThan(10);
+  });
+
+  it('is symmetric in argument order', () => {
+    expect(haversineKm(...SYDNEY, ...MELBOURNE)).toBe(haversineKm(...MELBOURNE, ...SYDNEY));
+  });
+
+  it('crosses the antimeridian without wrapping the long way round', () => {
+    // 1 degree of longitude at the equator ≈ 111 km, not ~40 000
+    expect(haversineKm(179.5, 0, -179.5, 0)).toBeCloseTo(111, 0);
+  });
+});
+
+describe('extractPoint', () => {
+  it('returns a lon-first tuple from (lat, lon) arguments', () => {
+    expect(extractPoint(-33.8688, 151.2093)).toEqual([151.2093, -33.8688]);
+  });
+
+  it('accepts the exact coordinate bounds and the null island', () => {
+    expect(extractPoint(90, 180)).toEqual([180, 90]);
+    expect(extractPoint(-90, -180)).toEqual([-180, -90]);
+    expect(extractPoint(0, 0)).toEqual([0, 0]);
+  });
+
+  it('returns undefined for missing, non-numeric or non-finite coords', () => {
+    expect(extractPoint(undefined, 151.2)).toBeUndefined();
+    expect(extractPoint(-33.8, undefined)).toBeUndefined();
+    expect(extractPoint(null, null)).toBeUndefined();
+    expect(extractPoint(NaN, 151.2)).toBeUndefined();
+    expect(extractPoint(-33.8, Infinity)).toBeUndefined();
+    // numeric strings are a provider bug, not a coordinate
+    expect(extractPoint('-33.8', '151.2')).toBeUndefined();
+  });
+
+  it('returns undefined for out-of-range coords', () => {
+    expect(extractPoint(91, 0)).toBeUndefined();
+    expect(extractPoint(-91, 0)).toBeUndefined();
+    expect(extractPoint(0, 181)).toBeUndefined();
+    expect(extractPoint(0, -181)).toBeUndefined();
+  });
+});
+
+describe('kmToDisplay / displayToKm', () => {
+  it('is an exact identity in both directions for km', () => {
+    for (const v of [1, 47, 50, 12.5, 0.001]) {
+      expect(kmToDisplay(v, 'km')).toBe(v);
+      expect(displayToKm(v, 'km')).toBe(v);
+    }
+  });
+
+  it('converts miles to km', () => {
+    expect(displayToKm(30, 'mi')).toBe(48.28);
+    expect(displayToKm(1, 'mi')).toBe(1.609);
+  });
+
+  it('converts km to miles for display', () => {
+    expect(kmToDisplay(48.28, 'mi')).toBe(30);
+    expect(kmToDisplay(100, 'mi')).toBe(62.14);
+  });
+
+  it('round-trips a miles value unchanged', () => {
+    for (const v of [1, 5, 30, 50, 100, 12.5]) {
+      expect(kmToDisplay(displayToKm(v, 'mi'), 'mi')).toBe(v);
+    }
+  });
+});
