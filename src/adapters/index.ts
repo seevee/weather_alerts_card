@@ -58,6 +58,16 @@ export function knownFeedSources(): { source: string; provider: AlertProvider }[
   return out;
 }
 
+/**
+ * Providers whose adapters can populate `WeatherAlert.point`. Editor-facing
+ * capability derivation (it decides whether to offer the radius control) —
+ * never a filter gate: the radius filter tests the alert for a point, so any
+ * future point-carrying source works without being listed anywhere.
+ */
+export function pointCapableProviders(): Set<AlertProvider> {
+  return new Set(adapters.filter(a => a.carriesPoint).map(a => a.provider));
+}
+
 export function getAdapter(
   provider: AlertProvider | undefined,
   attributes: Record<string, unknown>,

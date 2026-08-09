@@ -103,6 +103,8 @@ export const es: TranslationMap = {
   'editor.severity_moderate': 'Moderada o superior',
   'editor.severity_severe': 'Grave o superior',
   'editor.severity_extreme': 'Solo extrema',
+  'editor.max_distance': 'Distancia máxima ({unit})',
+  'editor.max_distance_helper': 'Mostrar solo los incidentes situados a menos de esta distancia de la ubicación de tu Home Assistant. Se aplica a los feeds de incidentes puntuales (NSW RFS): las alertas de área no tienen distancia y nunca se filtran.',
   'editor.animations': 'Activar animaciones',
   'editor.enhance_contrast': 'Mejorar contraste',
   'editor.enhance_contrast_off': 'Desactivado',

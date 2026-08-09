@@ -103,6 +103,8 @@ export const de: TranslationMap = {
   'editor.severity_moderate': 'Mäßig oder höher',
   'editor.severity_severe': 'Schwer oder höher',
   'editor.severity_extreme': 'Nur extrem',
+  'editor.max_distance': 'Maximale Entfernung ({unit})',
+  'editor.max_distance_helper': 'Nur Ereignisse innerhalb dieser Entfernung vom Standort Ihrer Home-Assistant-Installation anzeigen. Gilt für Einzelereignis-Feeds (NSW RFS) — Flächenwarnungen haben keine Entfernung und werden nie gefiltert.',
   'editor.animations': 'Animationen aktivieren',
   'editor.enhance_contrast': 'Kontrast erhöhen',
   'editor.enhance_contrast_off': 'Aus',

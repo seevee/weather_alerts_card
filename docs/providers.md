@@ -175,6 +175,25 @@ ladder (Emergency Warning / Watch and Act / Advice). Two consequences worth know
 - `showGeometry` is unavailable — the entity carries only a point, not the fire-ground
   polygon.
 
+That point does drive one thing: `maxDistanceKm` trims a statewide feed to incidents
+within a given number of kilometres of your Home Assistant home location. It is opt-in,
+always expressed in km in YAML, and has no effect on area-warning providers.
+
+```yaml
+type: custom:weather-alerts-card
+sources:
+  - nsw_rural_fire_service_feed
+maxDistanceKm: 50
+```
+
+::: warning The card filter only narrows — check the integration's radius first
+`nsw_rural_fire_service_feed` has its own `radius` option, **default 20 km**, measured from
+the same Home Assistant home location. Incidents beyond it never reach the card at all, so
+`maxDistanceKm` can only trim that set further, never widen it. On the default, a card set to
+`maxDistanceKm: 50` changes nothing — raise the integration's `radius` to see incidents
+further out. The card-side filter is for narrowing per card without touching the integration.
+:::
+
 ### PirateWeather
 
 ```yaml

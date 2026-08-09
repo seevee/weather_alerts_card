@@ -40,6 +40,7 @@ import {
   sortAlerts,
   alertMatchesZones,
   deduplicateAlerts,
+  haversineKm,
   getNwsEventColor,
   getMeteoAlarmColor,
   getEcccColor,
@@ -783,6 +784,24 @@ export class WeatherAlertsCard extends LitElement {
   private _filterAndSort(alerts: WeatherAlert[], opts?: { skipZones?: boolean; providerPriority?: AlertProvider[] }): WeatherAlert[] {
     if (!this._config) return alerts;
     let result = alerts;
+
+    // Radius filter runs FIRST, before dedup: distance is a per-incident
+    // property, and dedup's representative keeps only group[0]'s point, so a
+    // merged group would otherwise be judged by one arbitrary member's
+    // location. Alerts with no point always pass — an area warning either
+    // covers the home point or it doesn't, so a radius has no meaning for it
+    // (#105) and dropping one would be a safety regression. A missing/invalid
+    // radius or an unknown home location fails open (no filtering at all).
+    const maxKm = this._config.maxDistanceKm;
+    const homeLat = this.hass?.config?.latitude;
+    const homeLon = this.hass?.config?.longitude;
+    if (
+      typeof maxKm === 'number' && Number.isFinite(maxKm) && maxKm > 0
+      && typeof homeLat === 'number' && Number.isFinite(homeLat)
+      && typeof homeLon === 'number' && Number.isFinite(homeLon)
+    ) {
+      result = result.filter(a => !a.point || haversineKm(a.point[0], a.point[1], homeLon, homeLat) <= maxKm);
+    }
 
     if (this._config.deduplicate !== false) {
       result = deduplicateAlerts(result, opts?.providerPriority);
