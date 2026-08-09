@@ -74,6 +74,11 @@ whatever your unit system; on a US-customary install the visual editor labels th
 miles and converts to km when saving, so the stored config means the same distance on every
 install and flipping HA's unit system never changes what the card hides.
 
+It also only ever **narrows**. The `geo_location` integrations that feed it apply their own
+`radius` first (`nsw_rural_fire_service_feed` and `qld_bushfire` both default to 20 km from the
+same home location), so incidents beyond that never reach the card. Setting `maxDistanceKm`
+wider than the integration's radius does nothing — raise the integration's `radius` instead.
+
 ## Presentation
 
 | Option | Default | Description |

@@ -186,6 +186,14 @@ sources:
 maxDistanceKm: 50
 ```
 
+::: warning The card filter only narrows — check the integration's radius first
+`nsw_rural_fire_service_feed` has its own `radius` option, **default 20 km**, measured from
+the same Home Assistant home location. Incidents beyond it never reach the card at all, so
+`maxDistanceKm` can only trim that set further, never widen it. On the default, a card set to
+`maxDistanceKm: 50` changes nothing — raise the integration's `radius` to see incidents
+further out. The card-side filter is for narrowing per card without touching the integration.
+:::
+
 ### PirateWeather
 
 ```yaml

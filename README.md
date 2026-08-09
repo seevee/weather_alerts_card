@@ -221,7 +221,7 @@ Then click the Download button, and click Reload when prompted.
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list. Populated by CAP Alerts (UGC/SAME/EMMA_ID/NUTS and any other geocode scheme) and BoM (`area_id`, e.g. `NSW_FL049`; fork-dependent — the `safepay/ha_bom_australia` fork emits it). The recommended NWS integration doesn't emit zone codes, so this doesn't apply to it. **Alerts with no matching zone are hidden**, so setting `zones` on a provider that carries none hides everything |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'`. Alerts whose severity is unknown/unclassified are always shown, regardless of this threshold |
-| `maxDistanceKm` | — | Hide incidents further than this many **kilometres** from your Home Assistant home location (`latitude`/`longitude` under Settings → System → General). Opt-in; the YAML value is always km whatever your unit system, though the visual editor shows and accepts miles on a US-customary install. Only applies to point-incident providers that publish a real location (currently NSW RFS) — area warnings (NWS, CAP, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, PirateWeather) have no distance and are never filtered. Ignored when the home location is unset |
+| `maxDistanceKm` | — | Hide incidents further than this many **kilometres** from your Home Assistant home location (`latitude`/`longitude` under Settings → System → General). Opt-in; the YAML value is always km whatever your unit system, though the visual editor shows and accepts miles on a US-customary install. Only applies to point-incident providers that publish a real location (currently NSW RFS) — area warnings (NWS, CAP, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, PirateWeather) have no distance and are never filtered. Ignored when the home location is unset. Only ever narrows — the `geo_location` integration applies its own `radius` (default 20 km) first, so a wider card value has no effect |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — `'eccc'` uses ECCC's published `red`/`orange`/`yellow`/`grey` palette (matches weather.gc.ca); falls back to the canonical severity tier for non-ECCC alerts displayed under this theme |
 | `enhanceContrast` | `'subtle'` | `'off'`, `'subtle'`, `'strict'` — boost foreground colors for NWS/MeteoAlarm events whose raw hex reads poorly against the active theme's card background, applied per event, per theme mode, and only in the direction where it fails. `'subtle'` (default) uses a text tier (~2:1 for icon/label) and a stricter progress tier (~1.3:1 for progress-bar fill, which catches near-invisible tints like yellow Tornado Watch). `'strict'` tightens both tiers (text ~3:1, progress ~2:1) toward WCAG AA-ish guarantees. `'off'` always renders raw theme hex values. Events that already read cleanly (e.g. Tornado Warning) render unchanged in all modes. |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
@@ -406,6 +406,10 @@ sources:
   - nsw_rural_fire_service_feed
 maxDistanceKm: 50
 ```
+
+Note that this only narrows: the integration itself has a `radius` option (default 20 km
+from the same home location) and incidents beyond it never reach the card, so a card value
+wider than that does nothing. Raise the integration's `radius` to see incidents further out.
 
 **PirateWeather alerts**
 ```yaml
