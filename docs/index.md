@@ -61,6 +61,7 @@ only have to point the card at an entity — the provider is auto-detected.
 | Change colors, surfaces, or translucency | [Theming](./theming) |
 | Find the right integration for your region | [Providers](./providers) |
 | Open alerts in a pop-up instead of expanding inline | [Recipes](./recipes/detail-popup) |
+| Get alert text in your own language | [Alert language](./recipes/alert-language) |
 | Build the card from source | [Development](./development) |
 
 ## Beyond the basics
