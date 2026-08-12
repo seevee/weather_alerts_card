@@ -74,6 +74,11 @@ The MeteoAlarm integration exposes a `binary_sensor` with flat attributes and re
 multi-alert European coverage, ingest the same feeds through
 [CAP Alerts](#cap-alerts-multi-region) instead.
 
+Alert text arrives in whatever language the platform's `language:` option selects, which
+defaults to English. See [Alert text in your own
+language](./recipes/alert-language) for that setting and for the title caveat, which
+depends on your national service rather than on MeteoAlarm.
+
 ### DWD (Germany)
 
 ```yaml
