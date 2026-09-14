@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.4.0 — 2026-09-14
+
+### Added
+- Show per-incident distance from home in the detail panel (#263) (5156ded…)
+- Collect from multiple alert devices with `devices:` (#264) (719f5cf…)
+- Draw a marker for point-incident alerts, opt-in my-location ring (#265) (e437692…)
+- Regroup the visual editor into panels that say what changed (#266) (c682043…)
+
+### Maintenance
+- Translate the eleven editor strings added by #265 and #266 (#268) (3668037…)
+
 ## 3.3.2 — 2026-09-08
 
 ### Added
