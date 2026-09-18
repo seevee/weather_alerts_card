@@ -62,16 +62,30 @@ fi
 # Prerelease: notes for just this tag's commits
 # GA release: collapse all commits since last stable tag into one section
 if [ "$PRERELEASE" = true ]; then
-  NOTES=$(npx git-cliff \
+  NOTES=$(CLIFF_SURFACE=release npx git-cliff \
     --config cliff.toml \
     --latest \
     --strip header)
 else
-  NOTES=$(npx git-cliff \
+  NOTES=$(CLIFF_SURFACE=release npx git-cliff \
     --config cliff.toml \
     --tag-pattern "^v[0-9]+\.[0-9]+\.[0-9]+$" \
     --latest \
     --strip header)
+fi
+
+# The release PR body is the release notes once someone has edited it.
+# release.sh seeds that body with the same generated notes, so a body that
+# still matches the generation was never touched and the fresh copy ships.
+# Anything else, a narrative above the list or an annotated line, ships
+# verbatim: the PR is where the notes get reviewed, not the release edit box.
+# --notes and --new-contributor still append below whichever body ships.
+PR_BODY=$(gh pr list --state merged --base main --head "release/v$VERSION" \
+  --json body --jq '.[0].body // empty' 2>/dev/null || true)
+PR_BODY=${PR_BODY//$'\r'/}
+if [ -n "$PR_BODY" ] && [ "$PR_BODY" != "$NOTES" ]; then
+  echo "Using the release PR body as the release notes"
+  NOTES="$PR_BODY"
 fi
 
 # Append new-contributors section

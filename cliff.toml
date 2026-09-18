@@ -1,31 +1,85 @@
+# git-cliff configuration — mirrors the companion cap_alerts repo so both
+# halves of the integration+card pair share one changelog house style.
+# Regenerate CHANGELOG.md with: npx git-cliff --config cliff.toml --output CHANGELOG.md
+#
+# One template renders two surfaces, selected by the CLIFF_SURFACE variable:
+#
+#   changelog (default)  CHANGELOG.md. Version heading per release, every
+#                        group as a ### heading.
+#   release              GitHub Release and release-PR bodies. No version
+#                        heading (the title carries it), Documentation and
+#                        Internal folded into a <details> block, compare link
+#                        at the foot.
+#
+# Each line is the commit subject plus the issues its `Closes #N` footers
+# name. Breaking commits (`feat!:` or a BREAKING CHANGE footer) lead the
+# section in a callout.
+
 [changelog]
 header = """
 # Changelog
 """
 
 body = """
-{% if version %}
-## {{ version | trim_start_matches(pat="v") }} — {{ timestamp | date(format="%Y-%m-%d") }}
+{%- set surface = get_env(name="CLIFF_SURFACE", default="changelog") -%}
+{%- set repo = "https://github.com/seevee/weather_alerts_card" -%}
+{%- if surface == "changelog" %}
+## {{ version | default(value="Unreleased") | trim_start_matches(pat="v") }}{% if timestamp %} ({{ timestamp | date(format="%Y-%m-%d") }}){% endif %}
+{% endif -%}
+{%- set breaking = commits | filter(attribute="breaking", value=true) -%}
+{%- if breaking | length > 0 %}
+> [!IMPORTANT]
+> **Breaking**
+{%- for commit in breaking %}
+> - {{ commit.breaking_description | default(value=commit.message) | replace(from="\n", to=" ") | upper_first }}
+{%- endfor %}
 {% endif -%}
 {%- for group, commits in commits | group_by(attribute="group") %}
-### {{ group }}
+{%- set name = group | striptags | trim %}
+{%- if surface == "changelog" or name == "Added" or name == "Fixed" or name == "Changed" %}
+### {{ name }}
 {% for commit in commits -%}
-- {{ commit.message | upper_first }} ({{ commit.id | truncate(length=7) }})
-{% endfor -%}
+- {{ commit.message | upper_first }}
+{%- for f in commit.footers | filter(attribute="token", value="Closes") %} (closes #{{ f.value }}){% endfor %}
 {% endfor %}
+{%- endif %}
+{%- endfor %}
+{%- if surface == "release" %}
+{%- set internal = commits | filter(attribute="group", value="<!-- 3 -->Documentation") | concat(with=commits | filter(attribute="group", value="<!-- 4 -->Internal")) %}
+{%- if internal | length > 0 %}
+<details><summary>Documentation and internal changes</summary>
+
+{% for commit in internal -%}
+- {{ commit.message | upper_first }}
+{% endfor %}
+</details>
+{% endif %}
+{%- if previous and previous.version %}
+Full diff: [{{ previous.version }}...{{ version }}]({{ repo }}/compare/{{ previous.version }}...{{ version }})
+{% endif %}
+{%- endif %}
 """
 
 [git]
 conventional_commits = true
 filter_unconventional = true
 tag_pattern = "v[0-9]*"
+# A breaking commit is never dropped by a skip rule below.
+protect_breaking_commits = true
 
+# The HTML-comment prefix fixes the group order (group_by sorts by name); the
+# template strips it before rendering.
 commit_parsers = [
-  { message = "^feat", group = "Added" },
-  { message = "^fix", group = "Fixed" },
-  { message = "^perf", group = "Performance" },
-  { message = "^refactor", group = "Changed" },
-  { message = "^docs", group = "Documentation" },
+  # Release bumps are `chore: release vX.Y.Z`, committed by scripts/release.sh.
   { message = "^chore: release", skip = true },
-  { message = "^chore", group = "Maintenance" }
+  # Bare `ci:` commits are build-internal noise; scoped fix(ci)/chore(ci) still
+  # land in Fixed/Internal because those rules match.
+  { message = "^ci", skip = true },
+  { message = "^feat", group = "<!-- 0 -->Added" },
+  { message = "^fix", group = "<!-- 1 -->Fixed" },
+  { message = "^perf", group = "<!-- 2 -->Changed" },
+  { message = "^refactor", group = "<!-- 2 -->Changed" },
+  { message = "^docs", group = "<!-- 3 -->Documentation" },
+  { message = "^chore", group = "<!-- 4 -->Internal" },
+  { message = "^test", group = "<!-- 4 -->Internal" },
 ]

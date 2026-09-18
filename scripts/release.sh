@@ -184,7 +184,7 @@ if [ "$DRY_RUN" = true ]; then
   echo ""
   echo "---- SIMULATED RELEASE FROM origin/main ----"
 
-  npx git-cliff \
+  CLIFF_SURFACE=release npx git-cliff \
     --config cliff.toml \
     --tag "v$VERSION" \
     "${NOTES_FLAGS[@]}" \
@@ -261,7 +261,11 @@ fi
 # Create PR
 # -------------------------
 
-NOTES=$(npx git-cliff \
+# The PR body doubles as the release notes: publish.sh ships it verbatim once
+# it differs from this generation. Write the narrative above the list before
+# merging. A re-run leaves an existing body alone for the same reason and
+# prints the fresh generation instead.
+NOTES=$(CLIFF_SURFACE=release npx git-cliff \
   --config cliff.toml \
   --tag "v$VERSION" \
   "${NOTES_FLAGS[@]}" \
@@ -271,8 +275,9 @@ NOTES=$(npx git-cliff \
 EXISTING_PR=$(gh pr list --head "$BRANCH" --base main --json number --jq '.[0].number // empty' 2>/dev/null || true)
 
 if [ -n "$EXISTING_PR" ]; then
-  echo "PR #$EXISTING_PR already exists, updating body"
-  gh pr edit "$EXISTING_PR" --body "$NOTES"
+  echo "PR #$EXISTING_PR already exists, leaving its body alone. Fresh notes:"
+  echo ""
+  echo "$NOTES"
 else
   gh pr create \
     --title "chore: release v$VERSION" \
@@ -284,5 +289,6 @@ fi
 echo ""
 echo "PR created for v$VERSION"
 echo ""
+echo "Write the release narrative into the PR body above the generated list."
 echo "After merge run:"
 echo "scripts/publish.sh $VERSION"

@@ -258,8 +258,13 @@ All agent skills are defined in `.claude/commands/`. When modifying a skill, als
 - `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` to the release.
 - To release, use the `/release` skill or follow its steps manually:
   1. Create `release/vX.Y.Z` branch from `main`.
-  2. Update `CHANGELOG.md`, bump version in `package.json`, run `npm run build`.
-  3. Commit, push, and open a PR to `main`.
+  2. Bump the version in `package.json` and regenerate `CHANGELOG.md` with
+     `npx git-cliff --config cliff.toml --tag vX.Y.Z --output CHANGELOG.md`.
+     The file is generated from conventional commit subjects, never hand-edited;
+     a `Closes #N` footer links the issue, and `feat!:` marks a breaking change.
+  3. Commit, push, and open a PR to `main`. The PR body is the release notes:
+     `release.sh` seeds it with the generated list, the narrative goes above
+     that list before merge, and `publish.sh` ships the body verbatim.
   4. After merge: tag `main` as `vX.Y.Z`, push tag, create GitHub Release with `gh release create`.
   5. The release workflow attaches the built JS artifact.
 - Users add this repo as a HACS custom repository (Frontend category).
