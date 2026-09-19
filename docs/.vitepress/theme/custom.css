@@ -1,0 +1,26 @@
+/*
+ * The default hero image slot is sized for a logo: 320px square at desktop
+ * widths, with a blurred halo behind it. Our hero is a 1060x844 screenshot of
+ * the card, which that cap shrinks to a third of its size and makes
+ * unreadable. Let the figure fill the hero's image column instead, and drop
+ * the halo, which only makes sense behind a logo.
+ *
+ * `width` has to be explicit: the adaptive SVG carries a viewBox but no
+ * intrinsic size, and as an absolutely positioned image with only a max-width
+ * it collapses to the 300px replaced-element default.
+ */
+.VPHero .image-src {
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
+}
+
+.VPHero .image-bg {
+  display: none;
+}
+
+/* The theme nudges the image column 32px up and left so a logo overlaps the
+ * heading a little. A screenshot wants a gap from the tagline, not overlap. */
+.VPHero .image-container {
+  transform: none;
+}

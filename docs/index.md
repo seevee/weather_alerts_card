@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Weather Alerts Card
   text: Weather alerts, done properly
-  tagline: A custom Home Assistant Lovelace card for severe-weather alerts — nine providers, severity-aware colors, time progress bars and expandable details.
+  tagline: A custom Home Assistant Lovelace card for severe-weather alerts — multi-provider, severity-aware colors, time progress bars and expandable details.
   image:
     src: /img/hero-adaptive.svg
     alt: The Weather Alerts Card showing several active alerts
@@ -21,15 +21,15 @@ hero:
 
 features:
   - title: Multi-provider
-    details: NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), NINA (German civil protection), MeteoSwiss, ECCC (Canada), NSW RFS, PirateWeather and CAP Alerts — with auto-detection from entity attributes.
+    details: NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), NINA (German civil protection), MeteoSwiss, ECCC (Canada), NSW RFS, PirateWeather and CAP Alerts — auto-detected from entity attributes, and one card can read several alert devices.
   - title: Color themes
-    details: Severity-based by default, or the official NWS event, MeteoAlarm awareness-level, or ECCC public-alert palettes — with per-event contrast correction.
+    details: Severity-based by default, or the official NWS event, MeteoAlarm awareness-level, or ECCC public-alert palettes, plus an opt-in override that paints each alert in the color its issuing agency published — with per-event contrast correction.
   - title: Time progress bars
     details: Elapsed and remaining time with relative and absolute timestamps, and honest "ongoing" handling for feeds that carry no expiry.
   - title: Expandable details
     details: Sanitized description, instructions and a source link — inline, or in a per-alert modal via tap_action.
   - title: Affected-area mini-map
-    details: An optional inline outline of a CAP alert's polygon, with an opt-in raster-tile basemap for geographic context.
+    details: An optional inline outline of a CAP alert's polygon, or a marker at a point incident's location, with an opt-in raster-tile basemap and an opt-in you-are-here dot.
   - title: Broken-source safety badge
     details: When a configured sensor goes unavailable, a degraded indicator names the broken source. A dead feed is never treated as proof of safety.
   - title: Themeable surfaces
@@ -47,7 +47,7 @@ alert with a severity color, an icon, a headline, and a progress bar showing how
 much of the alert's window has elapsed. Tapping an alert expands the full
 description and instructions.
 
-Nine providers are supported through an **adapter** layer: whatever integration you
+Every provider is supported through an **adapter** layer: whatever integration you
 run, the card normalizes its output into one internal alert shape, so every feature
 below behaves the same regardless of where the data came from. In most cases you
 only have to point the card at an entity — the provider is auto-detected.
@@ -66,7 +66,8 @@ only have to point the card at an entity — the provider is auto-detected.
 
 ## Beyond the basics
 
-- **Filtering** — restrict by zone code, event code, or a minimum severity threshold.
+- **Filtering** — restrict by zone code, event code, a minimum severity threshold, or
+  distance from home for point incidents.
 - **Layouts** — a full card, or a `compact` one-row-per-alert list that expands on tap.
 - **Dismissal** — optional per-alert dismiss by button or swipe, with undo and a
   restore-all control, stored browser-locally.
