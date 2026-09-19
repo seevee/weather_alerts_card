@@ -34,7 +34,7 @@ Always run `npm run lint` and `npm run test` before committing.
 | `src/adapters/meteoswiss.ts` | MeteoSwiss adapter: parses the hass-swissweather aggregate `weather_warnings` sensor's parallel arrays → `WeatherAlert[]`. Detects via the `warning_types`/`warning_levels_numeric`/`warning_valid_from` array-triple. |
 | `src/adapters/pirateweather.ts` | PirateWeather adapter: parses Pirate Weather integration attributes → `WeatherAlert[]`. Detects via attribution string. |
 | `src/adapters/cap.ts` | CAP Alerts adapter: each `sensor.cap_alert_*` entity carries one alert as flat CAP 1.2 attributes. Detects via `incident_platform_version`. Thin passthrough — normalisation happens in the integration. |
-| `src/adapters/eccc.ts` | ECCC adapter: parses the HACS `environment_canada` custom component's `attributes.alerts` array → `WeatherAlert[]`. Detects via Environment Canada attribution (English or French). Severity is synthesised as the max of `color`/`type`/`impact`. |
+| `src/adapters/eccc.ts` | ECCC adapter: parses the HACS `environment_canada` custom component's `attributes.alerts` array → `WeatherAlert[]`. Detects via Environment Canada attribution (English or French). Severity is synthesised as the max of `color`/`type`/`impact`. Resolves the `color` tag against the weather.gc.ca palette into a `colorHint` hex (tier fallback when absent). |
 | `src/adapters/nsw_rfs.ts` | NSW RFS adapter: each `nsw_rural_fire_service_feed` `geo_location.*` entity carries one incident as flat attributes → single-element `WeatherAlert[]`. Detects via `category` + `status` + `responsible_agency`. Severity maps from `category` (Australian Warning System ladder); `endsTs:0` (no expiry, honest "ongoing"); RFS-only fields synthesised into the description; `carriesPoint = true` + `point` from the entity's `latitude`/`longitude` (never a `bbox` — the render path frames a `point` itself). |
 | `src/localize.ts` | i18n lookup. Exports `t(key, lang, params?)` — strips the region subtag, falls back to English per key. |
 | `src/translations/` | One file per locale (`en`, `fr`, `es`, `it`, `de`, `zh-Hans`), registered in `index.ts`. Split out of `localize.ts` so parity checks can iterate the registry and so a locale change is a self-contained diff. (The split was originally also meant to make `CODEOWNERS` paths expressible; that never worked, since GitHub ignores owners without write access, and the file has since been removed.) |
@@ -78,7 +78,8 @@ interface WeatherAlertsCardConfig {
   animations?: boolean;        // undefined: respects prefers-reduced-motion; true/false: force
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
-  colorTheme?: 'severity' | 'nws' | 'meteoalarm';
+  colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';  // the ladder every alert is painted from; 'nws' keys off event name (severity tier when unmatched), 'meteoalarm'/'eccc' key off tier
+  providerColors?: boolean;    // undefined/false: ladder only; true: an alert carrying its issuer's published color (WeatherAlert.colorHint, a hex the adapter resolved) is painted in it. Defaults on under colorTheme: 'eccc'
   enhanceContrast?: 'off' | 'subtle' | 'strict';  // undefined/'subtle': per-event/per-theme WCAG boost, two tiers — text (icon/label, fails ~2:1) and progress-bar fill (stricter ~1.3:1); 'strict' tightens both tiers (text ~3:1, progress ~2:1) toward WCAG AA; 'off': raw theme hex. Applies to nws + meteoalarm themes.
   provider?: AlertProvider;    // 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'meteoswiss' | 'eccc' | 'nsw_rfs' | 'cap' — undefined: auto-detect
   deduplicate?: boolean;       // undefined/true: dedup on; false: off

@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { WeatherAlert, AlertProgress, AlertProvider, ContrastMode, HomeAssistant } from './types';
+import { WeatherAlert, WeatherAlertsCardConfig, AlertProgress, AlertProvider, ContrastMode, HomeAssistant } from './types';
 import { t } from './localize';
 import { NWS_EVENT_COLORS } from './nws-colors';
 
@@ -217,7 +217,7 @@ function buildEventColor(hex: string, rgb: string, crLight: number, crDark: numb
   };
 }
 
-export function getNwsEventColor(event: string, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor {
+export function getNwsEventColor(event: string, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor | undefined {
   const e = event.toLowerCase();
   const direct = NWS_EVENT_COLORS[e];
   if (direct) {
@@ -234,14 +234,9 @@ export function getNwsEventColor(event: string, mode: ContrastMode = DEFAULT_CON
       );
     }
   }
-  const fallback = '#808080';
-  return buildEventColor(
-    fallback,
-    hexToRgbString(fallback),
-    contrastRatio(fallback, LIGHT_BG),
-    contrastRatio(fallback, DARK_BG),
-    mode,
-  );
+  // Not an NWS-shaped event (a DWD or INMET alert on an NWS-themed card):
+  // no color, so the card paints it by severity tier instead of a flat grey.
+  return undefined;
 }
 
 // MeteoAlarm official awareness level colors
@@ -251,6 +246,27 @@ const METEOALARM_SEVERITY_COLORS: Record<string, string> = {
   moderate: '#FFC800',  // Yellow
   minor:   '#88C840',   // Green
 };
+
+// The same palette keyed by the color token EUMETNET members publish in
+// `awareness_level` ("2; yellow; Moderate"). The token is the contract; the
+// numeric prefix and trailing label vary by member.
+const METEOALARM_TOKEN_COLORS: Record<string, string> = {
+  red:    METEOALARM_SEVERITY_COLORS.extreme,
+  orange: METEOALARM_SEVERITY_COLORS.severe,
+  yellow: METEOALARM_SEVERITY_COLORS.moderate,
+  green:  METEOALARM_SEVERITY_COLORS.minor,
+};
+
+// Resolves a MeteoAlarm `awareness_level` string to the issuer's hex for
+// `WeatherAlert.colorHint`, or undefined when the token is missing or not one
+// of the four awareness colors. Shared by the native MeteoAlarm adapter and
+// the CAP adapter (cap_alerts surfaces the raw CAP parameter map).
+export function meteoalarmAwarenessColorHex(awarenessLevel: unknown): string | undefined {
+  if (typeof awarenessLevel !== 'string') return undefined;
+  const parts = awarenessLevel.split(';');
+  if (parts.length < 2) return undefined;
+  return METEOALARM_TOKEN_COLORS[parts[1].trim().toLowerCase()];
+}
 
 export function getMeteoAlarmColor(severity: string, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor {
   const hex = METEOALARM_SEVERITY_COLORS[severity] ?? '#808080';
@@ -264,29 +280,33 @@ export function getMeteoAlarmColor(severity: string, mode: ContrastMode = DEFAUL
 }
 
 // ECCC public-alert palette (matches the `--alert-*-bg` palette on
-// weather.gc.ca, defined in `/204/css/base.css`).
-const ECCC_COLOR_PALETTE: Record<string, string> = {
+// weather.gc.ca, defined in `/204/css/base.css`), keyed by the `color` tag the
+// environment_canada integration publishes. Exported for the ECCC adapter,
+// which resolves that tag into a `colorHint` hex.
+export const ECCC_COLOR_PALETTE: Record<string, string> = {
   red:    '#D10000',
   orange: '#FF9500',
   yellow: '#FFFF00',
   grey:   '#656565',
 };
 
-// Fallback when colorHint is missing (e.g. non-ECCC alert displayed under
-// the eccc theme): pick a reasonable hex from the canonical severity tier.
-const ECCC_SEVERITY_FALLBACK: Record<string, string> = {
-  extreme:  '#D10000',
-  severe:   '#FF9500',
-  moderate: '#FFFF00',
-  minor:    '#656565',
-  unknown:  '#656565',
+// The same palette as a severity ladder: `colorTheme: 'eccc'` paints every
+// alert by tier from this table, and the ECCC adapter uses it when an alert
+// arrives without a `color` tag so an ECCC card never mixes palettes.
+const ECCC_SEVERITY_COLORS: Record<string, string> = {
+  extreme:  ECCC_COLOR_PALETTE.red,
+  severe:   ECCC_COLOR_PALETTE.orange,
+  moderate: ECCC_COLOR_PALETTE.yellow,
+  minor:    ECCC_COLOR_PALETTE.grey,
+  unknown:  ECCC_COLOR_PALETTE.grey,
 };
 
-export function getEcccColor(alert: WeatherAlert, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor {
-  const hint = alert.colorHint?.toLowerCase();
-  const hex = (hint && ECCC_COLOR_PALETTE[hint])
-    ?? ECCC_SEVERITY_FALLBACK[alert.severity]
-    ?? '#808080';
+export function ecccTierHex(severity: string): string {
+  return ECCC_SEVERITY_COLORS[severity] ?? ECCC_COLOR_PALETTE.grey;
+}
+
+export function getEcccColor(severity: string, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor {
+  const hex = ecccTierHex(severity);
   return buildEventColor(
     hex,
     hexToRgbString(hex),
@@ -294,6 +314,43 @@ export function getEcccColor(alert: WeatherAlert, mode: ContrastMode = DEFAULT_C
     contrastRatio(hex, DARK_BG),
     mode,
   );
+}
+
+// `providerColors: true` — the issuer's own published color, when the
+// adapter supplied one as a `#rrggbb` hex in `colorHint`. Each adapter resolves
+// its issuer's palette itself (ECCC's colour names, MeteoAlarm's awareness
+// token, INMET's literal hex), so this only has to validate a hex and run it
+// through the same contrast machinery as the NWS and MeteoAlarm palettes.
+// Returns undefined when the alert carries no usable hint; the card then paints
+// the alert from whichever ladder `colorTheme` selects.
+const HEX_COLOR = /^#[0-9a-f]{6}$/;
+
+export function getProviderColor(alert: WeatherAlert, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor | undefined {
+  const hint = alert.colorHint?.trim().toLowerCase();
+  if (!hint || !HEX_COLOR.test(hint)) return undefined;
+  return buildEventColor(
+    hint,
+    hexToRgbString(hint),
+    contrastRatio(hint, LIGHT_BG),
+    contrastRatio(hint, DARK_BG),
+    mode,
+  );
+}
+
+// Whether per-alert issuer colors apply. `colorTheme: 'eccc'` predates the
+// `providerColors` key and always meant "ECCC's ladder, and each ECCC alert in
+// the color ECCC published for it", so under that ladder the override defaults
+// on; an explicit `providerColors: false` still wins. Every other ladder
+// defaults it off.
+export function providerColorsEnabled(config: Pick<WeatherAlertsCardConfig, 'colorTheme' | 'providerColors'>): boolean {
+  return config.providerColors ?? config.colorTheme === 'eccc';
+}
+
+// The editor's view of a config: the rule above made explicit, so the toggle
+// reads on for an `eccc` card and the first write carries the key forward.
+export function normalizeColorConfig(config: WeatherAlertsCardConfig): WeatherAlertsCardConfig {
+  if (config.providerColors !== undefined || config.colorTheme !== 'eccc') return config;
+  return { ...config, providerColors: true };
 }
 
 export function parseTimestamp(raw: string | undefined | null): number {

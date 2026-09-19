@@ -96,6 +96,7 @@ export const zhHans: TranslationMap = {
   'editor.color_nws': 'NWS 官方',
   'editor.color_meteoalarm': 'MeteoAlarm 认知等级',
   'editor.color_eccc': 'ECCC 公共警报',
+  'editor.provider_colors': '使用提供方发布的警报颜色',
   'editor.timezone': '时区',
   'editor.tz_server': '服务器（Home Assistant）',
   'editor.tz_browser': '浏览器（本地设备）',

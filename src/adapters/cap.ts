@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
-import { normalizeSeverity, parseTimestamp } from '../utils';
+import { meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '../utils';
 
 // CAP Alerts integration sets one entity per active alert. Each entity's
 // extra_state_attributes is a flat dict of CAP 1.2 fields plus an
@@ -45,6 +45,14 @@ export class CapAdapter implements AlertAdapter {
     const geometryRef = geometryRefRaw || undefined;
     const bbox = numArray4(attributes['bbox']);
 
+    // cap_alerts serialises the raw CAP `<parameter>` map under `parameters`.
+    // MeteoAlarm members publish their awareness colour there; it is the only
+    // issuer colour any cap_alerts provider carries today.
+    const params = attributes['parameters'];
+    const colorHint = params && typeof params === 'object' && !Array.isArray(params)
+      ? meteoalarmAwarenessColorHex((params as Record<string, unknown>)['awareness_level'])
+      : undefined;
+
     return [{
       id,
       event: event || 'Unknown',
@@ -69,6 +77,7 @@ export class CapAdapter implements AlertAdapter {
       ...(providerIcon !== undefined && { providerIcon }),
       ...(geometryRef !== undefined && { geometryRef }),
       ...(bbox !== undefined && { bbox }),
+      ...(colorHint !== undefined && { colorHint }),
     }];
   }
 }

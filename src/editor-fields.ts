@@ -35,6 +35,7 @@ export type ToggleKey =
   | 'showGeometry'
   | 'showMyLocation'
   | 'showProvider'
+  | 'providerColors'
   | 'showSourceLink'
   | 'hideExpired'
   | 'allowDismiss'
@@ -105,6 +106,12 @@ const opts = (prefix: string, ...values: string[]) =>
 
 export const TOGGLE_FIELDS: readonly ToggleField[] = [
   bool('showProvider', 'appearance', false, 'editor.show_provider'),
+  // Paint each alert in the color its issuer published (ECCC's tag,
+  // MeteoAlarm's awareness colour, INMET's hex) over the colorTheme ladder.
+  // Off by default so no dashboard changes on upgrade; `colorTheme: eccc`
+  // always meant this, so the card treats it as on there (see
+  // providerColorsEnabled in utils) and the editor normalises the config to say so.
+  bool('providerColors', 'appearance', false, 'editor.provider_colors'),
   // `layout` is a two-value enum driven by one switch: checked writes
   // 'compact', unchecked writes the 'default' sentinel, which deletes the key.
   { kind: 'toggle', key: 'layout', panel: 'appearance', default: 'default', on: 'compact', off: 'default', label: 'editor.compact' },
@@ -172,7 +179,7 @@ export const FIELDS: Readonly<Record<SimpleKey, Field>> = { ...TOGGLES, ...SELEC
 export const PANELS: Readonly<Record<Panel, readonly (keyof WeatherAlertsCardConfig)[]>> = {
   source: ['entity', 'entities', 'device', 'devices', 'sources', 'title'],
   filtering: ['zones', 'eventCodes', 'excludeEventCodes', 'minSeverity', 'maxDistanceKm', 'myLocationEntity'],
-  appearance: ['layout', 'colorTheme', 'fontSize', 'animations', 'showProvider', 'progressFill', 'progressStyle', 'iconBorderStyle'],
+  appearance: ['layout', 'colorTheme', 'providerColors', 'fontSize', 'animations', 'showProvider', 'progressFill', 'progressStyle', 'iconBorderStyle'],
   details: ['showDetails', 'expandDetails', 'showMetadata', 'showDescription', 'showInstructions', 'showGeometry', 'geometryStyle', 'showMyLocation', 'showSourceLink'],
   behavior: ['tap_action', 'sortOrder', 'hideExpired', 'hideNoAlerts', 'unavailableBehavior'],
   dismissal: ['allowDismiss', 'dismissTrigger', 'dismissButtonStyle', 'showDismissUndo'],

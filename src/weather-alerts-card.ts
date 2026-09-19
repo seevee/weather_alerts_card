@@ -48,6 +48,9 @@ import {
   getNwsEventColor,
   getMeteoAlarmColor,
   getEcccColor,
+  getProviderColor,
+  providerColorsEnabled,
+  type EventColor,
   resolveContrastMode,
   sanitizeAlertHtml,
   getDisplayHeadline,
@@ -993,6 +996,7 @@ export class WeatherAlertsCard extends LitElement {
   }
   private get _isCompact(): boolean { return this._config?.layout === 'compact'; }
   private get _colorTheme(): 'severity' | 'nws' | 'meteoalarm' | 'eccc' { return this._config?.colorTheme || 'severity'; }
+  private get _providerColors(): boolean { return !!this._config && providerColorsEnabled(this._config); }
   private get _fontScale(): number | undefined {
     switch (this._config?.fontSize) {
       case 'small': return 0.85;
@@ -1015,42 +1019,41 @@ export class WeatherAlertsCard extends LitElement {
     return resolveContrastMode(this._config?.enhanceContrast);
   }
 
-  private _alertColorStyle(alert: WeatherAlert): string {
-    if (this._colorTheme === 'nws') {
-      const { color, rgb, textColorLight, textColorDark } = getNwsEventColor(alert.event, this._contrastMode);
-      return `--color: ${color}; --color-rgb: ${rgb}; --color-on-light: ${textColorLight}; --color-on-dark: ${textColorDark};`;
+  // Two axes. `providerColors` is a per-alert override: an alert carrying the
+  // color its issuer published is painted in it. Everything else is painted
+  // from the `colorTheme` ladder. The severity ladder is CSS (HA theme tokens
+  // via the severity-* classes), so it resolves to no inline style; the other
+  // ladders and the override resolve to a hex plus its contrast tags.
+  private _resolveEventColor(alert: WeatherAlert, mode: ContrastMode): EventColor | undefined {
+    if (this._providerColors) {
+      const published = getProviderColor(alert, mode);
+      if (published) return published;
     }
-    if (this._colorTheme === 'meteoalarm') {
-      const { color, rgb, textColorLight, textColorDark } = getMeteoAlarmColor(alert.severity, this._contrastMode);
-      return `--color: ${color}; --color-rgb: ${rgb}; --color-on-light: ${textColorLight}; --color-on-dark: ${textColorDark};`;
+    switch (this._colorTheme) {
+      case 'nws': return getNwsEventColor(alert.event, mode);
+      case 'meteoalarm': return getMeteoAlarmColor(alert.severity, mode);
+      case 'eccc': return getEcccColor(alert.severity, mode);
+      default: return undefined;
     }
-    if (this._colorTheme === 'eccc') {
-      const { color, rgb, textColorLight, textColorDark } = getEcccColor(alert, this._contrastMode);
-      return `--color: ${color}; --color-rgb: ${rgb}; --color-on-light: ${textColorLight}; --color-on-dark: ${textColorDark};`;
-    }
-    return '';
   }
 
-  // Per-alert boost classes — only emitted for event-color themes (nws,
-  // meteoalarm). Two tiers driven by _contrastMode: boost-{light,dark}
-  // darkens icon/label text, progress-boost-{light,dark} darkens the
-  // progress-bar fill at a stricter tier. Mode 'off' emits nothing.
-  // Severity theme never gets classes: its colors are HA theme tokens
-  // that the theme author has already tuned for their palette.
+  private _alertColorStyle(alert: WeatherAlert): string {
+    const resolved = this._resolveEventColor(alert, this._contrastMode);
+    if (!resolved) return '';
+    const { color, rgb, textColorLight, textColorDark } = resolved;
+    return `--color: ${color}; --color-rgb: ${rgb}; --color-on-light: ${textColorLight}; --color-on-dark: ${textColorDark};`;
+  }
+
+  // Per-alert boost classes — only emitted when a hex is in play (an agency
+  // ladder or a published color). Two tiers driven by _contrastMode:
+  // boost-{light,dark} darkens icon/label text, progress-boost-{light,dark}
+  // darkens the progress-bar fill at a stricter tier. Mode 'off' emits
+  // nothing. The severity ladder never gets classes: its colors are HA theme
+  // tokens that the theme author has already tuned for their palette.
   private _alertBoostClasses(alert: WeatherAlert): string {
     const mode = this._contrastMode;
     if (mode === 'off') return '';
-    let tags: {
-      boostLight: boolean; boostDark: boolean;
-      progressBoostLight: boolean; progressBoostDark: boolean;
-    } | null = null;
-    if (this._colorTheme === 'nws') {
-      tags = getNwsEventColor(alert.event, mode);
-    } else if (this._colorTheme === 'meteoalarm') {
-      tags = getMeteoAlarmColor(alert.severity, mode);
-    } else if (this._colorTheme === 'eccc') {
-      tags = getEcccColor(alert, mode);
-    }
+    const tags = this._resolveEventColor(alert, mode);
     if (!tags) return '';
     const classes: string[] = [];
     if (tags.boostLight) classes.push('boost-light');

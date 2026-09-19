@@ -172,8 +172,8 @@ describe('EcccAdapter', () => {
       expect(a.url).toBe('https://weather.gc.ca/index_e.html');
     });
 
-    it('colorHint is the lower-cased color field', () => {
-      expect(a.colorHint).toBe('yellow');
+    it('colorHint is the weather.gc.ca hex for the color field', () => {
+      expect(a.colorHint).toBe('#FFFF00');
     });
   });
 
@@ -442,7 +442,8 @@ describe('EcccAdapter', () => {
       expect(a.certainty).toBe('');
       expect(a.phase).toBe('');
       expect(a.url).toBe('https://weather.gc.ca/index_e.html');
-      expect(a.colorHint).toBeUndefined();
+      // No `color` → the palette entry for the tier, so an ECCC card never mixes palettes.
+      expect(a.colorHint).toBe('#656565');
       expect(a.severityBadgeLabel).toBeUndefined();
     });
   });

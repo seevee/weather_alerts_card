@@ -57,6 +57,19 @@ describe('MeteoAlarmAdapter', () => {
     });
   });
 
+  describe('colorHint (issuer colour)', () => {
+    it('is the MeteoAlarm hex for the awareness_level colour token', () => {
+      const a = adapter.parseAlerts(makeMeteoAlarmAttributes())[0];
+      expect(a.colorHint).toBe('#FF9900');
+      expect(adapter.parseAlerts(makeMeteoAlarmAttributes({ awareness_level: '2; yellow; Moderate' }))[0].colorHint).toBe('#FFC800');
+    });
+
+    it('is omitted when awareness_level carries no recognised colour', () => {
+      const a = adapter.parseAlerts(makeMeteoAlarmAttributes({ awareness_level: '' }))[0];
+      expect(Object.prototype.hasOwnProperty.call(a, 'colorHint')).toBe(false);
+    });
+  });
+
   describe('parseAlerts', () => {
     it('normalizes MeteoAlarm attributes to a single WeatherAlert', () => {
       const alerts = adapter.parseAlerts(makeMeteoAlarmAttributes());

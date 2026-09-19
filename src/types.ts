@@ -155,7 +155,8 @@ export interface WeatherAlertsCardConfig {
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   progressFill?: 'track' | 'background'; // undefined/'track': thin progress bar (full) / bottom mini-bar (compact); 'background': Bubble-Card-style whole-row low-opacity wash growing to --progress, behind the content (thin track hidden, labels kept)
-  colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';
+  colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc'; // the ladder every alert is painted from: the card's own tiers, NWS's per-event table (tier when no event matches), MeteoAlarm's tiers, ECCC's tiers
+  providerColors?: boolean;    // undefined/false: ladder only; true: an alert carrying the color its issuer published (WeatherAlert.colorHint) is painted in that color, the ladder covers the rest. Defaults on under colorTheme: 'eccc', which always meant this
   enhanceContrast?: ContrastMode;  // undefined/'subtle': two-tier WCAG boost on NWS/MeteoAlarm colors — text tier (~2:1) darkens icon/label, progress tier (~1.3:1) darkens the progress-bar fill; 'strict': tighter thresholds (text ~3:1, progress ~2:1) for WCAG-AA-style accessibility; 'off': always render raw colors. Triggered per event + per theme mode against the active card background.
   provider?: AlertProvider;  // undefined: auto-detect from entity attributes
   deduplicate?: boolean;     // undefined/true: dedup on; false: dedup off
@@ -223,7 +224,7 @@ export interface WeatherAlert {
   iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
   providerIcon?: string;   // Raw MDI icon from provider (e.g. 'mdi:weather-tornado'); bypasses dictionary when present
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
-  colorHint?: string;      // Provider-published color tag (currently only ECCC: red/orange/yellow/grey/green); consumed by getEcccColor when colorTheme: 'eccc'
+  colorHint?: string;      // The color the issuing agency published for this alert, as a `#rrggbb` hex the adapter resolved (ECCC's red/orange/yellow/grey tag, MeteoAlarm's awareness token, INMET's literal hex); painted by getProviderColor when providerColors is on. Absent = the ladder paints it
   severityBadgeLabel?: string; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
   bbox?: [number, number, number, number]; // [minlon, minlat, maxlon, maxlat] (lon-first); synchronous from cap_alerts attributes. Drives the geometry mini-map frame.
   geometryRef?: string;    // Opaque handle for the out-of-band cap_alerts geometry fetch (full polygon). Empty/absent when unavailable.

@@ -16,7 +16,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 ## Features
 
 - **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region) with auto-detection
-- **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors
+- **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors, plus an opt-in override that paints each alert in the color its issuing agency published (ECCC, MeteoAlarm, INMET)
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
@@ -224,7 +224,8 @@ Then click the Download button, and click Reload when prompted.
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'`. Alerts whose severity is unknown/unclassified are always shown, regardless of this threshold |
 | `maxDistanceKm` | — | Hide incidents further than this many **kilometres** from your reference point — the Home Assistant home location (`latitude`/`longitude` under Settings → System → General) unless `myLocationEntity` is set. Opt-in; the YAML value is always km whatever your unit system, though the visual editor shows and accepts miles on a US-customary install. Only applies to point-incident providers that publish a real location (currently NSW RFS) — area warnings (NWS, CAP, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, PirateWeather) have no distance and are never filtered. Ignored when no reference point resolves. Only ever narrows — the `geo_location` integration applies its own `radius` (default 20 km) first, so a wider card value has no effect |
 | `myLocationEntity` | — | A `device_tracker`, `person`, or `zone` entity whose `latitude`/`longitude` replace the HA home location as the card's reference point — the origin of `maxDistanceKm`, the detail panel's distance row, and the `showMyLocation` marker. Falls back to HA home when the entity is missing or has no coordinates (a router-based tracker), never to "no filtering". Use a zone for a fixed location, e.g. to match a `geo_location` integration configured somewhere other than HA home |
-| `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — `'eccc'` uses ECCC's published `red`/`orange`/`yellow`/`grey` palette (matches weather.gc.ca); falls back to the canonical severity tier for non-ECCC alerts displayed under this theme |
+| `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — the palette every alert is painted from. `'nws'` keys off the event name (NWS's official per-event colors, applied to any provider whose events read like NWS's; anything unmatched falls back to the severity tier); `'meteoalarm'` and `'eccc'` are those agencies' four-tier palettes keyed by severity |
+| `providerColors` | `false` | `true` paints each alert in the color its issuing agency published for it, over whatever `colorTheme` selects: ECCC's `red`/`orange`/`yellow`/`grey` tag, MeteoAlarm's awareness color (natively or through CAP Alerts), INMET's hex. Alerts whose provider publishes no color keep the `colorTheme` palette. `colorTheme: 'eccc'` turns this on by default, because that theme always meant it |
 | `enhanceContrast` | `'subtle'` | `'off'`, `'subtle'`, `'strict'` — boost foreground colors for NWS/MeteoAlarm events whose raw hex reads poorly against the active theme's card background, applied per event, per theme mode, and only in the direction where it fails. `'subtle'` (default) uses a text tier (~2:1 for icon/label) and a stricter progress tier (~1.3:1 for progress-bar fill, which catches near-invisible tints like yellow Tornado Watch). `'strict'` tightens both tiers (text ~3:1, progress ~2:1) toward WCAG AA-ish guarantees. `'off'` always renders raw theme hex values. Events that already read cleanly (e.g. Tornado Warning) render unchanged in all modes. |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
@@ -371,7 +372,7 @@ entity: sensor.marathon_alerts
 ```yaml
 type: custom:weather-alerts-card
 entity: sensor.marathon_alerts
-colorTheme: eccc
+colorTheme: eccc      # ECCC's red/orange/yellow/grey ladder; each ECCC alert in its published color
 ```
 
 **NSW RFS (Australian bushfire)**

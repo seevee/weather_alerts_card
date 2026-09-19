@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, EcccAlert, WeatherAlert } from '../types';
-import { parseTimestamp, SEVERITY_RANK } from '../utils';
+import { ECCC_COLOR_PALETTE, ecccTierHex, parseTimestamp, SEVERITY_RANK } from '../utils';
 
 // Locale-aware fallback URLs for the ECCC weather entry point.
 // Used when the per-alert `url` field is absent (the WFS-fed path of the
@@ -164,7 +164,7 @@ export class EcccAdapter implements AlertAdapter {
     const headline = str(a.title);
     const eventCode = str(a.alert_code);
     const area = str(a.area);
-    const colorHint = a.color ? a.color.toLowerCase() : undefined;
+    const colorHint = ecccColorHex(a.color, severity);
     const impactRaw = str(a.impact);
     // `impact` mirrors CAP's raw severity word (preserves locale, e.g. "Élevée");
     // when absent we fall back to the canonical tier so severityLabel is never
@@ -200,6 +200,13 @@ export class EcccAdapter implements AlertAdapter {
       severityBadgeLabel: rawSeverityLabel,
     };
   }
+}
+
+// `colorHint` is a hex contract: resolve ECCC's colour tag against its own
+// palette here, and keep the ECCC look by tier when the tag is absent.
+function ecccColorHex(color: string | undefined, severity: AlertSeverity): string {
+  const tag = color ? color.trim().toLowerCase() : '';
+  return ECCC_COLOR_PALETTE[tag] ?? ecccTierHex(severity);
 }
 
 function str(v: unknown): string {

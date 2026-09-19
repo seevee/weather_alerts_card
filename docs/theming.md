@@ -15,14 +15,26 @@ Two separate things are called "theming" here, and they are configured different
 | `colorTheme` | Palette |
 |---|---|
 | `'severity'` *(default)* | The card's own severity ladder — extreme, severe, moderate, minor, unknown |
-| `'nws'` | The National Weather Service's official per-event colors |
-| `'meteoalarm'` | MeteoAlarm awareness-level colors |
-| `'eccc'` | ECCC's published red / orange / yellow / grey palette, matching weather.gc.ca |
+| `'nws'` | The National Weather Service's official per-event colors, keyed by event name |
+| `'meteoalarm'` | MeteoAlarm awareness-level colors, keyed by severity tier |
+| `'eccc'` | ECCC's published red / orange / yellow / grey palette, matching weather.gc.ca, keyed by severity tier |
 
-`'severity'` is provider-agnostic and always works. The other three are agency palettes:
-they key off event codes or awareness levels that only some providers emit, and fall
-back to the canonical severity tier for alerts they do not recognize. `'eccc'`, for
-instance, renders a non-ECCC alert by severity rather than inventing a color for it.
+`'severity'` is provider-agnostic and always works. The other three are agency palettes,
+and each applies to every alert on the card whatever its provider: `'meteoalarm'` and
+`'eccc'` paint by tier, so a DWD alert gets ECCC's orange under `'eccc'`, and `'nws'`
+paints by event name, so an ECCC or BoM "Flood Warning" gets NWS's green while a DWD or
+INMET event the table does not know drops to the severity tier.
+
+## Published colors (`providerColors`)
+
+Some agencies publish a color with each alert: ECCC tags every alert red, orange, yellow
+or grey, MeteoAlarm members carry an awareness color (natively or through CAP Alerts),
+and INMET sends a literal hex. `providerColors: true` paints each such alert in that
+color and leaves the rest of the card on the `colorTheme` palette, so a mixed card never
+invents a color for an alert whose issuer did not supply one.
+
+`colorTheme: 'eccc'` turns this on unless you set it `false`. That theme always meant
+"ECCC's ladder, and each ECCC alert in the color ECCC published for it", and it still does.
 
 Agency palettes were designed for print and for maps, so a few of their colors read
 poorly on a dashboard card in one theme mode or the other. `enhanceContrast` corrects

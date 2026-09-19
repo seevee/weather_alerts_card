@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
-import { normalizeSeverity, parseTimestamp } from '../utils';
+import { meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '../utils';
 
 // MeteoAlarm awareness_level format: "2; yellow; Moderate"
 // Level 2 = Yellow (Moderate), 3 = Orange (Severe), 4 = Red (Extreme)
@@ -68,6 +68,9 @@ export class MeteoAlarmAdapter implements AlertAdapter {
     // Severity is raw if awareness_level or raw severity attribute provided a value
     const severityInferred = !awarenessLevelToSeverity(awarenessLevel) && !str(attributes['severity']);
 
+    // The issuer's own awareness colour, for `providerColors: true`.
+    const colorHint = meteoalarmAwarenessColorHex(awarenessLevel);
+
     return [{
       id: `meteoalarm_${eventName}_${onsetTs}`,
       event: eventName,
@@ -90,6 +93,7 @@ export class MeteoAlarmAdapter implements AlertAdapter {
       phase: '',
       severityInferred,
       certaintyInferred: false,
+      ...(colorHint !== undefined && { colorHint }),
     }];
   }
 }

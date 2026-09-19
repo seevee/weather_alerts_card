@@ -96,6 +96,7 @@ export const nl: TranslationMap = {
   'editor.color_nws': 'NWS Officieel',
   'editor.color_meteoalarm': 'MeteoAlarm Bewustwording',
   'editor.color_eccc': 'ECCC Publieke Waarschuwingen',
+  'editor.provider_colors': 'Door de aanbieder gepubliceerde kleuren gebruiken',
   'editor.timezone': 'Tijdzone',
   'editor.tz_server': 'Server (Home Assistant)',
   'editor.tz_browser': 'Browser (lokaal apparaat)',

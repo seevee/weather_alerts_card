@@ -96,6 +96,7 @@ export const fr: TranslationMap = {
   'editor.color_nws': 'NWS officiel',
   'editor.color_meteoalarm': 'MeteoAlarm Vigilance',
   'editor.color_eccc': 'Alertes publiques ECCC',
+  'editor.provider_colors': 'Utiliser les couleurs publiées par le fournisseur',
   'editor.timezone': 'Fuseau horaire',
   'editor.tz_server': 'Serveur (Home Assistant)',
   'editor.tz_browser': 'Navigateur (appareil local)',

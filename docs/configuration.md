@@ -95,7 +95,8 @@ card's distances and radius agree with the integration's.
 | `title` | — | Card header title |
 | `layout` | `'default'` | `'default'` or `'compact'` |
 | `fontSize` | `'default'` | `'small'`, `'default'`, `'large'`, `'x-large'` — scales text and icons |
-| `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` |
+| `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — the palette every alert is painted from |
+| `providerColors` | `false` | Paint each alert in the color its issuing agency published for it, over the `colorTheme` palette. On by default under `colorTheme: 'eccc'` |
 | `enhanceContrast` | `'subtle'` | `'off'`, `'subtle'`, `'strict'` — see below |
 | `progressFill` | `'track'` | `'track'` (thin bar) or `'background'` (whole-row wash) |
 | `progressStyle` | see below | Per-phase progress-bar decoration |
@@ -104,9 +105,15 @@ card's distances and radius agree with the integration's.
 | `showProvider` | `false` | Show a provider label (e.g. NWS) above the event title |
 | `timezone` | `'server'` | `'server'` or `'browser'` (the client's local time) |
 
-`colorTheme: 'eccc'` uses ECCC's published red/orange/yellow/grey palette (matching
-weather.gc.ca) and falls back to the canonical severity tier for non-ECCC alerts shown
-under it. See [Theming](./theming) for what each palette looks like.
+`colorTheme` picks the palette, `providerColors` lets a published color win. `'nws'`
+colors by event name, so it also lights up ECCC, BoM or NSW RFS events that read like
+NWS's, and drops to the severity tier for anything it does not recognise. `'meteoalarm'`
+and `'eccc'` are those agencies' four-tier palettes keyed by severity. With
+`providerColors: true`, an alert that carries the color its issuer published (ECCC's
+red/orange/yellow/grey tag, MeteoAlarm's awareness color, INMET's hex) is painted in it,
+and the rest of the card keeps the `colorTheme` palette. `colorTheme: 'eccc'` turns the
+override on unless you set it `false`, because that theme always meant exactly this. See
+[Theming](./theming) for what each palette looks like.
 
 ### `enhanceContrast`
 
@@ -390,6 +397,7 @@ interface WeatherAlertsCardConfig {
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';
+  providerColors?: boolean;    // undefined/false: colorTheme only; true: an alert's published color wins. Defaults on under colorTheme: 'eccc'
   enhanceContrast?: 'off' | 'subtle' | 'strict';
   provider?: AlertProvider;    // undefined: auto-detect
   deduplicate?: boolean;

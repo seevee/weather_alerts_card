@@ -5,7 +5,7 @@ import type { Connection } from 'home-assistant-js-websocket';
 import { HomeAssistant, WeatherAlertsCardConfig, EntityRegistryDisplayEntry, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, ActionConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import { BESPOKE_LABELS, DETAIL_SECTIONS, FIELDS, PANELS, PANEL_LABELS, Panel, SELECTS, STYLING_KEYS, TOGGLES, SelectKey, SimpleKey, SimpleValue, ToggleKey, changedKeys, effectiveValue, isChanged, isOn, shortLabel, withKey } from './editor-fields';
 import { canHandleAny, ENTITY_NAME_PATTERNS, getAdapter, knownFeedSources, pointCapableProviders } from './adapters';
-import { LengthUnit, displayToKm, kmToDisplay, toLengthUnit } from './utils';
+import { LengthUnit, displayToKm, kmToDisplay, normalizeColorConfig, toLengthUnit } from './utils';
 import { configuredDevices, deviceEntityIds, resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
 import { scopeHashForConfig, loadDismissals, restoreAll, subscribeToDismissalChanges } from './dismissal';
@@ -193,7 +193,9 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   public setConfig(config: WeatherAlertsCardConfig): void {
-    this._config = config;
+    // `colorTheme: eccc` implies providerColors; make it explicit so the
+    // toggle reads on and the key rides along on the next write.
+    this._config = normalizeColorConfig(config);
     this._showPreview = !!config._preview;
   }
 
@@ -1089,6 +1091,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     return html`
       ${this._renderToggle('layout')}
       ${this._renderSelect('colorTheme')}
+      ${this._renderToggle('providerColors')}
       ${this._renderSelect('fontSize')}
       ${this._renderToggle('showProvider')}
       ${this._renderToggle('animations')}

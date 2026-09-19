@@ -5,6 +5,11 @@ import {
   getNwsEventColor,
   getMeteoAlarmColor,
   getEcccColor,
+  ecccTierHex,
+  getProviderColor,
+  meteoalarmAwarenessColorHex,
+  providerColorsEnabled,
+  normalizeColorConfig,
   resolveContrastMode,
   computeAlertProgress,
   normalizeSeverity,
@@ -23,7 +28,7 @@ import {
   toLengthUnit,
   formatDistance,
 } from '../src/utils';
-import type { WeatherAlert, AlertProvider, HomeAssistant } from '../src/types';
+import type { WeatherAlert, WeatherAlertsCardConfig, AlertProvider, HomeAssistant } from '../src/types';
 
 function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
   return {
@@ -264,34 +269,34 @@ describe('getCertaintyIcon', () => {
 
 describe('getNwsEventColor', () => {
   it('returns red for tornado warning', () => {
-    const result = getNwsEventColor('Tornado Warning');
+    const result = getNwsEventColor('Tornado Warning')!;
     expect(result.color).toBe('#FF0000');
   });
 
   it('returns specific color for severe thunderstorm warning', () => {
-    const result = getNwsEventColor('Severe Thunderstorm Warning');
+    const result = getNwsEventColor('Severe Thunderstorm Warning')!;
     expect(result.color).toBe('#FFA500');
   });
 
-  it('returns gray for unknown event', () => {
-    const result = getNwsEventColor('Unknown Event');
-    expect(result.color).toBe('#808080');
+  it('returns undefined for an event that is not NWS-shaped, so the card paints it by tier', () => {
+    expect(getNwsEventColor('Unknown Event')).toBeUndefined();
+    expect(getNwsEventColor('Chuvas Intensas')).toBeUndefined();
   });
 
   it('picks badge text to match card background (knockout) when contrast allows', () => {
     // Tornado Warning (#FF0000) vs white card: 4.0:1 >= 1.9 → white text
     // vs dark card: 4.42:1 >= 1.9 → dark text
-    expect(getNwsEventColor('Tornado Warning').textColorLight).toBe('#ffffff');
-    expect(getNwsEventColor('Tornado Warning').textColorDark).toBe('#1c1c1e');
+    expect(getNwsEventColor('Tornado Warning')!.textColorLight).toBe('#ffffff');
+    expect(getNwsEventColor('Tornado Warning')!.textColorDark).toBe('#1c1c1e');
     // Freeze Warning (#483D8B darkslateblue, L≈0.062) vs dark card: 1.30:1 < 1.9
     // → flip to light text so dark-on-dark doesn't disappear
-    expect(getNwsEventColor('Freeze Warning').textColorDark).toBe('#f5f5f5');
+    expect(getNwsEventColor('Freeze Warning')!.textColorDark).toBe('#f5f5f5');
   });
 
   it('flips badge text when card-bg would collapse into the badge bg', () => {
     // Wind Advisory (#D2B48C tan, L≈0.482) vs white: 1.97:1 — above 1.9,
     // so we keep the knockout (white text on tan)
-    expect(getNwsEventColor('Wind Advisory').textColorLight).toBe('#ffffff');
+    expect(getNwsEventColor('Wind Advisory')!.textColorLight).toBe('#ffffff');
     // But a very-close-to-white pale shade would fall below 1.9 and flip
     // to dark — no such entry exists in the help-map fixture, so this is
     // covered by the unit above rather than a specific event.
@@ -300,43 +305,43 @@ describe('getNwsEventColor', () => {
   it('matches event names case-insensitively against the help-map table', () => {
     // Help-map includes these full event names — lookup must resolve them
     // directly rather than falling through to the pattern-match fallback.
-    expect(getNwsEventColor('WINTER STORM WARNING').color).toBe('#FF69B4');
-    expect(getNwsEventColor('coastal flood watch').color).toBe('#66CDAA');
-    expect(getNwsEventColor('Gale Warning').color).toBe('#DDA0DD');
+    expect(getNwsEventColor('WINTER STORM WARNING')!.color).toBe('#FF69B4');
+    expect(getNwsEventColor('coastal flood watch')!.color).toBe('#66CDAA');
+    expect(getNwsEventColor('Gale Warning')!.color).toBe('#DDA0DD');
   });
 
   it('sets boostLight (text tier, 2.0:1) for middling-contrast hues on white', () => {
     // Severe Thunderstorm Warning (#FFA500 orange, ~1.97:1) — fails text tier
-    expect(getNwsEventColor('Severe Thunderstorm Warning').boostLight).toBe(true);
+    expect(getNwsEventColor('Severe Thunderstorm Warning')!.boostLight).toBe(true);
     // Tornado Warning (#FF0000 red, ~4.0:1) — passes both tiers
-    expect(getNwsEventColor('Tornado Warning').boostLight).toBe(false);
+    expect(getNwsEventColor('Tornado Warning')!.boostLight).toBe(false);
   });
 
   it('sets boostDark (text tier, 2.0:1) for dark hues on dark card', () => {
     // Freeze Warning (#483D8B darkslateblue) — fails text tier on dark
-    expect(getNwsEventColor('Freeze Warning').boostDark).toBe(true);
-    expect(getNwsEventColor('Tornado Warning').boostDark).toBe(false);
+    expect(getNwsEventColor('Freeze Warning')!.boostDark).toBe(true);
+    expect(getNwsEventColor('Tornado Warning')!.boostDark).toBe(false);
   });
 
   it('only flags progressBoostLight for near-invisible tints (1.3:1 tier)', () => {
     // Tornado Watch (#FFFF00 yellow, ~1.07:1) — progress bar truly invisible
-    expect(getNwsEventColor('Tornado Watch').progressBoostLight).toBe(true);
+    expect(getNwsEventColor('Tornado Watch')!.progressBoostLight).toBe(true);
     // Heat Advisory (#FF7F50 coral, ~2.47:1) — boostLight false too, never fires
-    expect(getNwsEventColor('Heat Advisory').progressBoostLight).toBe(false);
+    expect(getNwsEventColor('Heat Advisory')!.progressBoostLight).toBe(false);
     // Winter Storm Warning (#FF69B4 hotpink, ~2.63:1) — progress fine at this contrast
-    expect(getNwsEventColor('Winter Storm Warning').progressBoostLight).toBe(false);
+    expect(getNwsEventColor('Winter Storm Warning')!.progressBoostLight).toBe(false);
     // Severe Thunderstorm Warning — text tier fires, progress tier does not
-    expect(getNwsEventColor('Severe Thunderstorm Warning').boostLight).toBe(true);
-    expect(getNwsEventColor('Severe Thunderstorm Warning').progressBoostLight).toBe(false);
+    expect(getNwsEventColor('Severe Thunderstorm Warning')!.boostLight).toBe(true);
+    expect(getNwsEventColor('Severe Thunderstorm Warning')!.progressBoostLight).toBe(false);
   });
 
   it('progressBoostDark is rare — saturated hues pass easily on dark card', () => {
-    expect(getNwsEventColor('Tornado Warning').progressBoostDark).toBe(false);
-    expect(getNwsEventColor('Freeze Warning').progressBoostDark).toBe(false);
+    expect(getNwsEventColor('Tornado Warning')!.progressBoostDark).toBe(false);
+    expect(getNwsEventColor('Freeze Warning')!.progressBoostDark).toBe(false);
   });
 
   it('computes all four boost tags for pattern-match fallbacks too', () => {
-    const result = getNwsEventColor('Blast Wave Flood Advisory');
+    const result = getNwsEventColor('Blast Wave Flood Advisory')!;
     expect(result.color).toBe('#228B22');
     expect(typeof result.boostLight).toBe('boolean');
     expect(typeof result.boostDark).toBe('boolean');
@@ -359,15 +364,15 @@ describe('getNwsEventColor', () => {
 
   it('mode="strict" catches middling hues that subtle lets through', () => {
     // Heat Advisory (#FF7F50, crLight ~2.50) — passes subtle (>=2.0), fails strict (<3.0)
-    expect(getNwsEventColor('Heat Advisory', 'subtle').boostLight).toBe(false);
-    expect(getNwsEventColor('Heat Advisory', 'strict').boostLight).toBe(true);
+    expect(getNwsEventColor('Heat Advisory', 'subtle')!.boostLight).toBe(false);
+    expect(getNwsEventColor('Heat Advisory', 'strict')!.boostLight).toBe(true);
     // Winter Storm Warning (#FF69B4, crLight ~2.65) — same pattern
-    expect(getNwsEventColor('Winter Storm Warning', 'subtle').boostLight).toBe(false);
-    expect(getNwsEventColor('Winter Storm Warning', 'strict').boostLight).toBe(true);
+    expect(getNwsEventColor('Winter Storm Warning', 'subtle')!.boostLight).toBe(false);
+    expect(getNwsEventColor('Winter Storm Warning', 'strict')!.boostLight).toBe(true);
     // Severe Thunderstorm Warning (crLight ~1.97) — strict progress tier (2.0) now
     // fires where subtle's 1.3 tier let it pass
-    expect(getNwsEventColor('Severe Thunderstorm Warning', 'subtle').progressBoostLight).toBe(false);
-    expect(getNwsEventColor('Severe Thunderstorm Warning', 'strict').progressBoostLight).toBe(true);
+    expect(getNwsEventColor('Severe Thunderstorm Warning', 'subtle')!.progressBoostLight).toBe(false);
+    expect(getNwsEventColor('Severe Thunderstorm Warning', 'strict')!.progressBoostLight).toBe(true);
   });
 
   it('mode="strict" does not falsely flag well-contrasted hues', () => {
@@ -430,45 +435,114 @@ describe('getMeteoAlarmColor', () => {
   });
 });
 
-describe('getEcccColor', () => {
-  it('returns palette hex for each ECCC color', () => {
-    expect(getEcccColor(makeAlert({ colorHint: 'red' })).color).toBe('#D10000');
-    expect(getEcccColor(makeAlert({ colorHint: 'orange' })).color).toBe('#FF9500');
-    expect(getEcccColor(makeAlert({ colorHint: 'yellow' })).color).toBe('#FFFF00');
-    expect(getEcccColor(makeAlert({ colorHint: 'grey' })).color).toBe('#656565');
-  });
-
-  it('is case-insensitive on colorHint', () => {
-    expect(getEcccColor(makeAlert({ colorHint: 'YELLOW' })).color).toBe('#FFFF00');
-    expect(getEcccColor(makeAlert({ colorHint: 'Red' })).color).toBe('#D10000');
-  });
-
-  it('falls back to severity table when colorHint is missing', () => {
-    expect(getEcccColor(makeAlert({ severity: 'extreme' })).color).toBe('#D10000');
-    expect(getEcccColor(makeAlert({ severity: 'severe' })).color).toBe('#FF9500');
-    expect(getEcccColor(makeAlert({ severity: 'moderate' })).color).toBe('#FFFF00');
-    expect(getEcccColor(makeAlert({ severity: 'minor' })).color).toBe('#656565');
-    expect(getEcccColor(makeAlert({ severity: 'unknown' })).color).toBe('#656565');
-  });
-
-  it('falls back to severity table when colorHint is unrecognised', () => {
-    expect(getEcccColor(makeAlert({ colorHint: 'fuchsia', severity: 'severe' })).color).toBe('#FF9500');
+describe('getEcccColor (ladder)', () => {
+  it('paints each tier from the weather.gc.ca palette', () => {
+    expect(getEcccColor('extreme').color).toBe('#D10000');
+    expect(getEcccColor('severe').color).toBe('#FF9500');
+    expect(getEcccColor('moderate').color).toBe('#FFFF00');
+    expect(getEcccColor('minor').color).toBe('#656565');
+    expect(getEcccColor('unknown').color).toBe('#656565');
+    expect(ecccTierHex('nonsense')).toBe('#656565');
   });
 
   it('populates EventColor shape (rgb, text, boost flags)', () => {
-    const result = getEcccColor(makeAlert({ colorHint: 'red' }));
-    expect(result.color).toBe('#D10000');
+    const result = getEcccColor('extreme');
     expect(result.rgb).toBe('209, 0, 0');
     expect(result.textColorLight).toBeTruthy();
     expect(result.textColorDark).toBeTruthy();
     expect(typeof result.boostLight).toBe('boolean');
-    expect(typeof result.boostDark).toBe('boolean');
-    expect(typeof result.progressBoostLight).toBe('boolean');
     expect(typeof result.progressBoostDark).toBe('boolean');
   });
 
   it('flags yellow for text-tier boost on light (pure yellow vs white is ~1.07:1)', () => {
-    expect(getEcccColor(makeAlert({ colorHint: 'yellow' })).boostLight).toBe(true);
+    expect(getEcccColor('moderate').boostLight).toBe(true);
+  });
+});
+
+describe('providerColorsEnabled / normalizeColorConfig', () => {
+  const cfg = (extra: Record<string, unknown>) => ({ type: 'custom:weather-alerts-card', entity: 'sensor.x', ...extra }) as WeatherAlertsCardConfig;
+
+  it('is off by default and on when asked', () => {
+    expect(providerColorsEnabled(cfg({}))).toBe(false);
+    expect(providerColorsEnabled(cfg({ colorTheme: 'nws' }))).toBe(false);
+    expect(providerColorsEnabled(cfg({ providerColors: true }))).toBe(true);
+  });
+
+  it("defaults on under colorTheme 'eccc', which always meant this, unless told otherwise", () => {
+    expect(providerColorsEnabled(cfg({ colorTheme: 'eccc' }))).toBe(true);
+    expect(providerColorsEnabled(cfg({ colorTheme: 'eccc', providerColors: false }))).toBe(false);
+  });
+
+  it('normalises only the implicit eccc case, and returns the same object otherwise', () => {
+    const plain = cfg({ colorTheme: 'meteoalarm' });
+    expect(normalizeColorConfig(plain)).toBe(plain);
+    const explicit = cfg({ colorTheme: 'eccc', providerColors: false });
+    expect(normalizeColorConfig(explicit)).toBe(explicit);
+    const implicit = cfg({ colorTheme: 'eccc' });
+    expect(normalizeColorConfig(implicit)).toEqual({ ...implicit, providerColors: true });
+    expect(implicit.providerColors).toBeUndefined();
+  });
+});
+
+describe('getProviderColor', () => {
+  it('uses the adapter-resolved hex verbatim', () => {
+    expect(getProviderColor(makeAlert({ colorHint: '#d10000' }))?.color).toBe('#d10000');
+    expect(getProviderColor(makeAlert({ colorHint: '#f96602' }))?.color).toBe('#f96602');
+  });
+
+  it('is case- and whitespace-insensitive on the hex', () => {
+    expect(getProviderColor(makeAlert({ colorHint: '#FFFE00' }))?.color).toBe('#fffe00');
+    expect(getProviderColor(makeAlert({ colorHint: ' #D10000 ' }))?.color).toBe('#d10000');
+  });
+
+  it('returns undefined when the alert carries no hint, so the ladder paints it', () => {
+    expect(getProviderColor(makeAlert({ severity: 'extreme' }))).toBeUndefined();
+    expect(getProviderColor(makeAlert({ colorHint: '' }))).toBeUndefined();
+  });
+
+  it('returns undefined for anything that is not a six-digit hex', () => {
+    expect(getProviderColor(makeAlert({ colorHint: 'red' }))).toBeUndefined();
+    expect(getProviderColor(makeAlert({ colorHint: '#fff' }))).toBeUndefined();
+    expect(getProviderColor(makeAlert({ colorHint: 'fuchsia' }))).toBeUndefined();
+    expect(getProviderColor(makeAlert({ colorHint: '#gggggg' }))).toBeUndefined();
+  });
+
+  it('populates EventColor shape (rgb, text, boost flags)', () => {
+    const result = getProviderColor(makeAlert({ colorHint: '#D10000' }));
+    expect(result?.color).toBe('#d10000');
+    expect(result?.rgb).toBe('209, 0, 0');
+    expect(result?.textColorLight).toBeTruthy();
+    expect(result?.textColorDark).toBeTruthy();
+    expect(typeof result?.boostLight).toBe('boolean');
+    expect(typeof result?.boostDark).toBe('boolean');
+    expect(typeof result?.progressBoostLight).toBe('boolean');
+    expect(typeof result?.progressBoostDark).toBe('boolean');
+  });
+
+  it('flags yellow for text-tier boost on light (pure yellow vs white is ~1.07:1)', () => {
+    expect(getProviderColor(makeAlert({ colorHint: '#FFFF00' }))?.boostLight).toBe(true);
+    expect(getProviderColor(makeAlert({ colorHint: '#FFFE00' }))?.boostLight).toBe(true);
+  });
+});
+
+describe('meteoalarmAwarenessColorHex', () => {
+  it('maps the awareness colour token to the MeteoAlarm palette', () => {
+    expect(meteoalarmAwarenessColorHex('4; red; Extreme')).toBe('#D8001E');
+    expect(meteoalarmAwarenessColorHex('3; orange; Severe')).toBe('#FF9900');
+    expect(meteoalarmAwarenessColorHex('2; yellow; Moderate')).toBe('#FFC800');
+    expect(meteoalarmAwarenessColorHex('1; green; Minor')).toBe('#88C840');
+  });
+
+  it('ignores the level prefix and the label, and tolerates case/spacing', () => {
+    expect(meteoalarmAwarenessColorHex('9;  Orange ;whatever')).toBe('#FF9900');
+    expect(meteoalarmAwarenessColorHex('yellow; RED')).toBe('#D8001E');
+  });
+
+  it('returns undefined for missing, malformed or unknown tokens', () => {
+    expect(meteoalarmAwarenessColorHex(undefined)).toBeUndefined();
+    expect(meteoalarmAwarenessColorHex(2)).toBeUndefined();
+    expect(meteoalarmAwarenessColorHex('2')).toBeUndefined();
+    expect(meteoalarmAwarenessColorHex('2; purple; Moderate')).toBeUndefined();
   });
 });
 

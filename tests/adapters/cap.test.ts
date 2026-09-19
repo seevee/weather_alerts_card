@@ -268,6 +268,27 @@ describe('CapAdapter', () => {
       });
     });
 
+    describe('issuer colour (parameters.awareness_level)', () => {
+      it('resolves a MeteoAlarm awareness colour token to the MeteoAlarm hex', () => {
+        const a = adapter.parseAlerts(makeCapAttributes({
+          provider: 'meteoalarm',
+          parameters: { awareness_level: '3; orange; Severe', awareness_type: '1; Wind' },
+        }))[0];
+        expect(a.colorHint).toBe('#FF9900');
+      });
+
+      it('omits colorHint when the parameter map carries no awareness colour', () => {
+        const a = adapter.parseAlerts(makeCapAttributes({ parameters: { VTEC: '/O.NEW.KBOU.TO.W.0001/' } }))[0];
+        expect(Object.prototype.hasOwnProperty.call(a, 'colorHint')).toBe(false);
+      });
+
+      it('omits colorHint when there is no parameter map, or it is not an object', () => {
+        expect(Object.prototype.hasOwnProperty.call(adapter.parseAlerts(makeCapAttributes())[0], 'colorHint')).toBe(false);
+        expect(Object.prototype.hasOwnProperty.call(
+          adapter.parseAlerts(makeCapAttributes({ parameters: ['awareness_level'] }))[0], 'colorHint')).toBe(false);
+      });
+    });
+
     describe('geometry parsing', () => {
       it('parses bbox + geometry_ref onto the alert when present and valid', () => {
         const alerts = adapter.parseAlerts(makeCapAttributes({
