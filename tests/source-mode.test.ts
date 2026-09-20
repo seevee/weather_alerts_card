@@ -20,6 +20,7 @@ import { scopeHashForConfig } from '../src/dismissal';
 import type { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert } from '../src/types';
 
 const RFS_SOURCE = 'nsw_rural_fire_service_feed';
+const INMET_SOURCE = 'inmet';
 
 // One nsw_rural_fire_service_feed geo_location incident, as HA exposes it.
 function rfsIncident(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -35,6 +36,22 @@ function rfsIncident(overrides: Record<string, unknown> = {}): Record<string, un
     fire: true,
     responsible_agency: 'Rural Fire Service',
     publication_date: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    ...overrides,
+  };
+}
+
+function inmetAlert(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    source: INMET_SOURCE,
+    alert_id: Math.floor(Math.random() * 100000),
+    description: 'Chuvas Intensas',
+    severity: 'Perigo',
+    risks: ['Risco de alagamentos.'],
+    instructions: ['Evite enfrentar o mau tempo.'],
+    start_date: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    end_date: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+    latitude: -22.9056,
+    longitude: -47.0608,
     ...overrides,
   };
 }
@@ -115,6 +132,22 @@ describe('source-based auto-collection', () => {
     expect(alerts.length).toBe(2);
     expect(alerts.every(a => a.provider === 'nsw_rfs')).toBe(true);
     expect(new Set(alerts.map(a => a.severity))).toEqual(new Set(['moderate', 'extreme']));
+  });
+
+  it('parses source-collected INMET alerts end-to-end', () => {
+    const card = makeCard();
+    card.setConfig({
+      type: 'custom:weather-alerts-card',
+      sources: [INMET_SOURCE],
+    } as WeatherAlertsCardConfig);
+    card.hass = makeHass({
+      'geo_location.inmet_a': { state: '3', attributes: inmetAlert({ severity: 'Perigo' }) },
+      'geo_location.inmet_b': { state: '12', attributes: inmetAlert({ severity: 'Grande Perigo' }) },
+    });
+    const alerts = card._getAlerts();
+    expect(alerts.length).toBe(2);
+    expect(alerts.every(a => a.provider === 'inmet')).toBe(true);
+    expect(new Set(alerts.map(a => a.severity))).toEqual(new Set(['severe', 'extreme']));
   });
 
   it('decouples collection from the provider override: a source-collected feed and a hand-added foreign entity each auto-detect their own adapter', () => {

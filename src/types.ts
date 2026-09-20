@@ -87,7 +87,7 @@ export interface EntityRegistryDisplayEntry {
 }
 
 export type AlertSeverity = 'extreme' | 'severe' | 'moderate' | 'minor' | 'unknown';
-export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs' | 'nina';
+export type AlertProvider = 'nws' | 'bom' | 'meteoalarm' | 'pirateweather' | 'dwd' | 'cap' | 'eccc' | 'meteoswiss' | 'nsw_rfs' | 'inmet' | 'nina';
 export type ContrastMode = 'off' | 'subtle' | 'strict';
 
 // Progress-bar decoration (pattern) applied to a temporal phase's fill. Direction
@@ -146,7 +146,7 @@ export interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
   excludeEventCodes?: string[]; // NWS event codes to exclude, e.g. ["SCY"] — empty/omitted = none excluded
   minSeverity?: AlertSeverity;
-  maxDistanceKm?: number;      // kilometres from the card's reference point — the HA home location (hass.config.latitude/longitude) unless myLocationEntity resolves — whatever the install's unit system. Only excludes alerts carrying a `point` (point-incident providers like NSW RFS); area warnings have no distance and are never filtered. Omitted/non-positive/non-numeric = no filtering.
+  maxDistanceKm?: number;      // kilometres from the card's reference point — the HA home location (hass.config.latitude/longitude) unless myLocationEntity resolves — whatever the install's unit system. Only excludes alerts carrying a `point` (point-incident providers like NSW RFS and INMET); area warnings have no distance and are never filtered. Omitted/non-positive/non-numeric = no filtering.
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
   progressStyle?: ProgressStyleConfig; // per-phase progress-bar decoration; omit for defaults (prep striped, active shimmer, ongoing pulse)
@@ -357,6 +357,27 @@ export interface NswRfsIncident {
   // coordinates. The entity *state* (distance from home in km) is deliberately
   // unused — it is provider-specific, and the card computes distance itself so
   // the same filter works for any point-carrying source.
+  latitude?: number;
+  longitude?: number;
+}
+
+// Raw INMET alert shape from sigrist/inmet. The integration publishes one
+// geo_location entity per active alert, stamped with `source: inmet`.
+export interface InmetAlert {
+  source?: string;
+  alert_id?: string | number;
+  description?: string;
+  severity?: string;
+  risks?: string | string[];
+  instructions?: string | string[];
+  color?: string;
+  updated?: string | Date | boolean;
+  finished?: boolean;
+  future?: boolean;
+  start_date?: string | Date;
+  end_date?: string | Date;
+  sequence?: string | number;
+  url?: string;
   latitude?: number;
   longitude?: number;
 }

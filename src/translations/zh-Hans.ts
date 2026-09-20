@@ -78,6 +78,7 @@ export const zhHans: TranslationMap = {
   'editor.provider_meteoswiss': 'MeteoSwiss（瑞士）',
   'editor.provider_eccc': 'ECCC（加拿大）',
   'editor.provider_nsw_rfs': 'NSW RFS（澳大利亚）',
+  'editor.provider_inmet': 'INMET（巴西）',
   'editor.provider_cap': 'CAP 警报（多区域）',
   'editor.devices': '警报设备（可选）',
   'editor.devices_helper': '自动拉取所选设备下的所有活跃警报传感器（CAP Alerts、NINA）。添加更多设备可合并多个地点或提供方。',

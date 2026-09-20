@@ -1,6 +1,6 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region).
+A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.webp)
 
@@ -15,12 +15,12 @@ is the same material with more room to breathe, plus per-provider setup detail.
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), PirateWeather, and CAP Alerts (multi-region) with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), PirateWeather, and CAP Alerts (multi-region) with auto-detection
 - **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors, plus an opt-in override that paints each alert in the color its issuing agency published (ECCC, MeteoAlarm, INMET)
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
-- **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, or a marker at a point incident's location (NSW RFS, CAP Alerts point feeds), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
+- **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, or a marker at a point incident's location (NSW RFS, INMET, CAP Alerts point feeds), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
 - **Zone filtering** — show only alerts for specific zone codes (CAP Alerts geocodes, BoM `area_id`); see the `zones` note for provider support
@@ -217,12 +217,12 @@ Then click the Download button, and click Reload when prompted.
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. CAP Alerts and NINA both produce this shape. Can be combined with `entity`/`entities` or used on its own. |
 | `devices` | — | Additional device ids, the same shape `entities` gives `entity`. Every CAP Alerts entry is one provider × one scope, so a home zone plus a GPS tracker, or NWS plus GDACS, is two devices. The same alert seen through two devices is shown once; each device that goes dark is named on its own. |
 | `sources` | — | Feed `source` attribute values to auto-collect (e.g. `['nsw_rural_fire_service_feed']`). Harvests **every** entity whose `source` attribute matches, re-scanning each render so per-incident entities appear and vanish with the live feed — no volatile `geo_location.*` ids to hand-list. Independent of `provider` (each collected entity still auto-detects its adapter). Can be used on its own or combined with `entity`/`entities`/`device`. |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'inmet'`, `'pirateweather'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list. Populated by CAP Alerts (UGC/SAME/EMMA_ID/NUTS and any other geocode scheme) and BoM (`area_id`, e.g. `NSW_FL049`; fork-dependent — the `safepay/ha_bom_australia` fork emits it). The recommended NWS integration doesn't emit zone codes, so this doesn't apply to it. **Alerts with no matching zone are hidden**, so setting `zones` on a provider that carries none hides everything |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'`. Alerts whose severity is unknown/unclassified are always shown, regardless of this threshold |
-| `maxDistanceKm` | — | Hide incidents further than this many **kilometres** from your reference point — the Home Assistant home location (`latitude`/`longitude` under Settings → System → General) unless `myLocationEntity` is set. Opt-in; the YAML value is always km whatever your unit system, though the visual editor shows and accepts miles on a US-customary install. Only applies to point-incident providers that publish a real location (currently NSW RFS) — area warnings (NWS, CAP, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, PirateWeather) have no distance and are never filtered. Ignored when no reference point resolves. Only ever narrows — the `geo_location` integration applies its own `radius` (default 20 km) first, so a wider card value has no effect |
+| `maxDistanceKm` | — | Hide incidents further than this many **kilometres** from your reference point — the Home Assistant home location (`latitude`/`longitude` under Settings → System → General) unless `myLocationEntity` is set. Opt-in; the YAML value is always km whatever your unit system, though the visual editor shows and accepts miles on a US-customary install. Only applies to point-incident providers that publish a real location (currently NSW RFS and INMET) — area warnings (NWS, CAP, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, PirateWeather) have no distance and are never filtered. Ignored when no reference point resolves. Only ever narrows — the upstream `geo_location` integration may apply its own radius before alerts reach the card |
 | `myLocationEntity` | — | A `device_tracker`, `person`, or `zone` entity whose `latitude`/`longitude` replace the HA home location as the card's reference point — the origin of `maxDistanceKm`, the detail panel's distance row, and the `showMyLocation` marker. Falls back to HA home when the entity is missing or has no coordinates (a router-based tracker), never to "no filtering". Use a zone for a fixed location, e.g. to match a `geo_location` integration configured somewhere other than HA home |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — the palette every alert is painted from. `'nws'` keys off the event name (NWS's official per-event colors, applied to any provider whose events read like NWS's; anything unmatched falls back to the severity tier); `'meteoalarm'` and `'eccc'` are those agencies' four-tier palettes keyed by severity |
 | `providerColors` | `false` | `true` paints each alert in the color its issuing agency published for it, over whatever `colorTheme` selects: ECCC's `red`/`orange`/`yellow`/`grey` tag, MeteoAlarm's awareness color (natively or through CAP Alerts), INMET's hex. Alerts whose provider publishes no color keep the `colorTheme` palette. `colorTheme: 'eccc'` turns this on by default, because that theme always meant it |
@@ -238,10 +238,10 @@ Then click the Download button, and click Reload when prompted.
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
 | `showProvider` | `false` | Show provider label (e.g., NWS) above event title |
-| `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel. Point-incident alerts (currently NSW RFS) also get a distance row (from HA home, or `myLocationEntity`), in km or miles per your unit system |
+| `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel. Point-incident alerts (currently NSW RFS and INMET) also get a distance row (from HA home, or `myLocationEntity`), in km or miles per your unit system |
 | `showDescription` | `true` | Show description text in detail panel |
 | `showInstructions` | `true` | Show instructions text in detail panel |
-| `showGeometry` | `false` | Show an inline SVG mini-map in the detail panel. Draws whatever the alert carries, best first: the polygon outline (CAP Alerts, fetched out-of-band) → the bounding-box frame (CAP Alerts, immediate) → a marker at the incident's location inside a ~20 km frame (point-incident providers, currently NSW RFS) → nothing (area providers with no geometry: NWS, BoM, DWD, …). |
+| `showGeometry` | `false` | Show an inline SVG mini-map in the detail panel. Draws whatever the alert carries, best first: the polygon outline (CAP Alerts, fetched out-of-band) → the bounding-box frame (CAP Alerts, immediate) → a marker at the incident's location inside a ~20 km frame (point-incident providers, currently NSW RFS and INMET) → nothing (area providers with no geometry: NWS, BoM, DWD, …). |
 | `geometryStyle` | `'shape'` | Mini-map rendering when `showGeometry` is on. `'shape'`: bare outline or marker, fully offline. `'map'`: raster-tile basemap behind the polygon or marker for geographic context — **opt-in and fetches map tiles (online)**. The default source is Home Assistant's own `map_tiles` proxy (core 2026.9+), so the tiles come from your instance and match HA's map; on an older core, or if tiles fail, the card falls back to the outline. |
 | `geometryTileUrl` | HA `map_tiles` proxy | Slippy-map tile template (`{z}/{x}/{y}`, optional `{s}`) used when `geometryStyle: 'map'`. Override to point at a self-hosted source, or at a keyed one such as CARTO with your own key (`https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=YOUR_KEY`). **An override reveals the alert's bounding box to that host** and is rendered as-is, without the dark-theme inversion the default gets. |
 | `geometryTileAttribution` | `© OpenStreetMap contributors` | Attribution label shown over the map. Set this to credit your provider when using a custom `geometryTileUrl` (e.g. `© OpenStreetMap, CARTO`). |
@@ -474,6 +474,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) — point the card at `sensor.weather_warnings_at_<postcode>` |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; auto-collect the whole feed with `sources: [nsw_rural_fire_service_feed]` |
+| INMET | Brazil | [sigrist/inmet](https://github.com/sigrist/inmet) — one `geo_location.*` entity per active INMET alert; auto-collect the whole feed with `sources: [inmet]` |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
@@ -535,6 +536,7 @@ Severity and certainty badges are always localized to your configured language. 
 | MeteoSwiss | Raw (from integer level) | Absent |
 | ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
 | NSW RFS | Raw (from `category` — the Australian Warning System ladder) | Absent |
+| INMET | Raw (from `severity`) | Absent |
 | PirateWeather | Raw (from `severity` field) | Absent |
 | CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty` field) |
 

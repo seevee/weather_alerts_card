@@ -14,6 +14,7 @@ below lists the ones that are actually tested.
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — see [below](#canada-eccc-via-cap-alerts) |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) |
+| INMET | Brazil | [sigrist/inmet](https://github.com/sigrist/inmet) |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) |
 
@@ -206,6 +207,30 @@ If the platform's `latitude`/`longitude` differ from HA home, set `myLocationEnt
 at the platform's coordinates so the card measures from the same origin.
 :::
 
+### INMET (Brazil)
+
+The [sigrist/inmet](https://github.com/sigrist/inmet) integration creates one
+`geo_location.*` entity per active INMET alert and stamps each entity with
+`source: inmet`. Point the card at that feed so alert entities can appear and
+clear without updating YAML:
+
+```yaml
+type: custom:weather-alerts-card
+sources:
+  - inmet
+```
+
+Severity comes from INMET's textual `severity` field. The adapter maps `Perigo
+Potencial` to moderate, `Perigo` to severe, and `Grande Perigo` to extreme.
+`risks` render as the description, `instructions` render as the action text, and
+the alert URL opens the matching INMET aviso page. Set `providerColors: true` to paint
+each alert in the color INMET published for it (`aviso_cor`).
+
+INMET entities carry the configured location's coordinates, so `showGeometry`
+draws a marker rather than an affected-area outline. Those coordinates also
+drive `maxDistanceKm`, which is useful when the feed contains alerts for a
+broader configured area.
+
 ### PirateWeather
 
 ```yaml
@@ -316,5 +341,6 @@ badges reflect real provider data.
 | MeteoSwiss | Raw (from integer level) | Absent |
 | ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three are absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
 | NSW RFS | Raw (from `category`) | Absent |
+| INMET | Raw (from `severity`) | Absent |
 | PirateWeather | Raw (from `severity`) | Absent |
 | CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty`) |

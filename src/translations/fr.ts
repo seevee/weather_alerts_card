@@ -78,6 +78,7 @@ export const fr: TranslationMap = {
   'editor.provider_meteoswiss': 'MeteoSwiss (Suisse)',
   'editor.provider_eccc': 'ECCC (Canada)',
   'editor.provider_nsw_rfs': 'NSW RFS (Australie)',
+  'editor.provider_inmet': 'INMET (Brésil)',
   'editor.provider_cap': 'Alertes CAP (multi-region)',
   'editor.devices': 'Appareils d\'alerte (optionnel)',
   'editor.devices_helper': 'Récupère automatiquement chaque capteur d\'alerte actif sous les appareils sélectionnés (CAP Alerts, NINA). Ajoutez d\'autres appareils pour combiner des lieux ou des fournisseurs.',

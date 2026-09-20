@@ -149,6 +149,21 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('nsw_rfs');
   });
 
+  it('returns INMET adapter for explicit inmet provider', () => {
+    const adapter = getAdapter('inmet', {});
+    expect(adapter.provider).toBe('inmet');
+  });
+
+  it('auto-detects INMET from source + alert attributes', () => {
+    const adapter = getAdapter(undefined, {
+      source: 'inmet',
+      alert_id: 12345,
+      description: 'Chuvas Intensas',
+      severity: 'Perigo',
+    });
+    expect(adapter.provider).toBe('inmet');
+  });
+
   it('returns NINA adapter for explicit nina provider', () => {
     const adapter = getAdapter('nina', {});
     expect(adapter.provider).toBe('nina');
@@ -224,6 +239,15 @@ describe('canHandleAny', () => {
       category: 'Advice',
       status: 'Being controlled',
       responsible_agency: 'Rural Fire Service',
+    })).toBe(true);
+  });
+
+  it('returns true for INMET attributes', () => {
+    expect(canHandleAny({
+      source: 'inmet',
+      alert_id: '12345',
+      description: 'Chuvas Intensas',
+      severity: 'Perigo',
     })).toBe(true);
   });
 
@@ -321,6 +345,6 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
 describe('pointCapableProviders', () => {
   it('lists exactly the adapters that can populate WeatherAlert.point', () => {
-    expect([...pointCapableProviders()].sort()).toEqual(['cap', 'nsw_rfs']);
+    expect([...pointCapableProviders()].sort()).toEqual(['cap', 'inmet', 'nsw_rfs']);
   });
 });

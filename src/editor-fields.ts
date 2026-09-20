@@ -138,7 +138,7 @@ export const SELECT_FIELDS: readonly SelectField[] = [
   // `sources` field / feed picker), so leaving it on Auto keeps mixed-provider
   // cards auto-detecting per entity. 'auto' is a sentinel: it deletes the key.
   select('provider', 'advanced', 'auto', 'editor.provider',
-    opts('editor.provider_', 'auto', 'nws', 'bom', 'meteoalarm', 'dwd', 'nina', 'meteoswiss', 'eccc', 'nsw_rfs', 'pirateweather', 'cap')),
+    opts('editor.provider_', 'auto', 'nws', 'bom', 'meteoalarm', 'dwd', 'nina', 'meteoswiss', 'eccc', 'nsw_rfs', 'inmet', 'pirateweather', 'cap')),
   select('minSeverity', 'filtering', 'all', 'editor.min_severity',
     opts('editor.severity_', 'all', 'minor', 'moderate', 'severe', 'extreme')),
   select('colorTheme', 'appearance', 'severity', 'editor.color_theme',

@@ -956,7 +956,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _renderSourceSection(lang: string): TemplateResult {
-    // Per-incident feeds a user can auto-collect (currently NSW RFS), labelled
+    // Per-incident feeds a user can auto-collect (e.g. NSW RFS, INMET), labelled
     // by the provider that parses them. Independent of the provider override.
     // Only offer a feed whose integration is actually present in this HA — i.e.
     // at least one entity currently carries that `source` — so the option only

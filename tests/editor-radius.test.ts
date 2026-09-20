@@ -16,6 +16,7 @@ type EditorInternals = {
 };
 
 const RFS_SOURCE = 'nsw_rural_fire_service_feed';
+const INMET_SOURCE = 'inmet';
 
 const rfsAttributes = {
   source: RFS_SOURCE,
@@ -25,6 +26,15 @@ const rfsAttributes = {
   type: 'Bush Fire',
   latitude: -33.7,
   longitude: 150.3,
+};
+
+const inmetAttributes = {
+  source: INMET_SOURCE,
+  alert_id: '12345',
+  description: 'Chuvas Intensas',
+  severity: 'Perigo',
+  latitude: -22.9056,
+  longitude: -47.0608,
 };
 
 const nwsAttributes = { Alerts: [] };
@@ -67,10 +77,12 @@ describe('_showsRadiusControl', () => {
 
   it('is shown when the provider is explicitly point-capable', () => {
     expect(makeEditor({ provider: 'nsw_rfs' })._showsRadiusControl()).toBe(true);
+    expect(makeEditor({ provider: 'inmet' })._showsRadiusControl()).toBe(true);
   });
 
   it('is shown when a point-capable feed source is collected', () => {
     expect(makeEditor({ sources: [RFS_SOURCE] })._showsRadiusControl()).toBe(true);
+    expect(makeEditor({ sources: [INMET_SOURCE] })._showsRadiusControl()).toBe(true);
   });
 
   it('is shown when a point-carrying entity is hand-listed', () => {
@@ -81,9 +93,9 @@ describe('_showsRadiusControl', () => {
   it('is shown for a hand-listed entity in the `entities` list', () => {
     const hass = makeHass({
       'sensor.nws_alerts': { state: '0', attributes: nwsAttributes },
-      'geo_location.fire_a': { state: '12', attributes: rfsAttributes },
+      'geo_location.inmet_a': { state: '12', attributes: inmetAttributes },
     });
-    const editor = makeEditor({ entity: 'sensor.nws_alerts', entities: ['geo_location.fire_a'] }, hass);
+    const editor = makeEditor({ entity: 'sensor.nws_alerts', entities: ['geo_location.inmet_a'] }, hass);
     expect(editor._showsRadiusControl()).toBe(true);
   });
 

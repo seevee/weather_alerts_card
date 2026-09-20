@@ -104,6 +104,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   pirateweather: 'Pirate Weather',
   cap: 'CAP',
   nsw_rfs: 'NSW RFS',
+  inmet: 'INMET',
   nina: 'NINA',
 };
 
@@ -117,6 +118,7 @@ const PROVIDER_SHORT: Record<string, string> = {
   pirateweather: 'PW',
   cap: 'CAP',
   nsw_rfs: 'RFS',
+  inmet: 'INMET',
   nina: 'NINA',
 };
 
