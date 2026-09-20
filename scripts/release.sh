@@ -166,6 +166,11 @@ fi
 
 STABLE_TAGS=(--tag-pattern "^v[0-9]+\.[0-9]+\.[0-9]+$")
 
+# The release surface asks GitHub who is contributing for the first time
+# (cliff.toml [remote.github]). It works unauthenticated; gh's token lifts
+# the rate limit.
+export GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}"
+
 IS_PRERELEASE=false
 NOTES_FLAGS=()
 

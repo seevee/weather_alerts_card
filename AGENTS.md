@@ -267,7 +267,11 @@ All agent skills are defined in `.claude/commands/`. When modifying a skill, als
      a `Closes #N` footer links the issue, and `feat!:` marks a breaking change.
   3. Commit, push, and open a PR to `main`. The PR body is the release notes:
      `release.sh` seeds it with the generated list, the narrative goes above
-     that list before merge, and `publish.sh` ships the body verbatim.
+     that list before merge, and `publish.sh` ships the body verbatim. The
+     generated list ends with a **New Contributors** section when a PR in the
+     range is someone's first: git-cliff asks GitHub (`[remote.github]` in
+     `cliff.toml`), so nothing is typed by hand; `publish.sh --new-contributor`
+     is only for a credit the lookup cannot see.
   4. After merge: tag `main` as `vX.Y.Z`, push tag, create GitHub Release with `gh release create`.
   5. The release workflow attaches the built JS artifact.
 - Users add this repo as a HACS custom repository (Frontend category).
