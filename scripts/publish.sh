@@ -61,6 +61,11 @@ fi
 # Generate notes after tag exists so --latest works on re-runs too
 # Prerelease: notes for just this tag's commits
 # GA release: collapse all commits since last stable tag into one section
+# First-time contributors come from GitHub (cliff.toml [remote.github]); gh's
+# token lifts the rate limit. --new-contributor remains as a manual addition
+# for anyone the lookup misses (a co-author, a contributor credited by hand).
+export GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token)}"
+
 if [ "$PRERELEASE" = true ]; then
   NOTES=$(CLIFF_SURFACE=release npx git-cliff \
     --config cliff.toml \
