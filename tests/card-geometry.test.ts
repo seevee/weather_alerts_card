@@ -79,6 +79,38 @@ const capAlert = () => ({
   },
 });
 
+// A cap_alerts point-only incident (NSW RFS via the Australian provider): the
+// marker is the only location, so the integration publishes a degenerate bbox
+// around it. Whitton, NSW.
+const capPointAlert = () => ({
+  state: 'minor',
+  attributes: {
+    incident_platform_version: '1.0',
+    id: 'd9b7ce4dc750',
+    event: 'Bushfire',
+    severity: 'Minor',
+    severity_normalized: 'minor',
+    certainty: 'Observed',
+    urgency: 'Expected',
+    sent: new Date(Date.now() - 2 * HOUR).toISOString(),
+    effective: new Date(Date.now() - 2 * HOUR).toISOString(),
+    description: 'ALERT LEVEL: Not Applicable',
+    headline: 'WHITTON DARLINGTON POINT RD, WHITTON',
+    area_desc: 'WHITTON DARLINGTON POINT RD, WHITTON 2705',
+    provider: 'au',
+    phase: 'new',
+    msg_type: 'Alert',
+    bbox: [146.158767701, -34.598636627, 146.158767701, -34.598636627] as [number, number, number, number],
+    points: [[146.158767701, -34.598636627]],
+  },
+});
+
+// Tile URL "…/{z}/{x}/{y}.png" → z.
+function tileZoom(href: string): number {
+  const m = href.match(/\/(\d+)\/\d+\/\d+(?:[.@][\w.]+)?$/);
+  return m ? Number(m[1]) : NaN;
+}
+
 const nwsAlert = () => ({
   state: '1',
   attributes: {
@@ -214,6 +246,45 @@ describe('point-incident mini-map (#206)', () => {
       makeHass({ 'geo_location.fire': rfsIncident() }),
     );
     expect(q(card, '.alert-geometry')).toBeNull();
+    cleanup();
+  });
+
+  it('frames a cap_alerts point-only alert (degenerate bbox) like a point incident', async () => {
+    // cap_alerts publishes a marker-only incident as bbox [lon, lat, lon, lat];
+    // the adapter derives `point` from it. Framing that box as the alert's own
+    // extent lands at the deepest zoom over a few pixels of tile.
+    const { card, cleanup } = await mountCard(
+      capConfig(MAP),
+      makeHass({ 'sensor.cap_alert_abc': capPointAlert() }),
+    );
+    const svg = q(card, 'svg.alert-geometry.map');
+    expect(svg).not.toBeNull();
+    expect(svg!.classList.contains('point')).toBe(true);
+    const tiles = [...qAll(card, '.geometry-tiles image')];
+    expect(tiles.length).toBeGreaterThan(0);
+    // The synthesized 10 km frame, not the ~10 m padded point: z11, not z16.
+    const zooms = new Set(tiles.map(t => tileZoom(t.getAttribute('href') || '')));
+    expect(zooms).toEqual(new Set([11]));
+    // Alone in its frame, the incident sits at the centre: exact in x, and
+    // within a few pixels in y (the Mercator frame's padding is not linear).
+    const { w, h } = viewBoxOf(svg!);
+    const a = anchorOf(q(card, '.geometry-marker')!);
+    expect(a.x).toBeCloseTo(w / 2, 3);
+    expect(Math.abs(a.y - h / 2)).toBeLessThan(h * 0.05);
+    cleanup();
+  });
+
+  it('keeps a real cap_alerts bbox as the frame even when a point is present', async () => {
+    const alert = capPointAlert();
+    alert.attributes.bbox = [146.1, -34.65, 146.2, -34.55]; // ~9 km × 11 km
+    const { card, cleanup } = await mountCard(
+      capConfig(MAP),
+      makeHass({ 'sensor.cap_alert_abc': alert }),
+    );
+    const tiles = [...qAll(card, '.geometry-tiles image')];
+    const zooms = new Set(tiles.map(t => tileZoom(t.getAttribute('href') || '')));
+    // Its own extent frames it (z12 for ~10 km), not the 10 km point frame.
+    expect(zooms).toEqual(new Set([12]));
     cleanup();
   });
 

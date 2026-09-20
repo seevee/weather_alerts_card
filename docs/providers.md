@@ -250,6 +250,15 @@ carries raw CAP fields and the original alert polygons, it is the only source th
 unlocks the `showGeometry` mini-map, and the only one with a per-alert entity for
 `tap_action: more-info` to target.
 
+Some of its feeds mark **where an incident is** as well as, or instead of, the area it
+covers: the Australian state feeds (NSW RFS, Queensland, WA, Tasmania) put a location
+marker on every fire and a fire-ground polygon on about half of them. The integration
+publishes the marker in `points`, and the card reads a single marker as the alert's
+`point`, so `maxDistanceKm` and the distance row work on those entities exactly as they
+do for the `nsw_rural_fire_service_feed` route. A marker-only alert draws the same
+synthesized town-scale frame a point incident gets; one with a polygon keeps the
+polygon as its frame.
+
 ## Canada: ECCC via CAP Alerts
 
 For Environment and Climate Change Canada alerts,

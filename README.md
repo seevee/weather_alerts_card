@@ -20,7 +20,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
-- **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, or a marker at a point incident's location (NSW RFS), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
+- **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, or a marker at a point incident's location (NSW RFS, CAP Alerts point feeds), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
 - **Zone filtering** — show only alerts for specific zone codes (CAP Alerts geocodes, BoM `area_id`); see the `zones` note for provider support

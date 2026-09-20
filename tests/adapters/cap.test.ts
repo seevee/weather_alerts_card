@@ -299,6 +299,64 @@ describe('CapAdapter', () => {
         expect(alerts[0].geometryRef).toBe('geom-abc-123');
       });
 
+      it('takes point from a single-entry points list, lon-first, and keeps a real bbox', () => {
+        const [a] = adapter.parseAlerts(makeCapAttributes({
+          bbox: [146.1, -34.65, 146.2, -34.55],
+          points: [[146.158767701, -34.598636627]],
+        }));
+        expect(a.point).toEqual([146.158767701, -34.598636627]);
+        expect(a.bbox).toEqual([146.1, -34.65, 146.2, -34.55]);
+      });
+
+      it('drops a degenerate bbox and derives the point from it', () => {
+        // A marker-only alert: the integration publishes [lon, lat, lon, lat].
+        const [a] = adapter.parseAlerts(makeCapAttributes({
+          bbox: [146.158767701, -34.598636627, 146.158767701, -34.598636627],
+        }));
+        expect(a.point).toEqual([146.158767701, -34.598636627]);
+        expect(a.bbox).toBeUndefined();
+        expect(Object.prototype.hasOwnProperty.call(a, 'bbox')).toBe(false);
+      });
+
+      it('prefers the explicit points entry over a degenerate bbox', () => {
+        const [a] = adapter.parseAlerts(makeCapAttributes({
+          bbox: [1, 1, 1, 1],
+          points: [[146.158767701, -34.598636627]],
+        }));
+        expect(a.point).toEqual([146.158767701, -34.598636627]);
+        expect(a.bbox).toBeUndefined();
+      });
+
+      it('names no point for a multi-marker alert or a malformed points list', () => {
+        for (const points of [
+          [[151.0, -33.0], [151.5, -33.5]],
+          [[151.0]],
+          [['151.0', '-33.0']],
+          [[200, -33.0]],
+          'nope',
+          [],
+        ]) {
+          const [a] = adapter.parseAlerts(makeCapAttributes({
+            bbox: [-105.3, 39.9, -105.1, 40.1],
+            points,
+          }));
+          expect(a.point, JSON.stringify(points)).toBeUndefined();
+          expect(a.bbox).toEqual([-105.3, 39.9, -105.1, 40.1]);
+        }
+      });
+
+      it('declares carriesPoint so the editor offers the radius control', () => {
+        expect(adapter.carriesPoint).toBe(true);
+      });
+
+      it('leaves point undefined for an area warning with no marker', () => {
+        const [a] = adapter.parseAlerts(makeCapAttributes({
+          bbox: [-105.3, 39.9, -105.1, 40.1],
+        }));
+        expect(a.point).toBeUndefined();
+        expect(Object.prototype.hasOwnProperty.call(a, 'point')).toBe(false);
+      });
+
       it('leaves bbox/geometryRef undefined when both are absent', () => {
         const a = adapter.parseAlerts(makeCapAttributes())[0];
         expect(a.bbox).toBeUndefined();

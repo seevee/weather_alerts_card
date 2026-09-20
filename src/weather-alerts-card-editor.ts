@@ -727,6 +727,9 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (this._config?.provider && capable.has(this._config.provider)) return true;
     const selectedSources = new Set(this._config?.sources ?? []);
     if (knownFeedSources().some(f => selectedSources.has(f.source) && capable.has(f.provider))) return true;
+    // The device selector admits cap_alerts devices only, so a configured
+    // device is the CAP adapter by construction — no entity to sniff.
+    if ((this._config?.device || (this._config?.devices?.length ?? 0) > 0) && capable.has('cap')) return true;
     for (const id of this._getSelectedEntities()) {
       const state = this.hass?.states[id];
       if (!state) continue;

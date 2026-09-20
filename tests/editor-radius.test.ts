@@ -87,6 +87,22 @@ describe('_showsRadiusControl', () => {
     expect(editor._showsRadiusControl()).toBe(true);
   });
 
+  it('is shown for a cap_alerts entity (the adapter carries points)', () => {
+    const hass = makeHass({
+      'sensor.cap_alert_abc': {
+        state: 'minor',
+        attributes: { incident_platform_version: '1.0', id: 'abc', event: 'Bushfire' },
+      },
+    });
+    expect(makeEditor({ entity: 'sensor.cap_alert_abc' }, hass)._showsRadiusControl()).toBe(true);
+  });
+
+  it('is shown for a device-mode cap_alerts card, which names no entity', () => {
+    expect(makeEditor({ device: '1a2b3c4d5e6f' })._showsRadiusControl()).toBe(true);
+    expect(makeEditor({ devices: ['1a2b3c4d5e6f'] })._showsRadiusControl()).toBe(true);
+    expect(makeEditor({ devices: [] })._showsRadiusControl()).toBe(false);
+  });
+
   it('is shown whenever a value is already set, whatever the provider', () => {
     expect(makeEditor({ entity: 'sensor.nws_alerts', maxDistanceKm: 25 })._showsRadiusControl()).toBe(true);
   });

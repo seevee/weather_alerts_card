@@ -321,6 +321,6 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
 describe('pointCapableProviders', () => {
   it('lists exactly the adapters that can populate WeatherAlert.point', () => {
-    expect([...pointCapableProviders()].sort()).toEqual(['nsw_rfs']);
+    expect([...pointCapableProviders()].sort()).toEqual(['cap', 'nsw_rfs']);
   });
 });

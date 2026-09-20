@@ -46,7 +46,7 @@ checkbox, which appears only when a matching integration is installed.
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
-| `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident providers only (NSW RFS) |
+| `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident alerts only (NSW RFS, and CAP Alerts entities that carry a single `points` marker, such as the Australian state feeds) |
 | `myLocationEntity` | — | `device_tracker` / `person` / `zone` whose coordinates replace HA home as the reference point, for `maxDistanceKm`, the distance row and `showMyLocation` |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
@@ -69,8 +69,9 @@ always shown, on the principle that an unrankable alert must not be silently dro
 `maxDistanceKm` measures from the card's **reference point** — your Home Assistant home
 location (Settings → System → General) unless `myLocationEntity` names a `device_tracker`,
 `person` or `zone` entity, whose `latitude`/`longitude` then take over. It applies **only to
-providers that publish a per-incident point** — currently NSW RFS. Area warnings (NWS, CAP Alerts, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC,
-PirateWeather) either cover your home point or they don't, so a radius has no meaning for
+alerts that carry a per-incident point**: NSW RFS, and CAP Alerts entities whose `points`
+attribute names exactly one marker (the Australian state feeds publish one per incident). Area warnings (NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC,
+PirateWeather, and CAP Alerts entities with no marker) either cover your home point or they don't, so a radius has no meaning for
 them and they are never filtered, even on a mixed card. If no reference point resolves, the
 filter is skipped rather than hiding everything; an entity that is missing or momentarily
 has no coordinates (a router-based tracker, a phone with GPS off) falls back to HA home
@@ -195,7 +196,8 @@ legibility-safe opacity. The wash is always solid.
 |---|---|---|
 | polygon (+ bbox) | CAP Alerts | bounding-box frame immediately, polygon outline once fetched out of band (frame alone on a cache miss) |
 | bbox only | CAP Alerts, polygon unavailable | the bounding-box frame |
-| point only | NSW RFS (any point-incident feed) | a severity-colored marker at the incident inside a ~20 km frame — town scale on the `map` style |
+| point only | NSW RFS, CAP Alerts with a marker and no polygon (the Australian state feeds) | a severity-colored marker at the incident inside a ~20 km frame — town scale on the `map` style |
+| polygon + point | CAP Alerts (an Australian fire with a fire-ground polygon and a location marker) | the polygon in its own frame; the marker still drives `maxDistanceKm` and the distance row |
 | nothing | NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, NINA, PirateWeather | no mini-map |
 
 For a point incident the frame is invented by the card, not published by the feed, so it
@@ -390,7 +392,7 @@ interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // event codes to include — empty/omitted = all
   excludeEventCodes?: string[]; // event codes to exclude — empty/omitted = none
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
-  maxDistanceKm?: number;      // km from the reference point (HA home, or myLocationEntity); point-incident providers only
+  maxDistanceKm?: number;      // km from the reference point (HA home, or myLocationEntity); alerts carrying a point only
   myLocationEntity?: string;   // device_tracker / person / zone that replaces HA home as the reference point
   sortOrder?: 'default' | 'onset' | 'severity';
   animations?: boolean;        // undefined: respect prefers-reduced-motion; true/false: force
