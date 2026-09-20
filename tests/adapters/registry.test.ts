@@ -345,6 +345,8 @@ describe('ENTITY_NAME_PATTERNS', () => {
 
 describe('pointCapableProviders', () => {
   it('lists exactly the adapters that can populate WeatherAlert.point', () => {
-    expect([...pointCapableProviders()].sort()).toEqual(['cap', 'inmet', 'nsw_rfs']);
+    // INMET populates `point` but its coordinates are the configured city,
+    // not the alert, so it is deliberately absent here.
+    expect([...pointCapableProviders()].sort()).toEqual(['cap', 'nsw_rfs']);
   });
 });

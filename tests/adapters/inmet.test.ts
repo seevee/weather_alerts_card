@@ -88,7 +88,8 @@ describe('InmetAdapter', () => {
       expect(alert.onsetTs).toBe(parseTimestamp('2026-01-08T10:00:00-03:00'));
       expect(alert.endsTs).toBe(parseTimestamp('2026-01-08T23:59:00-03:00'));
       expect(alert.url).toBe('https://avisos.inmet.gov.br/12345');
-      expect(alert.eventCode).toBe('42');
+      // `sequence` (42 in the fixture) is an update counter, not an event code.
+      expect(alert.eventCode).toBe('');
       expect(alert.providerIcon).toBe('mdi:alert');
       expect(alert.colorHint).toBe('Laranja');
       expect(alert.point).toEqual([-47.0608, -22.9056]);
@@ -135,9 +136,11 @@ describe('InmetAdapter', () => {
   });
 
   describe('adapter capabilities', () => {
-    it('declares source collection and point support', () => {
+    it('declares source collection but not the radius control', () => {
       expect(adapter.feedSources).toEqual(['inmet']);
-      expect(adapter.carriesPoint).toBe(true);
+      // The point is the configured city, identical on every alert, so a
+      // radius over it is a constant: the marker stays, the control does not.
+      expect(adapter.carriesPoint).toBeFalsy();
       expect(adapter.stableIds).toBe(true);
     });
   });

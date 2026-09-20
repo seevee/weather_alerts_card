@@ -226,10 +226,15 @@ Potencial` to moderate, `Perigo` to severe, and `Grande Perigo` to extreme.
 the alert URL opens the matching INMET aviso page. Set `providerColors: true` to paint
 each alert in the color INMET published for it (`aviso_cor`).
 
-INMET entities carry the configured location's coordinates, so `showGeometry`
-draws a marker rather than an affected-area outline. Those coordinates also
-drive `maxDistanceKm`, which is useful when the feed contains alerts for a
-broader configured area.
+INMET entities carry the coordinates of the city you configured in the
+integration, identical on every alert, rather than the alert's own location.
+So `showGeometry` draws a marker at that city, the distance row reads as the
+distance to it, and `maxDistanceKm` is deliberately not offered in the editor:
+over a constant point it either changes nothing or, set below the home-to-city
+distance, hides every alert. The YAML key still applies if you set it. The
+alert's real extent is a polygon the integration does not expose; INMET's own
+CAP feed carries it, which is a CAP Alerts provider candidate rather than a
+card change.
 
 ### PirateWeather
 
