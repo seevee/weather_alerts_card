@@ -48,7 +48,7 @@ checkbox, which appears only when a matching integration is installed.
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
-| `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident alerts only (NSW RFS, INMET, and CAP Alerts entities that carry a single `points` marker, such as the Australian state feeds) |
+| `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident alerts only (NSW RFS, and CAP Alerts entities that carry a single `points` marker, such as the Australian state feeds). INMET's point is the configured city, so it is not offered there |
 | `myLocationEntity` | — | `device_tracker` / `person` / `zone` whose coordinates replace HA home as the reference point, for `maxDistanceKm`, the distance row and `showMyLocation` |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
@@ -71,10 +71,12 @@ always shown, on the principle that an unrankable alert must not be silently dro
 `maxDistanceKm` measures from the card's **reference point** — your Home Assistant home
 location (Settings → System → General) unless `myLocationEntity` names a `device_tracker`,
 `person` or `zone` entity, whose `latitude`/`longitude` then take over. It applies **only to
-alerts that carry a per-incident point**: NSW RFS, INMET, and CAP Alerts entities whose `points`
+alerts that carry a per-incident point**: NSW RFS, and CAP Alerts entities whose `points`
 attribute names exactly one marker (the Australian state feeds publish one per incident). Area warnings (NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC,
 PirateWeather, and CAP Alerts entities with no marker) either cover your home point or they don't, so a radius has no meaning for
-them and they are never filtered, even on a mixed card. If no reference point resolves, the
+them and they are never filtered, even on a mixed card. INMET alerts do carry a point, but it is the
+city you configured in the integration, identical on every alert, so the editor does not offer the
+filter for them: set below the home-to-city distance it would hide every alert. If no reference point resolves, the
 filter is skipped rather than hiding everything; an entity that is missing or momentarily
 has no coordinates (a router-based tracker, a phone with GPS off) falls back to HA home
 rather than switching the filter off. The YAML value is always kilometres,

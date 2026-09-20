@@ -62,7 +62,12 @@ export class InmetAdapter implements AlertAdapter {
   provider: AlertProvider = 'inmet';
 
   feedSources = [INMET_SOURCE];
-  carriesPoint = true;
+  // No carriesPoint. The integration stamps every alert with the *configured
+  // city's* coordinates, not the alert's, so `point` is the same for all of
+  // them: it still places the mini-map marker and the distance row (distance
+  // to that city), but a radius filter over it is a constant, and one set
+  // below home-to-city would hide every alert. The editor therefore does not
+  // offer the control; the YAML key still works for anyone who wants it.
   stableIds = true;
 
   canHandle(attributes: Record<string, unknown>): boolean {
@@ -100,7 +105,9 @@ export class InmetAdapter implements AlertAdapter {
       headline: event,
       areaDesc: 'Brazil',
       zones: [],
-      eventCode: stringish(alert.sequence),
+      // `sequence` is the alert's update counter (1, 2, …), not an event type;
+      // INMET publishes no code, so this stays empty like NSW RFS and BoM.
+      eventCode: '',
       provider: 'inmet',
       phase,
       severityInferred: inferred,
