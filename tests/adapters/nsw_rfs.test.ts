@@ -18,7 +18,7 @@ function makeIncident(overrides: Partial<NswRfsIncident> = {}): Record<string, u
     latitude: -33.7,
     longitude: 150.3,
   };
-  return { ...defaults, ...overrides } as Record<string, unknown>;
+  return { ...defaults, ...overrides };
 }
 
 describe('NswRfsAdapter', () => {

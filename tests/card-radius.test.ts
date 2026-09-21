@@ -89,7 +89,7 @@ function makeCard(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssistant)
     provider: 'nsw_rfs',
     sources: [RFS_SOURCE],
     ...config,
-  } as WeatherAlertsCardConfig);
+  });
   card.hass = hass;
   return card;
 }

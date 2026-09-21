@@ -69,9 +69,9 @@ export class BomAdapter implements AlertAdapter {
     if (warnings.length === 0) {
       // Empty array — check for BoM attribution as secondary signal
       return typeof attributes['attribution'] === 'string'
-        && (attributes['attribution'] as string).toLowerCase().includes('bureau of meteorology');
+        && (attributes['attribution']).toLowerCase().includes('bureau of meteorology');
     }
-    const first = warnings[0];
+    const first: unknown = warnings[0];
     return typeof first === 'object' && first !== null
       && 'warning_group_type' in first && 'issue_time' in first;
   }

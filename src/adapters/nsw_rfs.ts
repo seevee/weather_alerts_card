@@ -78,7 +78,7 @@ export class NswRfsAdapter implements AlertAdapter {
     // The attributes object *is* the incident (one geo_location entity = one
     // incident). Guard defensively in parity with canHandle.
     if (!this.canHandle(attributes)) return [];
-    return [this._normalize(attributes as NswRfsIncident)];
+    return [this._normalize(attributes)];
   }
 
   private _normalize(inc: NswRfsIncident): WeatherAlert {

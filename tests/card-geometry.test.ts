@@ -154,7 +154,7 @@ const capConfig = (extra: Partial<WeatherAlertsCardConfig> = {}): WeatherAlertsC
   expandDetails: true,
   showGeometry: true,
   ...extra,
-} as WeatherAlertsCardConfig);
+});
 
 // Bypass the map_tiles token fetch: a user tile override renders immediately.
 const MAP = { geometryStyle: 'map' as const, geometryTileUrl: 'https://tiles.example.com/{z}/{x}/{y}.png' };

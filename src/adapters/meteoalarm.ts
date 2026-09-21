@@ -34,7 +34,7 @@ export class MeteoAlarmAdapter implements AlertAdapter {
   canHandle(attributes: Record<string, unknown>): boolean {
     // Primary signal: MeteoAlarm attribution string
     if (typeof attributes['attribution'] === 'string'
-      && (attributes['attribution'] as string).toLowerCase().includes('meteoalarm')) {
+      && (attributes['attribution']).toLowerCase().includes('meteoalarm')) {
       return true;
     }
     // Secondary: presence of awareness_level (fairly unique to MeteoAlarm)

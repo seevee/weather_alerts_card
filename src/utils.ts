@@ -18,7 +18,7 @@ export function sanitizeAlertHtml(text: string): string {
   return DOMPurify.sanitize(text, {
     ALLOWED_TAGS: ALERT_HTML_TAGS,
     ALLOWED_ATTR: ['href'],
-  }) as string;
+  });
 }
 
 const WEATHER_ICONS: [readonly string[], string][] = [
@@ -509,7 +509,7 @@ interface HaLocale {
   language: string;
   time_format: 'language' | '12' | '24';
   date_format?: 'language' | 'DMY' | 'MDY' | 'YMD';
-  timeZone?: string;  // IANA tz name, e.g. "America/Denver"
+  timeZone?: string | undefined;  // IANA tz name, e.g. "America/Denver"
 }
 
 function timeFormatOptions(locale?: HaLocale): { locale: string | undefined; hour12?: boolean } {
@@ -665,7 +665,7 @@ export function getDisplayHeadline(alert: WeatherAlert, smart = true): string {
 export function reflowAlertText(text: string): string {
   if (!text) return '';
   // Short bullet: line starts with optional whitespace then · • or - (not * which NWS uses for headings)
-  const shortBullet = /^\s*[·•\-]\s/;
+  const shortBullet = /^\s*[·•-]\s/;
   // NWS period forecast: line starts with .UPPERCASE (e.g. ".TONIGHT...NW wind 25 kt.")
   const nwsPeriod = /^\.[A-Z]/;
   return text

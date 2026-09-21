@@ -92,7 +92,7 @@ describe('minSeverity filter', () => {
       nwsAlert('Tornado Warning', 'Extreme'),    // → 'extreme'
     ]);
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', minSeverity: 'severe' } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', minSeverity: 'severe' },
       hass,
     );
     const titles = alertTitles(card);
@@ -142,7 +142,7 @@ describe('degraded badge (#201)', () => {
 
   it('renders a CAP alert whose sensor sits at state "unknown" and shows no badge', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.cap_alerts_beach_hazards' } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', entity: 'sensor.cap_alerts_beach_hazards' },
       capUnknownStateHass(),
     );
     expect(alertTitles(card)).toContain('Beach Hazards Statement');
@@ -161,7 +161,7 @@ describe('degraded badge (#201)', () => {
 
   it('all-broken + default (message), 0 alerts → qualified empty state, no strip/dot', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' },
       brokenSensorHass(),
     );
     // No alerts to anchor to → the caveat lives in the empty state, not a strip.
@@ -175,7 +175,7 @@ describe('degraded badge (#201)', () => {
 
   it('all-broken + compact, 0 alerts → same qualified empty state (no dot)', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'compact' } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'compact' },
       brokenSensorHass(),
     );
     // With no alerts, 'compact' collapses to the same caveat empty state as
@@ -191,7 +191,7 @@ describe('degraded badge (#201)', () => {
 
   it('all-broken + hide alone does NOT hide the card (needs hideNoAlerts too)', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'hide' } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', unavailableBehavior: 'hide' },
       brokenSensorHass(),
     );
     // Badge suppressed, but hideNoAlerts is off → the empty state shows.
@@ -208,7 +208,7 @@ describe('degraded badge (#201)', () => {
         entity: 'sensor.nws_alerts',
         unavailableBehavior: 'hide',
         hideNoAlerts: true,
-      } as WeatherAlertsCardConfig,
+      },
       brokenSensorHass(),
     );
     expect((card as unknown as HTMLElement).style.display).toBe('none');
@@ -232,7 +232,7 @@ describe('degraded badge (#201)', () => {
     entity: 'sensor.nws_broken',
     entities: ['sensor.nws_quiet'],
     ...extra,
-  } as WeatherAlertsCardConfig);
+  });
 
   it('partial (0 alerts) + default → qualified empty state, card visible', async () => {
     const { card, cleanup } = await mountCard(partialConfig({}), partialHass());
@@ -313,7 +313,7 @@ describe('degraded badge (#201)', () => {
       locale: { language: 'en' },
     } as unknown as HomeAssistant;
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_quiet', entities: ['sensor.nws_quiet_2'] } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', entity: 'sensor.nws_quiet', entities: ['sensor.nws_quiet_2'] },
       hass,
     );
     expect(root(card).querySelector('.degraded-badge')).toBeNull();

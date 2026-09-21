@@ -314,8 +314,8 @@ export interface GeometryMap {
 export interface BuildGeometryMapOptions {
   tileUrl?: string;
   attribution?: string;
-  point?: LonLat;
-  referencePoint?: LonLat;
+  point?: LonLat | undefined;
+  referencePoint?: LonLat | undefined;
 }
 
 // (lon, lat) → world-pixel coords at zoom z (origin top-left, y increases south).

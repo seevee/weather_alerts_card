@@ -160,7 +160,7 @@ describe('metadata-grid seam', () => {
     type: 'custom:weather-alerts-card',
     entity,
     expandDetails: true,
-  } as WeatherAlertsCardConfig);
+  });
 
   it('omits the Issued row when there is no issued time', async () => {
     const from = new Date(Date.now() - HOUR).toISOString();
@@ -266,6 +266,6 @@ describe('distance-from-home row', () => {
   });
 
   function baseConfig(entity: string): WeatherAlertsCardConfig {
-    return { type: 'custom:weather-alerts-card', entity, expandDetails: true } as WeatherAlertsCardConfig;
+    return { type: 'custom:weather-alerts-card', entity, expandDetails: true };
   }
 });

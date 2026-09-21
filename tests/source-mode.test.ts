@@ -78,7 +78,7 @@ describe('source-based auto-collection', () => {
         type: 'custom:weather-alerts-card',
         provider: 'nsw_rfs',
         sources: [RFS_SOURCE],
-      } as WeatherAlertsCardConfig),
+      }),
     ).not.toThrow();
   });
 
@@ -87,7 +87,7 @@ describe('source-based auto-collection', () => {
     card.setConfig({
       type: 'custom:weather-alerts-card',
       sources: [RFS_SOURCE],
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass({
       'geo_location.fire_b': { state: '12', attributes: rfsIncident() },
       'geo_location.fire_a': { state: '3', attributes: rfsIncident() },
@@ -108,7 +108,7 @@ describe('source-based auto-collection', () => {
       type: 'custom:weather-alerts-card',
       entity: 'geo_location.fire_a',
       sources: [RFS_SOURCE],
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass({
       'geo_location.fire_a': { state: '3', attributes: rfsIncident() },
       'geo_location.fire_b': { state: '12', attributes: rfsIncident() },
@@ -123,7 +123,7 @@ describe('source-based auto-collection', () => {
       type: 'custom:weather-alerts-card',
       provider: 'nsw_rfs',
       sources: [RFS_SOURCE],
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass({
       'geo_location.fire_a': { state: '3', attributes: rfsIncident({ category: 'Advice' }) },
       'geo_location.fire_b': { state: '12', attributes: rfsIncident({ category: 'Emergency Warning' }) },
@@ -139,7 +139,7 @@ describe('source-based auto-collection', () => {
     card.setConfig({
       type: 'custom:weather-alerts-card',
       sources: [INMET_SOURCE],
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass({
       'geo_location.inmet_a': { state: '3', attributes: inmetAlert({ severity: 'Perigo' }) },
       'geo_location.inmet_b': { state: '12', attributes: inmetAlert({ severity: 'Grande Perigo' }) },
@@ -160,7 +160,7 @@ describe('source-based auto-collection', () => {
       entity: 'sensor.bom_x_warnings',
       sources: [RFS_SOURCE],
       // provider intentionally omitted → auto-detect per entity
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass({
       'sensor.bom_x_warnings': {
         state: '1',

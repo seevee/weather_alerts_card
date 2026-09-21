@@ -119,7 +119,7 @@ describe('NwsAdapter', () => {
     it('skips non-object entries in the Alerts array', () => {
       const valid = makeNwsAttributes([{ Event: 'Tornado Warning' }]);
       const attrs = { Alerts: [null, 'oops', (valid.Alerts as unknown[])[0]] };
-      const alerts = adapter.parseAlerts(attrs as Record<string, unknown>);
+      const alerts = adapter.parseAlerts(attrs);
       expect(alerts).toHaveLength(1);
       expect(alerts[0].event).toBe('Tornado Warning');
     });

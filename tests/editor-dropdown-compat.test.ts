@@ -33,7 +33,7 @@ function makeEditor(): EditorInternals {
 // rather than on Lit internals.
 function markupOf(template: unknown): string {
   const host = document.createElement('div');
-  render(template as never, host);
+  render(template, host);
   return host.innerHTML;
 }
 
@@ -126,10 +126,10 @@ describe('_useHaInput', () => {
 type RenderedField = { label?: string; value?: string; hint?: string; helper?: string; helperPersistent?: boolean };
 function fieldOf(template: unknown): { tag: string; el: RenderedField & Element } {
   const host = document.createElement('div');
-  render(template as never, host);
+  render(template, host);
   // The control sits inside its `.field` row wrapper.
   const el = host.querySelector('ha-input, ha-textfield')!;
-  return { tag: el.localName, el: el as unknown as RenderedField & Element };
+  return { tag: el.localName, el: el };
 }
 
 describe('_renderTextField', () => {

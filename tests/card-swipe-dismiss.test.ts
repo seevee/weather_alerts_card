@@ -122,7 +122,7 @@ function rows(card: CardInternals): HTMLElement[] {
 // be 0 px. Give each row a width the handlers can measure.
 function row(card: CardInternals, index = 0): HTMLElement {
   const el = rows(card)[index];
-  el.getBoundingClientRect = () => ({ width: WIDTH, height: 80, x: 0, y: 0, top: 0, left: 0, right: WIDTH, bottom: 80, toJSON: () => ({}) }) as DOMRect;
+  el.getBoundingClientRect = () => ({ width: WIDTH, height: 80, x: 0, y: 0, top: 0, left: 0, right: WIDTH, bottom: 80, toJSON: () => ({}) });
   return el;
 }
 

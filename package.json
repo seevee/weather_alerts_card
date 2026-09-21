@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c --watch",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && eslint src tests vitest.config.ts",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "screenshot": "node scripts/screenshot.js",
@@ -31,6 +31,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@mdi/js": "^7.4.47",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -40,7 +41,10 @@
     "@vitest/coverage-v8": "^4.1.11",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^11.2.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-lit": "^2.3.1",
     "git-cliff": "^2.12.0",
+    "globals": "^17.12.0",
     "home-assistant-js-websocket": "^9.6.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.59.1",
@@ -49,6 +53,7 @@
     "rollup-plugin-typescript2": "^0.37.0",
     "semver": "^7.7.4",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
     "vitepress": "^1.6.4",
     "vitest": "^4.0.18"
   },

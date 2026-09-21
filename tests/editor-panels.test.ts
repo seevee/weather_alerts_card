@@ -28,7 +28,7 @@ const en = translations.en;
 const ORDER: Panel[] = ['source', 'filtering', 'appearance', 'details', 'behavior', 'dismissal', 'advanced'];
 
 function base(extra: Partial<WeatherAlertsCardConfig> = {}): WeatherAlertsCardConfig {
-  return { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', ...extra } as WeatherAlertsCardConfig;
+  return { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', ...extra };
 }
 
 function makeEditor(config: WeatherAlertsCardConfig): { editor: EditorInternals; events: WeatherAlertsCardConfig[] } {
@@ -45,7 +45,7 @@ function makeEditor(config: WeatherAlertsCardConfig): { editor: EditorInternals;
 
 function renderHost(editor: EditorInternals): HTMLElement {
   const host = document.createElement('div');
-  render(editor.render() as never, host, { host: editor });
+  render(editor.render(), host, { host: editor });
   return host;
 }
 
@@ -170,7 +170,7 @@ describe('panel header summaries', () => {
 describe('changed-row markers', () => {
   const markedLabels = (root: Element) =>
     [...root.querySelectorAll('.field.changed')].map(f => {
-      const el = f.querySelector('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector') as Labelled | null;
+      const el = f.querySelector('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector');
       return el?.label;
     });
 
@@ -333,8 +333,8 @@ describe('default option suffix', () => {
 describe('reset links', () => {
   const rows = (host: HTMLElement) =>
     [...host.querySelectorAll('.field.changed')].map(f => ({
-      label: (f.querySelector('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector') as Labelled | null)?.label,
-      link: f.querySelector(':scope > .reset-link') as HTMLElement | null,
+      label: (f.querySelector('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector'))?.label,
+      link: f.querySelector(':scope > .reset-link'),
     }));
   const click = (el: HTMLElement | null | undefined) => el!.dispatchEvent(new Event('click'));
 

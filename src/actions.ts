@@ -67,7 +67,7 @@ export function handleTapAction(
     case 'toggle': {
       const entityId = action.entity ?? defaultEntity;
       if (!entityId || !hass?.callService) return;
-      hass.callService('homeassistant', 'toggle', { entity_id: entityId });
+      void hass.callService('homeassistant', 'toggle', { entity_id: entityId });
       break;
     }
     case 'call-service':
@@ -78,7 +78,7 @@ export function handleTapAction(
       if (idx < 0) return;
       const domain = service.slice(0, idx);
       const serviceName = service.slice(idx + 1);
-      hass.callService(
+      void hass.callService(
         domain,
         serviceName,
         action.data ?? action.service_data,

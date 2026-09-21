@@ -84,7 +84,6 @@ import './weather-alerts-card-editor';
 export const GEOMETRY_MISS_COOLDOWN_MS = 60_000;
 export const GEOMETRY_MISS_MAX_ATTEMPTS = 10;
 
-/* eslint-disable no-console */
 declare const __CARD_VERSION__: string;
 const CARD_VERSION = __CARD_VERSION__;
 console.info(
@@ -92,7 +91,6 @@ console.info(
   'color: white; background: #555; font-weight: bold;',
   'color: white; background: #007acc; font-weight: bold;',
 );
-/* eslint-enable no-console */
 
 const PROVIDER_LABELS: Record<string, string> = {
   nws: 'NWS',
@@ -160,7 +158,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       areaDesc: 'Sampletown County',
       zones: ['SAMPLE02'],
       eventCode: 'WIA',
-      provider: 'nws' as AlertProvider,
+      provider: 'nws',
       phase: '',
       severityInferred: true,
       certaintyInferred: false,
@@ -182,7 +180,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       areaDesc: 'Pleasantville, USA',
       zones: ['SAMPLE01'],
       eventCode: 'HTA',
-      provider: 'nws' as AlertProvider,
+      provider: 'nws',
       phase: 'Update',
       severityInferred: false,
       certaintyInferred: false,
@@ -204,7 +202,7 @@ function getPreviewAlerts(): WeatherAlert[] {
       areaDesc: 'Pleasantville, USA',
       zones: ['SAMPLE01'],
       eventCode: 'FRA',
-      provider: 'nws' as AlertProvider,
+      provider: 'nws',
       phase: '',
       severityInferred: false,
       certaintyInferred: true,
@@ -227,7 +225,7 @@ export class WeatherAlertsCard extends LitElement {
   @state() private _detailPopupAlertId: string | null = null;
   @state() private _dismissals: Map<string, DismissalRecord> = new Map();
   private _dismissalsScope = '';
-  private _unsubscribeDismissals?: () => void;
+  private _unsubscribeDismissals: (() => void) | undefined;
 
   // Pointer-drag-to-dismiss gesture state (plain fields — requestUpdate() called manually).
   // Unifies touch swipe and mouse drag via Pointer Events; setPointerCapture takes
@@ -245,8 +243,8 @@ export class WeatherAlertsCard extends LitElement {
   // Live entity-registry copy. `null` until the WS subscription delivers;
   // resolution helpers fall back to `hass.entities` while it is null.
   private _registryEntries: EntityRegistryDisplayEntry[] | null = null;
-  private _unsubscribeRegistry?: () => void;
-  private _subscribedRegistryConn?: Connection;
+  private _unsubscribeRegistry: (() => void) | undefined;
+  private _subscribedRegistryConn: Connection | undefined;
 
   // cap_alerts geometry mini-map (opt-in via showGeometry). Cache maps a
   // geometry_ref → fetched geometry. A polygon that arrived is immutable for
@@ -260,7 +258,7 @@ export class WeatherAlertsCard extends LitElement {
   @state() private _geometryCache = new Map<string, GeoJsonGeometry>();
   private _geometryMisses = new Map<string, { at: number; attempts: number }>();
   private _geometryInFlight = new Set<string>();
-  private _geometryConn?: Connection;
+  private _geometryConn: Connection | undefined;
 
   // Basemap access token for geometryStyle: 'map' (HA's map_tiles proxy, #259).
   // Fetched once per connection when the map style is on, refreshed on the
@@ -269,7 +267,7 @@ export class WeatherAlertsCard extends LitElement {
   // (core < 2026.9) stays rejected for that connection — no retry per hass
   // update — and the card draws the plain outline instead.
   @state() private _mapTilesToken: string | null = null;
-  private _mapTilesConn?: Connection;
+  private _mapTilesConn: Connection | undefined;
   private _mapTilesInFlight = false;
   private _mapTilesTimer: ReturnType<typeof setInterval> | null = null;
   private _onMapTilesReady = () => this._refreshMapTilesToken();
@@ -519,7 +517,7 @@ export class WeatherAlertsCard extends LitElement {
     if (!rest.entity && rest.entities && rest.entities.length > 0) {
       rest.entity = rest.entities[0];
     }
-    this._config = rest as WeatherAlertsCardConfig;
+    this._config = rest;
     this._forcePreview = !!_preview;
     const stateKey = this._entityStateKey();
     const saved = WeatherAlertsCard._editorExpandedState.get(stateKey);
@@ -552,7 +550,7 @@ export class WeatherAlertsCard extends LitElement {
     const scope = this._scopeHash;
     if (scope === this._dismissalsScope) return;
     this._dismissalsScope = scope;
-    this._dismissals = scope ? loadDismissals(scope) : new Map();
+    this._dismissals = scope ? loadDismissals(scope) : new Map<string, DismissalRecord>();
     this._resubscribeDismissals();
   }
 
@@ -1496,7 +1494,7 @@ export class WeatherAlertsCard extends LitElement {
     const progressStyle = isOngoing ? '' : `--progress: ${progress.progressPct}%;`;
     const swipeClass = this._swipeCardClass(alert);
     const tapAction = hasTapAction(this._config);
-    const actionable = tapAction && this._config!.tap_action!.action !== 'none';
+    const actionable = tapAction && this._config.tap_action!.action !== 'none';
     const cardStyle = this._swipeCardStyle(alert, `${this._alertColorStyle(alert)} ${progressStyle}`);
     return html`
       <div
@@ -1581,7 +1579,7 @@ export class WeatherAlertsCard extends LitElement {
     const decoClasses = this._alertDecoClasses(progress);
     const swipeClass = this._swipeCardClass(alert);
     const tapAction = hasTapAction(this._config);
-    const actionable = tapAction && this._config!.tap_action!.action !== 'none';
+    const actionable = tapAction && this._config.tap_action!.action !== 'none';
     // --progress positions the whole-row wash (progressFill:background); ongoing
     // (active, no end time) fills full-width, so pin it to 0% (left:0). Inert in
     // track mode. Mirrors the compact renderer.
@@ -1689,7 +1687,7 @@ export class WeatherAlertsCard extends LitElement {
     `;
   }
 
-  private _renderBadgesRow(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
+  private _renderBadgesRow(alert: WeatherAlert, _progress: AlertProgress): TemplateResult {
     const severityText = alert.severityBadgeLabel
       ?? t('badge.severity_' + alert.severity, this._lang);
     const certText = alert.certainty
@@ -1820,7 +1818,7 @@ export class WeatherAlertsCard extends LitElement {
   // close enough (REFERENCE_FRAME_MAX_KM) to keep the incident in local
   // context — past that it is dropped from framing and not drawn at all.
   // Pure: reads config + hass only.
-  private _geometryPoints(alert: WeatherAlert): { bbox?: Bbox; point?: LonLat; referencePoint?: LonLat } {
+  private _geometryPoints(alert: WeatherAlert): { bbox?: Bbox | undefined; point?: LonLat | undefined; referencePoint?: LonLat | undefined } {
     const point = alert.point;
     let referencePoint = this._config?.showMyLocation === true
       ? resolveReferencePoint(this.hass, this._config?.myLocationEntity)
@@ -1995,8 +1993,7 @@ export class WeatherAlertsCard extends LitElement {
 }
 
 // Register with HA card picker
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const w = window as any;
+const w = window as unknown as { customCards?: unknown[] };
 w.customCards = w.customCards || [];
 w.customCards.push({
   type: 'weather-alerts-card',

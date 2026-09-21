@@ -27,7 +27,7 @@ type CardInternals = {
 
 function makeCard(config: Partial<WeatherAlertsCardConfig>): CardInternals {
   const card = new WeatherAlertsCard() as unknown as CardInternals;
-  card.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.alerts', ...config } as WeatherAlertsCardConfig);
+  card.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.alerts', ...config });
   return card;
 }
 
@@ -114,9 +114,9 @@ describe("legacy 'eccc' configs", () => {
   it('are shown in the editor with the toggle on, without rewriting an explicit false', () => {
     type EditorInternals = { setConfig(c: WeatherAlertsCardConfig): void; _config: WeatherAlertsCardConfig };
     const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
-    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.alerts', colorTheme: 'eccc' } as WeatherAlertsCardConfig);
+    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.alerts', colorTheme: 'eccc' });
     expect(editor._config.providerColors).toBe(true);
-    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.alerts', colorTheme: 'eccc', providerColors: false } as WeatherAlertsCardConfig);
+    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.alerts', colorTheme: 'eccc', providerColors: false });
     expect(editor._config.providerColors).toBe(false);
   });
 });

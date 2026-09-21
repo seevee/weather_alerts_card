@@ -22,7 +22,7 @@ function makeAlert(overrides: Partial<InmetAlert> = {}): Record<string, unknown>
     latitude: -22.9056,
     longitude: -47.0608,
   };
-  return { ...defaults, ...overrides } as Record<string, unknown>;
+  return { ...defaults, ...overrides };
 }
 
 describe('InmetAdapter', () => {
