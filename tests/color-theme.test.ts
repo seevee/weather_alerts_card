@@ -33,7 +33,7 @@ function makeCard(config: Partial<WeatherAlertsCardConfig>): CardInternals {
 
 function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
   return {
-    id: 'a1', event: 'Test', severity: 'severe', certainty: '', urgency: '',
+    id: 'a1', event: 'Test', severity: 'severe', severityLabel: 'Severe', certainty: '', urgency: '',
     sentTs: 0, onsetTs: 0, endsTs: 0, description: '', instruction: '', url: '',
     headline: '', areaDesc: '', zones: [], eventCode: '', provider: 'eccc', phase: '',
     severityInferred: false, certaintyInferred: false,

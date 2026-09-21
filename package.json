@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c --watch",
-    "lint": "tsc --noEmit && eslint src tests vitest.config.ts",
+    "lint": "tsc --noEmit -p tsconfig.eslint.json && eslint src tests vitest.config.ts",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "screenshot": "node scripts/screenshot.js",

@@ -26,7 +26,7 @@ import type { ActionConfig, HomeAssistant, WeatherAlertsCardConfig } from '../sr
 
 const HOUR = 3600 * 1000;
 
-interface CardInternals {
+interface CardInternals extends HTMLElement {
   setConfig(config: WeatherAlertsCardConfig): void;
   hass: HomeAssistant;
   shadowRoot: ShadowRoot | null;

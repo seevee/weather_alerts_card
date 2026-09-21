@@ -11,7 +11,7 @@ import type { HomeAssistant, WeatherAlertsCardConfig, EntityRegistryDisplayEntry
 // asserts the emitted config, then covers the two lifecycle hooks that keep
 // the dismissal and registry subscriptions aligned with the config.
 
-type EditorInternals = WeatherAlertsCardEditor & {
+type EditorInternals = Omit<WeatherAlertsCardEditor, never> & {
   _config: WeatherAlertsCardConfig;
   _showPreview: boolean;
   _subscribedDismissalsScope: string;
@@ -63,14 +63,14 @@ describe('comma-list text fields', () => {
   for (const c of cases) {
     it(`${c.key}: splits on commas, trims, drops empties${c.key === 'zones' ? '' : ', upper-cases'}`, () => {
       const { editor, events } = makeEditor();
-      editor[c.handler](input(c.raw));
+      (editor[c.handler])(input(c.raw));
       expect(events).toHaveLength(1);
       expect(events[0][c.key]).toEqual(c.parsed);
     });
 
     it(`${c.key}: a blank field removes the key`, () => {
       const { editor, events } = makeEditor({ [c.key]: ['X'] });
-      editor[c.handler](input('   '));
+      (editor[c.handler])(input('   '));
       expect(events).toHaveLength(1);
       expect(events[0]).not.toHaveProperty(c.key);
     });
@@ -214,7 +214,7 @@ describe('_previewChanged', () => {
 describe('_renderSourceHint', () => {
   function hint(editor: EditorInternals): { warning: string[]; info: string[] } {
     const host = document.createElement('div');
-    render(editor._renderSourceHint('en') as never, host);
+    render(editor._renderSourceHint('en'), host);
     const of = (type: string) => [...host.querySelectorAll(`ha-alert[alert-type="${type}"]`)].map(el => (el.textContent || '').trim());
     return { warning: of('warning'), info: of('info') };
   }
@@ -224,7 +224,7 @@ describe('_renderSourceHint', () => {
   it('renders nothing without sources, and nothing without hass', () => {
     expect(hint(makeEditor().editor)).toEqual({ warning: [], info: [] });
     const { editor } = makeEditor({ sources: [NSW_SOURCE] });
-    (editor as { hass?: HomeAssistant }).hass = undefined;
+    (editor as { hass: HomeAssistant | undefined }).hass = undefined;
     expect(hint(editor)).toEqual({ warning: [], info: [] });
   });
 
@@ -283,7 +283,7 @@ async function flushAsync(): Promise<void> {
 
 async function mountEditor(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssistant) {
   const editor = document.createElement('weather-alerts-card-editor') as unknown as EditorInternals;
-  editor.setConfig({ type: 'custom:weather-alerts-card', ...config });
+  editor.setConfig({ type: 'custom:weather-alerts-card', ...config } as WeatherAlertsCardConfig);
   editor.hass = hass;
   document.body.appendChild(editor);
   await editor.updateComplete;

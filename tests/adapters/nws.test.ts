@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { NwsAdapter } from '../../src/adapters/nws';
 import type { NwsAlert } from '../../src/types';
+import type { Overrides } from '../types';
 
-function makeNwsAttributes(alerts: Partial<NwsAlert>[] = []): Record<string, unknown> {
+function makeNwsAttributes(alerts: Overrides<NwsAlert>[] = []): Record<string, unknown> {
   const defaults: NwsAlert = {
     ID: 'urn:oid:2.49.0.1.840.0.test',
     Event: 'Tornado Warning',

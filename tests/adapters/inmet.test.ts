@@ -140,7 +140,7 @@ describe('InmetAdapter', () => {
       expect(adapter.feedSources).toEqual(['inmet']);
       // The point is the configured city, identical on every alert, so a
       // radius over it is a constant: the marker stays, the control does not.
-      expect(adapter.carriesPoint).toBeFalsy();
+      expect((adapter as { carriesPoint?: boolean }).carriesPoint).toBeFalsy();
       expect(adapter.stableIds).toBe(true);
     });
   });

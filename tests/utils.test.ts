@@ -35,6 +35,8 @@ function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
     id: 'test-1',
     event: 'Test Alert',
     severity: 'moderate',
+    severityLabel: 'Moderate',
+    eventCode: '',
     certainty: 'Likely',
     urgency: 'Immediate',
     sentTs: parseTimestamp('2026-03-06T10:00:00-07:00'),
@@ -353,13 +355,13 @@ describe('getNwsEventColor', () => {
     // Severe Thunderstorm Warning normally boosts on light; Freeze Warning
     // normally boosts on dark. 'off' must suppress both.
     const stw = getNwsEventColor('Severe Thunderstorm Warning', 'off');
-    expect(stw.boostLight).toBe(false);
-    expect(stw.boostDark).toBe(false);
-    expect(stw.progressBoostLight).toBe(false);
-    expect(stw.progressBoostDark).toBe(false);
+    expect(stw!.boostLight).toBe(false);
+    expect(stw!.boostDark).toBe(false);
+    expect(stw!.progressBoostLight).toBe(false);
+    expect(stw!.progressBoostDark).toBe(false);
     const fw = getNwsEventColor('Freeze Warning', 'off');
-    expect(fw.boostDark).toBe(false);
-    expect(fw.progressBoostDark).toBe(false);
+    expect(fw!.boostDark).toBe(false);
+    expect(fw!.progressBoostDark).toBe(false);
   });
 
   it('mode="strict" catches middling hues that subtle lets through', () => {
@@ -378,8 +380,8 @@ describe('getNwsEventColor', () => {
   it('mode="strict" does not falsely flag well-contrasted hues', () => {
     // Tornado Warning (#FF0000, crLight ~4.0, crDark ~4.26) — passes even strict's 3.0 text tier
     const tw = getNwsEventColor('Tornado Warning', 'strict');
-    expect(tw.boostLight).toBe(false);
-    expect(tw.boostDark).toBe(false);
+    expect(tw!.boostLight).toBe(false);
+    expect(tw!.boostDark).toBe(false);
   });
 });
 

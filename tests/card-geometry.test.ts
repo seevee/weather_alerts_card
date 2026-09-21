@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import type { Overrides } from './types';
 
 // jsdom lacks matchMedia; the card touches it during construction, so the
 // polyfill must be installed before the card module loads.
@@ -19,7 +20,7 @@ import '../src/weather-alerts-card';
 import { REFERENCE_FRAME_MAX_KM } from '../src/geometry';
 import type { HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
 
-interface CardInternals {
+interface CardInternals extends HTMLElement {
   setConfig(config: WeatherAlertsCardConfig): void;
   hass: HomeAssistant;
   remove(): void;
@@ -139,7 +140,7 @@ function makeHass(
   return hass as unknown as HomeAssistant;
 }
 
-const rfsConfig = (extra: Partial<WeatherAlertsCardConfig> = {}): WeatherAlertsCardConfig => ({
+const rfsConfig = (extra: Overrides<WeatherAlertsCardConfig> = {}): WeatherAlertsCardConfig => ({
   type: 'custom:weather-alerts-card',
   provider: 'nsw_rfs',
   sources: [RFS_SOURCE],
@@ -327,7 +328,7 @@ describe('my-location marker', () => {
     expect(anchorOf(ring!).x).toBeGreaterThan(anchorOf(marker!).x);
     expect(anchorOf(ring!).y).toBeCloseTo(anchorOf(marker!).y, 3);
     // Reference is painted first (under), the incident last (on top).
-    const paths = [...qAll(card, 'svg.alert-geometry path')].map(p => p.className.baseVal);
+    const paths = [...qAll(card, 'svg.alert-geometry path')].map(p => (p as SVGElement).className.baseVal);
     expect(paths.indexOf('geometry-reference-ring')).toBeLessThan(paths.indexOf('geometry-marker'));
     expect(svg.getAttribute('aria-label')).toBe('Somewhere, with your location marked');
     cleanup();
@@ -381,7 +382,7 @@ describe('my-location marker', () => {
       rfsConfig({ ...MAP, showMyLocation: true }),
       makeHass({ 'geo_location.fire': rfsIncident() }),
     );
-    const paths = [...qAll(card, 'svg.alert-geometry.map path')].map(p => p.className.baseVal);
+    const paths = [...qAll(card, 'svg.alert-geometry.map path')].map(p => (p as SVGElement).className.baseVal);
     expect(paths).toEqual([
       'geometry-reference-ring',
       'geometry-reference-core',

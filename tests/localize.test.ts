@@ -2,6 +2,13 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { t } from '../src/localize';
 import { translations, type TranslationMap } from '../src/translations';
 
+// Read without @types/node: pulling Node's globals into the compile would
+// retype setTimeout and friends for the card source as well.
+const nodeProcess = (globalThis as {
+  process?: { env?: Record<string, string | undefined>; stderr?: { write(chunk: string): unknown } };
+}).process;
+const strictI18n = (): boolean => !!nodeProcess?.env?.I18N_STRICT;
+
 describe('t()', () => {
   it('returns English string for known key', () => {
     expect(t('card.no_alerts', 'en')).toBe('No active alerts.');
@@ -280,11 +287,11 @@ describe('t()', () => {
 
     const message =
       `${lang}.ts is missing ${missing.length} key(s) present in en.ts: ${missing.join(', ')}`;
-    if (process.env.I18N_STRICT) expect.fail(message);
+    if (strictI18n()) expect.fail(message);
 
     // Written straight to stderr, not console.warn: vitest's default reporter
     // buffers console output from *passing* tests and drops it when stdout is
     // not a TTY — i.e. exactly in CI, where this notice is the only signal.
-    process.stderr.write(`[i18n drift] ${message}\n`);
+    nodeProcess?.stderr?.write(`[i18n drift] ${message}\n`);
   });
 });

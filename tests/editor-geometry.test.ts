@@ -36,7 +36,7 @@ function capture(editor: EditorInternals): () => WeatherAlertsCardConfig | undef
   return () => emitted;
 }
 
-type Rendered = { selectors: { label?: string; value?: unknown; selector?: unknown }[]; switches: { label: string; checked?: boolean }[] };
+type Rendered = { selectors: { label?: string; value?: unknown; selector?: unknown }[]; switches: { label: string; checked?: boolean | undefined }[] };
 function renderEditor(editor: EditorInternals): Rendered {
   const host = document.createElement('div');
   render(editor.render(), host);
