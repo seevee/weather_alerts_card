@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import type { LooseConfig, Overrides } from './types';
 
 // jsdom lacks matchMedia; the card touches it during construction, so polyfill
 // before the card module loads (mirrors source-mode.test.ts).
@@ -77,19 +78,20 @@ function makeHass(
   return hass as unknown as HomeAssistant;
 }
 
-type CardInternals = WeatherAlertsCard & {
+type CardInternals = Omit<WeatherAlertsCard, never> & {
+  setConfig(config: LooseConfig): void;
   _config?: WeatherAlertsCardConfig;
   _getAlerts(reconcile?: boolean): WeatherAlert[];
 };
 
-function makeCard(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssistant): CardInternals {
+function makeCard(config: Overrides<WeatherAlertsCardConfig>, hass: HomeAssistant): CardInternals {
   const card = new WeatherAlertsCard() as unknown as CardInternals;
   card.setConfig({
     type: 'custom:weather-alerts-card',
     provider: 'nsw_rfs',
     sources: [RFS_SOURCE],
     ...config,
-  });
+  } as LooseConfig);
   card.hass = hass;
   return card;
 }

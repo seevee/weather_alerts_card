@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { NswRfsAdapter } from '../../src/adapters/nsw_rfs';
 import { parseTimestamp, reflowAlertText } from '../../src/utils';
 import type { NswRfsIncident } from '../../src/types';
+import type { Overrides } from '../types';
 
-function makeIncident(overrides: Partial<NswRfsIncident> = {}): Record<string, unknown> {
+function makeIncident(overrides: Overrides<NswRfsIncident> = {}): Record<string, unknown> {
   const defaults: NswRfsIncident = {
     external_id: 'https://www.rfs.nsw.gov.au/incident/1234',
     category: 'Advice',

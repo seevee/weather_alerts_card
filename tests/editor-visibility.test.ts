@@ -24,6 +24,7 @@ function makeEditor(): EditorInternals {
 
 function makeConfig(overrides: Partial<WeatherAlertsCardConfig>): WeatherAlertsCardConfig {
   return {
+    type: 'custom:weather-alerts-card',
     entity: 'sensor.nws_alerts',
     ...overrides,
   };

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import type { Connection } from 'home-assistant-js-websocket';
+import type { LooseConfig } from './types';
 
 // jsdom lacks matchMedia; LitElement/the card's _motionQuery touches it during
 // construction, so the polyfill must be installed before the card module loads.
@@ -159,7 +160,8 @@ describe('resolveDeviceAlertEntities', () => {
 
 // Reach into the card's privates to keep test surface contained while still
 // exercising the real wiring of setConfig → _getAllEntities → render.
-type CardInternals = WeatherAlertsCard & {
+type CardInternals = Omit<WeatherAlertsCard, never> & {
+  setConfig(config: LooseConfig): void;
   _config?: WeatherAlertsCardConfig;
   _registryEntries: EntityRegistryDisplayEntry[] | null;
   _dismissals: Map<string, DismissalRecord>;
@@ -321,7 +323,7 @@ async function flushAsync(): Promise<void> {
 }
 
 async function mountCard(
-  config: WeatherAlertsCardConfig,
+  config: LooseConfig,
   hass: HomeAssistant,
 ): Promise<{ card: CardInternals; cleanup: () => void }> {
   const card = document.createElement('weather-alerts-card') as unknown as CardInternals;
@@ -376,7 +378,7 @@ describe('WeatherAlertsCard render in device mode', () => {
       { [ALERT_ID]: { state: 'moderate', attributes: capAlertAttrs({ event: 'Frost' }) } },
     );
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.preview-label')).toBe(false);
@@ -390,7 +392,7 @@ describe('WeatherAlertsCard render in device mode', () => {
     // the per-alert sensor — i.e. the integration cleared all active alerts.
     const hass = makeHass([entry(ALERT_ID)], {});
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.preview-label')).toBe(false);
@@ -401,7 +403,7 @@ describe('WeatherAlertsCard render in device mode', () => {
   it('renders preview when device has no entries at all', async () => {
     const hass = makeHass([], {});
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.preview-label')).toBe(true);
@@ -420,7 +422,7 @@ describe('WeatherAlertsCard render in device mode', () => {
     } as unknown as HomeAssistant;
 
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.preview-label')).toBe(true);
@@ -453,7 +455,7 @@ describe('WeatherAlertsCard reactive registry updates', () => {
     } as unknown as HomeAssistant;
 
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     // Phase 1: empty registry → preview.
@@ -508,7 +510,7 @@ describe('WeatherAlertsCard dismissal scope stability across registry churn', ()
         type: 'custom:weather-alerts-card',
         device: DEVICE,
         allowDismiss: true,
-      } as WeatherAlertsCardConfig,
+      },
       hass,
     );
 
@@ -555,7 +557,7 @@ describe('WeatherAlertsCard dismissal scope stability across registry churn', ()
         type: 'custom:weather-alerts-card',
         device: DEVICE,
         allowDismiss: true,
-      } as WeatherAlertsCardConfig,
+      },
       hass,
     );
 
@@ -607,7 +609,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it('a fully-dark device surfaces the caveat instead of a bare all-clear', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       darkDeviceHass(),
     );
     // Previously this was a plain "No active alerts." — the false all-clear #201
@@ -619,7 +621,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it("message mode names the dark device (shows *which* source)", async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       darkDeviceHass(),
     );
     // The whole promise of 'message': name the source, not a generic string.
@@ -629,7 +631,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it('falls back to a generic singular when the device has no registry name', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       darkDeviceHass(false),
     );
     expect(caveat(card).toLowerCase()).toContain('a source is unavailable');
@@ -645,7 +647,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it('a dark device stays visible even under hideNoAlerts', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE, hideNoAlerts: true } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE, hideNoAlerts: true },
       darkDeviceHass(),
     );
     expect(hasEl(card, '.no-alerts-caveat')).toBe(true);
@@ -655,7 +657,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it('unavailableBehavior:hide opts a dark device back out (no caveat)', async () => {
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE, unavailableBehavior: 'hide' } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE, unavailableBehavior: 'hide' },
       darkDeviceHass(),
     );
     expect(hasEl(card, '.no-alerts')).toBe(true);
@@ -672,7 +674,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
       },
     );
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.alert-card')).toBe(true);
@@ -688,7 +690,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
       { [ALERT_ID]: { state: 'unknown', attributes: capAlertAttrs({ event: 'Beach Hazards' }) } },
     );
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.alert-card')).toBe(true);
@@ -705,7 +707,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
       },
     );
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.no-alerts')).toBe(true);
@@ -730,7 +732,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
       { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } },
     );
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
     expect(hasEl(card, '.no-alerts')).toBe(true);
@@ -927,7 +929,7 @@ describe('WeatherAlertsCard with multiple devices (#256)', () => {
       connection: mock.conn,
     } as unknown as HomeAssistant;
     const { card, cleanup } = await mountCard(
-      { type: 'custom:weather-alerts-card', devices: [DEVICE] } as WeatherAlertsCardConfig,
+      { type: 'custom:weather-alerts-card', devices: [DEVICE] },
       hass,
     );
     expect(hasEl(card, '.preview-label')).toBe(true);

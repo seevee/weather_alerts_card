@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
+import type { LooseConfig } from './types';
 
 // jsdom lacks matchMedia; the card touches it during construction, so polyfill
 // before the card module loads (mirrors device-mode.test.ts).
@@ -60,7 +61,8 @@ function makeHass(states: Record<string, { state: string; attributes: Record<str
   return { states, locale: { language: 'en' }, entities: {} } as unknown as HomeAssistant;
 }
 
-type CardInternals = WeatherAlertsCard & {
+type CardInternals = Omit<WeatherAlertsCard, never> & {
+  setConfig(config: LooseConfig): void;
   _config?: WeatherAlertsCardConfig;
   _getAllEntities(): string[];
   _getAlerts(): WeatherAlert[];

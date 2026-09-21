@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { BomAdapter } from '../../src/adapters/bom';
 import type { BomWarning } from '../../src/types';
+import type { Overrides } from '../types';
 
-function makeBomAttributes(warnings: Partial<BomWarning>[] = []): Record<string, unknown> {
+function makeBomAttributes(warnings: Overrides<BomWarning>[] = []): Record<string, unknown> {
   const defaults: BomWarning = {
     id: 'NSW_IDN12345',
     area_id: 'NSW_ME001',

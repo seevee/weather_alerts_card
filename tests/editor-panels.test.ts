@@ -170,7 +170,7 @@ describe('panel header summaries', () => {
 describe('changed-row markers', () => {
   const markedLabels = (root: Element) =>
     [...root.querySelectorAll('.field.changed')].map(f => {
-      const el = f.querySelector('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector');
+      const el = f.querySelector<Labelled>('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector');
       return el?.label;
     });
 
@@ -333,10 +333,10 @@ describe('default option suffix', () => {
 describe('reset links', () => {
   const rows = (host: HTMLElement) =>
     [...host.querySelectorAll('.field.changed')].map(f => ({
-      label: (f.querySelector('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector'))?.label,
+      label: f.querySelector<Labelled>('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector')?.label,
       link: f.querySelector(':scope > .reset-link'),
     }));
-  const click = (el: HTMLElement | null | undefined) => el!.dispatchEvent(new Event('click'));
+  const click = (el: Element | null | undefined) => el!.dispatchEvent(new Event('click'));
 
   it('renders none on a default card', () => {
     expect(renderHost(makeEditor(base()).editor).querySelectorAll('.reset-link')).toHaveLength(0);

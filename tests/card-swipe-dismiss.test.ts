@@ -49,7 +49,7 @@ const WIDTH = 300;
 const WIND = 'wind-severe';
 const FLOOD = 'flood-severe';
 
-type CardInternals = WeatherAlertsCard & {
+type CardInternals = Omit<WeatherAlertsCard, never> & {
   _swipeState: { id: string; offset: number; locked: boolean; cardWidth: number } | null;
   _swipeExiting: string | null;
   _swipeJustDragged: boolean;

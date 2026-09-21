@@ -23,7 +23,7 @@ beforeAll(() => {
 import '../src/weather-alerts-card';
 import type { HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
 
-interface CardInternals {
+interface CardInternals extends HTMLElement {
   setConfig(config: WeatherAlertsCardConfig): void;
   hass: HomeAssistant;
   remove(): void;

@@ -21,7 +21,7 @@ type EditorInternals = {
   _tapActionChanged(ev: Event): void;
 };
 
-type EditorStatics = { _webAwesome?: boolean; _haInput?: boolean };
+type EditorStatics = { _webAwesome: boolean | undefined; _haInput: boolean | undefined };
 
 function makeEditor(): EditorInternals {
   const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
