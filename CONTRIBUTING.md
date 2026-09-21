@@ -20,7 +20,7 @@ See [AGENTS.md](AGENTS.md) for full architecture details and dev container instr
 
 All PRs must pass:
 - `npm run lint` — TypeScript type-check
-- `npm run test` — Vitest unit tests
+- `npm run test` — Vitest unit tests, gated on the coverage floors in `vitest.config.ts`
 - `npm run build` — Rollup bundle
 - HACS validation
 
