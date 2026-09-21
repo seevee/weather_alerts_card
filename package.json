@@ -38,7 +38,7 @@
     "@rollup/plugin-replace": "^6.0.3",
     "@types/dompurify": "^3.2.0",
     "@vitest/browser": "^4.1.2",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.1",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^12.1.0",
     "eslint": "^10.11.0",
