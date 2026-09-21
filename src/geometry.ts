@@ -204,7 +204,8 @@ function outerRings(geometry?: GeoJsonGeometry | null): number[][][] {
   if (!geometry) return [];
   if (geometry.type === 'Polygon') {
     const rings = (geometry as GeoJsonPolygon).coordinates;
-    return Array.isArray(rings) && rings.length > 0 ? [rings[0]] : [];
+    const outer = Array.isArray(rings) ? rings[0] : undefined;
+    return outer ? [outer] : [];
   }
   if (geometry.type === 'MultiPolygon') {
     const polys = (geometry as GeoJsonMultiPolygon).coordinates;
@@ -224,8 +225,10 @@ function ringToPath(
   let d = '';
   for (let i = 0; i < ring.length; i++) {
     const pt = ring[i];
-    if (!Array.isArray(pt) || pt.length < 2) continue;
-    const [x, y] = project(pt[0], pt[1]);
+    if (!Array.isArray(pt)) continue;
+    const [lon, lat] = pt;
+    if (lon === undefined || lat === undefined) continue;
+    const [x, y] = project(lon, lat);
     d += `${i === 0 ? 'M' : 'L'}${fmt(x)},${fmt(y)}`;
   }
   if (!d) return null;

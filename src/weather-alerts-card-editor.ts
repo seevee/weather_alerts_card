@@ -404,13 +404,14 @@ export class WeatherAlertsCardEditor extends LitElement {
 
     // Mirrors _entityChanged: device = first selected (a one-device config
     // stays byte-identical to before `devices` existed); devices = the rest.
-    if (selected.length > 0) {
-      newConfig.device = selected[0];
+    const [firstDevice, ...moreDevices] = selected;
+    if (firstDevice !== undefined) {
+      newConfig.device = firstDevice;
     } else {
       delete newConfig.device;
     }
-    if (selected.length > 1) {
-      newConfig.devices = selected.slice(1);
+    if (moreDevices.length > 0) {
+      newConfig.devices = moreDevices;
     } else {
       delete newConfig.devices;
     }
@@ -573,8 +574,9 @@ export class WeatherAlertsCardEditor extends LitElement {
 
     if (config.hideNoAlerts && allIds.size > 0) {
       const perEntity = [...allIds].map(id => this._buildEntityCondition(id));
-      if (perEntity.length === 1) {
-        conditions.push(perEntity[0]);
+      const [only, ...more] = perEntity;
+      if (only !== undefined && more.length === 0) {
+        conditions.push(only);
       } else {
         conditions.push({ condition: 'or', conditions: perEntity });
       }

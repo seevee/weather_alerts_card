@@ -515,7 +515,7 @@ export class WeatherAlertsCard extends LitElement {
     const { _preview, ...rest } = config;
     // If entity is missing but entities is set, default entity to entities[0]
     if (!rest.entity && rest.entities && rest.entities.length > 0) {
-      rest.entity = rest.entities[0];
+      rest.entity = rest.entities[0] ?? '';
     }
     this._config = rest;
     this._forcePreview = !!_preview;
@@ -592,6 +592,7 @@ export class WeatherAlertsCard extends LitElement {
       );
       const withAlerts = matches.find(id => {
         const s = hass.states[id];
+        if (!s) return false;
         // sensor: state is alert count; binary_sensor: 'on' means active
         return (s.state !== '0' && s.state !== 'off' && s.state !== 'unknown' && s.state !== 'unavailable');
       });
@@ -1213,7 +1214,7 @@ export class WeatherAlertsCard extends LitElement {
       let hasParseable = false;
       let hasErrored = false;
       for (const id of deviceEntityIds(this.hass, deviceId, this._registryEntries)) {
-        if (COMMAND_DOMAINS.has(id.split('.', 1)[0])) continue;
+        if (COMMAND_DOMAINS.has(id.split('.', 1)[0] ?? '')) continue;
         const e = this.hass.states[id];
         if (!e) continue;
         const parses = getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length > 0;
@@ -1231,12 +1232,13 @@ export class WeatherAlertsCard extends LitElement {
   // strip, the dot, and the empty-state caveat so all three phrasings stay
   // identical.
   private _degradedLabel(sources: BrokenSource[]): string {
-    if (sources.length === 1) {
+    const [only] = sources;
+    if (only !== undefined && sources.length === 1) {
       // One dark source: name it when we can, else a generic singular — some
       // devices have no registry name, and "1 sources unavailable" from the
       // count string reads wrong.
-      return sources[0].name
-        ? t('card.sources_unavailable_named', this._lang, { name: sources[0].name })
+      return only.name
+        ? t('card.sources_unavailable_named', this._lang, { name: only.name })
         : t('card.sources_unavailable_one', this._lang);
     }
     return t('card.sources_unavailable_count', this._lang, { count: sources.length });

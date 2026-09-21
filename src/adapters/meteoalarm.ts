@@ -5,7 +5,7 @@ import { meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '
 // Level 2 = Yellow (Moderate), 3 = Orange (Severe), 4 = Red (Extreme)
 function awarenessLevelToSeverity(awarenessLevel: string | undefined): AlertSeverity | undefined {
   if (!awarenessLevel || typeof awarenessLevel !== 'string') return undefined;
-  const levelId = parseInt(awarenessLevel.split(';')[0].trim(), 10);
+  const levelId = parseInt((awarenessLevel.split(';')[0] ?? '').trim(), 10);
   if (levelId >= 4) return 'extreme';
   if (levelId === 3) return 'severe';
   if (levelId === 2) return 'moderate';
@@ -17,7 +17,7 @@ function awarenessLevelToSeverity(awarenessLevel: string | undefined): AlertSeve
 function awarenessLevelLabel(awarenessLevel: string | undefined): string {
   if (!awarenessLevel || typeof awarenessLevel !== 'string') return '';
   const parts = awarenessLevel.split(';');
-  return parts.length >= 3 ? parts[2].trim() : '';
+  return parts[2]?.trim() ?? '';
 }
 
 // MeteoAlarm awareness_type format: "1; Wind"

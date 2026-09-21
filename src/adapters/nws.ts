@@ -3,7 +3,7 @@ import { normalizeSeverity, parseTimestamp } from '../utils';
 
 function extractZoneCode(url: string): string {
   const parts = url.split('/');
-  return parts[parts.length - 1].toUpperCase();
+  return (parts[parts.length - 1] ?? '').toUpperCase();
 }
 
 function collectZones(alert: NwsAlert): string[] {

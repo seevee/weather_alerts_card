@@ -81,8 +81,8 @@ export function configuredScopeTokens(config: ScopeConfig | undefined): string[]
 /** Scope hash for a card config, or '' when no sources are configured. */
 export function scopeHashForConfig(config: ScopeConfig | undefined): string {
   const tokens = configuredScopeTokens(config);
-  if (tokens.length === 0) return '';
   const [primary, ...extras] = tokens;
+  if (primary === undefined) return '';
   return computeScopeHash(primary, extras);
 }
 
