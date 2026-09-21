@@ -37,8 +37,8 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-replace": "^6.0.3",
     "@types/dompurify": "^3.2.0",
-    "@vitest/browser": "^4.1.2",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/browser": "^5.0.1",
+    "@vitest/coverage-v8": "^5.0.1",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^12.1.0",
     "eslint": "^10.11.0",
@@ -55,7 +55,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.70.0",
     "vitepress": "^1.6.4",
-    "vitest": "^4.0.18"
+    "vitest": "^5.0.1"
   },
   "dependencies": {
     "dompurify": "^3.4.15",
