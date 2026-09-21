@@ -13,7 +13,10 @@ import { InmetAdapter } from './inmet';
 
 // CAP comes first so its `incident_platform_version` marker wins detection
 // over any upstream-shaped attributes that the integration may surface.
-const adapters: AlertAdapter[] = [new CapAdapter(), new NwsAdapter(), new BomAdapter(), new NswRfsAdapter(), new InmetAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
+// NWS is the default adapter for backwards compatibility, so it is named
+// rather than found in the registry when falling back.
+const nwsAdapter = new NwsAdapter();
+const adapters: AlertAdapter[] = [new CapAdapter(), nwsAdapter, new BomAdapter(), new NswRfsAdapter(), new InmetAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
@@ -83,5 +86,5 @@ export function getAdapter(
     if (adapter.canHandle(attributes)) return adapter;
   }
   // Default to NWS for backwards compatibility
-  return adapters.find(a => a.provider === 'nws') ?? adapters[0];
+  return nwsAdapter;
 }

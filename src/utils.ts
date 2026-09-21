@@ -240,12 +240,12 @@ export function getNwsEventColor(event: string, mode: ContrastMode = DEFAULT_CON
 }
 
 // MeteoAlarm official awareness level colors
-const METEOALARM_SEVERITY_COLORS: Record<string, string> = {
+const METEOALARM_SEVERITY_COLORS = {
   extreme: '#D8001E',   // Red
   severe:  '#FF9900',   // Orange
   moderate: '#FFC800',  // Yellow
   minor:   '#88C840',   // Green
-};
+} as const satisfies Record<string, string>;
 
 // The same palette keyed by the color token EUMETNET members publish in
 // `awareness_level` ("2; yellow; Moderate"). The token is the contract; the
@@ -265,11 +265,11 @@ export function meteoalarmAwarenessColorHex(awarenessLevel: unknown): string | u
   if (typeof awarenessLevel !== 'string') return undefined;
   const parts = awarenessLevel.split(';');
   if (parts.length < 2) return undefined;
-  return METEOALARM_TOKEN_COLORS[parts[1].trim().toLowerCase()];
+  return METEOALARM_TOKEN_COLORS[(parts[1] ?? '').trim().toLowerCase()];
 }
 
 export function getMeteoAlarmColor(severity: string, mode: ContrastMode = DEFAULT_CONTRAST_MODE): EventColor {
-  const hex = METEOALARM_SEVERITY_COLORS[severity] ?? '#808080';
+  const hex = (METEOALARM_SEVERITY_COLORS as Record<string, string | undefined>)[severity] ?? '#808080';
   return buildEventColor(
     hex,
     hexToRgbString(hex),
@@ -283,12 +283,12 @@ export function getMeteoAlarmColor(severity: string, mode: ContrastMode = DEFAUL
 // weather.gc.ca, defined in `/204/css/base.css`), keyed by the `color` tag the
 // environment_canada integration publishes. Exported for the ECCC adapter,
 // which resolves that tag into a `colorHint` hex.
-export const ECCC_COLOR_PALETTE: Record<string, string> = {
+export const ECCC_COLOR_PALETTE = {
   red:    '#D10000',
   orange: '#FF9500',
   yellow: '#FFFF00',
   grey:   '#656565',
-};
+} as const satisfies Record<string, string>;
 
 // The same palette as a severity ladder: `colorTheme: 'eccc'` paints every
 // alert by tier from this table, and the ECCC adapter uses it when an alert
@@ -676,7 +676,7 @@ export function reflowAlertText(text: string): string {
       for (const line of lines) {
         if (merged.length === 0) {
           merged.push(line.trimStart());
-        } else if (shortBullet.test(line) || nwsPeriod.test(line.trimStart()) || merged[merged.length - 1].trimEnd().endsWith(':')) {
+        } else if (shortBullet.test(line) || nwsPeriod.test(line.trimStart()) || (merged[merged.length - 1]?.trimEnd().endsWith(':') ?? false)) {
           // Current line is a bullet item or NWS period forecast, or previous line is a header — keep separate
           merged.push(line);
         } else {
@@ -746,7 +746,9 @@ export function deduplicateAlerts(
   }
 
   // Phase 1: merge zone-split alerts within the same provider
-  const groups = new Map<string, WeatherAlert[]>();
+  // Every group is created with its first alert, and the tuple type says so,
+  // so group[0] is a WeatherAlert without a check at the read.
+  const groups = new Map<string, [WeatherAlert, ...WeatherAlert[]]>();
   const order: string[] = [];
 
   for (const alert of input) {
@@ -762,9 +764,10 @@ export function deduplicateAlerts(
 
   let result = order.map(key => {
     const group = groups.get(key)!;
-    if (group.length === 1) return group[0];
+    const first = group[0];
+    if (group.length === 1) return first;
 
-    const representative = { ...group[0] };
+    const representative = { ...first };
     const zoneSet = new Set<string>();
     const areaDescs = new Set<string>();
 
@@ -790,8 +793,8 @@ export function deduplicateAlerts(
   // Alerts with endsTs === 0 are excluded — can't match without an expiry.
   if (providerPriority && providerPriority.length > 1) {
     const rank = new Map<AlertProvider, number>();
-    for (let i = 0; i < providerPriority.length; i++) {
-      if (!rank.has(providerPriority[i])) rank.set(providerPriority[i], i);
+    for (const [i, provider] of providerPriority.entries()) {
+      if (!rank.has(provider)) rank.set(provider, i);
     }
 
     const bestProvider = new Map<string, AlertProvider>();

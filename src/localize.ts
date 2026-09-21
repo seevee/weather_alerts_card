@@ -1,4 +1,5 @@
 import { translations, type TranslationMap } from './translations';
+import { en } from './translations/en';
 
 // Resolves a Home Assistant language code to a translation map, most specific
 // match first: exact code, case-insensitive code, base subtag, then any
@@ -11,19 +12,18 @@ import { translations, type TranslationMap } from './translations';
 // Registry order breaks ties if several locales ever share a base subtag.
 function resolveMap(lang: string): TranslationMap {
   const lower = lang.toLowerCase();
-  const base = lower.split('-')[0];
+  const base = lower.split('-')[0] ?? lower;
 
-  if (translations[lang]) return translations[lang];
-  if (translations[lower]) return translations[lower];
-  if (translations[base]) return translations[base];
+  const direct = translations[lang] ?? translations[lower] ?? translations[base];
+  if (direct) return direct;
 
   const sibling = Object.keys(translations).find((code) => code.toLowerCase().split('-')[0] === base);
-  return sibling ? translations[sibling] : translations.en;
+  return (sibling ? translations[sibling] : undefined) ?? en;
 }
 
 export function t(key: string, lang: string, params?: Record<string, string | number>): string {
   const map = resolveMap(lang);
-  let value = map[key] ?? translations.en[key] ?? key;
+  let value = map[key] ?? en[key] ?? key;
 
   if (params) {
     for (const [k, v] of Object.entries(params)) {

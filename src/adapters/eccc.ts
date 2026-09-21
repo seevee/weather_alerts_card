@@ -93,9 +93,9 @@ function sevFromImpact(impact: string | undefined): AlertSeverity {
 
 function maxSeverity(...severities: AlertSeverity[]): AlertSeverity {
   let best: AlertSeverity = 'unknown';
-  let bestRank = SEVERITY_RANK[best];
+  let bestRank = SEVERITY_RANK[best] ?? 0;
   for (const s of severities) {
-    const r = SEVERITY_RANK[s] ?? SEVERITY_RANK.unknown;
+    const r = SEVERITY_RANK[s] ?? SEVERITY_RANK.unknown ?? 0;
     if (r < bestRank) {
       best = s;
       bestRank = r;
@@ -206,7 +206,8 @@ export class EcccAdapter implements AlertAdapter {
 // palette here, and keep the ECCC look by tier when the tag is absent.
 function ecccColorHex(color: string | undefined, severity: AlertSeverity): string {
   const tag = color ? color.trim().toLowerCase() : '';
-  return ECCC_COLOR_PALETTE[tag] ?? ecccTierHex(severity);
+  const tagged = (ECCC_COLOR_PALETTE as Record<string, string | undefined>)[tag];
+  return tagged ?? ecccTierHex(severity);
 }
 
 function str(v: unknown): string {
