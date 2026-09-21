@@ -6,6 +6,10 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // One jsdom per worker instead of one per file: the environment was
+    // two thirds of the suite's wall time (38 creations, ~34 s). vmThreads
+    // keeps per-file isolation in a fresh VM context.
+    pool: 'vmThreads',
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       provider: 'v8',
