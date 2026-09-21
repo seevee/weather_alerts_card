@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  # Build, test and lint tooling in package.json. Runtime dependencies are
+  # only lit and dompurify; a bump to either changes what ships in the bundle,
+  # so review those on their own rather than as part of the group.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-deps:
+        dependency-type: development
+        patterns: ["*"]
