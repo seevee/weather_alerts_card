@@ -169,6 +169,15 @@ describe('_entityChanged', () => {
     expect(subs.map(s => s.entity)).toEqual(['sensor.a', 'sensor.b']);
   });
 
+  it('removes a flat managed condition when hideNoAlerts is on but the selection is emptied', () => {
+    const { editor, events } = makeEditor({
+      hideNoAlerts: true,
+      visibility: [{ condition: 'state', entity: 'sensor.nws_alerts', state_not: '0' }],
+    });
+    editor._entityChanged(selector([]));
+    expect(events[0]).not.toHaveProperty('visibility');
+  });
+
   it('removes a managed or wrapper when hideNoAlerts is on but the selection is emptied', () => {
     const { editor, events } = makeEditor({
       hideNoAlerts: true,

@@ -127,6 +127,53 @@ describe('_syncMultiEntityVisibility', () => {
     ]);
   });
 
+  it('drops the flat condition of the entity the previous config had when the entity is swapped', () => {
+    const editor = makeEditor();
+    editor._config = makeConfig({
+      hideNoAlerts: true,
+      visibility: [{ condition: 'state', entity: 'sensor.nws_alerts', state_not: '0' }],
+    });
+    const result = editor._syncMultiEntityVisibility(makeConfig({
+      entity: 'sensor.other_alerts',
+      hideNoAlerts: true,
+      visibility: [{ condition: 'state', entity: 'sensor.nws_alerts', state_not: '0' }],
+    }));
+    expect(result).toEqual([
+      { condition: 'state', entity: 'sensor.other_alerts', state_not: '0' },
+    ]);
+  });
+
+  it('removes visibility entirely when the selection is cleared under hideNoAlerts', () => {
+    const editor = makeEditor();
+    editor._config = makeConfig({
+      hideNoAlerts: true,
+      visibility: [{ condition: 'state', entity: 'sensor.nws_alerts', state_not: '0' }],
+    });
+    const result = editor._syncMultiEntityVisibility(makeConfig({
+      entity: '',
+      hideNoAlerts: true,
+      visibility: [{ condition: 'state', entity: 'sensor.nws_alerts', state_not: '0' }],
+    }));
+    expect(result).toBeUndefined();
+  });
+
+  it('keeps a user condition on an unrelated entity across an entity swap', () => {
+    const editor = makeEditor();
+    editor._config = makeConfig({ hideNoAlerts: true });
+    const result = editor._syncMultiEntityVisibility(makeConfig({
+      entity: 'sensor.other_alerts',
+      hideNoAlerts: true,
+      visibility: [
+        { condition: 'state', entity: 'sensor.nws_alerts', state_not: '0' },
+        { condition: 'state', entity: 'sensor.front_door', state: 'on' },
+      ],
+    }));
+    expect(result).toEqual([
+      { condition: 'state', entity: 'sensor.front_door', state: 'on' },
+      { condition: 'state', entity: 'sensor.other_alerts', state_not: '0' },
+    ]);
+  });
+
   it('cleans up a stale OR wrapper referencing a removed entity', () => {
     const editor = makeEditor();
     const result = editor._syncMultiEntityVisibility(makeConfig({

@@ -556,8 +556,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     if (config.entity) allIds.add(config.entity);
     if (config.entities) config.entities.forEach(id => allIds.add(id));
 
+    // A flat condition is recognized by entity id, so one written for an
+    // entity the previous config had must count as managed too. Otherwise
+    // clearing or swapping the entity leaves its condition behind as if a
+    // user had authored it. (The OR wrapper is matched by shape and never
+    // had this problem.) `this._config` is still the previous config here:
+    // callers assign the new one only when they fire config-changed.
+    const managedIds = new Set(allIds);
+    const previous: WeatherAlertsCardConfig | undefined = this._config;
+    if (previous?.entity) managedIds.add(previous.entity);
+    previous?.entities?.forEach(id => managedIds.add(id));
+
     const conditions = (config.visibility || []).filter(
-      c => !this._isManagedCondition(c, allIds),
+      c => !this._isManagedCondition(c, managedIds),
     );
 
     if (config.hideNoAlerts && allIds.size > 0) {
