@@ -11,16 +11,31 @@ updates:
   # only lit and dompurify; a bump to either changes what ships in the bundle,
   # so review those on their own rather than as part of the group.
   #
-  # The group takes minors and patches only. A major arrives as its own PR,
-  # because one major can sink the whole group: the first grouped run bundled
-  # TypeScript 7 with ten other updates, and typescript-eslint's peer range
-  # made `npm ci` fail before anything else was tried (#286).
+  # Families first: packages that pin each other's version have to move in
+  # one PR, majors included, or every one of them fails npm ci on its
+  # sibling's peer range (#293, #295 were vitest 5 and its coverage plugin,
+  # split). Groups match in order, so a family claims its packages before the
+  # catch-all group sees them. The catch-all takes minors and patches only;
+  # any other major arrives as its own PR, because one major can sink a group
+  # (#286 bundled TypeScript 7 with ten other updates).
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     groups:
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+      rollup:
+        patterns: ["rollup", "@rollup/*", "rollup-plugin-*"]
+      eslint:
+        patterns: ["eslint", "@eslint/*", "eslint-plugin-*", "typescript-eslint"]
       dev-deps:
         dependency-type: development
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    ignore:
+      # typescript-eslint's peer range does not admit TypeScript 7 yet, so the
+      # major fails npm ci before anything else is tried (#294). Drop this
+      # entry once typescript-eslint supports it.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
