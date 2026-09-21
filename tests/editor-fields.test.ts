@@ -26,7 +26,7 @@ type EditorInternals = {
 const ALL: readonly Field[] = [...TOGGLE_FIELDS, ...SELECT_FIELDS];
 
 function base(extra: Partial<WeatherAlertsCardConfig> = {}): WeatherAlertsCardConfig {
-  return { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', ...extra } as WeatherAlertsCardConfig;
+  return { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', ...extra };
 }
 
 /** A value that is not the field's default: the `on` side of a toggle whose
@@ -64,7 +64,7 @@ const SWITCH_FIELDS = TOGGLE_FIELDS.filter(f => !LIST_KEYS.includes(f.key));
 type Control = { kind: 'toggle' | 'select'; el: Element; label: string };
 function renderControls(editor: EditorInternals): Control[] {
   const host = document.createElement('div');
-  render(editor.render() as never, host, { host: editor });
+  render(editor.render(), host, { host: editor });
   const out: Control[] = [];
   for (const f of host.querySelectorAll('ha-formfield')) {
     const sw = f.querySelector('ha-switch');

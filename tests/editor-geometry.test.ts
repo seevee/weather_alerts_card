@@ -20,7 +20,7 @@ const RFS_SOURCE = 'nsw_rural_fire_service_feed';
 
 function makeEditor(config: Partial<WeatherAlertsCardConfig>): EditorInternals {
   const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
-  editor._config = { type: 'custom:weather-alerts-card', entity: '', ...config } as WeatherAlertsCardConfig;
+  editor._config = { type: 'custom:weather-alerts-card', entity: '', ...config };
   editor.hass = {
     states: { 'sensor.nws_alerts': { state: '0', attributes: { Alerts: [] } } },
     locale: { language: 'en' },
@@ -39,7 +39,7 @@ function capture(editor: EditorInternals): () => WeatherAlertsCardConfig | undef
 type Rendered = { selectors: { label?: string; value?: unknown; selector?: unknown }[]; switches: { label: string; checked?: boolean }[] };
 function renderEditor(editor: EditorInternals): Rendered {
   const host = document.createElement('div');
-  render(editor.render() as never, host);
+  render(editor.render(), host);
   const selectors = [...host.querySelectorAll('ha-selector')] as unknown as Rendered['selectors'];
   const switches = [...host.querySelectorAll('ha-formfield')].map(f => ({
     label: (f as unknown as { label?: string }).label ?? '',

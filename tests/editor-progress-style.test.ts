@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { WeatherAlertsCardEditor } from '../src/weather-alerts-card-editor';
-import type { WeatherAlertsCardConfig, ProgressDecoration, IconBorderStyle } from '../src/types';
+import type { WeatherAlertsCardConfig } from '../src/types';
 
 // Reach into the private per-phase handlers; this suite pins the default
 // detection + key-pruning contract (mirrors _writeKey) and that each change
@@ -32,7 +32,7 @@ function sel(value: string): CustomEvent {
 describe('_progressStyleChanged', () => {
   it('writes a non-default decoration and emits config-changed', () => {
     const { editor, events } = makeEditor();
-    editor._progressStyleChanged('active', sel('striped' as ProgressDecoration));
+    editor._progressStyleChanged('active', sel('striped'));
     expect(editor._config.progressStyle).toEqual({ active: 'striped' });
     expect(events).toHaveLength(1);
     expect(events[0].progressStyle).toEqual({ active: 'striped' });
@@ -61,7 +61,7 @@ describe('_progressStyleChanged', () => {
 describe('_iconBorderStyleChanged', () => {
   it('round-trips a non-default value then prunes on return to default', () => {
     const { editor, events } = makeEditor();
-    editor._iconBorderStyleChanged('preparation', sel('solid' as IconBorderStyle));
+    editor._iconBorderStyleChanged('preparation', sel('solid'));
     expect(editor._config.iconBorderStyle).toEqual({ preparation: 'solid' });
     expect(events).toHaveLength(1);
 

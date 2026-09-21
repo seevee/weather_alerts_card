@@ -69,10 +69,10 @@ type Script = (msg: { type: string }) => Promise<unknown>;
 // Scripted connection: `geometry` and `token` decide each call's outcome in
 // sequence; the last entry repeats. Counts every command by type, and exposes
 // the `ready` listeners the card registers so a test can fire a reconnect.
-function makeConn(opts: { geometry?: Array<unknown | Error>; token?: Array<unknown | Error> } = {}) {
+function makeConn(opts: { geometry?: unknown[]; token?: unknown[] } = {}) {
   const calls: Record<string, number> = {};
   const listeners = new Map<string, Set<() => void>>();
-  const next = (queue: Array<unknown | Error> | undefined) => {
+  const next = (queue: unknown[] | undefined) => {
     if (!queue || queue.length === 0) return new Error('unknown_command');
     return queue.length > 1 ? queue.shift()! : queue[0];
   };
@@ -121,7 +121,7 @@ async function flush(card: WeatherAlertsCard): Promise<void> {
 }
 
 async function mount(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssistant): Promise<WeatherAlertsCard> {
-  const card = document.createElement('weather-alerts-card') as WeatherAlertsCard;
+  const card = document.createElement('weather-alerts-card');
   card.setConfig({
     type: 'custom:weather-alerts-card',
     entity: ENTITY,
@@ -129,7 +129,7 @@ async function mount(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssista
     showGeometry: true,
     expandDetails: true,
     ...config,
-  } as WeatherAlertsCardConfig);
+  });
   card.hass = hass;
   document.body.appendChild(card);
   await flush(card);
@@ -197,7 +197,7 @@ describe('geometry miss cooldown (#258)', () => {
   });
 
   it('forgets misses on a connection swap and fetches afresh', async () => {
-    let now = 1_000_000;
+    const now = 1_000_000;
     vi.spyOn(Date, 'now').mockImplementation(() => now);
     const a = makeConn({ geometry: [new Error('not_found')] });
     const card = await mount({}, makeHass(a.conn));

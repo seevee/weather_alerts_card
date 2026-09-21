@@ -161,7 +161,7 @@ function numArray4(v: unknown): [number, number, number, number] | undefined {
 // or multi-marker list is "no point" (never thrown, never a guess).
 function singlePoint(v: unknown): [number, number] | undefined {
   if (!Array.isArray(v) || v.length !== 1) return undefined;
-  const pair = v[0];
+  const pair: unknown = v[0];
   if (!Array.isArray(pair) || pair.length !== 2) return undefined;
   return extractPoint(pair[1], pair[0]);
 }

@@ -11,7 +11,7 @@ A standalone custom Home Assistant Lovelace card for displaying weather alerts f
 ```bash
 npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~189KB minified, downleveled to ES2019)
 npm run watch     # Rollup in watch mode
-npm run lint      # TypeScript type-check (tsc --noEmit)
+npm run lint      # TypeScript type-check (tsc --noEmit) + ESLint (type-aware, eslint.config.mjs)
 npm run test      # Vitest unit tests (jsdom environment) + coverage floors (vitest.config.ts)
 npm run test:watch # Vitest in watch mode
 ```

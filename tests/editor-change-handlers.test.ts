@@ -37,7 +37,7 @@ function makeHass(states: Record<string, { state: string; attributes: Record<str
 
 function makeEditor(config: Partial<WeatherAlertsCardConfig> = {}, hass: HomeAssistant = makeHass()) {
   const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
-  editor._config = { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', ...config } as WeatherAlertsCardConfig;
+  editor._config = { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', ...config };
   editor.hass = hass;
   const events: WeatherAlertsCardConfig[] = [];
   editor.addEventListener('config-changed', (ev) => events.push((ev as CustomEvent).detail.config));
@@ -274,7 +274,7 @@ async function flushAsync(): Promise<void> {
 
 async function mountEditor(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssistant) {
   const editor = document.createElement('weather-alerts-card-editor') as unknown as EditorInternals;
-  editor.setConfig({ type: 'custom:weather-alerts-card', ...config } as WeatherAlertsCardConfig);
+  editor.setConfig({ type: 'custom:weather-alerts-card', ...config });
   editor.hass = hass;
   document.body.appendChild(editor);
   await editor.updateComplete;
@@ -287,14 +287,14 @@ describe('updated(): dismissal subscription follows the scope', () => {
     expect(editor._subscribedDismissalsScope).toBe(scopeHashForConfig({ entity: 'sensor.nws_alerts' }));
     expect(editor._unsubscribeDismissals).toBeDefined();
 
-    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.other' } as WeatherAlertsCardConfig);
+    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.other' });
     await editor.updateComplete;
     expect(editor._subscribedDismissalsScope).toBe(scopeHashForConfig({ entity: 'sensor.other' }));
   });
 
   it('drops the subscription when no source is configured', async () => {
     const editor = await mountEditor({ entity: 'sensor.nws_alerts' }, makeHass());
-    editor.setConfig({ type: 'custom:weather-alerts-card', entity: '' } as WeatherAlertsCardConfig);
+    editor.setConfig({ type: 'custom:weather-alerts-card', entity: '' });
     await editor.updateComplete;
     expect(editor._subscribedDismissalsScope).toBe('');
     expect(editor._unsubscribeDismissals).toBeUndefined();
@@ -335,7 +335,7 @@ describe('updated(): registry subscription only in device mode', () => {
     const hass = { ...makeHass(), connection: mock.conn } as unknown as HomeAssistant;
     const editor = await mountEditor({ device: DEVICE }, hass);
     await flushAsync();
-    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' } as WeatherAlertsCardConfig);
+    editor.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' });
     await editor.updateComplete;
     expect(editor._subscribedRegistryConn).toBeUndefined();
     expect(mock.unsubscribes).toBe(1);
@@ -344,9 +344,9 @@ describe('updated(): registry subscription only in device mode', () => {
   it('resubscribes on a new connection and unsubscribes the old one', async () => {
     const first = makeMockConnection([entry('sensor.x')]);
     const second = makeMockConnection([entry('sensor.y')]);
-    const editor = await mountEditor({ device: DEVICE }, { ...makeHass(), connection: first.conn } as unknown as HomeAssistant);
+    const editor = await mountEditor({ device: DEVICE }, { ...makeHass(), connection: first.conn });
     await flushAsync();
-    editor.hass = { ...makeHass(), connection: second.conn } as unknown as HomeAssistant;
+    editor.hass = { ...makeHass(), connection: second.conn };
     await editor.updateComplete;
     await flushAsync();
     expect(editor._subscribedRegistryConn).toBe(second.conn);
@@ -357,9 +357,9 @@ describe('updated(): registry subscription only in device mode', () => {
   it('discards a subscription that resolves after the connection was swapped', async () => {
     const first = makeMockConnection([entry('sensor.x')]);
     const second = makeMockConnection([entry('sensor.y')]);
-    const editor = await mountEditor({ device: DEVICE }, { ...makeHass(), connection: first.conn } as unknown as HomeAssistant);
+    const editor = await mountEditor({ device: DEVICE }, { ...makeHass(), connection: first.conn });
     // Swap before the first subscribe round-trip completes.
-    editor.hass = { ...makeHass(), connection: second.conn } as unknown as HomeAssistant;
+    editor.hass = { ...makeHass(), connection: second.conn };
     await editor.updateComplete;
     await flushAsync();
     expect(editor._subscribedRegistryConn).toBe(second.conn);
@@ -369,7 +369,7 @@ describe('updated(): registry subscription only in device mode', () => {
 
   it('forgets the connection when the subscription fails, so a later update retries', async () => {
     const mock = makeMockConnection([], { reject: true });
-    const editor = await mountEditor({ device: DEVICE }, { ...makeHass(), connection: mock.conn } as unknown as HomeAssistant);
+    const editor = await mountEditor({ device: DEVICE }, { ...makeHass(), connection: mock.conn });
     await flushAsync();
     expect(editor._subscribedRegistryConn).toBeUndefined();
     expect(editor._registryEntries).toBeNull();

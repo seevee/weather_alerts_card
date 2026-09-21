@@ -16,14 +16,14 @@ export class WeatherAlertsCardEditor extends LitElement {
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _showPreview = false;
   private _subscribedDismissalsScope = '';
-  private _unsubscribeDismissals?: () => void;
+  private _unsubscribeDismissals: (() => void) | undefined;
 
   // Live entity-registry copy. `null` until the WS subscription delivers;
   // `_renderNoEntitiesHint` and the device-children exclusion in
   // `_getMatchingEntityIds` fall back to `hass.entities` while it is null.
   private _registryEntries: EntityRegistryDisplayEntry[] | null = null;
-  private _unsubscribeRegistry?: () => void;
-  private _subscribedRegistryConn?: Connection;
+  private _unsubscribeRegistry: (() => void) | undefined;
+  private _subscribedRegistryConn: Connection | undefined;
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
@@ -365,10 +365,10 @@ export class WeatherAlertsCardEditor extends LitElement {
     return html`<ha-alert alert-type="info">${t('editor.source_hint', lang, { count })}</ha-alert>`;
   }
 
-  private _entityChanged(ev: CustomEvent): void {
+  private _entityChanged(ev: CustomEvent<{ value?: unknown }>): void {
     const value = ev.detail.value;
     // ha-selector with multiple: true returns string[]
-    const selected: string[] = Array.isArray(value) ? value : (value ? [value] : []);
+    const selected: string[] = Array.isArray(value) ? (value as string[]) : (value ? [value as string] : []);
     const newConfig: WeatherAlertsCardConfig = { ...this._config };
 
     // entity = first selected (backwards compat); entities = rest
@@ -390,7 +390,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  private _deviceChanged(ev: CustomEvent): void {
+  private _deviceChanged(ev: CustomEvent<{ value?: unknown }>): void {
     const value = ev.detail.value;
     // ha-selector with multiple: true returns string[]
     const raw: unknown[] = Array.isArray(value) ? value : (value ? [value] : []);
@@ -430,9 +430,9 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  private _feedsChanged(ev: CustomEvent): void {
+  private _feedsChanged(ev: CustomEvent<{ value?: unknown }>): void {
     const value = ev.detail.value;
-    const selected: string[] = Array.isArray(value) ? value : (value ? [value] : []);
+    const selected: string[] = Array.isArray(value) ? (value as string[]) : (value ? [value as string] : []);
     const newConfig = { ...this._config };
     if (selected.length > 0) {
       newConfig.sources = selected;
@@ -442,7 +442,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  private _myLocationEntityChanged(ev: CustomEvent): void {
+  private _myLocationEntityChanged(ev: CustomEvent<{ value?: unknown }>): void {
     const raw = ev.detail?.value;
     const value = typeof raw === 'string' ? raw.trim() : '';
     if (value === (this._config.myLocationEntity ?? '')) return;
@@ -615,7 +615,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   // YAML-authored payloads (fire-dom-event `browser_mod`, service `data`,
   // `target`, …) survive an action switch untouched.
   private _tapActionChanged(ev: CustomEvent): void {
-    const value = this._selectValue(ev) as string;
+    const value = this._selectValue(ev);
     if (value === (this._config.tap_action?.action ?? 'default')) return;
     const newConfig = { ...this._config };
     if (value === 'default') {
@@ -647,7 +647,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _tapSubFieldChanged(key: 'navigation_path' | 'url_path', value: string): void {
     const current = this._config.tap_action;
     if (!current) return;
-    if (value === ((current[key] as string | undefined) || '')) return;
+    if (value === ((current[key]) || '')) return;
     const next: ActionConfig = { ...current };
     if (value) {
       next[key] = value;
@@ -1192,9 +1192,9 @@ export class WeatherAlertsCardEditor extends LitElement {
 
   // One click on the sections list is one event: fold `withKey` over the five
   // keys, so a section switched off deletes or writes exactly its own key.
-  private _detailSectionsChanged(ev: CustomEvent): void {
+  private _detailSectionsChanged(ev: CustomEvent<{ value?: unknown }>): void {
     const raw = ev.detail?.value;
-    const selected = new Set<string>(Array.isArray(raw) ? raw : []);
+    const selected = new Set<string>(Array.isArray(raw) ? (raw as string[]) : []);
     let next = this._config;
     for (const key of DETAIL_SECTIONS) next = withKey(next, key, selected.has(key));
     if (next !== this._config) this._fireConfigChanged(next);
@@ -1288,7 +1288,7 @@ export class WeatherAlertsCardEditor extends LitElement {
     `;
   }
 
-  private _renderAdvancedSection(lang: string): TemplateResult {
+  private _renderAdvancedSection(_lang: string): TemplateResult {
     return html`
       ${this._renderSelect('provider')}
       ${this._renderSelect('timezone')}

@@ -184,7 +184,7 @@ describe('WeatherAlertsCard._getAllEntities', () => {
   it('returns the full per-device set when only `device` is configured', () => {
     const card = makeCard();
     const ids = [ALERT_A, ALERT_B, ALERT_C];
-    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE });
     card.hass = makeHass(
       ids.map(id => entry(id)),
       Object.fromEntries(ids.map(id => [id, { state: 'moderate', attributes: capAlertAttrs() }])),
@@ -201,7 +201,7 @@ describe('WeatherAlertsCard._getAllEntities', () => {
       entity: explicit[0],
       entities: explicit,
       device: DEVICE,
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass(
       deviceIds.map(id => entry(id)),
       Object.fromEntries(
@@ -219,7 +219,7 @@ describe('WeatherAlertsCard._getAllEntities', () => {
       entity: ALERT_A,
       entities: [ALERT_A, ALERT_B],
       device: DEVICE,
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass(
       [entry(ALERT_A), entry(ALERT_B), entry(ALERT_C)],
       Object.fromEntries(
@@ -235,7 +235,7 @@ describe('WeatherAlertsCard._getAllEntities', () => {
       type: 'custom:weather-alerts-card',
       entity: '',
       device: DEVICE,
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass(
       [entry(ALERT_A)],
       { [ALERT_A]: { state: 'moderate', attributes: capAlertAttrs() } },
@@ -248,7 +248,7 @@ describe('WeatherAlertsCard._getAllEntities', () => {
     card.setConfig({
       type: 'custom:weather-alerts-card',
       device: DEVICE,
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass([], {});
     expect(card._getAllEntities()).toEqual([]);
   });
@@ -258,7 +258,7 @@ describe('WeatherAlertsCard.setConfig', () => {
   it('accepts a device-only config (no entity, no entities)', () => {
     const card = makeCard();
     expect(() =>
-      card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig),
+      card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE }),
     ).not.toThrow();
     expect(card._config?.device).toBe(DEVICE);
     expect(card._config?.entity).toBeUndefined();
@@ -267,7 +267,7 @@ describe('WeatherAlertsCard.setConfig', () => {
   it('accepts an entity-only config', () => {
     const card = makeCard();
     expect(() =>
-      card.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.x' } as WeatherAlertsCardConfig),
+      card.setConfig({ type: 'custom:weather-alerts-card', entity: 'sensor.x' }),
     ).not.toThrow();
   });
 
@@ -276,14 +276,14 @@ describe('WeatherAlertsCard.setConfig', () => {
     card.setConfig({
       type: 'custom:weather-alerts-card',
       entities: ['sensor.a', 'sensor.b'],
-    } as WeatherAlertsCardConfig);
+    });
     expect(card._config?.entity).toBe('sensor.a');
   });
 
   it('throws when entity, entities, device, and sources are all absent', () => {
     const card = makeCard();
     expect(() =>
-      card.setConfig({ type: 'custom:weather-alerts-card' } as WeatherAlertsCardConfig),
+      card.setConfig({ type: 'custom:weather-alerts-card' }),
     ).toThrow(/entity, device, or feed/);
   });
 });
@@ -472,7 +472,7 @@ describe('WeatherAlertsCard reactive registry updates', () => {
     const stripped = {
       ...hass,
       states: {},  // alert state evicted
-    } as unknown as HomeAssistant;
+    };
     card.hass = stripped;
     await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
     expect(hasEl(card, '.no-alerts')).toBe(true);
@@ -638,7 +638,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it('_brokenSources names a dark device from the device registry', () => {
     const card = makeCard();
-    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE });
     card.hass = darkDeviceHass();
     expect(card._brokenSources()).toEqual([{ name: DEVICE_NAME }]);
   });
@@ -740,7 +740,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
 
   it('_brokenSources ignores command entities on an idle device', () => {
     const card = makeCard();
-    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE });
     card.hass = makeHass(
       [entry(COUNT_ID), entry(BUTTON_ID)],
       {
@@ -756,7 +756,7 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
     // The exclusion must not swallow the real signal: the data entities are
     // unavailable here, and the button's presence changes nothing.
     const card = makeCard();
-    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE } as WeatherAlertsCardConfig);
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE });
     card.hass = makeHass(
       [entry(COUNT_ID), entry(UPDATED_ID), entry(BUTTON_ID)],
       {
@@ -804,7 +804,7 @@ describe('WeatherAlertsCard with multiple devices (#256)', () => {
   it('setConfig accepts a devices-only config', () => {
     const card = makeCard();
     expect(() =>
-      card.setConfig({ type: 'custom:weather-alerts-card', devices: [DEVICE] } as WeatherAlertsCardConfig),
+      card.setConfig({ type: 'custom:weather-alerts-card', devices: [DEVICE] }),
     ).not.toThrow();
     expect(card._config?.device).toBeUndefined();
     expect(card._config?.devices).toEqual([DEVICE]);
@@ -816,7 +816,7 @@ describe('WeatherAlertsCard with multiple devices (#256)', () => {
       type: 'custom:weather-alerts-card',
       device: DEVICE,
       devices: [OTHER_DEVICE, DEVICE],
-    } as WeatherAlertsCardConfig);
+    });
     card.hass = makeHass(
       [entry(A1), entry(A2), entry(B1, OTHER_DEVICE)],
       Object.fromEntries([A1, A2, B1].map(id => [id, { state: 'moderate', attributes: capAlertAttrs() }])),
@@ -826,7 +826,7 @@ describe('WeatherAlertsCard with multiple devices (#256)', () => {
 
   it('_getAllEntities honours a devices-only config', () => {
     const card = makeCard();
-    card.setConfig({ type: 'custom:weather-alerts-card', devices: [OTHER_DEVICE] } as WeatherAlertsCardConfig);
+    card.setConfig({ type: 'custom:weather-alerts-card', devices: [OTHER_DEVICE] });
     card.hass = makeHass(
       [entry(A1), entry(B1, OTHER_DEVICE)],
       Object.fromEntries([A1, B1].map(id => [id, { state: 'moderate', attributes: capAlertAttrs() }])),

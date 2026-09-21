@@ -225,7 +225,7 @@ export interface WeatherAlert {
   providerIcon?: string;   // Raw MDI icon from provider (e.g. 'mdi:weather-tornado'); bypasses dictionary when present
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
   colorHint?: string;      // The color the issuing agency published for this alert, as a `#rrggbb` hex the adapter resolved (ECCC's red/orange/yellow/grey tag, MeteoAlarm's awareness token, INMET's literal hex); painted by getProviderColor when providerColors is on. Absent = the ladder paints it
-  severityBadgeLabel?: string; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
+  severityBadgeLabel?: string | undefined; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
   bbox?: [number, number, number, number]; // [minlon, minlat, maxlon, maxlat] (lon-first); synchronous from cap_alerts attributes. Drives the geometry mini-map frame.
   geometryRef?: string;    // Opaque handle for the out-of-band cap_alerts geometry fetch (full polygon). Empty/absent when unavailable.
   point?: [number, number]; // [lon, lat] (lon-first, same convention as bbox) — where the incident IS, for point-incident providers; absent for area warnings. Never the centre of an affected area. Consumed by the maxDistanceKm filter, the detail panel's distance row, and the geometry mini-map's incident marker (which synthesizes its own framing box when `bbox` is absent — an adapter must NOT fake a bbox from a point).

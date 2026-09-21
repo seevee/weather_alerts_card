@@ -279,7 +279,7 @@ function baseFull(extra: Partial<WeatherAlertsCardConfig> = {}): WeatherAlertsCa
     type: 'custom:weather-alerts-card',
     entity: 'sensor.nws_alerts',
     ...extra,
-  } as WeatherAlertsCardConfig;
+  };
 }
 
 describe('back-compat (no tap_action)', () => {
@@ -373,7 +373,7 @@ describe('per-alert entity resolution', () => {
         entity: 'sensor.cap_frost',
         entities: ['sensor.cap_flood'],
         tap_action: { action: 'more-info' },
-      } as WeatherAlertsCardConfig,
+      },
       capTwoEntityHass(),
     );
     const r = root(card);
@@ -395,7 +395,7 @@ describe('per-alert entity resolution', () => {
         entity: 'sensor.cap_frost',
         entities: ['sensor.cap_flood'],
         tap_action: { action: 'more-info', entity: 'sensor.override' },
-      } as WeatherAlertsCardConfig,
+      },
       capTwoEntityHass(),
     );
     const r = root(card);
@@ -486,7 +486,7 @@ describe('tap_action action:details', () => {
     expect(d).not.toBeNull();
     // The whole alert body renders inside, so the alert's own title is on
     // screen (the reason the expanded-sub-block-only version was wrong).
-    expect(d.querySelector('.alert-title')!.textContent!.trim())
+    expect(d.querySelector('.alert-title')!.textContent.trim())
       .toBe('High Wind Warning');
     expect(d.querySelector('.alert-header-row')).not.toBeNull();
     expect(d.querySelector('.icon-box')).not.toBeNull();
@@ -522,7 +522,7 @@ describe('tap_action action:details', () => {
 
     expect(card._detailPopupAlertId).toBe('flood-severe');
     const d = dialog(card)!;
-    expect(d.querySelector('.alert-title')!.textContent!.trim())
+    expect(d.querySelector('.alert-title')!.textContent.trim())
       .toBe('Flash Flood Warning');
     expect(d.textContent).toContain('Rapid rises expected.');
     expect(d.textContent).not.toContain('Damaging winds.');

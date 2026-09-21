@@ -55,7 +55,7 @@ function makeEditor(
   hass: HomeAssistant = makeHass(),
 ): EditorInternals {
   const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
-  editor._config = { type: 'custom:weather-alerts-card', entity: '', ...config } as WeatherAlertsCardConfig;
+  editor._config = { type: 'custom:weather-alerts-card', entity: '', ...config };
   editor.hass = hass;
   return editor;
 }
@@ -198,7 +198,7 @@ describe('rendered control', () => {
   // property bindings the widget actually receives.
   function radiusField(editor: EditorInternals): { label?: string; value?: string } | undefined {
     const host = document.createElement('div');
-    render(editor.render() as never, host);
+    render(editor.render(), host);
     const fields = [...host.querySelectorAll('ha-input, ha-textfield')] as unknown as {
       label?: string; value?: string;
     }[];

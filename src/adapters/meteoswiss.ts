@@ -66,6 +66,10 @@ export class MeteoSwissAdapter implements AlertAdapter {
       return METEOSWISS_WARNINGS_URL;
     };
 
+    // Feed values are strings; anything else is not text and must not
+    // stringify to '[object Object]'.
+    const text = (v: unknown): string =>
+      typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : '';
     const alerts: WeatherAlert[] = [];
 
     for (let i = 0; i < types.length; i++) {
@@ -73,9 +77,9 @@ export class MeteoSwissAdapter implements AlertAdapter {
       // Skip level 0 (no danger) and non-numeric levels.
       if (level === 0) continue;
 
-      const event = String(types[i] ?? '');
+      const event = text(types[i]);
       const { severity, label } = mapSeverity(level);
-      const severityLabel = String(levels[i] ?? '') || label;
+      const severityLabel = text(levels[i]) || label;
 
       const onsetTs = validFrom[i] != null ? parseTimestamp(String(validFrom[i])) : 0;
       const endsTs = validTo[i] != null ? parseTimestamp(String(validTo[i])) : 0;
@@ -90,7 +94,7 @@ export class MeteoSwissAdapter implements AlertAdapter {
         sentTs: 0,
         onsetTs,
         endsTs,
-        description: String(texts[i] ?? ''),
+        description: text(texts[i]),
         instruction: '',
         url: linkFor(i),
         headline: '',

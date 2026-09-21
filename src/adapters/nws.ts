@@ -17,7 +17,7 @@ function collectZones(alert: NwsAlert): string[] {
     }
   }
   if (Array.isArray(alert.Geocode?.UGC)) {
-    for (const code of alert.Geocode!.UGC!) {
+    for (const code of alert.Geocode.UGC) {
       if (typeof code !== 'string' || !code) continue;
       const upper = code.toUpperCase();
       if (!zones.includes(upper)) zones.push(upper);
@@ -37,7 +37,7 @@ export class NwsAdapter implements AlertAdapter {
     const alerts = attributes['Alerts'];
     if (!Array.isArray(alerts)) return false;
     if (alerts.length === 0) return true; // empty NWS array is still NWS
-    const first = alerts[0];
+    const first: unknown = alerts[0];
     return typeof first === 'object' && first !== null && 'Event' in first && 'Severity' in first;
   }
 

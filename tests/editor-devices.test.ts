@@ -63,7 +63,7 @@ function makeHass(opts: {
 
 function makeEditor(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssistant = makeHass()): EditorInternals {
   const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
-  editor._config = { type: 'custom:weather-alerts-card', entity: '', ...config } as WeatherAlertsCardConfig;
+  editor._config = { type: 'custom:weather-alerts-card', entity: '', ...config };
   editor.hass = hass;
   return editor;
 }
@@ -79,7 +79,7 @@ function fireDevices(editor: EditorInternals, value: unknown): WeatherAlertsCard
 
 function hintText(editor: EditorInternals): { warning: string[]; info: string[] } {
   const host = document.createElement('div');
-  render(editor._renderNoEntitiesHint('en') as never, host);
+  render(editor._renderNoEntitiesHint('en'), host);
   const of = (type: string): string[] =>
     [...host.querySelectorAll(`ha-alert[alert-type="${type}"]`)].map(el => (el.textContent || '').trim());
   return { warning: of('warning'), info: of('info') };
@@ -211,7 +211,7 @@ describe('_renderNoEntitiesHint with devices', () => {
 describe('rendered device picker', () => {
   function devicePicker(editor: EditorInternals): { selector?: Record<string, unknown>; value?: unknown; label?: string } | undefined {
     const host = document.createElement('div');
-    render(editor.render() as never, host);
+    render(editor.render(), host);
     const selectors = [...host.querySelectorAll('ha-selector')] as unknown as {
       selector?: Record<string, unknown>; value?: unknown; label?: string;
     }[];

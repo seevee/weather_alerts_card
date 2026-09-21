@@ -6,7 +6,7 @@ export class PirateWeatherAdapter implements AlertAdapter {
 
   canHandle(attributes: Record<string, unknown>): boolean {
     return typeof attributes['attribution'] === 'string'
-      && (attributes['attribution'] as string).toLowerCase().includes('pirate weather');
+      && (attributes['attribution']).toLowerCase().includes('pirate weather');
   }
 
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[] {

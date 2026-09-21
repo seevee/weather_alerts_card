@@ -42,7 +42,7 @@ export class DwdAdapter implements AlertAdapter {
     if (typeof attributes['warning_count'] !== 'number') return false;
     if (typeof attributes['region_name'] !== 'string') return false;
 
-    const count = attributes['warning_count'] as number;
+    const count = attributes['warning_count'];
     if (count > 0) {
       return isDwdWarningObject(attributes['warning_1']);
     }
@@ -52,11 +52,11 @@ export class DwdAdapter implements AlertAdapter {
 
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[] {
     const count = typeof attributes['warning_count'] === 'number'
-      ? (attributes['warning_count'] as number) : 0;
+      ? (attributes['warning_count']) : 0;
     if (count <= 0) return [];
 
     const regionName = typeof attributes['region_name'] === 'string'
-      ? (attributes['region_name'] as string) : '';
+      ? (attributes['region_name']) : '';
     const alerts: WeatherAlert[] = [];
 
     for (let i = 1; i <= count; i++) {
