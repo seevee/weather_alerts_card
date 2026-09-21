@@ -1,6 +1,6 @@
 # Weather Alerts Card
 
-A custom Home Assistant Lovelace card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), PirateWeather, and CAP Alerts (multi-region).
+One card for weather and hazard alerts from eleven Home Assistant integrations. It detects the provider behind each sensor and renders every alert the same way: a severity color, a progress bar from onset to expiry, the agency's own text, and a map of the affected area where the feed carries one. Sources: NWS (US), ECCC (Canada), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), BoM (Australia), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.webp)
 
