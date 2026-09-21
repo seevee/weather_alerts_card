@@ -10,6 +10,11 @@ updates:
   # Build, test and lint tooling in package.json. Runtime dependencies are
   # only lit and dompurify; a bump to either changes what ships in the bundle,
   # so review those on their own rather than as part of the group.
+  #
+  # The group takes minors and patches only. A major arrives as its own PR,
+  # because one major can sink the whole group: the first grouped run bundled
+  # TypeScript 7 with ten other updates, and typescript-eslint's peer range
+  # made `npm ci` fail before anything else was tried (#286).
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -18,3 +23,4 @@ updates:
       dev-deps:
         dependency-type: development
         patterns: ["*"]
+        update-types: ["minor", "patch"]
