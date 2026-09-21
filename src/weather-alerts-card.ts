@@ -1999,7 +1999,7 @@ w.customCards.push({
   type: 'weather-alerts-card',
   name: 'Weather Alerts Card',
   preview: true,
-  description: 'A card for displaying weather alerts with severity indicators, progress bars, and expandable details. Supports NWS (US), BoM (Australia), and MeteoAlarm (Europe).',
+  description: 'Weather and hazard alerts from eleven integrations (NWS, ECCC, MeteoAlarm, DWD, MeteoSwiss, NINA, NSW RFS, INMET, BoM, PirateWeather, CAP Alerts), rendered one way: severity color, time progress, the agency\'s text, and a map where the feed has one.',
 });
 
 declare global {
