@@ -13,13 +13,13 @@ export default defineConfig({
       reporter: ['text-summary'],
       // Floors are ratchets: raise them as gaps close, never lower one to
       // make a PR pass. Each sits one whole point under the last measured
-      // run (2026-09-21, after the swipe-dismiss tests: 88.27 / 83.95 /
-      // 87.98 / 90.41).
+      // run (2026-09-21, after the editor change-handler tests: 92.93 /
+      // 86.76 / 92.05 / 95.47).
       thresholds: {
-        statements: 87,
-        branches: 83,
-        functions: 87,
-        lines: 89,
+        statements: 91,
+        branches: 85,
+        functions: 91,
+        lines: 94,
       },
     },
   },
