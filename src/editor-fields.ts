@@ -152,7 +152,7 @@ export const SELECT_FIELDS: readonly SelectField[] = [
   select('geometryStyle', 'details', 'shape', 'editor.geometry_style',
     opts('editor.geometry_style_', 'shape', 'map')),
   select('sortOrder', 'behavior', 'default', 'editor.sort_order',
-    opts('editor.sort_', 'default', 'onset', 'severity')),
+    opts('editor.sort_', 'default', 'onset', 'severity', 'distance')),
   select('timezone', 'advanced', 'server', 'editor.timezone',
     opts('editor.tz_', 'server', 'browser')),
   select('unavailableBehavior', 'behavior', 'message', 'editor.unavailable_behavior',

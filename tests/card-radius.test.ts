@@ -212,3 +212,46 @@ describe('maxDistanceKm filter', () => {
     expect(headlines(card)).toEqual(['Coordless Fire']);
   });
 });
+
+describe('sortOrder: distance (#305)', () => {
+  // Far first in the feed, so an unchanged order is visible.
+  const farFirst = () => {
+    const near = rfsStates()['geo_location.fire_near'];
+    const far = rfsStates()['geo_location.fire_far'];
+    return { 'geo_location.fire_far': far, 'geo_location.fire_near': near };
+  };
+  const tracker = (attributes: Record<string, unknown>) => ({
+    'device_tracker.phone': { state: 'not_home', attributes },
+  });
+
+  it('lists incidents nearest the reference point first', () => {
+    const card = makeCard({ sortOrder: 'distance' }, makeHass(farFirst()));
+    expect(headlines(card)).toEqual(['Near Fire', 'Far Fire']);
+  });
+
+  it('puts an area warning ahead of every point incident', () => {
+    const card = makeCard(
+      { entity: 'sensor.nws_alerts', provider: undefined, sortOrder: 'distance' },
+      makeHass({
+        ...farFirst(),
+        'sensor.nws_alerts': { state: '1', attributes: { Alerts: [nwsAlert()] } },
+      }),
+    );
+    expect(headlines(card)).toEqual(['Tornado Warning', 'Near Fire', 'Far Fire']);
+  });
+
+  it('follows myLocationEntity, and follows it again when the tracker moves', () => {
+    const card = makeCard(
+      { sortOrder: 'distance', myLocationEntity: 'device_tracker.phone' },
+      makeHass({ ...farFirst(), ...tracker(FAR) }),
+    );
+    expect(headlines(card)).toEqual(['Far Fire', 'Near Fire']);
+    card.hass = makeHass({ ...farFirst(), ...tracker({ latitude: HOME_LAT, longitude: HOME_LON }) });
+    expect(headlines(card)).toEqual(['Near Fire', 'Far Fire']);
+  });
+
+  it('degrades to default order with no reference point at all', () => {
+    const card = makeCard({ sortOrder: 'distance' }, makeHass(farFirst(), null));
+    expect(headlines(card)).toEqual(['Far Fire', 'Near Fire']);
+  });
+});

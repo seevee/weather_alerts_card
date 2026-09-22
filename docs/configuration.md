@@ -46,10 +46,10 @@ checkbox, which appears only when a matching integration is installed.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list |
-| `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'` |
+| `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'`, `'distance'` (nearest the reference point first; area warnings sort ahead of every point incident, then severity and onset break ties; no reference point behaves as `'default'`) |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
 | `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident alerts only (NSW RFS, and CAP Alerts entities that carry a single `points` marker, such as the Australian state feeds). INMET's point is the configured city, so it is not offered there |
-| `myLocationEntity` | — | `device_tracker` / `person` / `zone` whose coordinates replace HA home as the reference point, for `maxDistanceKm`, the distance row and `showMyLocation` |
+| `myLocationEntity` | — | `device_tracker` / `person` / `zone` whose coordinates replace HA home as the reference point, for `maxDistanceKm`, `sortOrder: distance`, the distance row and `showMyLocation` |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
@@ -398,7 +398,7 @@ interface WeatherAlertsCardConfig {
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
   maxDistanceKm?: number;      // km from the reference point (HA home, or myLocationEntity); alerts carrying a point only
   myLocationEntity?: string;   // device_tracker / person / zone that replaces HA home as the reference point
-  sortOrder?: 'default' | 'onset' | 'severity';
+  sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
   animations?: boolean;        // undefined: respect prefers-reduced-motion; true/false: force
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';

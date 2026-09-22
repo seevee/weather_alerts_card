@@ -313,7 +313,7 @@ describe('default option suffix', () => {
 
   it('leaves entries that already call themselves the default alone', () => {
     const host = renderHost(makeEditor(base()).editor);
-    expect(optionsOf(host, 'Sort order')).toEqual(['Default', 'Onset time', 'Severity']);
+    expect(optionsOf(host, 'Sort order')).toEqual(['Default', 'Onset time', 'Severity', 'Distance']);
     expect(optionsOf(host, 'Font size')[1]).toBe('Default');
     expect(optionsOf(host, 'Tap action')[0]).toBe('Inline expand (default)');
   });

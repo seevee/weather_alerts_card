@@ -700,16 +700,44 @@ export const SEVERITY_RANK: Record<string, number> = {
   extreme: 0, severe: 1, moderate: 2, minor: 3, unknown: 4,
 };
 
-export function sortAlerts(alerts: WeatherAlert[], order: string): WeatherAlert[] {
+const bySeverityThenOnset = (a: WeatherAlert, b: WeatherAlert): number => {
+  const diff = (SEVERITY_RANK[a.severity] ?? 4)
+             - (SEVERITY_RANK[b.severity] ?? 4);
+  if (diff !== 0) return diff;
+  return (a.onsetTs || Infinity) - (b.onsetTs || Infinity);
+};
+
+/**
+ * Order alerts for display. `ref` is the card's resolved reference point
+ * (lon-first, from `resolveReferencePoint`) and only `distance` reads it.
+ *
+ * `distance` lists incidents nearest the reference point first. An alert with
+ * no `point` (an area warning) already covers the reference point, so it is
+ * closer than any incident with a number on it and sorts ahead of all of
+ * them (#305). Ties, which is every pair of area warnings, fall back to
+ * severity then onset, the same rule `severity` uses. With no reference
+ * point there is no distance to sort on, and the list keeps its default
+ * order rather than comparing NaN.
+ */
+export function sortAlerts(
+  alerts: WeatherAlert[],
+  order: string,
+  ref?: [number, number],
+): WeatherAlert[] {
   if (order === 'onset') {
     return [...alerts].sort((a, b) => (a.onsetTs || Infinity) - (b.onsetTs || Infinity));
   }
   if (order === 'severity') {
+    return [...alerts].sort(bySeverityThenOnset);
+  }
+  if (order === 'distance' && ref) {
+    const km = new Map(alerts.map(a => [
+      a, a.point ? haversineKm(a.point[0], a.point[1], ref[0], ref[1]) : -1,
+    ]));
     return [...alerts].sort((a, b) => {
-      const diff = (SEVERITY_RANK[a.severity] ?? 4)
-                 - (SEVERITY_RANK[b.severity] ?? 4);
+      const diff = (km.get(a) ?? -1) - (km.get(b) ?? -1);
       if (diff !== 0) return diff;
-      return (a.onsetTs || Infinity) - (b.onsetTs || Infinity);
+      return bySeverityThenOnset(a, b);
     });
   }
   return alerts;

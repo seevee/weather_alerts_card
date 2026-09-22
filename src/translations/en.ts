@@ -92,6 +92,7 @@ export const en: TranslationMap = {
   'editor.sort_default': 'Default',
   'editor.sort_onset': 'Onset time',
   'editor.sort_severity': 'Severity',
+  'editor.sort_distance': 'Distance',
   'editor.color_theme': 'Color theme',
   'editor.color_severity': 'Severity-based',
   'editor.color_nws': 'NWS Official',
