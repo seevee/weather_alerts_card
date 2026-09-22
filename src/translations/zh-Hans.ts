@@ -92,6 +92,7 @@ export const zhHans: TranslationMap = {
   'editor.sort_default': '默认',
   'editor.sort_onset': '开始时间',
   'editor.sort_severity': '严重程度',
+  'editor.sort_distance': '距离',
   'editor.color_theme': '配色主题',
   'editor.color_severity': '基于严重程度',
   'editor.color_nws': 'NWS 官方',

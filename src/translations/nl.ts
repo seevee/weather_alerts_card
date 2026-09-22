@@ -92,6 +92,7 @@ export const nl: TranslationMap = {
   'editor.sort_default': 'Standaard',
   'editor.sort_onset': 'Begintijd',
   'editor.sort_severity': 'Ernst',
+  'editor.sort_distance': 'Afstand',
   'editor.color_theme': 'Kleurthema',
   'editor.color_severity': 'Op basis van ernst',
   'editor.color_nws': 'NWS Officieel',

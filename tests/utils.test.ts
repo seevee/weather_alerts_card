@@ -635,6 +635,46 @@ describe('sortAlerts', () => {
     const sorted = sortAlerts([a, b], 'default');
     expect(sorted[0].id).toBe('a');
   });
+
+  describe('distance (#305)', () => {
+    const SYDNEY: [number, number] = [151.2093, -33.8688];
+    const near = () => makeAlert({ id: 'near', point: [150.7776, -33.8688] });   // ~40 km
+    const far = () => makeAlert({ id: 'far', point: [144.9631, -37.8136] });     // Melbourne
+    const area = (overrides: Partial<WeatherAlert> = {}) => makeAlert({ id: 'area', ...overrides });
+
+    it('lists incidents nearest the reference point first', () => {
+      expect(sortAlerts([far(), near()], 'distance', SYDNEY).map(a => a.id)).toEqual(['near', 'far']);
+    });
+
+    it('puts alerts with no point ahead of every incident', () => {
+      const sorted = sortAlerts([far(), area(), near()], 'distance', SYDNEY);
+      expect(sorted.map(a => a.id)).toEqual(['area', 'near', 'far']);
+    });
+
+    it('breaks ties on severity then onset, like the severity order', () => {
+      const early = area({ id: 'early', onsetTs: parseTimestamp('2026-03-06T10:00:00Z') });
+      const late = area({ id: 'late', onsetTs: parseTimestamp('2026-03-06T14:00:00Z') });
+      const extreme = area({ id: 'extreme', severity: 'extreme' });
+      expect(sortAlerts([late, early, extreme], 'distance', SYDNEY).map(a => a.id))
+        .toEqual(['extreme', 'early', 'late']);
+      // Two incidents at one spot rank by severity too.
+      const twinMinor = makeAlert({ id: 'twin-minor', severity: 'minor', point: [150.7776, -33.8688] });
+      const twinSevere = makeAlert({ id: 'twin-severe', severity: 'severe', point: [150.7776, -33.8688] });
+      expect(sortAlerts([twinMinor, twinSevere], 'distance', SYDNEY).map(a => a.id))
+        .toEqual(['twin-severe', 'twin-minor']);
+    });
+
+    it('keeps default order when there is no reference point', () => {
+      const input = [far(), near()];
+      expect(sortAlerts(input, 'distance')).toBe(input);
+    });
+
+    it('does not reorder the caller\'s array', () => {
+      const input = [far(), near()];
+      sortAlerts(input, 'distance', SYDNEY);
+      expect(input.map(a => a.id)).toEqual(['far', 'near']);
+    });
+  });
 });
 
 describe('alertMatchesZones', () => {

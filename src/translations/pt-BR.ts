@@ -92,6 +92,7 @@ export const ptBR: TranslationMap = {
   'editor.sort_default': 'Padrão',
   'editor.sort_onset': 'Horário de início',
   'editor.sort_severity': 'Severidade',
+  'editor.sort_distance': 'Distância',
   'editor.color_theme': 'Tema de cores',
   'editor.color_severity': 'Baseado na severidade',
   'editor.color_nws': 'Oficial do NWS',

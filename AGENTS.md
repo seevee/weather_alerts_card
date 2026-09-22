@@ -80,7 +80,7 @@ interface WeatherAlertsCardConfig {
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
   maxDistanceKm?: number;      // km from the reference point (hass.config home, or myLocationEntity); filters only alerts carrying `point` (point-incident providers) — area warnings never
   myLocationEntity?: string;   // device_tracker / person / zone whose lat/lon replace hass.config as the reference point (filter origin, distance row, my-location marker); unresolvable → falls back to home
-  sortOrder?: 'default' | 'onset' | 'severity';
+  sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
   animations?: boolean;        // undefined: respects prefers-reduced-motion; true/false: force
   layout?: 'default' | 'compact';
   fontSize?: 'small' | 'default' | 'large' | 'x-large';

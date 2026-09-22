@@ -140,6 +140,8 @@ function getPreviewAlerts(): WeatherAlert[] {
   //   default:  Wind Watch → Heat Advisory → Frost Advisory  (array order)
   //   severity: Heat Advisory → Wind Watch → Frost Advisory   (moderate first)
   //   onset:    Frost Advisory → Heat Advisory → Wind Watch    (earliest onset first)
+  //   distance: same as severity — no preview alert carries a point, so all
+  //             three tie at "covers the reference point" and fall through
   return [
     {
       id: 'preview-1',
@@ -973,7 +975,7 @@ export class WeatherAlertsCard extends LitElement {
       result = result.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
     }
 
-    return sortAlerts(result, this._config.sortOrder || 'default');
+    return sortAlerts(result, this._config.sortOrder || 'default', home);
   }
 
   private get _locale() {
