@@ -332,20 +332,43 @@ other. That is upstream behaviour, not the card.
 ## Data fidelity
 
 Severity and certainty badges are always localized to your configured language. When a
-value was **inferred** by the card's adapter rather than provided by the source, it is
-rendered in italics with a tilde prefix (`~Moderate`) — so you can tell at a glance which
-badges reflect real provider data.
+value was inferred by the card's adapter logic (rather than provided directly by the
+alert source), it is rendered with italic text and a tilde prefix (`~Moderate`) so you
+can tell at a glance which badges reflect actual provider data.
 
-| Provider | Severity | Certainty |
-|----------|----------|-----------|
-| NWS | Raw (from `Severity`) | Raw (from `Certainty`) |
-| BoM | Inferred (parsed from title/type/group) | Absent |
-| MeteoAlarm | Raw (from `awareness_level` or `severity`) | Raw (from `certainty`) |
-| DWD | Raw (from integer `level`) | Absent |
-| NINA | Raw (CAP vocabulary from `severity`) | Absent |
-| MeteoSwiss | Raw (from integer level) | Absent |
-| ECCC | Derived (max of `color`, `type`, `impact`; tilde only when all three are absent) | Mapped from `confidence` (High → Likely, Moderate → Possible, Low → Unlikely) |
-| NSW RFS | Raw (from `category`) | Absent |
-| INMET | Raw (from `severity`) | Absent |
-| PirateWeather | Raw (from `severity`) | Absent |
-| CAP Alerts | Raw (from `severity_normalized` / `severity`) | Raw (from `certainty`) |
+The matrix below is the per-provider capability table from
+[weather_alerts_card#205](https://github.com/seevee/weather_alerts_card/issues/205): how
+each source reaches the card, what shape it carries, where its severity really comes
+from, and which filters can act on it. Alerts that arrive through CAP Alerts all look
+the same to the card (`provider: cap`), so read the row for the provider your CAP Alerts
+device was set up with. "Never marked" in the severity column means the value is derived
+upstream and the card cannot tell, because CAP Alerts does not yet carry a
+derived-severity flag.
+
+Geometry is a tier: **polygon** (fetched out of band by `geometry_ref`, with `bbox`
+drawn meanwhile), **point** (a single marker, the origin of `maxDistanceKm`,
+`sortOrder: distance` and the distance row) or **none**. Filters: **Z** `zones`, **E**
+`eventCodes` / `excludeEventCodes`, **S** `minSeverity`, **D** `maxDistanceKm` and
+`sortOrder: distance`, **X** `hideExpired`. `zones` and `eventCodes` hide every alert
+that carries no matching value, so a row that says a filter "hides everything" means do
+not set it for that source.
+
+| Provider | Route | Geometry | What the shape is | `point` | Severity | Certainty | Filters that act |
+|---|---|---|---|---|---|---|---|
+| NWS | card adapter (`nws_alerts`) | none | — | no | Raw `Severity`; tilde when missing or unknown | Raw `Certainty` | E (`NWSCode`), S, X. Z only if the integration emits zone codes, and it does not |
+| BoM | card adapter (`bureau_of_meteorology`) | none | — | no | Inferred from title, type and group; always tilde | Absent | S, X. Z with the safepay fork's `area_id` |
+| MeteoAlarm | card adapter | none | — | no | Raw `awareness_level`, else `severity`; tilde only when both are absent | Raw `certainty` | S, X |
+| DWD | card adapter (`dwd_weather_warnings`) | none | — | no | Raw integer `level`; the colour-hex fallback is not marked | Absent | E (numeric DWD id), S, X |
+| NINA | card adapter (`nina`) | none | NINA publishes no geometry | no | Raw CAP `severity`, never marked (the integration substitutes `Unknown`) | Absent | S. X where the warning carries an expiry |
+| MeteoSwiss | card adapter (`meteoswiss`) | none | — | no | Raw integer level | Absent | E (the warning type name, e.g. `Wind`, not a code), S, X |
+| ECCC | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
+| NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
+| INMET | card adapter (`geo_location`, `inmet`) | point | The configured city, the same point on every alert | yes | Raw `severity` text; the colour fallback is tilde | Absent | S, X. D applies from YAML, but every alert is the same distance away, so the editor does not offer it |
+| PirateWeather | card adapter | none | — | no | Raw `severity`; tilde when empty or unknown | Absent | S, X |
+| CAP Alerts: NWS | cap_alerts (zone, GPS, tracker) | polygon or none | The warning's own polygon on storm-based warnings; zone-based alerts carry no shape, only `affected_zones` | no | VTEC significance (warning severe, watch moderate, advisory minor; tornado and extreme-wind warnings extreme), else CAP; never marked | Raw CAP | Z (UGC, SAME), E (`event_code_nws`, `event_code_same`), S, X |
+| CAP Alerts: ECCC | cap_alerts (province, GPS, tracker) | polygon | Severe thunderstorm and tornado warnings: the forecaster-drawn threat area; everything else the union of the zone polygons | rare (zero-radius circles) | Raw CAP; never marked | Raw CAP | Z (CLC, SGC), S, X. E hides everything: the CAP-CP event code lives in `parameters` |
+| CAP Alerts: MeteoAlarm | cap_alerts (country, region, GPS, tracker) | none in practice | Feeds publish EMMA region codes, not polygons (0 across ~5,900 areas sampled) | no | Awareness colour (yellow moderate, orange severe, red extreme), else CAP; never marked. The colour also drives the `meteoalarm` palette | Raw CAP | Z (EMMA_ID, NUTS), S, X. E hides everything |
+| CAP Alerts: WMO | cap_alerts (source, GPS, tracker, geocode prefix) | source-dependent | The CAP `<polygon>` union where the authority publishes one; many publish none | zero-radius circles, source-dependent | Raw CAP; never marked | Raw CAP | Z (whatever the source publishes), S. X where the authority publishes an expiry (Macao and Curaçao never do). E hides everything |
+| CAP Alerts: GDACS | cap_alerts (global, GPS, tracker) | polygon | Impact rings by alert level, forecast cones and wind radii excluded; an intensity circle for earthquakes | yes, the event centroid | Synthesised from the GDACS alert level (Green minor, Orange severe, Red extreme); the CAP body's own severity is not used; never marked | Raw CAP | D, S. Z hides everything (no geocodes), E hides everything, X never acts (no expiry) |
+| CAP Alerts: BBK / NINA | cap_alerts (district, GPS, tracker) | polygon | The warning polygon from BBK's per-warning GeoJSON | no | Raw CAP; never marked | Raw CAP | S. X for DWD relays and all-clears; MoWaS warnings carry no expiry. Z and E hide everything |
+| CAP Alerts: Australia | cap_alerts (state) | polygon or point | The fire-ground polygon where the agency draws one, about half the time, else the incident marker | yes, the incident's street-address marker | Australian Warning System tier (Emergency Warning extreme, Watch and Act severe, Advice moderate, the informational tiers minor); never marked | Raw CAP, near-uniform | D, S. X never acts (expiry is blank by design). Z hides all but the one state code; E hides everything |
