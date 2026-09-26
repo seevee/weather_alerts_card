@@ -1,5 +1,44 @@
 # Changelog
 
+## 3.5.0 (2026-09-26)
+
+### Added
+- Split alert color into a colorTheme ladder and a providerColors override (#273)
+- Pt-br translation (#274)
+- Add INMET alert provider (#271)
+- Add sortOrder distance, nearest the reference point first (#306) (closes #305)
+
+### Fixed
+- Read the incident point off cap_alerts entities (#276)
+- Keep the point, drop the radius control and the sequence code (#277)
+- Drop the previous entity's visibility condition on a swap (#289)
+
+### Documentation
+- Let the hero figure fill its column, refresh the home page copy (#275)
+- Lead with what the card does, fix the picker blurb (#285)
+- Add the per-provider capability matrix (#205) (#308)
+
+### Internal
+- Order groups, link closed issues, ship the PR body as notes (#272)
+- Credit first-time contributors in the generated notes (#279)
+- Gate npm test on coverage floors (#280)
+- Cover swipe-to-dismiss end to end, ratchet the floors (#281)
+- Cover the change handlers and lifecycle hooks, ratchet the floors (#282)
+- Add type-aware ESLint and tighten the compiler flags (#283)
+- Bump six action pins to current majors, add dependabot (#284)
+- Bump dompurify and @types/dompurify (#288)
+- Bump lit from 3.3.2 to 3.3.3 (#287)
+- Group only minor and patch dev-dep bumps (#290)
+- Bump the dev-deps group with 5 updates (#291)
+- Bump conventional-recommended-bump (#292)
+- Group dependabot majors by package family, ignore TS 7 (#296)
+- Bump the vitest group with 3 updates (#297)
+- Run the workflows on Node 24 (#299)
+- Bump jsdom from 29.1.1 to 30.1.0 (#298)
+- Type-check the tests directory in lint (#301)
+- Create one jsdom per worker with the vmThreads pool (#303)
+- Enable noUncheckedIndexedAccess for the card source (#302)
+
 ## 3.4.0 (2026-09-14)
 
 ### Added
