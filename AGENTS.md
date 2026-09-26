@@ -192,8 +192,8 @@ Conventions that are load-bearing:
 - **The motion capture is gated behind `DOCS_MOTION=1`,** off by default — still being
   tuned, and it needs both `ffmpeg` and `ffprobe` (`capture-tap-action.js` probes only for
   `ffmpeg`, so a runner with one and not the other throws rather than degrading).
-- **VitePress is pinned to 1.x.** 2.0 requires Node 22+ and all three workflows run Node
-  20; the migration is mostly that Node bump.
+- **VitePress is pinned to 1.x.** 2.0 requires Node 22+; the workflows have run Node 24
+  since #299, so the migration is now just the dependency bump.
 
 Three surfaces consume these figures, which is why the pipeline looks the way it does:
 
