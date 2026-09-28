@@ -53,7 +53,7 @@
     "rollup-plugin-typescript2": "^0.37.0",
     "semver": "^7.8.5",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.0",
+    "typescript-eslint": "^8.70.1",
     "vitepress": "^1.6.4",
     "vitest": "^5.0.1"
   },
