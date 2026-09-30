@@ -4,9 +4,17 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
+# One run per PR (or per branch for pushes). A new push to a PR cancels the
+# run it supersedes; pushes to main are never cancelled, so every merge commit
+# keeps its own result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   conventional-commit:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
     steps:
       - name: Check PR title follows conventional commits
         env:

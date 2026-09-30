@@ -13,6 +13,7 @@ permissions: {}
 jobs:
   validate-hacs:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: HACS validation
         uses: hacs/action@main
