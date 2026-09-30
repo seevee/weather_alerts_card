@@ -27,29 +27,12 @@ jobs:
 
       # The browser test project drives headless Chromium through Playwright.
       # A headless launch runs the headless shell, so that is the only build
-      # fetched (--only-shell), cached on the Playwright version, which alone
-      # decides the Chromium revision; hashing the lockfile would refetch on
-      # every unrelated dependency bump. The save sits right after the install
-      # so a failing lint or test still fills the cache.
-      #
-      # No --with-deps, on a miss or a hit. The runner image already has every
-      # library the shell links (it ships Chrome), and the suite passes with
-      # nothing installed. All apt adds is fonts and mesa upgrades, 32 MB that
-      # took 3 min on a slow mirror against 3 s for the browser itself (#318).
-      - id: playwright
-        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
-      - id: playwright-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-headless-shell-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
-      - if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --only-shell chromium
-      - if: steps.playwright-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ steps.playwright-cache.outputs.cache-primary-key }}
+      # fetched (--only-shell), about 5 s. No --with-deps: the runner image
+      # already has every library the shell links (it ships Chrome), and all
+      # apt adds is fonts and mesa upgrades, 32 MB that took 3 min on a slow
+      # mirror. No actions/cache either: a restore measured 3 s, so a hit
+      # saved 2 s and a miss cost 4 s more for the save (#318).
+      - run: npx playwright install --only-shell chromium
 
       - run: npm run lint
       - run: npm run test
