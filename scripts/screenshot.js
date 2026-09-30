@@ -290,6 +290,92 @@ const PORT = 3742;
       },
     },
     {
+      name: 'geometry-point',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry-point.html`,
+      canvasId: 'geometry-canvas',
+      cardIds: ['card-geometry-point'],
+      variants: [
+        { theme: 'theme-light', label: 'point  light', out: 'img/geometry-point-light.png' },
+        { theme: 'theme-dark',  label: 'point  dark ', out: 'img/geometry-point-dark.png' },
+      ],
+      afterRender: async (page) => {
+        // Expand "Read Details" to reveal the mini-map in the detail panel.
+        await page.locator('#card-geometry-point .details-summary').first().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-geometry-point');
+
+        // A point incident has nothing to fetch out of band: the marker and the
+        // you-are-here ring render synchronously from the entity attributes
+        // and hass.config. Wait for both so a missing reference point can't
+        // slip through as a "successful" capture.
+        await page.waitForFunction(() => {
+          const root = document.getElementById('card-geometry-point')?.shadowRoot;
+          return !!root?.querySelector('.alert-geometry .geometry-marker')
+            && !!root?.querySelector('.alert-geometry .geometry-reference-ring');
+        }, { timeout: 10000 });
+
+        // Same tile-settle dance as the geometry set: the raster basemap is
+        // SVG <image> elements loaded over the map_tiles route, and they land
+        // after the marker does.
+        await page.evaluate(async () => {
+          const card = document.getElementById('card-geometry-point');
+          const svg = card?.shadowRoot?.querySelector('.alert-geometry.map');
+          if (!svg) return;
+          const hrefs = [...svg.querySelectorAll('image')]
+            .map(im => im.getAttribute('href') || im.getAttribute('xlink:href'))
+            .filter(Boolean);
+          await Promise.all(hrefs.map(href => new Promise(resolve => {
+            const probe = new Image();
+            probe.onload = probe.onerror = () => resolve();
+            probe.src = href;
+          })));
+        });
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      },
+    },
+    {
+      name: 'geometry-watch',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry-watch.html`,
+      canvasId: 'geometry-canvas',
+      cardIds: ['card-geometry-watch'],
+      variants: [
+        { theme: 'theme-light', label: 'watch  light', out: 'img/geometry-watch-light.png' },
+        { theme: 'theme-dark',  label: 'watch  dark ', out: 'img/geometry-watch-dark.png' },
+      ],
+      afterRender: async (page) => {
+        // Expand "Read Details" to reveal the mini-map in the detail panel.
+        await page.locator('#card-geometry-watch .details-summary').first().click();
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-geometry-watch');
+
+        // The MultiPolygon arrives via cap_alerts/geometry on a later render
+        // (fetched from the static server, then handed to the card). Wait for
+        // the resolved shapes so the capture shows the municipalities, not
+        // just the province-scale bbox frame.
+        await page.waitForFunction(() => {
+          const root = document.getElementById('card-geometry-watch')?.shadowRoot;
+          return !!root?.querySelector('.alert-geometry .geometry-shape');
+        }, { timeout: 10000 });
+        await page.evaluate(id => document.getElementById(id).updateComplete, 'card-geometry-watch');
+
+        // Same tile-settle dance as the geometry set: the raster basemap is
+        // SVG <image> elements loaded over the map_tiles route, and they land
+        // after the marker does.
+        await page.evaluate(async () => {
+          const card = document.getElementById('card-geometry-watch');
+          const svg = card?.shadowRoot?.querySelector('.alert-geometry.map');
+          if (!svg) return;
+          const hrefs = [...svg.querySelectorAll('image')]
+            .map(im => im.getAttribute('href') || im.getAttribute('xlink:href'))
+            .filter(Boolean);
+          await Promise.all(hrefs.map(href => new Promise(resolve => {
+            const probe = new Image();
+            probe.onload = probe.onerror = () => resolve();
+            probe.src = href;
+          })));
+        });
+        await page.evaluate(() => new Promise(r => requestAnimationFrame(r)));
+      },
+    },
+    {
       name: 'tap-action',
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-tap-action.html`,
       canvasId: 'tap-action-canvas',

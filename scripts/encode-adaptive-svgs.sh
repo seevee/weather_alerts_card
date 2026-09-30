@@ -29,6 +29,8 @@ PAIRS=(
   "hero-light.png     hero-dark.png     hero-adaptive.svg     lossless"
   "themes-light.png   themes-dark.png   themes-adaptive.svg   lossless"
   "geometry-light.png geometry-dark.png geometry-adaptive.svg lossless"
+  "geometry-point-light.png geometry-point-dark.png geometry-point-adaptive.svg lossless"
+  "geometry-watch-light.png geometry-watch-dark.png geometry-watch-adaptive.svg lossless"
   "unavailable-light.png unavailable-dark.png unavailable-adaptive.svg lossless"
   "surface-theming-light.png surface-theming-dark.png surface-theming-adaptive.svg lossy"
   "tap-action-light.png tap-action-dark.png tap-action-adaptive.svg lossless"

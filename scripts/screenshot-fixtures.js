@@ -274,8 +274,14 @@ export const ECCC_ALERTS = [
 //
 // Uses real lon/lat over the Tampa Bay area so the `geometryStyle: 'map'`
 // raster basemap aligns with actual tiles (a fabricated bbox near 0,0 would
-// render open ocean). The polygon below is an illustrative SVR-style outline,
-// not a record of a real warning.
+// render open ocean). The polygon is a real storm-based warning shape: NWS
+// Tampa Bay (TBW) Severe Thunderstorm Warning, ETN 12 of 2025, issued
+// 2025-06-02 14:49Z and expired 15:15Z, as archived by the Iowa Environmental
+// Mesonet (api/1/vtec/sbw_interval.geojson). NWS publishes storm-based
+// polygons to hundredths of a degree, so five vertices IS what an SVR looks
+// like; cap_alerts never resolves zone/county outlines for NWS, so a detailed
+// outline here would misrepresent what the card draws. The alert text is
+// still illustrative, only the geometry is on record.
 export const CAP_GEOMETRY_REF = 'screenshot-geom-ref-1';
 
 export const CAP_GEOMETRY_ALERT_ATTRS = {
@@ -301,8 +307,9 @@ export const CAP_GEOMETRY_ALERT_ATTRS = {
   event_code_nws: 'SVR',
   provider: 'nws',
   phase: 'new',
-  // [minlon, minlat, maxlon, maxlat] — Tampa Bay metro, ~0.45° square.
-  bbox: [-82.72, 27.72, -82.28, 28.12],
+  // [minlon, minlat, maxlon, maxlat] — the polygon's own extent, as cap_alerts
+  // derives it.
+  bbox: [-82.57, 27.81, -82.23, 28.06],
   geometry_ref: CAP_GEOMETRY_REF,
 };
 
@@ -319,17 +326,98 @@ export const CAP_GEOMETRY_STUB = {
       geometry: {
         type: 'Polygon',
         coordinates: [[
-          [-82.70, 27.80],
-          [-82.35, 27.72],
-          [-82.28, 28.05],
-          [-82.55, 28.12],
-          [-82.72, 27.98],
-          [-82.70, 27.80],
+          [-82.51, 28.06],
+          [-82.23, 27.95],
+          [-82.41, 27.81],
+          [-82.57, 27.90],
+          [-82.51, 28.06],
         ]],
       },
     },
   ],
 };
+
+// A CAP alert whose polygon is genuinely complex: ECCC issues watches per
+// municipality, and cap_alerts folds every <area> polygon into one
+// MultiPolygon (providers/geometry.py geometry_from_polygons). This is a real
+// product: Environment Canada severe thunderstorm watch for southern
+// Saskatchewan, CAP identifier urn:oid:2.49.0.1.124.1498809496.2026, Update
+// sent 2026-09-06T14:29:22Z (CWWG), 112 areas from the City of Regina west
+// to the Alberta border. Coordinates are the feed's, rounded to 3 decimals,
+// and live in screenshot-eccc-watch.json (40 KB, too big to inline here).
+// `event` is what cap_alerts derives from the Alert_Name parameter; the
+// timestamps are re-anchored to the frozen clock; the text is the product's.
+export const ECCC_WATCH_ENTITY = 'sensor.cap_alert_eccc_watch_screenshot';
+export const ECCC_WATCH_REF = 'screenshot-eccc-watch-ref-1';
+
+export const ECCC_WATCH_ATTRS = {
+  incident_platform_version: '1.0',
+  id: 'urn:oid:2.49.0.1.124.1498809496.2026',
+  event: 'Yellow Watch - Severe Thunderstorm',
+  severity: 'Moderate',
+  severity_normalized: 'moderate',
+  certainty: 'Likely',
+  urgency: 'Expected',
+  sent: iso(-1 * H),
+  onset: iso(-1 * H),
+  expires: iso(7 * H),
+  headline: 'yellow watch - severe thunderstorm - in effect',
+  // The product names all 112 municipalities here, ~5.6 KB of text, and the
+  // card's detail panel prints every one of them in the AREA row, which makes
+  // the real card ~6000 px tall and the mini-map a thumbnail in the figure.
+  // Trimmed to the first eight so the figure is about the geometry; the
+  // full-list rendering is a card question, not a fixture one.
+  area_desc:
+    'City of Regina; R.M. of Maple Bush including Riverhurst and Douglas Prov. Park; R.M. of Huron including Tugaske; R.M. of Enfield including Central Butte; ' +
+    'R.M. of Eyebrow including Eyebrow and Brownlee; R.M. of Craik including Craik and Aylesbury; R.M. of Marquis including Tuxford Keeler and Buffalo Pound; R.M. of Chaplin including Chaplin',
+  description:
+    'Conditions are favourable for the development of severe thunderstorms that may be ' +
+    'capable of producing strong wind gusts, large hail and heavy rain.\n\n' +
+    'An area of thunderstorms, some of which may become severe, will make its way through ' +
+    'southern Saskatchewan this morning.\n\n' +
+    'Heavy rain can cause flash flooding and significant reductions to visibility. Strong ' +
+    'wind gusts can damage trees, buildings and overturn vehicles. Large hail can cause ' +
+    'significant damage and injury.',
+  instruction: 'When thunder roars, go indoors! Lightning kills and injures Canadians every year.',
+  web: 'https://weather.gc.ca/',
+  provider: 'eccc',
+  phase: 'update',
+  // [minlon, minlat, maxlon, maxlat] — the MultiPolygon's extent.
+  bbox: [-107.724, 49.704, -101.415, 52.496],
+  geometry_ref: ECCC_WATCH_REF,
+};
+
+// A point-incident alert for the mini-map's marker path (#265): one
+// nsw_rural_fire_service_feed geo_location entity, whose attributes ARE the
+// incident (see NswRfsIncident in src/types.ts). Snapshot of a real, minor
+// incident from the RFS Major Incidents feed on 2026-09-30: an Advice-level
+// grass fire already under control, so the data is genuine without being
+// alarming. The coordinates are the feed's; publication_date is re-anchored
+// to the frozen clock so the "sent" row stays deterministic.
+export const NSW_RFS_POINT_ENTITY = 'geo_location.kilto_pl_kurrajong';
+
+export const NSW_RFS_POINT_ATTRS = {
+  source: 'nsw_rural_fire_service_feed',
+  friendly_name: 'KILTO PL, KURRAJONG 2758',
+  external_id: 'https://incidents.rfs.nsw.gov.au/api/v1/incidents/679965',
+  category: 'Advice',
+  location: 'KILTO PL, KURRAJONG 2758',
+  council_area: 'Hawkesbury',
+  status: 'Under control',
+  type: 'Grass Fire',
+  fire: true,
+  size: '1 ha',
+  responsible_agency: 'Rural Fire Service',
+  publication_date: iso(-2 * H),
+  latitude: -33.5056,
+  longitude: 150.7106,
+  unit_of_measurement: 'km',
+};
+
+// The card's reference point for showMyLocation / the distance row: HA home
+// at Sydney's CBD, ~61 km from the incident. Inside the ~150 km cap, so the
+// point frame widens to hold both the marker and the you-are-here ring.
+export const NSW_RFS_HOME = { latitude: -33.8688, longitude: 151.2093 };
 
 // MeteoSwiss aggregate warning with the sparsest possible metadata: the feed
 // publishes no issued time (sentTs stays 0) and this warning is open-ended

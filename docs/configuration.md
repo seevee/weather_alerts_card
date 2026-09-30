@@ -204,9 +204,34 @@ legibility-safe opacity. The wash is always solid.
 | polygon + point | CAP Alerts (an Australian fire with a fire-ground polygon and a location marker) | the polygon in its own frame; the marker still drives `maxDistanceKm` and the distance row |
 | nothing | NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, NINA, PirateWeather | no mini-map |
 
+A polygon can be a single storm-based shape, as above, or a few hundred rings. ECCC
+issues its watches per municipality, so one alert arrives as a MultiPolygon of every
+area it names, and the frame is the whole extent:
+
+![An ECCC severe thunderstorm watch over southern Saskatchewan, drawn as 112 municipal outlines on the raster basemap](/img/geometry-watch-adaptive.svg)
+
 For a point incident the frame is invented by the card, not published by the feed, so it
 carries no tint: it's a viewport, not an affected area. A lone dot in an empty frame says
 little on the `'shape'` style; `'map'` gives it terrain, and `showMyLocation` gives it you.
+
+The three together are the point-incident setup worth copying. With the NSW RFS feed
+auto-collected by source, and `sortOrder: distance` so the nearest fire leads:
+
+```yaml
+type: custom:weather-alerts-card
+sources:
+  - nsw_rural_fire_service_feed
+showGeometry: true
+geometryStyle: map
+showMyLocation: true
+sortOrder: distance
+```
+
+![A grass fire marked on the mini-map, with the you-are-here ring at home about 60 km away](/img/geometry-point-adaptive.svg)
+
+Leave `maxDistanceKm` out of this one: the RFS integration already trims its feed at its
+own `radius` (20 km by default), so a wider card value changes nothing
+(see [Filtering and sorting](#filtering-and-sorting)).
 
 `showMyLocation: true` adds a small neutral ring at the card's reference point — HA home,
 or the `myLocationEntity` entity — under the incident marker. On a point map the frame
