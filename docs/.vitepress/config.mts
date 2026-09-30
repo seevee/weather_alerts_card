@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitepress';
 
-// Pinned to VitePress 1.x deliberately: 2.0 requires Node 22+, and CI runs
-// Node 20 across build.yml, release.yml and docs.yml. Revisit after that bump.
+// VitePress 2 (alpha, pinned exactly in package.json) so the docs toolchain
+// shares the Vite 8 that vitest already uses. 1.x pinned Vite 5, which carried
+// four Dependabot alerts Dependabot itself could not resolve (#319).
 export default defineConfig({
   title: 'Weather Alerts Card',
   description:

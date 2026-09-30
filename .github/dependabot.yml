@@ -37,3 +37,10 @@ updates:
       # entry once typescript-eslint supports it.
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # vitepress is an exact-pinned 2.0 alpha (#319). build.yml does not run
+      # the docs build, so a new alpha landing through the dev-deps group would
+      # only be checked by the Pages deploy after it merged. Hold prereleases
+      # here and bump by hand; 2.0.0 stable is outside this range and arrives
+      # normally. Drop the entry once the pin is back to a caret.
+      - dependency-name: vitepress
+        versions: [">=2.0.0-alpha.21 <2.0.0"]

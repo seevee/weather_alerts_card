@@ -192,8 +192,11 @@ Conventions that are load-bearing:
 - **The motion capture is gated behind `DOCS_MOTION=1`,** off by default — still being
   tuned, and it needs both `ffmpeg` and `ffprobe` (`capture-tap-action.js` probes only for
   `ffmpeg`, so a runner with one and not the other throws rather than degrading).
-- **VitePress is pinned to 1.x.** 2.0 requires Node 22+; the workflows have run Node 24
-  since #299, so the migration is now just the dependency bump.
+- **VitePress 2 is an exact-pinned alpha.** 1.x pins Vite 5, and Dependabot could not
+  clear the Vite 5 security alerts because `vitepress@1` and `@vitejs/plugin-vue@5` peer on
+  it (#319). The 2.0 alphas ship roughly monthly; `dependabot.yml` ignores them so a bump
+  is a deliberate PR checked against `npm run docs:build`, and the pin goes back to a
+  caret once 2.0.0 is stable. Node 22+ is required; the workflows run Node 24.
 
 Three surfaces consume these figures, which is why the pipeline looks the way it does:
 
