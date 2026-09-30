@@ -10,7 +10,7 @@ npm install
 npm run build      # Rolldown bundle → dist/weather-alerts-card.js
 npm run watch      # Rolldown in watch mode
 npm run lint       # TypeScript type-check (tsc --noEmit)
-npm run test       # Vitest unit tests (jsdom)
+npm run test       # Vitest, two projects: pure files on jsdom, every suite that mounts the card or editor in headless Chromium (run `npx playwright install chromium` once)
 npm run test:watch # Vitest in watch mode
 ```
 

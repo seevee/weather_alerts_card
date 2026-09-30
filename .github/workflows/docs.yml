@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # ~90 s normally: Chromium install plus every figure rendered headless.
+    # ~40 s cold, less on a browser cache hit: every figure rendered headless.
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -29,9 +29,23 @@ jobs:
       - run: npm ci
 
       # The figures are rendered from the real card in headless Chromium, so the
-      # docs build needs a browser. Scoped to this workflow — build.yml and
-      # release.yml stay Playwright-free.
-      - run: npx playwright install --with-deps chromium
+      # docs build needs a browser. Same steps and cache key as build.yml, so
+      # one download per Playwright version serves both workflows; build.yml
+      # carries the reasoning. release.yml stays Playwright-free.
+      - id: playwright
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: playwright-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-headless-shell-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.playwright-cache.outputs.cache-primary-key }}
 
       # Builds dist/, renders every figure, and stages them in docs/public/img/.
       # DOCS_MOTION is deliberately unset: the motion capture is still being

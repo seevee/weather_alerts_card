@@ -800,8 +800,15 @@ export class WeatherAlertsCard extends LitElement {
       }
       // Capture so the gesture survives the pointer leaving the card; the
       // rAF below schedules the lock-class + offset DOM update together on
-      // the next frame — no separate requestUpdate() needed here.
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      // the next frame — no separate requestUpdate() needed here. Chromium
+      // throws NotFoundError when the id is no longer an active pointer
+      // (released between events, or a synthesized event), and the lock
+      // must not hinge on that.
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        // No active pointer to capture; the gesture still locks.
+      }
       this._swipeState = { ...this._swipeState, locked: true };
     }
 

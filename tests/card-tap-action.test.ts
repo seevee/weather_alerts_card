@@ -1,24 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
-
-// jsdom lacks matchMedia; the card touches it during construction, so the
-// polyfill must be installed before the card module loads.
-beforeAll(() => {
-  if (!window.matchMedia) {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: () => ({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        addListener: () => {},
-        removeListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-  }
-});
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { WeatherAlertsCard } from '../src/weather-alerts-card';
 import { handleTapAction, hasTapAction, fireEvent } from '../src/actions';
@@ -143,20 +123,6 @@ beforeEach(() => {
   // clear it so expansion from one test never leaks into the next.
   (WeatherAlertsCard as unknown as { _editorExpandedState: Map<string, unknown> })
     ._editorExpandedState.clear();
-
-  const store = new Map<string, string>();
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: {
-      get length() { return store.size; },
-      clear: () => store.clear(),
-      getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-      setItem: (k: string, v: string) => { store.set(k, String(v)); },
-      removeItem: (k: string) => { store.delete(k); },
-      key: (i: number) => Array.from(store.keys())[i] ?? null,
-    },
-    configurable: true,
-    writable: true,
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -541,7 +507,12 @@ describe('tap_action action:details', () => {
     root(card).querySelector<HTMLElement>('.alert-card')!.click();
     await settle(card);
 
+    // close() fires the dialog's `close` event on a later task, and the
+    // state clears from that event, so wait for it before settling.
+    const d = dialog(card)!;
+    const closed = new Promise<void>((r) => d.addEventListener('close', () => r(), { once: true }));
     root(card).querySelector<HTMLElement>('.detail-dialog-close')!.click();
+    await closed;
     await settle(card);
 
     expect(card._detailPopupAlertId).toBeNull();

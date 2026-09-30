@@ -9,7 +9,7 @@ import type { WeatherAlertsCardConfig } from '../src/types';
 // field rendered as nothing on a current core. These tests pin the detection,
 // the event-shape fallback, and the element each renderer emits on each path.
 //
-// They cannot substitute for a real install — jsdom has neither component set —
+// They cannot substitute for a real install — the test page has neither component set —
 // but they do cover both branches, which is what regressed silently before.
 type EditorInternals = {
   _config: WeatherAlertsCardConfig;
@@ -37,7 +37,7 @@ function markupOf(template: unknown): string {
   return host.innerHTML;
 }
 
-// Detection reads the registry, which jsdom shares across the whole file.
+// Detection reads the registry, which the test page shares across the whole file.
 // Stubbing `get` keeps each case independent and leaves the registry untouched.
 function registryHas(...defined: string[]): void {
   vi.spyOn(customElements, 'get').mockImplementation(

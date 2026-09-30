@@ -1,24 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-
-// jsdom lacks matchMedia; the card touches it during construction, so the
-// polyfill must be installed before the card module loads.
-beforeAll(() => {
-  if (!window.matchMedia) {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: () => ({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        addListener: () => {},
-        removeListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-  }
-});
+import { describe, it, expect } from 'vitest';
 
 import '../src/weather-alerts-card';
 import type { HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
@@ -138,22 +118,6 @@ function metaGrid(card: CardInternals): Record<string, string> {
   }
   return out;
 }
-
-beforeEach(() => {
-  const store = new Map<string, string>();
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: {
-      get length() { return store.size; },
-      clear: () => store.clear(),
-      getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-      setItem: (k: string, v: string) => { store.set(k, String(v)); },
-      removeItem: (k: string) => { store.delete(k); },
-      key: (i: number) => Array.from(store.keys())[i] ?? null,
-    },
-    configurable: true,
-    writable: true,
-  });
-});
 
 describe('metadata-grid seam', () => {
   const baseConfig = (entity: string): WeatherAlertsCardConfig => ({

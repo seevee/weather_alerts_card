@@ -1,25 +1,5 @@
-import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import type { Connection } from 'home-assistant-js-websocket';
-
-// jsdom lacks matchMedia; the card's _motionQuery touches it during
-// construction, so the polyfill must be installed before the card module loads.
-beforeAll(() => {
-  if (!window.matchMedia) {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: () => ({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        addListener: () => {},
-        removeListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-  }
-});
 
 import {
   WeatherAlertsCard,

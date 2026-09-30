@@ -12,7 +12,7 @@ import type { HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
 // and a secondary naming its customised keys from the registry, with the
 // matching rows marked inside; dependents hidden (never disabled) behind
 // their master; the detail sections as one list selector.
-// ha-expansion-panel is undefined in jsdom, so panel children stay ordinary
+// ha-expansion-panel is undefined in the test page, so panel children stay ordinary
 // light DOM and querySelector reaches them.
 type EditorInternals = {
   _config: WeatherAlertsCardConfig;

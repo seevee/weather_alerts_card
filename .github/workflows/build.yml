@@ -15,7 +15,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # A whole run is ~35 s; anything past this is a hung worker, not a slow one.
+    # A whole run is ~40 s cold and less on a browser cache hit; anything past
+    # this is a hung worker, not a slow one.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -24,6 +25,31 @@ jobs:
           node-version: 24
           cache: 'npm'
       - run: npm ci
+
+      # The browser test project drives headless Chromium through Playwright.
+      # A headless launch runs the headless shell, so that is the only build
+      # fetched (--only-shell). It is cached across workflows, keyed on the
+      # Playwright version, which alone decides the Chromium revision; hashing
+      # the lockfile would refetch on every unrelated dependency bump. The
+      # save sits right after the install so a failing lint or test still
+      # fills the cache. On a hit nothing runs at all: the shell's shared
+      # libraries are already on the runner image, which ships Chrome, and
+      # install-deps would spend its time in apt-get update.
+      - id: playwright
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: playwright-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-headless-shell-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.playwright-cache.outputs.cache-primary-key }}
+
       - run: npm run lint
       - run: npm run test
       - run: npm run build

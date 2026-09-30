@@ -1,43 +1,5 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
-
-// jsdom lacks matchMedia; the card's _motionQuery touches it during
-// construction, so the polyfill must be installed before the card module
-// loads. `reducedMotion` is read at call time so one test can flip it.
-let reducedMotion = false;
-beforeAll(() => {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    configurable: true,
-    value: () => ({
-      get matches() { return reducedMotion; },
-      media: '',
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    }),
-  });
-});
-
-// jsdom implements PointerEvent but not pointer capture. Track captures per
-// element so the tests can assert the gesture captured and released.
-const captured = new WeakMap<Element, Set<number>>();
-beforeAll(() => {
-  const proto = Element.prototype as unknown as Record<string, unknown>;
-  proto.setPointerCapture = function (this: Element, id: number) {
-    let set = captured.get(this);
-    if (!set) { set = new Set(); captured.set(this, set); }
-    set.add(id);
-  };
-  proto.hasPointerCapture = function (this: Element, id: number) {
-    return captured.get(this)?.has(id) ?? false;
-  };
-  proto.releasePointerCapture = function (this: Element, id: number) {
-    captured.get(this)?.delete(id);
-  };
-});
+import { describe, it, expect, afterEach } from 'vitest';
+import { commands } from 'vitest/browser';
 
 import '../src/weather-alerts-card';
 import type { WeatherAlertsCard } from '../src/weather-alerts-card';
@@ -45,7 +7,6 @@ import { scopeHashForConfig, storageKey, saveDismissals, loadDismissals } from '
 import type { DismissalRecord, HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
 
 const HOUR = 3600 * 1000;
-const WIDTH = 300;
 const WIND = 'wind-severe';
 const FLOOD = 'flood-severe';
 
@@ -58,22 +19,11 @@ type CardInternals = Omit<WeatherAlertsCard, never> & {
   _dismissals: Map<string, DismissalRecord>;
 };
 
-// Node 22+/Vitest 4's default localStorage stub is missing several Storage
-// API methods. Install the same in-memory polyfill dismissal.test.ts uses.
-beforeEach(() => {
-  const store = new Map<string, string>();
-  const fake: Storage = {
-    get length() { return store.size; },
-    clear: () => store.clear(),
-    getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-    setItem: (k: string, v: string) => { store.set(k, String(v)); },
-    removeItem: (k: string) => { store.delete(k); },
-    key: (i: number) => Array.from(store.keys())[i] ?? null,
-  };
-  Object.defineProperty(globalThis, 'localStorage', { value: fake, configurable: true, writable: true });
-  reducedMotion = false;
+// The reduced-motion cases emulate the OS preference on the tester page;
+// put it back so the next test starts from the default.
+afterEach(async () => {
+  await commands.setReducedMotion(false);
 });
-afterEach(() => { reducedMotion = false; });
 
 function nwsHass(): HomeAssistant {
   const now = Date.now();
@@ -118,13 +68,15 @@ function rows(card: CardInternals): HTMLElement[] {
   return Array.from(card.shadowRoot!.querySelectorAll<HTMLElement>('.alert-card'));
 }
 
-// jsdom lays nothing out, so every rect is 0×0 and the 40 % threshold would
-// be 0 px. Give each row a width the handlers can measure.
 function row(card: CardInternals, index = 0): HTMLElement {
-  const el = rows(card)[index];
-  el.getBoundingClientRect = () => ({ width: WIDTH, height: 80, x: 0, y: 0, top: 0, left: 0, right: WIDTH, bottom: 80, toJSON: () => ({}) });
-  return el;
+  return rows(card)[index];
 }
+
+// The 40 % threshold is measured against the row's laid-out width, so every
+// drag distance is derived from it rather than a fixed pixel count.
+const width = (el: HTMLElement) => el.getBoundingClientRect().width;
+const shortOf = (el: HTMLElement) => Math.round(width(el) * 0.3);
+const pastOf = (el: HTMLElement) => Math.round(width(el) * 0.5);
 
 function pointer(el: HTMLElement, type: string, init: PointerEventInit & { clientX: number; clientY?: number }) {
   el.dispatchEvent(new PointerEvent(type, { bubbles: true, composed: true, pointerId: 1, clientY: 50, ...init }));
@@ -133,12 +85,15 @@ function pointer(el: HTMLElement, type: string, init: PointerEventInit & { clien
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-// A left drag from x=200 to `toX`, through the lock and one animation frame.
-async function drag(card: CardInternals, el: HTMLElement, toX: number, pointerId = 1) {
-  pointer(el, 'pointerdown', { clientX: 200, pointerId });
-  pointer(el, 'pointermove', { clientX: toX, pointerId });
+// A left drag of `dx` px from x=START, through the lock and one animation
+// frame. Returns the pointer's final x so the release lands at the same spot.
+const START = 400;
+async function drag(card: CardInternals, el: HTMLElement, dx: number, pointerId = 1): Promise<number> {
+  pointer(el, 'pointerdown', { clientX: START, pointerId });
+  pointer(el, 'pointermove', { clientX: START - dx, pointerId });
   await nextFrame();
   await card.updateComplete;
+  return START - dx;
 }
 
 describe('swipe gating', () => {
@@ -182,7 +137,6 @@ describe('gesture intent', () => {
     pointer(el, 'pointerdown', { clientX: 200 });
     pointer(el, 'pointermove', { clientX: 195, clientY: 90 });
     expect(card._swipeState).toBeNull();
-    expect(el.hasPointerCapture(1)).toBe(false);
   });
 
   it('abandons a rightward drag', async () => {
@@ -193,20 +147,19 @@ describe('gesture intent', () => {
     expect(card._swipeState).toBeNull();
   });
 
-  it('locks a leftward drag, captures the pointer, and paints the offset on the next frame', async () => {
+  it('locks a leftward drag and paints the offset on the next frame', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
     pointer(el, 'pointerdown', { clientX: 200 });
     pointer(el, 'pointermove', { clientX: 150 });
-    expect(card._swipeState).toMatchObject({ id: WIND, locked: true, offset: 0, cardWidth: WIDTH });
-    expect(el.hasPointerCapture(1)).toBe(true);
+    expect(card._swipeState).toMatchObject({ id: WIND, locked: true, offset: 0, cardWidth: width(el) });
     await nextFrame();
     await card.updateComplete;
     expect(card._swipeState!.offset).toBe(-50);
     const painted = row(card);
     expect(painted.classList.contains('swiping')).toBe(true);
     expect(painted.style.transform).toBe('translateX(-50px)');
-    expect(painted.style.opacity).toBe((1 - 50 / WIDTH).toFixed(2));
+    expect(painted.style.opacity).toBe((1 - 50 / width(el)).toFixed(2));
   });
 
   it('coalesces moves within one frame and never paints a positive offset', async () => {
@@ -225,11 +178,10 @@ describe('release', () => {
   it('snaps back when released short of 40 % of the row width', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 100); // -100 px, threshold is -120
-    pointer(el, 'pointerup', { clientX: 100 });
+    const x = await drag(card, el, shortOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     expect(card._swipeState).toBeNull();
     expect(card._swipeExiting).toBeNull();
-    expect(el.hasPointerCapture(1)).toBe(false);
     await card.updateComplete;
     expect(rows(card)).toHaveLength(2);
     expect(row(card).style.transform).toBe('');
@@ -241,8 +193,8 @@ describe('release', () => {
     const toasts: CustomEvent[] = [];
     card.addEventListener('hass-notification', (e) => toasts.push(e as CustomEvent));
     const el = row(card);
-    await drag(card, el, 60); // -140 px
-    pointer(el, 'pointerup', { clientX: 60 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     expect(card._swipeExiting).toBe(WIND);
     await card.updateComplete;
     expect(row(card).classList.contains('swipe-exit')).toBe(true);
@@ -260,11 +212,11 @@ describe('release', () => {
   });
 
   it('skips the exit delay under prefers-reduced-motion', async () => {
-    reducedMotion = true;
+    await commands.setReducedMotion(true);
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 60);
-    pointer(el, 'pointerup', { clientX: 60 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     await sleep(0);
     await card.updateComplete;
     expect(rows(card)).toHaveLength(1);
@@ -272,26 +224,26 @@ describe('release', () => {
   });
 
   it('fires no toast when showDismissUndo is off', async () => {
-    reducedMotion = true;
+    await commands.setReducedMotion(true);
     const card = await mountCard({ ...SWIPE, showDismissUndo: false });
     const toasts: Event[] = [];
     card.addEventListener('hass-notification', (e) => toasts.push(e));
     const el = row(card);
-    await drag(card, el, 60);
-    pointer(el, 'pointerup', { clientX: 60 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     await sleep(0);
     expect(card._dismissals.has(WIND)).toBe(true);
     expect(toasts).toHaveLength(0);
   });
 
   it('restores the alert through the toast undo action', async () => {
-    reducedMotion = true;
+    await commands.setReducedMotion(true);
     const card = await mountCard(SWIPE);
     const toasts: CustomEvent[] = [];
     card.addEventListener('hass-notification', (e) => toasts.push(e as CustomEvent));
     const el = row(card);
-    await drag(card, el, 60);
-    pointer(el, 'pointerup', { clientX: 60 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     await sleep(0);
     await card.updateComplete;
     expect(rows(card)).toHaveLength(1);
@@ -310,8 +262,8 @@ describe('release', () => {
   it('drops the pending dismissal when the card unmounts mid-exit', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 60);
-    pointer(el, 'pointerup', { clientX: 60 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     expect(card._swipeExiting).toBe(WIND);
     card.remove();
     expect(card._swipeExiting).toBeNull();
@@ -320,15 +272,13 @@ describe('release', () => {
     expect(localStorage.getItem(storageKey(SCOPE))).toBeNull();
   });
 
-  it('resets on pointercancel and releases the capture', async () => {
+  it('resets on pointercancel', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 60);
-    expect(el.hasPointerCapture(1)).toBe(true);
-    pointer(el, 'pointercancel', { clientX: 60 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointercancel', { clientX: x });
     expect(card._swipeState).toBeNull();
     expect(card._swipePointerId).toBeNull();
-    expect(el.hasPointerCapture(1)).toBe(false);
     await card.updateComplete;
     expect(rows(card)).toHaveLength(2);
     expect(card._dismissals.size).toBe(0);
@@ -337,9 +287,9 @@ describe('release', () => {
   it('ignores up and cancel from a pointer that did not start the gesture', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 60);
-    pointer(el, 'pointerup', { clientX: 60, pointerId: 2 });
-    pointer(el, 'pointercancel', { clientX: 60, pointerId: 2 });
+    const x = await drag(card, el, pastOf(el));
+    pointer(el, 'pointerup', { clientX: x, pointerId: 2 });
+    pointer(el, 'pointercancel', { clientX: x, pointerId: 2 });
     expect(card._swipeState).toMatchObject({ id: WIND, locked: true });
   });
 
@@ -355,12 +305,30 @@ describe('release', () => {
   });
 });
 
+describe('real pointer', () => {
+  // Chromium only captures an active pointer, which a synthesized PointerEvent
+  // never is, so the capture/release contract is proven with the real mouse.
+  it('captures the mouse on lock and releases it on pointerup', async () => {
+    const card = await mountCard(SWIPE);
+    const el = row(card);
+    await commands.mouseDrag(0, shortOf(el));
+    await card.updateComplete;
+    expect(card._swipeState).toMatchObject({ id: WIND, locked: true });
+    expect(el.hasPointerCapture(1)).toBe(true);
+    await commands.mouseUp();
+    await card.updateComplete;
+    expect(card._swipeState).toBeNull();
+    expect(el.hasPointerCapture(1)).toBe(false);
+    expect(rows(card)).toHaveLength(2);
+  });
+});
+
 describe('click after a drag', () => {
   it('swallows the synthesized click so the row does not expand, then clears the guard', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 100);
-    pointer(el, 'pointerup', { clientX: 100 });
+    const x = await drag(card, el, shortOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     expect(card._swipeJustDragged).toBe(true);
 
     el.querySelector<HTMLElement>('.details-summary')!.click();
@@ -375,8 +343,8 @@ describe('click after a drag', () => {
   it('clears the guard on its own when no click follows', async () => {
     const card = await mountCard(SWIPE);
     const el = row(card);
-    await drag(card, el, 100);
-    pointer(el, 'pointerup', { clientX: 100 });
+    const x = await drag(card, el, shortOf(el));
+    pointer(el, 'pointerup', { clientX: x });
     expect(card._swipeJustDragged).toBe(true);
     await sleep(0);
     expect(card._swipeJustDragged).toBe(false);

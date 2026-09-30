@@ -1,26 +1,6 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { Connection } from 'home-assistant-js-websocket';
 import type { LooseConfig } from './types';
-
-// jsdom lacks matchMedia; LitElement/the card's _motionQuery touches it during
-// construction, so the polyfill must be installed before the card module loads.
-beforeAll(() => {
-  if (!window.matchMedia) {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: () => ({
-        matches: false,
-        media: '',
-        onchange: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        addListener: () => {},
-        removeListener: () => {},
-        dispatchEvent: () => false,
-      }),
-    });
-  }
-});
 
 import { WeatherAlertsCard, resolveDeviceAlertEntities } from '../src/weather-alerts-card';
 import { DISMISSALS_CHANGED_EVENT, storageKey } from '../src/dismissal';
@@ -348,26 +328,6 @@ function shadow(card: CardInternals): ShadowRoot {
 function hasEl(card: CardInternals, selector: string): boolean {
   return shadow(card).querySelector(selector) !== null;
 }
-
-beforeEach(() => {
-  // Defensive localStorage polyfill — Vitest's jsdom env supplies one but
-  // some Node versions ship a Storage stub missing key/length, which the
-  // dismissal module doesn't tolerate.
-  const store = new Map<string, string>();
-  const fake: Storage = {
-    get length() { return store.size; },
-    clear: () => store.clear(),
-    getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-    setItem: (k: string, v: string) => { store.set(k, String(v)); },
-    removeItem: (k: string) => { store.delete(k); },
-    key: (i: number) => Array.from(store.keys())[i] ?? null,
-  };
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: fake,
-    configurable: true,
-    writable: true,
-  });
-});
 
 describe('WeatherAlertsCard render in device mode', () => {
   const ALERT_ID = 'sensor.cap_alerts_x_cap_alert_frost_aaa';

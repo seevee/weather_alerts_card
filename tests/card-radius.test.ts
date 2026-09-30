@@ -1,20 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { LooseConfig, Overrides } from './types';
-
-// jsdom lacks matchMedia; the card touches it during construction, so polyfill
-// before the card module loads (mirrors source-mode.test.ts).
-beforeAll(() => {
-  if (!window.matchMedia) {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: () => ({
-        matches: false, media: '', onchange: null,
-        addEventListener: () => {}, removeEventListener: () => {},
-        addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
-      }),
-    });
-  }
-});
 
 import { WeatherAlertsCard } from '../src/weather-alerts-card';
 import { haversineKm } from '../src/utils';

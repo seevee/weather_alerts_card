@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { WeatherAlertsCardEditor } from '../src/weather-alerts-card-editor';
 import type { WeatherAlertsCardConfig } from '../src/types';
 import { saveDismissals, scopeHashForConfig } from '../src/dismissal';
@@ -251,22 +251,6 @@ describe('_isManagedCondition', () => {
 });
 
 describe('editor dismissal scope (device-mode CAP)', () => {
-  beforeEach(() => {
-    const store = new Map<string, string>();
-    Object.defineProperty(globalThis, 'localStorage', {
-      value: {
-        get length() { return store.size; },
-        clear: () => store.clear(),
-        getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-        setItem: (k: string, v: string) => { store.set(k, String(v)); },
-        removeItem: (k: string) => { store.delete(k); },
-        key: (i: number) => Array.from(store.keys())[i] ?? null,
-      },
-      configurable: true,
-      writable: true,
-    });
-  });
-
   it('derives the same scope hash the card uses for a device-only config', () => {
     const editor = makeEditor();
     const config = { type: 'custom:weather-alerts-card', device: 'cap-dev-1' } as WeatherAlertsCardConfig;

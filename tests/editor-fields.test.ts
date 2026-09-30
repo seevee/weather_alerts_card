@@ -51,7 +51,8 @@ function makeEditor(config: WeatherAlertsCardConfig): { editor: EditorInternals;
 
 /** A config in which every gated control is rendered: details on, geometry
  *  on, dismissal on with a button trigger. Collapsed panels are undefined
- *  elements in jsdom, so their children stay ordinary light DOM. */
+ *  elements in the test page (no HA frontend registers them), so their
+ *  children stay ordinary light DOM. */
 function everythingVisible(): WeatherAlertsCardConfig {
   return base({ showGeometry: true, allowDismiss: true });
 }

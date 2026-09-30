@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   STORAGE_KEY_PREFIX,
   STALE_TTL_SEC,
@@ -46,26 +46,6 @@ function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
 function makeRecord(sig: string, now: number): DismissalRecord {
   return { sig, dismissedAt: now, lastSeenAt: now };
 }
-
-// Node 22+/Vitest 4's default localStorage stub is missing several Storage
-// API methods. Install a minimal in-memory polyfill so tests are deterministic
-// across Node versions.
-beforeEach(() => {
-  const store = new Map<string, string>();
-  const fake: Storage = {
-    get length() { return store.size; },
-    clear: () => store.clear(),
-    getItem: (k: string) => (store.has(k) ? store.get(k)! : null),
-    setItem: (k: string, v: string) => { store.set(k, String(v)); },
-    removeItem: (k: string) => { store.delete(k); },
-    key: (i: number) => Array.from(store.keys())[i] ?? null,
-  };
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: fake,
-    configurable: true,
-    writable: true,
-  });
-});
 
 describe('computeAlertSignature', () => {
   it('is stable for the same alert', () => {
