@@ -4,13 +4,13 @@ This file provides guidance to AI agents working with code in this repository.
 
 ## Project Overview
 
-A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), MeteoSwiss (Switzerland — via the HACS [`izacus/hass-swissweather`](https://github.com/izacus/hass-swissweather) custom integration), ECCC (Environment and Climate Change Canada — via the HACS [`environment_canada`](https://github.com/michaeldavie/environment_canada_hacs) custom component, *not* the bundled HA core integration), NSW RFS (NSW Rural Fire Service bushfire incidents — via the built-in [`nsw_rural_fire_service_feed`](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) geo_location integration), INMET (Brazil — via the HACS [`sigrist/inmet`](https://github.com/sigrist/inmet) geo_location integration), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rollup, and packaged for HACS distribution.
+A standalone custom Home Assistant Lovelace card for displaying weather alerts from multiple providers. Currently supports NWS (National Weather Service, US), BoM (Bureau of Meteorology, Australia), MeteoAlarm (EUMETNET, Europe), DWD (Deutscher Wetterdienst, Germany), MeteoSwiss (Switzerland — via the HACS [`izacus/hass-swissweather`](https://github.com/izacus/hass-swissweather) custom integration), ECCC (Environment and Climate Change Canada — via the HACS [`environment_canada`](https://github.com/michaeldavie/environment_canada_hacs) custom component, *not* the bundled HA core integration), NSW RFS (NSW Rural Fire Service bushfire incidents — via the built-in [`nsw_rural_fire_service_feed`](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) geo_location integration), INMET (Brazil — via the HACS [`sigrist/inmet`](https://github.com/sigrist/inmet) geo_location integration), PirateWeather, and the [CAP Alerts](https://github.com/seevee/cap_alerts) integration (one entity per active alert, multi-region). Built with LitElement/Lit 3, bundled with Rolldown, and packaged for HACS distribution.
 
 ## Build Commands
 
 ```bash
-npm run build     # Rollup bundle → dist/weather-alerts-card.js (single ES module, ~189KB minified, downleveled to ES2019)
-npm run watch     # Rollup in watch mode
+npm run build     # Rolldown bundle → dist/weather-alerts-card.js (single ES module, ~296KB minified, downleveled to ES2019)
+npm run watch     # Rolldown in watch mode
 npm run lint      # TypeScript type-check of src/ and tests/ (tsconfig.eslint.json) + ESLint (type-aware, eslint.config.mjs). tests/ opts out of noUncheckedIndexedAccess there: fixture indexing is not what the flag protects
 npm run test      # Vitest unit tests (jsdom environment) + coverage floors (vitest.config.ts)
 npm run test:watch # Vitest in watch mode
@@ -45,7 +45,7 @@ PR pass.
 | `src/translations/` | One file per locale (`en`, `fr`, `es`, `it`, `de`, `nl`, `zh-Hans`, `pt-BR`), registered in `index.ts`. Split out of `localize.ts` so parity checks can iterate the registry and so a locale change is a self-contained diff. (The split was originally also meant to make `CODEOWNERS` paths expressible; that never worked, since GitHub ignores owners without write access, and the file has since been removed.) |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`, and the distance helpers `haversineKm()` / `extractPoint()` / `kmToDisplay()` / `displayToKm()` / `toLengthUnit()` / `formatDistance()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
-| `rollup.config.mjs` | Rollup config: resolve + commonjs + typescript2 + esbuild (minify + `target: es2019`, downlevels the whole bundle incl. Lit for old Android WebViews, #194) → single `dist/weather-alerts-card.js`. |
+| `rolldown.config.mjs` | Rolldown config, no plugins: built-in TS transform, `transform.target: es2019` (downlevels the whole bundle incl. Lit for old Android WebViews, #194), `transform.define` for `__CARD_VERSION__`, `output.minify` → single `dist/weather-alerts-card.js`. Type errors do not fail the build; `npm run lint` owns type-checking. |
 
 ## Key Patterns
 
@@ -167,7 +167,7 @@ npm run docs:preview  # serve the production build
 
 | File | Purpose |
 |------|---------|
-| `docs/.vitepress/config.mts` | Site config. **Must be `.mts`** — this package is CJS (no `"type": "module"`), so a `.ts` config is loaded as CommonJS and fails on VitePress's ESM-only export, same reason `rollup.config.mjs` is `.mjs`. |
+| `docs/.vitepress/config.mts` | Site config. **Must be `.mts`** — this package is CJS (no `"type": "module"`), so a `.ts` config is loaded as CommonJS and fails on VitePress's ESM-only export, same reason `rolldown.config.mjs` is `.mjs`. |
 | `docs/*.md`, `docs/recipes/*.md` | Content: overview, getting-started, configuration, theming, providers, two recipe pages, development. |
 | `scripts/build-docs-media.sh` | Builds `dist/`, runs `screenshot.js` + `encode-adaptive-svgs.sh`, copies `img/` output into `docs/public/img/`. |
 | `.github/workflows/docs.yml` | Pages build + deploy on push to `main` and `workflow_dispatch`. Installs Playwright Chromium; `build.yml`/`release.yml` stay Playwright-free. |

@@ -1,14 +1,14 @@
 # Development
 
-The card is a single LitElement bundled with Rollup and distributed through HACS. No
+The card is a single LitElement bundled with Rolldown and distributed through HACS. No
 framework, no build server — clone, `npm install`, and build.
 
 ## Build commands
 
 ```bash
 npm install
-npm run build      # Rollup bundle → dist/weather-alerts-card.js
-npm run watch      # Rollup in watch mode
+npm run build      # Rolldown bundle → dist/weather-alerts-card.js
+npm run watch      # Rolldown in watch mode
 npm run lint       # TypeScript type-check (tsc --noEmit)
 npm run test       # Vitest unit tests (jsdom)
 npm run test:watch # Vitest in watch mode
