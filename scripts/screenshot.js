@@ -55,6 +55,7 @@ const MIME = {
   '.css': 'text/css',
   '.png': 'image/png',
   '.json': 'application/json',
+  '.woff2': 'font/woff2',
 };
 
 function startServer(port) {

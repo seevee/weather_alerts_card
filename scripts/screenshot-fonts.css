@@ -1,0 +1,56 @@
+/* Roboto for the screenshot harnesses, from the roboto-fontface devDependency.
+ *
+ * The card inherits the page font, and in Home Assistant that is Roboto, served
+ * by the frontend itself (home-assistant/frontend depends on the same package
+ * and copies these files to static/fonts/roboto). Loading it here makes a
+ * figure render in HA's font wherever the harness runs, instead of whatever
+ * fontconfig picks as sans-serif on that machine: Noto Sans on one box,
+ * DejaVu or Liberation on a CI runner, a different line height on each. The
+ * local() sources come first, as in HA's roboto.ts, so an installed Roboto is
+ * used without a fetch. Weights are the ones src/styles.ts asks for (400, 500,
+ * 600 which Chromium resolves to 700, 700) plus 300 and the italics the
+ * relative-time rows use. Roboto Mono is not in this package; the one harness
+ * that names it falls through to ui-monospace, which is fine for a code chip.
+ */
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 300;
+  src: local("Roboto Light"), local("Roboto-Light"),
+       url(/node_modules/roboto-fontface/fonts/roboto/Roboto-Light.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Roboto"), local("Roboto-Regular"),
+       url(/node_modules/roboto-fontface/fonts/roboto/Roboto-Regular.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Roboto";
+  font-style: italic;
+  font-weight: 400;
+  src: local("Roboto Italic"), local("Roboto-Italic"),
+       url(/node_modules/roboto-fontface/fonts/roboto/Roboto-RegularItalic.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 500;
+  src: local("Roboto Medium"), local("Roboto-Medium"),
+       url(/node_modules/roboto-fontface/fonts/roboto/Roboto-Medium.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Roboto";
+  font-style: italic;
+  font-weight: 500;
+  src: local("Roboto Medium Italic"), local("Roboto-MediumItalic"),
+       url(/node_modules/roboto-fontface/fonts/roboto/Roboto-MediumItalic.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Roboto";
+  font-style: normal;
+  font-weight: 700;
+  src: local("Roboto Bold"), local("Roboto-Bold"),
+       url(/node_modules/roboto-fontface/fonts/roboto/Roboto-Bold.woff2) format("woff2");
+}

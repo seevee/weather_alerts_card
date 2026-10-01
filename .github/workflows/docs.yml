@@ -31,11 +31,15 @@ jobs:
 
       # The figures are rendered from the real card in headless Chromium, so the
       # docs build needs a browser. A headless launch runs the headless shell,
-      # so full Chrome is never fetched (--only-shell). --with-deps stays here,
-      # unlike build.yml: the harness pages fall back to system fonts and the
-      # apt set carries fonts, so dropping it could change the figures.
+      # so full Chrome is never fetched (--only-shell). No --with-deps, same as
+      # build.yml: the runner image already has the shared libraries the shell
+      # needs, and the apt step it would add (X11, Mesa, ALSA, CUPS, xvfb and
+      # ten font packages, none of them Roboto) took 20-55 s normally and
+      # stalled for 9 min on a bad mirror on 2026-10-01. The harnesses load
+      # Roboto from the roboto-fontface devDependency instead, so the figures
+      # render in HA's own font here and locally alike (scripts/screenshot-fonts.css).
       # release.yml stays Playwright-free.
-      - run: npx playwright install --with-deps --only-shell chromium
+      - run: npx playwright install --only-shell chromium
 
       # Builds dist/, renders every figure, and stages them in docs/public/img/.
       # DOCS_MOTION is deliberately unset: the motion capture is still being
