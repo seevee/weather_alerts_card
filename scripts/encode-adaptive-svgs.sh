@@ -31,6 +31,11 @@ PAIRS=(
   "geometry-light.png geometry-dark.png geometry-adaptive.svg lossless"
   "geometry-point-light.png geometry-point-dark.png geometry-point-adaptive.svg lossless"
   "geometry-watch-light.png geometry-watch-dark.png geometry-watch-adaptive.svg lossless"
+  # Forum-sized crops of the three above (#321): the mini-map and the metadata
+  # rows that fit under Discourse's 500 px inline-height clamp at 560 wide.
+  "geometry-map-light.png geometry-map-dark.png geometry-map-adaptive.svg lossless"
+  "geometry-point-map-light.png geometry-point-map-dark.png geometry-point-map-adaptive.svg lossless"
+  "geometry-watch-map-light.png geometry-watch-map-dark.png geometry-watch-map-adaptive.svg lossless"
   "unavailable-light.png unavailable-dark.png unavailable-adaptive.svg lossless"
   "surface-theming-light.png surface-theming-dark.png surface-theming-adaptive.svg lossy"
   "tap-action-light.png tap-action-dark.png tap-action-adaptive.svg lossless"

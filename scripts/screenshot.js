@@ -245,6 +245,7 @@ const PORT = 3742;
     },
     {
       name: 'geometry',
+      cropMap: true,
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry.html`,
       canvasId: 'geometry-canvas',
       cardIds: ['card-geometry'],
@@ -291,6 +292,7 @@ const PORT = 3742;
     },
     {
       name: 'geometry-point',
+      cropMap: true,
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry-point.html`,
       canvasId: 'geometry-canvas',
       cardIds: ['card-geometry-point'],
@@ -334,6 +336,7 @@ const PORT = 3742;
     },
     {
       name: 'geometry-watch',
+      cropMap: true,
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-geometry-watch.html`,
       canvasId: 'geometry-canvas',
       cardIds: ['card-geometry-watch'],
@@ -480,6 +483,46 @@ const PORT = 3742;
       }
 
       await compositePage.locator(`#${set.canvasId}`).screenshot({ path: resolve(ROOT, out), type: 'png' });
+
+      // Forum-sized companion (#321). Discourse clamps inline images to 500 px
+      // tall and scales the width to match, so the full-card figures above
+      // land as ~250 px thumbnails there. From the same render, clip the
+      // mini-map plus as many metadata rows above it as fit under that clamp
+      // at a 560 px display width. The docs site embeds the full figures;
+      // this one exists for the community threads.
+      if (set.cropMap) {
+        const clip = await compositePage.evaluate((cardId) => {
+          const host = document.getElementById(cardId);
+          const root = host?.shadowRoot;
+          const map = root?.querySelector('.alert-geometry-map') || root?.querySelector('.alert-geometry');
+          if (!host || !map) return null;
+          const PAD = 12;
+          const hostRect = host.getBoundingClientRect();
+          const mapRect = map.getBoundingClientRect();
+          const width = hostRect.width + PAD * 2;
+          const maxHeight = Math.floor(width * 500 / 560);
+          const bottom = mapRect.bottom + PAD;
+          // Candidate tops: each metadata row's top edge, tallest crop first.
+          const rows = [...new Set([...root.querySelectorAll('.meta-grid .meta-item')]
+            .map(el => Math.round(el.getBoundingClientRect().top)))].sort((a, b) => a - b);
+          let top = mapRect.top;
+          for (const rowTop of rows) {
+            if (bottom - (rowTop - PAD) <= maxHeight) { top = rowTop; break; }
+          }
+          top -= PAD;
+          return {
+            x: hostRect.left - PAD,
+            y: top,
+            width,
+            height: bottom - top,
+          };
+        }, set.cardIds[0]);
+        if (!clip) throw new Error(`${set.name}: no mini-map to crop`);
+        const cropOut = out.replace(/-(light|dark)\.png$/, '-map-$1.png');
+        const displayH = Math.round(560 * clip.height / clip.width);
+        console.log(`  ${label} (map)   → ${cropOut}  (560x${displayH} on Discourse)`);
+        await compositePage.screenshot({ path: resolve(ROOT, cropOut), type: 'png', clip });
+      }
     }
   }
   await compositeContext.close();
