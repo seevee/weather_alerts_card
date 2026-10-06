@@ -192,6 +192,14 @@ Conventions that are load-bearing:
 - **The motion capture is gated behind `DOCS_MOTION=1`,** off by default — still being
   tuned, and it needs both `ffmpeg` and `ffprobe` (`capture-tap-action.js` probes only for
   `ffmpeg`, so a runner with one and not the other throws rather than degrading).
+- **Forum figures must cook under 500 px tall.** Discourse clamps every inline image to
+  500 px high and scales the width to match, and its composer preview hides it. Every
+  `PAIRS` line in `encode-adaptive-svgs.sh` carries a fifth field: the width the thread
+  writes in its `![alt|WxH]` tag (690 full-width, 560 card-width) or `-` for a figure the
+  threads never inline (docs-only, or a link-through target). The script fails when a
+  declared figure would exceed the clamp, which gates both the Pages build and
+  `release.sh`. Fix the harness, never the guard: landscape canvas, tighter padding, or a
+  `-map` crop (the geometry sets, #321/#323).
 - **VitePress 2 is an exact-pinned alpha.** 1.x pins Vite 5, and Dependabot could not
   clear the Vite 5 security alerts because `vitepress@1` and `@vitejs/plugin-vue@5` peer on
   it (#319). The 2.0 alphas ship roughly monthly; `dependabot.yml` ignores them so a bump

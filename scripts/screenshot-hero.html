@@ -55,13 +55,20 @@
       font-family: Roboto, "Noto Sans", sans-serif;
     }
 
-    /* ---- Hero canvas: horizontal banner ---- */
+    /* ---- Hero canvas: horizontal banner ----
+       Sized for the community threads as much as the README: Discourse clamps
+       inline images to 500 px tall and scales the width to match (#324), so at
+       its 690 px content width the canvas has to stay at or under 1.38:1. The
+       two columns are already balanced to within a card row of each other, so
+       the slack is taken out of the frame (a wider canvas wraps less, tighter
+       padding) rather than out of the cards. encode-adaptive-svgs.sh fails the
+       build if a change here pushes the pair back over the clamp. */
     .hero-canvas {
       background: var(--hero-bg);
-      padding: 36px 32px 28px;
+      padding: 24px 32px 20px;
       display: flex;
       gap: 28px;
-      width: 1060px;
+      width: 1120px;
     }
 
     /* Each showcase column */

@@ -102,11 +102,17 @@
       font-family: Roboto, "Noto Sans", sans-serif;
     }
 
-    /* ---- The scene: one dashboard viewport, dimmed, with a pop-up over it ---- */
+    /* ---- The scene: one dashboard viewport, dimmed, with a pop-up over it ----
+       The stage is fixed-size, and its ratio is a forum constraint (#324):
+       Discourse clamps inline images to 500 px tall at its 690 px content
+       width, so the stage has to stay at or under 1.38:1 or the whole scene
+       posts as a thumbnail. 1300x930 is a laptop-shaped viewport that keeps
+       the sheet's top clear of the chip's tap cue; the dashboard row that sat
+       entirely behind the sheet is gone rather than painted and hidden. */
     .tap-canvas {
       position: relative;
-      width: 1200px;
-      height: 1010px;
+      width: 1300px;
+      height: 930px;
       overflow: hidden;
       border-radius: 22px;
       background: var(--stage-bg);
@@ -229,7 +235,7 @@
       background: var(--sheet-bg);
       border-radius: 28px 28px 0 0;
       box-shadow: 0 -22px 70px rgba(0, 0, 0, 0.34);
-      padding-bottom: 24px;
+      padding-bottom: 16px;
       overflow: hidden;
     }
     /* ② config pill, floating above the pop-up header (mirrors the ① chip pill) */
@@ -340,19 +346,6 @@
         <div class="dummy-bars"><div class="dummy-bar"></div><div class="dummy-bar short"></div></div>
       </div>
 
-      <!-- row 3 (mostly behind the sheet) -->
-      <div class="dummy-tile">
-        <div class="dummy-dot"></div>
-        <div class="dummy-bars"><div class="dummy-bar short"></div><div class="dummy-bar"></div></div>
-      </div>
-      <div class="dummy-tile">
-        <div class="dummy-dot"></div>
-        <div class="dummy-bars"><div class="dummy-bar"></div><div class="dummy-bar short"></div></div>
-      </div>
-      <div class="dummy-tile">
-        <div class="dummy-dot"></div>
-        <div class="dummy-bars"><div class="dummy-bar short"></div><div class="dummy-bar"></div></div>
-      </div>
     </div>
 
     <!-- ===== Scrim dims the dashboard ===== -->

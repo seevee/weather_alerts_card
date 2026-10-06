@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMG_DIR="$SCRIPT_DIR/../img"
 
-# Pairs: light-png dark-png output-svg codec
+# Pairs: light-png dark-png output-svg codec forum-width
 #
 # The codec is chosen per figure because these screenshots are not all the same
 # kind of image, and the wrong choice is expensive in both directions:
@@ -25,24 +25,44 @@ IMG_DIR="$SCRIPT_DIR/../img"
 # When adding a figure: if it is mostly card chrome and labels use lossless; if
 # it showcases translucent/blurred surfaces use lossy. Measure rather than
 # assume — `magick in.png -quality 90 out.webp` and compare.
+#
+# The forum-width field is the Discourse guard (#324). The community threads
+# embed these SVGs inline, and Discourse cooks every inline image to at most
+# 500 px tall, scaling the width to match; the composer preview does not show
+# it, so a portrait figure looks right until it is posted and then lands as a
+# thumbnail (#321 has the measured table). The field is the width the thread
+# writes in its `![alt|WxH]` tag: 690 for a full-width embed, 560 for the
+# card-width ones. The script fails when a figure's height at that width
+# would exceed 500. `-` means the figure is never embedded inline on the forum
+# (docs-site only, or reached only through a link), and the field is required
+# so adding a figure means deciding which it is.
 PAIRS=(
-  "hero-light.png     hero-dark.png     hero-adaptive.svg     lossless"
-  "themes-light.png   themes-dark.png   themes-adaptive.svg   lossless"
-  "geometry-light.png geometry-dark.png geometry-adaptive.svg lossless"
-  "geometry-point-light.png geometry-point-dark.png geometry-point-adaptive.svg lossless"
-  "geometry-watch-light.png geometry-watch-dark.png geometry-watch-adaptive.svg lossless"
+  "hero-light.png     hero-dark.png     hero-adaptive.svg     lossless 690"
+  "themes-light.png   themes-dark.png   themes-adaptive.svg   lossless 690"
+  # The three full-card geometry figures are the link-through targets of the
+  # crops below and the docs-site embeds; the threads never inline them.
+  "geometry-light.png geometry-dark.png geometry-adaptive.svg lossless -"
+  "geometry-point-light.png geometry-point-dark.png geometry-point-adaptive.svg lossless -"
+  "geometry-watch-light.png geometry-watch-dark.png geometry-watch-adaptive.svg lossless -"
   # Forum-sized crops of the three above (#321): the mini-map and the metadata
   # rows that fit under Discourse's 500 px inline-height clamp at 560 wide.
-  "geometry-map-light.png geometry-map-dark.png geometry-map-adaptive.svg lossless"
-  "geometry-point-map-light.png geometry-point-map-dark.png geometry-point-map-adaptive.svg lossless"
-  "geometry-watch-map-light.png geometry-watch-map-dark.png geometry-watch-map-adaptive.svg lossless"
-  "unavailable-light.png unavailable-dark.png unavailable-adaptive.svg lossless"
-  "surface-theming-light.png surface-theming-dark.png surface-theming-adaptive.svg lossy"
-  "tap-action-light.png tap-action-dark.png tap-action-adaptive.svg lossless"
+  "geometry-map-light.png geometry-map-dark.png geometry-map-adaptive.svg lossless 560"
+  "geometry-point-map-light.png geometry-point-map-dark.png geometry-point-map-adaptive.svg lossless 560"
+  "geometry-watch-map-light.png geometry-watch-map-dark.png geometry-watch-map-adaptive.svg lossless 560"
+  "unavailable-light.png unavailable-dark.png unavailable-adaptive.svg lossless -"
+  "surface-theming-light.png surface-theming-dark.png surface-theming-adaptive.svg lossy -"
+  "tap-action-light.png tap-action-dark.png tap-action-adaptive.svg lossless 690"
   # Captured from a live HA by capture-editor.js, not by screenshot.js, so the
   # PNGs are absent on CI and the pair is skipped there; its SVG is tracked.
-  "editor-light.png editor-dark.png editor-adaptive.svg lossless"
+  # Seven stacked panels can't fit under the clamp at any sensible width and a
+  # side-by-side recomposition would photograph a layout HA never shows, so
+  # the thread keeps it as a click-through thumbnail (#324) and it is not
+  # guarded.
+  "editor-light.png editor-dark.png editor-adaptive.svg lossless -"
 )
+
+# Discourse's max_image_height, in CSS px, applied to the cooked <img>.
+FORUM_MAX_HEIGHT=500
 
 # ImageMagick is optional. Without it every figure falls back to an embedded
 # PNG, which is exactly the previous behaviour — the script keeps working, it
@@ -81,8 +101,15 @@ to_webp() {
   fi
 }
 
+FORUM_VIOLATIONS=()
+
 for pair in "${PAIRS[@]}"; do
-  read -r LIGHT_NAME DARK_NAME OUTPUT_NAME CODEC <<< "$pair"
+  read -r LIGHT_NAME DARK_NAME OUTPUT_NAME CODEC FORUM_WIDTH <<< "$pair"
+
+  if [[ -z "$FORUM_WIDTH" ]]; then
+    echo "Error: $OUTPUT_NAME has no forum-width field (690, 560 or -). Decide whether the threads embed it." >&2
+    exit 1
+  fi
 
   LIGHT_PNG="$IMG_DIR/$LIGHT_NAME"
   DARK_PNG="$IMG_DIR/$DARK_NAME"
@@ -119,6 +146,16 @@ for pair in "${PAIRS[@]}"; do
     VB_HEIGHT=$PX_HEIGHT
   fi
 
+  # Forum clamp (#324): the cooked height at the declared display width must
+  # stay under FORUM_MAX_HEIGHT. The SVG is still written so the overrun can
+  # be looked at; the script fails once every pair has been reported.
+  if [[ "$FORUM_WIDTH" != "-" ]]; then
+    COOKED_HEIGHT=$(( FORUM_WIDTH * VB_HEIGHT / VB_WIDTH ))
+    if (( COOKED_HEIGHT > FORUM_MAX_HEIGHT )); then
+      FORUM_VIOLATIONS+=("$OUTPUT_NAME is ${VB_WIDTH}x${VB_HEIGHT}; at ${FORUM_WIDTH} wide Discourse cooks it to $(( FORUM_WIDTH * FORUM_MAX_HEIGHT / COOKED_HEIGHT ))x${FORUM_MAX_HEIGHT} (limit at that width: ${VB_WIDTH}x$(( FORUM_MAX_HEIGHT * VB_WIDTH / FORUM_WIDTH )))")
+    fi
+  fi
+
   cat > "$OUTPUT" <<EOF
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VB_WIDTH} ${VB_HEIGHT}" width="100%">
   <style>
@@ -134,5 +171,15 @@ for pair in "${PAIRS[@]}"; do
 </svg>
 EOF
 
-  echo "Written: $OUTPUT_NAME ($(( $(wc -c < "$OUTPUT") / 1024 )) KB, $CODEC, $(basename "$LIGHT_SRC" | sed "s/.*\.//"))"
+  FORUM_NOTE=""
+  [[ "$FORUM_WIDTH" != "-" ]] && FORUM_NOTE=", forum ${FORUM_WIDTH}x${COOKED_HEIGHT}"
+  echo "Written: $OUTPUT_NAME ($(( $(wc -c < "$OUTPUT") / 1024 )) KB, $CODEC, $(basename "$LIGHT_SRC" | sed "s/.*\.//")${FORUM_NOTE})"
 done
+
+if (( ${#FORUM_VIOLATIONS[@]} > 0 )); then
+  echo >&2
+  echo "Error: ${#FORUM_VIOLATIONS[@]} forum figure(s) exceed Discourse's ${FORUM_MAX_HEIGHT} px inline-height clamp (#324):" >&2
+  for v in "${FORUM_VIOLATIONS[@]}"; do echo "  - $v" >&2; done
+  echo "Rebalance the harness (landscape, wider canvas, tighter padding) or mark the pair '-' if the threads never embed it inline." >&2
+  exit 1
+fi
