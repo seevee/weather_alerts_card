@@ -49,7 +49,7 @@
     "rolldown": "^1.2.11",
     "semver": "^7.8.5",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.1",
+    "typescript-eslint": "^8.71.0",
     "vitepress": "2.0.0-alpha.20",
     "vitest": "^5.0.1"
   },
