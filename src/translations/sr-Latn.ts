@@ -15,7 +15,7 @@ export const srLatn: TranslationMap = {
   'card.dismissed_toast': 'Zatvoreno: {event}',
   'card.dismissed_toast_undo': 'Opozovi',
   'card.close': 'Zatvori',
-	
+
   // Detail labels
   'detail.issued': 'Izdato',
   'detail.onset': 'Početak',
@@ -26,7 +26,7 @@ export const srLatn: TranslationMap = {
   'detail.source': 'Izvor',
   'detail.description': 'Opis',
   'detail.instructions': 'Uputstva',
-	
+
   // Progress bar
   'progress.start': 'Početak',
   'progress.now': 'Sada',
@@ -63,7 +63,7 @@ export const srLatn: TranslationMap = {
   'badge.certainty_possible': 'Moguće',
   'badge.certainty_unlikely': 'Malo verovatno',
   'badge.certainty_unknown': 'Nepoznato',
-	
+
   // Editor
   'editor.entities': 'Entiteti',
   'editor.title': 'Naslov (opciono)',
@@ -215,5 +215,5 @@ export const srLatn: TranslationMap = {
   'editor.dismiss_button_style': 'Stil dugmeta',
   'editor.dismiss_button_style_icon': 'Samo ikona',
   'editor.dismiss_button_style_labeled': 'Ikona i oznaka',
-	
+
 };
