@@ -22,7 +22,7 @@ export const sr: TranslationMap = {
   'detail.expires': 'Истиче',
   'detail.area': 'Област',
   'detail.distance': 'Удаљеност',
-  'detail.area_more': 'и још {count} области',
+  'detail.area_more': 'и још области: {count}',
   'detail.area_fewer': 'Прикажи мање',
   'detail.geometry_with_location': '{area}, са означеном вашом локацијом',
   'detail.source': 'Извор',
