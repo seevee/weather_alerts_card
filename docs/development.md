@@ -92,6 +92,17 @@ is a release-time job.
 The motion capture (`scripts/capture-tap-action.js`) is gated behind `DOCS_MOTION=1` and
 off by default. It needs both `ffmpeg` and `ffprobe`.
 
+::: warning Forum figures must fit under 500 px
+The community threads embed the same SVGs from Pages, and Discourse cooks every inline
+image to at most 500 px tall, scaling the width to match. The composer preview does not
+show it, so a portrait figure looks right until it is posted and then lands as a
+thumbnail. Each pair in `scripts/encode-adaptive-svgs.sh` therefore declares the width
+the thread writes in its image tag (690 full-width, 560 card-width, or `-` when the
+threads never inline it), and the script fails the build when a figure would cook taller
+than 500 at that width. Fix it in the harness: a wider or shorter canvas, tighter
+padding, or a `-map` crop like the geometry figures. The site itself clamps nothing.
+:::
+
 The editor figure (`img/editor-adaptive.svg`) is the one exception to "not committed".
 The editor is nine HA widgets deep, so a stub harness would be a fake; instead
 `scripts/capture-editor.js` photographs the real editor in a running Home Assistant
