@@ -362,14 +362,15 @@ export const ECCC_WATCH_ATTRS = {
   onset: iso(-1 * H),
   expires: iso(7 * H),
   headline: 'yellow watch - severe thunderstorm - in effect',
-  // The product names all 112 municipalities here, ~5.6 KB of text, and the
-  // card's detail panel prints every one of them in the AREA row, which makes
-  // the real card ~6000 px tall and the mini-map a thumbnail in the figure.
-  // Trimmed to the first eight so the figure is about the geometry; the
-  // full-list rendering is a card question, not a fixture one.
+  // The product names all 112 municipalities here, ~5.6 KB of text, joined
+  // with ', ' the way cap_alerts joins every <area> block. The card collapses
+  // a list that long to "City of Regina and 111 more areas" (#322). Only the
+  // first eight names survive here: the 2026-09-06 product is off the Datamart
+  // archive, and inventing the other 104 would make the fixture a fake. So the
+  // figure reads "and 7 more areas" until a fresh Prairie watch is captured.
   area_desc:
-    'City of Regina; R.M. of Maple Bush including Riverhurst and Douglas Prov. Park; R.M. of Huron including Tugaske; R.M. of Enfield including Central Butte; ' +
-    'R.M. of Eyebrow including Eyebrow and Brownlee; R.M. of Craik including Craik and Aylesbury; R.M. of Marquis including Tuxford Keeler and Buffalo Pound; R.M. of Chaplin including Chaplin',
+    'City of Regina, R.M. of Maple Bush including Riverhurst and Douglas Prov. Park, R.M. of Huron including Tugaske, R.M. of Enfield including Central Butte, ' +
+    'R.M. of Eyebrow including Eyebrow and Brownlee, R.M. of Craik including Craik and Aylesbury, R.M. of Marquis including Tuxford Keeler and Buffalo Pound, R.M. of Chaplin including Chaplin',
   description:
     'Conditions are favourable for the development of severe thunderstorms that may be ' +
     'capable of producing strong wind gusts, large hail and heavy rain.\n\n' +

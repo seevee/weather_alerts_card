@@ -560,6 +560,26 @@ export const cardStyles = css`
     font-weight: 500;
     color: var(--primary-text-color);
   }
+  /* AREA row collapse toggle (#322): a text button that reads as the tail of
+     the sentence ("City of Regina" + "and 111 more areas"). */
+  .area-toggle {
+    align-self: flex-start;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-size: calc(0.8rem * var(--wac-scale, 1));
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 2px;
+  }
+  .area-toggle:hover,
+  .area-toggle:focus-visible {
+    color: var(--primary-text-color);
+    outline: none;
+  }
   .meta-relative {
     font-size: calc(0.75rem * var(--wac-scale, 1));
     color: var(--secondary-text-color);

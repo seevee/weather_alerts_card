@@ -55,6 +55,7 @@ import {
   sanitizeAlertHtml,
   getDisplayHeadline,
   reflowAlertText,
+  summarizeAreaDesc,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
 import {
@@ -1793,12 +1794,7 @@ export class WeatherAlertsCard extends LitElement {
               <span class="meta-value">${formatDistance(distanceKm, toLengthUnit(this.hass?.config?.unit_system?.length), lang)}</span>
             </div>
           ` : nothing}
-          ${alert.areaDesc ? html`
-            <div class="meta-item" style="grid-column: 1 / -1;">
-              <span class="meta-label">${t('detail.area', lang)}</span>
-              <span class="meta-value">${alert.areaDesc}</span>
-            </div>
-          ` : nothing}
+          ${alert.areaDesc ? this._renderAreaRow(alert, lang) : nothing}
         </div>
         ` : nothing}
 
@@ -1814,6 +1810,34 @@ export class WeatherAlertsCard extends LitElement {
               <ha-icon icon="mdi:open-in-new" style="width:${this._scaledPx(14)}px;"></ha-icon>
             </a>
           </div>
+        ` : nothing}
+      </div>
+    `;
+  }
+
+  // Full-width AREA row. A list of more than AREA_LIST_MAX names collapses to
+  // its first name plus an "and N more areas" toggle (#322): ECCC Prairie
+  // watches name 100+ municipalities, and printed in full they pushed the
+  // mini-map and the description thousands of pixels down. Expansion state
+  // rides in _expandedAlerts under an `_area` suffix, like `_details`, so it
+  // survives editor re-renders and works inside the detail pop-up.
+  private _renderAreaRow(alert: WeatherAlert, lang: string): TemplateResult {
+    const summary = summarizeAreaDesc(alert.areaDesc);
+    const key = alert.id + '_area';
+    const expanded = summary.more > 0 && (this._expandedAlerts.get(key) || false);
+    return html`
+      <div class="meta-item" style="grid-column: 1 / -1;">
+        <span class="meta-label">${t('detail.area', lang)}</span>
+        <span class="meta-value">${expanded ? alert.areaDesc : summary.first}</span>
+        ${summary.more > 0 ? html`
+          <button
+            type="button"
+            class="area-toggle"
+            aria-expanded=${expanded ? 'true' : 'false'}
+            @click=${() => this._toggleDetails(key)}
+          >${expanded
+            ? t('detail.area_fewer', lang)
+            : t('detail.area_more', lang, { count: summary.more })}</button>
         ` : nothing}
       </div>
     `;

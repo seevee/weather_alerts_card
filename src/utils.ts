@@ -690,6 +690,41 @@ export function reflowAlertText(text: string): string {
     .join('\n\n');
 }
 
+// Longest area list the detail panel prints in full. Beyond it the row
+// collapses to the first name and a count behind a toggle (#322): an ECCC
+// Prairie watch names 100+ rural municipalities (~5.6 KB), which made the card
+// ~6000 px tall and pushed the mini-map below the fold. Four names fill one
+// desktop line of the full-width row, so the collapse only ever hides a list
+// that would wrap.
+export const AREA_LIST_MAX = 4;
+
+export interface AreaDescSummary {
+  first: string;     // the first name, or the whole text when it does not collapse
+  more: number;      // names hidden behind the toggle; 0 means render in full
+}
+
+/**
+ * Split an areaDesc into its names and decide whether it collapses.
+ *
+ * cap_alerts joins the `<area>` blocks of one alert with ', '
+ * (providers/cap.py), while NWS lists counties inside one block with '; '
+ * ("Pinellas, FL; Hillsborough, FL") and the card's own dedup merge joins
+ * with '; ' too. Semicolons win when present so a county keeps its state;
+ * commas are the fallback. Prose (an AU bushfire advice: "people in Malaburra,
+ * Wulununjur and Jinyaadi Communities") splits into too few pieces to collapse,
+ * which is the guard against a sentence reading as a list.
+ *
+ * A trailing '…' is cap_alerts cutting an over-budget list at a name boundary
+ * (payload.py): it stays on the last name and is never counted or stripped.
+ */
+export function summarizeAreaDesc(text: string): AreaDescSummary {
+  const trimmed = text.trim();
+  const separator = trimmed.includes(';') ? /;\s*/ : /,\s*/;
+  const parts = trimmed.split(separator).map(p => p.trim()).filter(Boolean);
+  if (parts.length <= AREA_LIST_MAX) return { first: trimmed, more: 0 };
+  return { first: parts[0] ?? trimmed, more: parts.length - 1 };
+}
+
 export function normalizeSeverity(severity: string | undefined): string {
   const s = (severity || '').toLowerCase().replace(/\s/g, '');
   if (['extreme', 'severe', 'moderate', 'minor'].includes(s)) return s;

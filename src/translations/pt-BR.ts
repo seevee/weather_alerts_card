@@ -22,6 +22,8 @@ export const ptBR: TranslationMap = {
   'detail.expires': 'Expira',
   'detail.area': 'Área',
   'detail.distance': 'Distância',
+  'detail.area_more': 'e mais {count} áreas',
+  'detail.area_fewer': 'Mostrar menos',
   'detail.geometry_with_location': '{area}, com sua localização marcada',
   'detail.source': 'Fonte',
   'detail.description': 'Descrição',

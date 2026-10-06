@@ -20,6 +20,8 @@ import {
   parseTimestamp,
   getDisplayHeadline,
   reflowAlertText,
+  summarizeAreaDesc,
+  AREA_LIST_MAX,
   haversineKm,
   extractPoint,
   resolveReferencePoint,
@@ -1104,6 +1106,40 @@ describe('reflowAlertText', () => {
   });
 });
 
+
+// #322: the detail panel's AREA row collapses long lists to a count.
+describe('summarizeAreaDesc', () => {
+  const names = (n: number) => Array.from({ length: n }, (_, i) => `R.M. of Place ${i + 1}`);
+
+  it('collapses a comma-joined list longer than AREA_LIST_MAX (cap_alerts join)', () => {
+    const out = summarizeAreaDesc(names(AREA_LIST_MAX + 1).join(', '));
+    expect(out).toEqual({ first: 'R.M. of Place 1', more: AREA_LIST_MAX });
+  });
+
+  it('renders a list of AREA_LIST_MAX or fewer names in full', () => {
+    const text = names(AREA_LIST_MAX).join(', ');
+    expect(summarizeAreaDesc(text)).toEqual({ first: text, more: 0 });
+  });
+
+  it('prefers semicolons so an NWS county keeps its state', () => {
+    const out = summarizeAreaDesc('Pinellas, FL; Hillsborough, FL; Manatee, FL; Sarasota, FL; Pasco, FL');
+    expect(out).toEqual({ first: 'Pinellas, FL', more: 4 });
+  });
+
+  it('leaves prose with commas alone', () => {
+    const text = 'A Bushfire Advice is in place for people in Malaburra, Wulununjur and Jinyaadi Communities in DAMPIER PENINSULA in the SHIRE OF BROOME.';
+    expect(summarizeAreaDesc(text)).toEqual({ first: text, more: 0 });
+  });
+
+  it('does not count a cap_alerts cut ellipsis as a name', () => {
+    expect(summarizeAreaDesc(names(6).join(', ') + '\u2026').more).toBe(5);
+  });
+
+  it('returns an empty summary for empty text', () => {
+    expect(summarizeAreaDesc('')).toEqual({ first: '', more: 0 });
+    expect(summarizeAreaDesc('  ')).toEqual({ first: '', more: 0 });
+  });
+});
 
 describe('haversineKm', () => {
   // lon-first, matching the WeatherAlert.point tuple order

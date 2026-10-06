@@ -22,6 +22,8 @@ export const en: TranslationMap = {
   'detail.expires': 'Expires',
   'detail.area': 'Area',
   'detail.distance': 'Distance',
+  'detail.area_more': 'and {count} more areas',
+  'detail.area_fewer': 'Show fewer',
   'detail.geometry_with_location': '{area}, with your location marked',
   'detail.source': 'Source',
   'detail.description': 'Description',

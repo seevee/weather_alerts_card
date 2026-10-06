@@ -22,6 +22,8 @@ export const zhHans: TranslationMap = {
   'detail.expires': '过期时间',
   'detail.area': '区域',
   'detail.distance': '距离',
+  'detail.area_more': '及另外 {count} 个区域',
+  'detail.area_fewer': '收起',
   'detail.geometry_with_location': '{area}，已标出您的位置',
   'detail.source': '来源',
   'detail.description': '描述',
