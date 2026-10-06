@@ -15,7 +15,7 @@ export const sr: TranslationMap = {
   'card.dismissed_toast': 'Затворено: {event}',
   'card.dismissed_toast_undo': 'Опозови',
   'card.close': 'Затвори',
-	
+
   // Detail labels
   'detail.issued': 'Издато',
   'detail.onset': 'Почетак',
@@ -26,7 +26,7 @@ export const sr: TranslationMap = {
   'detail.source': 'Извор',
   'detail.description': 'Опис',
   'detail.instructions': 'Упутства',
-	
+
   // Progress bar
   'progress.start': 'Почетак',
   'progress.now': 'Сада',
@@ -63,7 +63,7 @@ export const sr: TranslationMap = {
   'badge.certainty_possible': 'Могуће',
   'badge.certainty_unlikely': 'Мало вероватно',
   'badge.certainty_unknown': 'Непознато',
-	
+
   // Editor
   'editor.entities': 'Ентитети',
   'editor.title': 'Наслов (опционо)',
@@ -194,7 +194,6 @@ export const sr: TranslationMap = {
   'editor.feeds_missing_warning': 'Нема података уживо за {feeds}. Овај извор је омогућен али ништа не шаље податке — да ли је интеграција подешена у Home Assistant-у?',
   'editor.devices_missing_warning': 'Није пронађен ниједан уређај за {ids}. Да ли је интеграција уклоњена?',
   'editor.no_device_alerts_hint': 'Још увек нису пронађени активни сензори упозорења под изабраним уређајима. Картица ће се аутоматски попунити када интеграција објави упозорења.',
-
 
   // Editor section labels
   'editor.section_source': 'Извор',

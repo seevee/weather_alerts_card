@@ -35,7 +35,7 @@ features:
   - title: Themeable surfaces
     details: A small, stable set of --wac-* CSS custom properties for backgrounds, borders, corners and shadows. No card config needed.
   - title: Localized UI
-    details: English, French, Spanish, Italian, German, Dutch, Simplified Chinese, Brazilian Portuguese and Serbian, auto-detected from your Home Assistant locale.
+    details: English, French, Spanish, Italian, German, Dutch, Simplified Chinese, Brazilian Portuguese and Serbian (Cyrillic and Latin), auto-detected from your Home Assistant locale.
   - title: Visual config
     details: Every option is available in the visual editor. No YAML editing required.
 ---
