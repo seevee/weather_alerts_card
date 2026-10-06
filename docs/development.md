@@ -31,7 +31,7 @@ in the old Android WebViews some wall panels still ship
 | `src/adapters/index.ts` | Adapter registry and auto-detection — exports `getAdapter(provider, attributes)` |
 | `src/adapters/*.ts` | One adapter per provider |
 | `src/localize.ts` | i18n lookup — `t(key, lang, params?)`, strips the region subtag, falls back to English per key |
-| `src/translations/` | One file per locale (`en`, `fr`, `es`, `it`, `de`, `nl`, `zh-Hans`, `pt-BR`, `sr-Latn`) |
+| `src/translations/` | One file per locale (`en`, `fr`, `es`, `it`, `de`, `nl`, `zh-Hans`, `pt-BR`, `sr`, `sr-Latn`) |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, sorting, `reflowAlertText()` |
 | `src/styles.ts` | All CSS, as a Lit `css` tagged template |
 
