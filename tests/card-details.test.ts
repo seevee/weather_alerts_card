@@ -233,3 +233,103 @@ describe('distance-from-home row', () => {
     return { type: 'custom:weather-alerts-card', entity, expandDetails: true };
   }
 });
+
+// #322: the full-width Area row collapses a long list behind a toggle. A
+// cap_alerts entity carries the list the way the integration joins it (', ').
+describe('area row collapse', () => {
+  const municipalities = Array.from({ length: 112 }, (_, i) => (i === 0 ? 'City of Regina' : `R.M. of Place ${i}`));
+
+  function capHass(areaDesc: string): HomeAssistant {
+    const now = Date.now();
+    return {
+      states: {
+        'sensor.cap_alert_watch': {
+          state: 'on',
+          attributes: {
+            incident_platform_version: '1.0',
+            id: 'urn:oid:2.49.0.1.124.1498809496.2026',
+            event: 'Severe Thunderstorm Watch',
+            severity: 'Moderate',
+            severity_normalized: 'moderate',
+            certainty: 'Likely',
+            urgency: 'Expected',
+            sent: new Date(now - HOUR).toISOString(),
+            onset: new Date(now - HOUR).toISOString(),
+            expires: new Date(now + 7 * HOUR).toISOString(),
+            headline: 'severe thunderstorm watch in effect',
+            description: 'Conditions are favourable for severe thunderstorms.',
+            area_desc: areaDesc,
+            provider: 'eccc',
+            phase: 'update',
+          },
+        },
+      },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+  }
+
+  const config = (extra: Partial<WeatherAlertsCardConfig> = {}): WeatherAlertsCardConfig => ({
+    type: 'custom:weather-alerts-card',
+    entity: 'sensor.cap_alert_watch',
+    expandDetails: true,
+    ...extra,
+  });
+
+  function toggle(card: CardInternals): HTMLButtonElement | null {
+    const root = (card as unknown as { shadowRoot: ShadowRoot }).shadowRoot;
+    return root.querySelector<HTMLButtonElement>('.area-toggle');
+  }
+
+  it('collapses a 112-name list to the first name and a count', async () => {
+    const { card, cleanup } = await mountCard(config(), capHass(municipalities.join(', ')));
+    expect(metaGrid(card)['Area']).toBe('City of Regina');
+    const button = toggle(card);
+    expect(button?.textContent?.trim()).toBe('and 111 more areas');
+    expect(button?.getAttribute('aria-expanded')).toBe('false');
+    cleanup();
+  });
+
+  it('expands to the full list on click, and collapses again', async () => {
+    const full = municipalities.join(', ');
+    const { card, cleanup } = await mountCard(config(), capHass(full));
+    toggle(card)!.click();
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+    expect(metaGrid(card)['Area']).toBe(full);
+    expect(toggle(card)?.textContent?.trim()).toBe('Show fewer');
+    expect(toggle(card)?.getAttribute('aria-expanded')).toBe('true');
+
+    toggle(card)!.click();
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+    expect(metaGrid(card)['Area']).toBe('City of Regina');
+    cleanup();
+  });
+
+  it('renders four names in full with no toggle', async () => {
+    const four = municipalities.slice(0, 4).join(', ');
+    const { card, cleanup } = await mountCard(config(), capHass(four));
+    expect(metaGrid(card)['Area']).toBe(four);
+    expect(toggle(card)).toBeNull();
+    cleanup();
+  });
+
+  it('renders a prose area verbatim', async () => {
+    const prose = 'A Bushfire Advice is in place for people in Malaburra, Wulununjur and Jinyaadi Communities.';
+    const { card, cleanup } = await mountCard(config(), capHass(prose));
+    expect(metaGrid(card)['Area']).toBe(prose);
+    expect(toggle(card)).toBeNull();
+    cleanup();
+  });
+
+  it('collapses inside the details pop-up too', async () => {
+    const { card, cleanup } = await mountCard(
+      config({ expandDetails: false, tap_action: { action: 'details' } }),
+      capHass(municipalities.join(', ')),
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot }).shadowRoot;
+    root.querySelector<HTMLElement>('.alert-card')!.click();
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+    expect(metaGrid(card)['Area']).toBe('City of Regina');
+    expect(toggle(card)?.textContent?.trim()).toBe('and 111 more areas');
+    cleanup();
+  });
+});

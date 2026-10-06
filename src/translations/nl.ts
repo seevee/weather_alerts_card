@@ -22,6 +22,8 @@ export const nl: TranslationMap = {
   'detail.expires': 'Verloopt',
   'detail.area': 'Gebied',
   'detail.distance': 'Afstand',
+  'detail.area_more': 'en {count} andere gebieden',
+  'detail.area_fewer': 'Minder tonen',
   'detail.geometry_with_location': '{area}, met je locatie gemarkeerd',
   'detail.source': 'Bron',
   'detail.description': 'Beschrijving',

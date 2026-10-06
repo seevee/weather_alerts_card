@@ -190,6 +190,8 @@ legibility-safe opacity. The wash is always solid.
 | `geometryTileUrl` | HA `map_tiles` proxy | Slippy-map tile template (`{z}/{x}/{y}`, optional `{s}`) used when `geometryStyle: 'map'` |
 | `geometryTileAttribution` | `© OpenStreetMap contributors` | Attribution label shown over the map |
 
+The grid's area row collapses a list of more than four names to the first one plus an "and N more areas" toggle, so an ECCC Prairie watch naming 100+ municipalities doesn't push the mini-map and description below the fold. Four or fewer render in full.
+
 ### Affected-area mini-map
 
 ![The affected-area mini-map, as a bare outline and over a raster basemap](/img/geometry-adaptive.svg)

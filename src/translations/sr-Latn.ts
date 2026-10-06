@@ -22,6 +22,8 @@ export const srLatn: TranslationMap = {
   'detail.expires': 'Ističe',
   'detail.area': 'Oblast',
   'detail.distance': 'Udaljenost',
+  'detail.area_more': 'i još {count} oblasti',
+  'detail.area_fewer': 'Prikaži manje',
   'detail.geometry_with_location': '{area}, sa označenom vašom lokacijom',
   'detail.source': 'Izvor',
   'detail.description': 'Opis',
