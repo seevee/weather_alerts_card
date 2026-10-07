@@ -65,12 +65,14 @@ export class CapAdapter implements AlertAdapter {
       ?? (degenerate ? extractPoint(rawBbox[1], rawBbox[0]) : undefined);
     const bbox = degenerate ? undefined : rawBbox;
 
-    // cap_alerts serialises the raw CAP `<parameter>` map under `parameters`.
-    // MeteoAlarm members publish their awareness colour there; it is the only
-    // issuer colour any cap_alerts provider carries today.
-    const params = attributes['parameters'];
-    const colorHint = params && typeof params === 'object' && !Array.isArray(params)
-      ? meteoalarmAwarenessColorHex((params as Record<string, unknown>)['awareness_level'])
+    // cap_alerts serialises the raw CAP `<parameter>` map under `parameters`,
+    // plus whatever of a source's envelope the provider passes through under
+    // the source's own names. MeteoAlarm members publish their awareness
+    // colour there; it is the only issuer colour any cap_alerts provider
+    // carries today.
+    const params = paramMap(attributes['parameters']);
+    const colorHint = params
+      ? meteoalarmAwarenessColorHex(params['awareness_level'])
       : undefined;
 
     return [{
@@ -89,7 +91,7 @@ export class CapAdapter implements AlertAdapter {
       headline: str(attributes['headline']),
       areaDesc: str(attributes['area_desc']),
       zones: collectZones(attributes),
-      eventCode: str(attributes['event_code_nws']) || str(attributes['event_code_same']),
+      eventCode: eventCodeOf(attributes, params),
       provider: 'cap',
       phase: phaseLabel(str(attributes['phase'])),
       severityInferred: !rawSeverity && !normalizedSev,
@@ -141,6 +143,30 @@ function collectZones(attributes: Record<string, unknown>): string[] {
     }
   }
   return out;
+}
+
+function paramMap(v: unknown): Record<string, unknown> | undefined {
+  return v && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : undefined;
+}
+
+// cap_alerts 2.0 moved the NWS event codes into `parameters`, under the
+// scheme names NWS publishes them with (`NationalWeatherService`, `SAME`) and
+// list-valued like every NWS parameter (cap_alerts #292). The flat keys are
+// the 1.x spelling, read second so an older integration keeps its badge.
+function eventCodeOf(
+  attributes: Record<string, unknown>,
+  params: Record<string, unknown> | undefined,
+): string {
+  return firstStr(params?.['NationalWeatherService'])
+    || firstStr(params?.['SAME'])
+    || str(attributes['event_code_nws'])
+    || str(attributes['event_code_same']);
+}
+
+function firstStr(v: unknown): string {
+  return Array.isArray(v) ? str(v[0]) : str(v);
 }
 
 function str(v: unknown): string {
