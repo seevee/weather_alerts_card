@@ -17,10 +17,13 @@ function makeCapAttributes(overrides: Record<string, unknown> = {}): Record<stri
     instruction: 'Take shelter immediately.',
     headline: 'Tornado Warning issued for Boulder County',
     area_desc: 'Boulder; Larimer',
-    affected_zones: ['COC013', 'COC069'],
-    geocode_ugc: ['COC013', 'COC069'],
+    geocodes: { UGC: ['COC013', 'COC069'] },
     url: 'https://api.weather.gov/alerts/urn:oid:abc',
-    event_code_nws: 'TOR',
+    parameters: {
+      NationalWeatherService: ['TOR'],
+      SAME: ['TOR'],
+      VTEC: ['/O.NEW.KBOU.TO.W.0001.260425T1000Z-260425T1100Z/'],
+    },
     provider: 'nws',
     phase: 'new',
     msg_type: 'Alert',
@@ -140,25 +143,28 @@ describe('CapAdapter', () => {
       expect(alerts[0].onsetTs).toBe(alerts[0].sentTs);
     });
 
-    it('collects zones from affected_zones and dedups against geocode_ugc', () => {
+    it('collects zones from the geocodes container', () => {
       const alerts = adapter.parseAlerts(makeCapAttributes());
       expect(alerts[0].zones).toEqual(['COC013', 'COC069']);
     });
 
     it('uppercases zone codes', () => {
       const alerts = adapter.parseAlerts(makeCapAttributes({
-        affected_zones: ['coc013'],
-        geocode_ugc: [],
+        geocodes: { UGC: ['coc013'] },
       }));
       expect(alerts[0].zones).toEqual(['COC013']);
     });
 
-    it('falls back to geocode_ugc when affected_zones is empty', () => {
-      const alerts = adapter.parseAlerts(makeCapAttributes({
-        affected_zones: [],
-        geocode_ugc: ['COC013'],
+    it('still reads the 1.x flat zone keys from an older integration', () => {
+      // cap_alerts 2.0 dropped `affected_zones` (cap_alerts #292); a 1.x
+      // integration published it alongside `geocodes`, and before #150 the
+      // `geocode_ugc` alias too. Both still count, deduplicated.
+      const flat = adapter.parseAlerts(makeCapAttributes({
+        geocodes: undefined,
+        affected_zones: ['COC013'],
+        geocode_ugc: ['coc013'],
       }));
-      expect(alerts[0].zones).toEqual(['COC013']);
+      expect(flat[0].zones).toEqual(['COC013']);
     });
 
     it('flattens the geocodes container into zones', () => {
@@ -214,11 +220,33 @@ describe('CapAdapter', () => {
       }
     });
 
-    it('falls back to event_code_same when event_code_nws is absent', () => {
-      const attrs = makeCapAttributes({ event_code_same: 'TOR' });
-      delete attrs.event_code_nws;
-      const alerts = adapter.parseAlerts(attrs);
-      expect(alerts[0].eventCode).toBe('TOR');
+    it('reads the NWS event code from parameters (cap_alerts 2.0)', () => {
+      const attrs = makeCapAttributes({
+        parameters: { NationalWeatherService: ['SVR'], SAME: ['SVR'] },
+      });
+      expect(adapter.parseAlerts(attrs)[0].eventCode).toBe('SVR');
+    });
+
+    it('falls back to the SAME scheme when NationalWeatherService is absent', () => {
+      const attrs = makeCapAttributes({ parameters: { SAME: ['TOR'] } });
+      expect(adapter.parseAlerts(attrs)[0].eventCode).toBe('TOR');
+    });
+
+    it('accepts a bare string in parameters, the shape other providers use', () => {
+      const attrs = makeCapAttributes({ parameters: { SAME: 'TOR' } });
+      expect(adapter.parseAlerts(attrs)[0].eventCode).toBe('TOR');
+    });
+
+    it('still reads the 1.x flat keys from an older integration', () => {
+      const attrs = makeCapAttributes({ parameters: undefined, event_code_nws: 'TOR' });
+      expect(adapter.parseAlerts(attrs)[0].eventCode).toBe('TOR');
+      const same = makeCapAttributes({ parameters: undefined, event_code_same: 'TOR' });
+      expect(adapter.parseAlerts(same)[0].eventCode).toBe('TOR');
+    });
+
+    it('leaves eventCode empty when no slot carries one', () => {
+      const attrs = makeCapAttributes({ parameters: { VTEC: ['/O.NEW.KBOU.TO.W.0001.260425T1000Z-260425T1100Z/'] } });
+      expect(adapter.parseAlerts(attrs)[0].eventCode).toBe('');
     });
 
     it('falls back to web when url is absent', () => {

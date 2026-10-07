@@ -304,7 +304,7 @@ export const CAP_GEOMETRY_ALERT_ATTRS = {
   instruction:
     'For your protection move to an interior room on the lowest floor of a building.',
   url: 'https://example.com/alerts/screenshot-geom',
-  event_code_nws: 'SVR',
+  parameters: { NationalWeatherService: ['SVR'], SAME: ['SVR'] },
   provider: 'nws',
   phase: 'new',
   // [minlon, minlat, maxlon, maxlat] — the polygon's own extent, as cap_alerts
