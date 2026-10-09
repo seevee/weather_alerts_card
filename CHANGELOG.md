@@ -1,5 +1,38 @@
 # Changelog
 
+## 3.6.0 (2026-10-09)
+
+### Added
+- Add Serbian (Latin) translation (#329)
+- Add Serbian Cyrillic translation file (#332)
+
+### Fixed
+- Collapse long area lists in the detail panel to a count (#337) (closes #322)
+- Read the NWS event code from parameters (#339)
+
+### Documentation
+- Route ECCC through CAP Alerts in the overview (#317)
+- Real geometry in the mini-map figures, plus point and watch variants (#320)
+- Forum-sized crops of the three mini-map figures (#323) (closes #321. The embed swap on the threads is a manual step after Pages deploys.)
+- List Serbian in the locale tables after #329 (#330)
+- List Serbian Cyrillic in the locale tables after #332 (#334)
+- Keep every forum embed under Discourse's 500 px clamp (#336) (closes #324.)
+
+### Internal
+- Bump the dev-deps group with 2 updates (#312)
+- Bump typescript-eslint in the eslint group (#311)
+- Bump dompurify from 3.4.15 to 3.4.16 (#313)
+- Bump rollup in the rollup group across 1 directory (#310)
+- Swap Rollup for Rolldown (#314)
+- Bump the vitest group with 3 updates (#316)
+- Run the DOM suites in vitest browser mode (#318) (closes #300)
+- Move the docs site to VitePress 2 to clear the Vite 5 alerts (#319)
+- Render the figures in Roboto, drop the apt step from the docs build (#325)
+- Bump the vitest group with 3 updates (#326)
+- Bump typescript-eslint (#327)
+- Bump the dev-deps group with 2 updates (#328)
+- Bump source-map-js from 1.2.1 to 1.2.2 (#335)
+
 ## 3.5.0 (2026-09-26)
 
 ### Added
