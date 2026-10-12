@@ -5,6 +5,7 @@ import { es } from './es';
 import { it } from './it';
 import { de } from './de';
 import { nl } from './nl';
+import { pl } from './pl';
 import { sr } from './sr';
 import { srLatn } from './sr-Latn';
 import { zhHans } from './zh-Hans';
@@ -24,6 +25,7 @@ export const translations: Record<string, TranslationMap> = {
   it,
   de,
   nl,
+  pl,
   sr,
   'sr-Latn': srLatn,
   'zh-Hans': zhHans,
