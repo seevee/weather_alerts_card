@@ -38,7 +38,7 @@
     "@vitest/coverage-v8": "^5.0.1",
     "conventional-changelog-cli": "^5.0.0",
     "conventional-recommended-bump": "^12.1.0",
-    "eslint": "^10.11.0",
+    "eslint": "^10.12.0",
     "eslint-plugin-lit": "^2.3.1",
     "git-cliff": "^2.14.2",
     "globals": "^17.13.0",
@@ -49,7 +49,7 @@
     "rolldown": "^1.2.12",
     "semver": "^7.8.5",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.0",
+    "typescript-eslint": "^8.71.1",
     "vitepress": "2.0.0-alpha.20",
     "vitest": "^5.0.1"
   },
