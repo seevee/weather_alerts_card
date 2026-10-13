@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.7.0 (2026-10-13)
+
+### Added
+- Add Polish translation file (#343)
+
+### Internal
+- Bump handlebars from 4.7.9 to 4.7.10 (#341)
+- Bump the dev-deps group with 4 updates (#345)
+- Bump the eslint group with 2 updates (#344)
+
 ## 3.6.0 (2026-10-09)
 
 ### Added
