@@ -44,6 +44,7 @@ export default defineConfig({
           { text: 'Per-alert detail pop-up', link: '/recipes/detail-popup' },
           { text: 'Bubble Card pop-up', link: '/recipes/bubble-card-popup' },
           { text: 'Alert text in your own language', link: '/recipes/alert-language' },
+          { text: 'GeoSphere Austria (municipality warnings)', link: '/recipes/geosphere-austria' },
         ],
       },
       {
