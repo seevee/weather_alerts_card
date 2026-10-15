@@ -251,20 +251,23 @@ Warnings whose `rawinfo.end` is in the past are filtered out before counting, so
 
 Two things about that YAML are not style, they are the platform:
 
-- **`attributes:` has to be a mapping** (`attribute_name: template`) on Home Assistant 2026.10;
-  the older form, one template rendering the whole dict, fails validation
-  (`expected a mapping for dictionary value 'sensor->0->attributes'`). Dynamic keys are therefore
-  impossible and the sensor carries fixed slots `warning_1`…`warning_6`. The adapter iterates only
-  up to `warning_count` and skips empty slots, so a quiet municipality is not a problem.
-- **The list append/update helpers are blocked in the template sandbox**, so the per-warning dict
-  is assembled by string concatenation in a `namespace` and emitted as JSON text.
+- **`attributes:` is a mapping of name to template** (`` attribute_name: template ``), one template
+  per attribute — that was already the case before Home Assistant 2026.10. Dynamic keys are
+  impossible that way, so the sensor carries fixed slots `warning_1`…`warning_6`. The adapter
+  iterates only up to `warning_count` and skips empty slots, so a quiet municipality is not a
+  problem.
+- **Each slot publishes a dict literal that Home Assistant parses natively**, which is why an empty
+  slot comes back as `{}` and not as a string. The list append/update helpers are blocked in the
+  template sandbox, so the slots are written out as literals instead of being accumulated, and a
+  `namespace` carries the running counter and the selected payload.
 
 ::: warning No `awareness_level` / `awareness_type` here, on purpose
 An earlier version of this mapping carried them (plus `active_levels` and `active_type_codes`)
 because the MeteoAlarm integration uses that shape. The DWD adapter never reads any of the four —
 and `awareness_level` together with `awareness_type` is exactly what the **MeteoAlarm** adapter
-keys on, so leaving them in makes the entity claimable by the wrong adapter if auto-detection ever
-runs before this card's explicit `provider: dwd`. Do not add them back.
+keys on, so leaving them in makes the entity claimable by the wrong adapter. Explicit
+`provider: dwd` on the card decides that, so the shapes only collide for a reader who leaves the
+line out and lets auto-detection pick. Do not add them back.
 :::
 
 ## 3. Point the card at the sensor
@@ -273,10 +276,16 @@ runs before this card's explicit `provider: dwd`. Do not add them back.
 type: custom:weather-alerts-card
 entity: sensor.municipality_unwetterwarnungen
 provider: dwd
+showSourceLink: false
 ```
 
 Set `provider: dwd` explicitly. The sensor is a GeoSphere entity carrying DWD-shaped attributes,
 and naming the adapter removes any dependence on attribute-shape auto-detection.
+
+`showSourceLink: false` because that link belongs to the DWD adapter, which points at `dwd.de` for
+every alert — not at the GeoSphere warning this sensor actually read. Turn it back on if a DWD
+landing page is what you want next to an Austrian warning; the recipe's own `attribution` already
+carries the required source credit.
 
 ## Sample payloads
 
@@ -329,7 +338,7 @@ it as a real API response.
     },
     "warnings": [
       {
-        "type": "Feature",
+        "type": "Warning",
         "properties": {
           "warntypid": 5,
           "warnstufeid": 2,
@@ -337,13 +346,13 @@ it as a real API response.
           "auswirkungen": "Ueberflutungen moeglich.",
           "empfehlungen": "Lose Gegenstaende sichern, Aufenthalt im Freien vermeiden.",
           "rawinfo": {
-            "start": 1791900000,
-            "end": 1791921600
+            "start": "1791900000",
+            "end": "1791921600"
           }
         }
       },
       {
-        "type": "Feature",
+        "type": "Warning",
         "properties": {
           "warntypid": 2,
           "warnstufeid": 1,
@@ -351,8 +360,8 @@ it as a real API response.
           "auswirkungen": "Rutschgefahr auf Strassen.",
           "empfehlungen": "Vorsichtig fahren.",
           "rawinfo": {
-            "start": 1791892800,
-            "end": 1791914400
+            "start": "1791892800",
+            "end": "1791914400"
           }
         }
       }
