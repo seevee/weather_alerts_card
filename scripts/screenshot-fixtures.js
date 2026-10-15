@@ -338,7 +338,7 @@ export const CAP_GEOMETRY_STUB = {
 };
 
 // A CAP alert whose polygon is genuinely complex: ECCC issues watches per
-// municipality, and cap_alerts folds every <area> polygon into one
+// forecast region, and cap_alerts folds every <area> polygon into one
 // MultiPolygon (providers/geometry.py geometry_from_polygons). This is a real
 // product: Environment Canada severe thunderstorm watch for southern
 // Saskatchewan, CAP identifier urn:oid:2.49.0.1.124.1498809496.2026, Update

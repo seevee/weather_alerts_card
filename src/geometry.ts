@@ -221,7 +221,9 @@ function shapePath(
 // Stable id for the SVG <mask> that trims the outline stroke to the outside
 // of the shape. Fragment ids resolve within the card's shadow root, so this
 // only has to be unique per alert there; it is derived from the alert rather
-// than counted at render time, which keeps render() pure.
+// than counted at render time, which keeps render() pure. With `deduplicate:
+// false` the same alert can render twice and the two masks share an id; both
+// hold the same path, so whichever one resolves draws the same picture.
 export function geometryMaskId(provider: string, alertId: string): string {
   return `wac-geometry-mask-${`${provider}-${alertId}`.replace(/[^A-Za-z0-9_-]+/g, '_')}`;
 }
@@ -248,7 +250,9 @@ function outerRings(geometry?: GeoJsonGeometry | null): number[][][] {
 // One closed subpath per ring, every ring emitted in the same orientation
 // (positive shoelace area in the y-down projected space) so a nonzero fill
 // over several rings is their union. A ring whose points all project to the
-// same place has zero area and is emitted as it came.
+// same place has zero area and is emitted as it came. The sign of the total
+// area is only a reliable winding for a simple ring; a self-intersecting one
+// (figure-eight) could land either way, but no provider sends those.
 function ringToPath(
   ring: number[][],
   project: (lon: number, lat: number) => [number, number],

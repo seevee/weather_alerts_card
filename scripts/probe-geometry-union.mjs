@@ -9,17 +9,21 @@
 //
 //   node scripts/probe-geometry-union.mjs
 //
-// Writes probe.html and the PNGs to the current directory. Findings on
-// Chromium 153 (2026-10-15): attribute and CSS mask both resolve in the
+// Writes probe.html and the PNGs to a fresh directory under the OS temp dir
+// and prints its path, so a run from the repo root leaves the tree clean.
+// Findings on Chromium 153 (2026-10-15): attribute and CSS mask both resolve in the
 // shadow root; an invalid reference renders the stroke unmasked (the old
 // per-region look) rather than dropping the shape; opposite ring windings
 // punch the overlap out, which is why the builder normalises winding.
 import { chromium } from 'playwright';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
+const out = mkdtempSync(join(tmpdir(), 'wac-geometry-probe-'));
+const outFile = name => join(out, name);
 const fixture = JSON.parse(readFileSync(join(here, 'screenshot-eccc-watch.json'), 'utf8'));
 const geom = fixture.features[0].geometry;
 const rings = geom.coordinates.map(p => p[0]);
@@ -73,13 +77,13 @@ const html = `<!doctype html><meta charset="utf-8">
   put('fixture', 'G 112-polygon ECCC watch, shadow DOM, attr mask', ${JSON.stringify(svgFor('g', d, viewBox))});
   put('fixture', 'H same, no mask (current per-ring look)', ${JSON.stringify(svgFor('h', d, viewBox, { maskRef: 'none' }))});
 </script>`;
-writeFileSync('probe.html', html);
+writeFileSync(outFile('probe.html'), html);
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1100, height: 700 }, deviceScaleFactor: 1 });
-await page.goto('file://' + process.cwd() + '/probe.html');
+await page.goto('file://' + outFile('probe.html'));
 await page.waitForTimeout(300);
-await page.screenshot({ path: 'probe-all.png', fullPage: true });
+await page.screenshot({ path: outFile('probe-all.png'), fullPage: true });
 
 // Pixel sampling: for each 100x100 square case, sample the interior shared
 // edge (x=60 in viewBox, y=55 -> inside both squares' overlap boundary) and
@@ -95,14 +99,15 @@ const sample = async (locator) => {
     return { sharedEdge: px(60, 55), sharedEdgeOut: px(59.3, 55), outerEdgeOutside: px(19.3, 50), outerEdgeInside: px(20.7, 50), overlapInterior: px(50, 55), singleInterior: px(30, 50) };
   }, [shot.toString('base64'), Math.round(box.width), Math.round(box.height)]);
 };
-const out = {};
-out.A_light_attr = await sample(page.locator('#light .cell:nth-child(1) svg'));
-out.B_light_nomask = await sample(page.locator('#light .cell:nth-child(2) svg'));
+const samples = {};
+samples.A_light_attr = await sample(page.locator('#light .cell:nth-child(1) svg'));
+samples.B_light_nomask = await sample(page.locator('#light .cell:nth-child(2) svg'));
 for (const [i, name] of ['C_shadow_attr', 'D_shadow_css', 'E_shadow_invalid', 'F_shadow_mixed'].entries()) {
-  out[name] = await sample(page.locator('probe-el').nth(i).locator('svg'));
+  samples[name] = await sample(page.locator('probe-el').nth(i).locator('svg'));
 }
-console.log(JSON.stringify(out, null, 1));
-await page.locator('probe-el').nth(4).screenshot({ path: 'probe-fixture-masked.png' });
-await page.locator('probe-el').nth(5).screenshot({ path: 'probe-fixture-unmasked.png' });
+console.log(JSON.stringify(samples, null, 1));
+await page.locator('probe-el').nth(4).screenshot({ path: outFile('probe-fixture-masked.png') });
+await page.locator('probe-el').nth(5).screenshot({ path: outFile('probe-fixture-unmasked.png') });
 console.log('chromium', browser.version());
+console.log('output in', out);
 await browser.close();
