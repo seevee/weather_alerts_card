@@ -96,6 +96,11 @@ entities:
   - sensor.dwd_weather_warnings_advance
 ```
 
+The adapter only reads the flat `warning_count` / `warning_N` shape, so any source you can
+reshape into it works with `provider: dwd`. The [GeoSphere Austria
+recipe](./recipes/geosphere-austria) does exactly that for Austrian municipality warnings,
+which the MeteoAlarm feed only carries at district level.
+
 ### NINA (German civil protection)
 
 NINA is the BBK's national warning app. It carries far more than weather: DWD storm and
