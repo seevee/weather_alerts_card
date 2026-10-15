@@ -99,7 +99,7 @@ interface WeatherAlertsCardConfig {
   showMetadata?: boolean;      // undefined/true: show metadata grid in details; false: hide
   showDescription?: boolean;   // undefined/true: show description block in details; false: hide
   showInstructions?: boolean;  // undefined/true: show instructions block in details; false: hide
-  showGeometry?: boolean;      // undefined/false: no mini-map; true: polygon (cap_alerts) → bbox frame (cap_alerts, INMET) → marker at `point` (NSW RFS, cap_alerts point feeds) → nothing
+  showGeometry?: boolean;      // undefined/false: no mini-map; true: polygon (cap_alerts, every ring merged into one outline) → bbox frame (cap_alerts, INMET) → marker at `point` (NSW RFS, cap_alerts point feeds) → nothing
   geometryStyle?: 'shape' | 'map'; // undefined/'shape': offline outline/marker; 'map': raster tiles behind it (HA map_tiles proxy by default)
   showMyLocation?: boolean;    // undefined/false: off; true: neutral ring at the reference point on the mini-map (opt-in: it draws the user's location)
   showSourceLink?: boolean;    // undefined/true: show "Open Source" link; false: hide (kiosk mode)

@@ -204,10 +204,13 @@ The grid's area row collapses a list of more than four names to the first one pl
 | nothing | NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, NINA, PirateWeather | no mini-map |
 
 A polygon can be a single storm-based shape, as above, or a few hundred rings. ECCC
-issues its watches per municipality, so one alert arrives as a MultiPolygon of every
-area it names, and the frame is the whole extent:
+issues its watches per forecast region, so one alert arrives as a MultiPolygon of every
+area it names, and the frame is the whole extent. The card draws those regions as one
+shape: a single tint over the union and one outline around the outside, since the
+borders between regions are the issuer's tiling rather than anything the alert
+distinguishes. Separate parts, such as islands, keep their own outlines.
 
-![An ECCC severe thunderstorm watch over southern Saskatchewan, drawn as 112 municipal outlines on the raster basemap](/img/geometry-watch-adaptive.svg)
+![An ECCC severe thunderstorm watch over southern Saskatchewan, 112 regions merged into one outline on the raster basemap](/img/geometry-watch-adaptive.svg)
 
 For a point incident the frame is invented by the card, not published by the feed, so it
 carries no tint: it's a viewport, not an affected area. A lone dot in an empty frame says

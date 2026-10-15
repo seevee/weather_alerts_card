@@ -594,7 +594,10 @@ export const cardStyles = css`
     max-width: 260px;
     height: 120px;
     margin: 0 auto 16px;
-    /* No basemap — the shape reads against the panel background. */
+    /* No basemap — the shape reads against the panel background. The merged
+       outline is stroked on the OUTSIDE of a shape that spans the viewBox, so
+       it may spill a hair past the frame; keep it rather than clip it. */
+    overflow: visible;
   }
   .alert-geometry .geometry-frame {
     fill: rgba(var(--color-rgb), 0.04);
@@ -602,10 +605,19 @@ export const cardStyles = css`
     stroke-width: 1px;
     vector-effect: non-scaling-stroke;
   }
-  .alert-geometry .geometry-shape {
+  /* The affected area is one path: a nonzero fill painted once over the
+     union of every region, and the same path stroked under a mask that keeps
+     only the half of the stroke outside the shape (#348). Interior region
+     borders fall entirely inside and vanish; stroke widths here are doubled
+     so the visible outer half keeps the intended weight. */
+  .alert-geometry .geometry-fill {
     fill: rgba(var(--color-rgb), 0.18);
+    stroke: none;
+  }
+  .alert-geometry .geometry-shape {
+    fill: none;
     stroke: var(--wac-fg, var(--color));
-    stroke-width: 1.5px;
+    stroke-width: 3px;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
   }
@@ -668,6 +680,7 @@ export const cardStyles = css`
     height: 100%;
     margin: 0;
     max-width: none;
+    overflow: hidden;
   }
   .alert-geometry.map image {
     image-rendering: auto;
@@ -686,16 +699,19 @@ export const cardStyles = css`
     fill: none;
     stroke: rgba(var(--rgb-primary-text-color, 128, 128, 128), 0.25);
   }
-  .alert-geometry.map .geometry-shape {
+  .alert-geometry.map .geometry-fill {
     fill: rgba(var(--color-rgb), 0.22);
-    stroke-width: 2px;
+  }
+  .alert-geometry.map .geometry-shape {
+    stroke-width: 4px;
   }
   /* White casing under the colored stroke keeps the outline legible over busy
-     tiles (light or dark). */
+     tiles (light or dark). Masked like the stroke, so it reads as a halo on
+     the outside of the merged edge only. */
   .alert-geometry.map .geometry-shape-casing {
     fill: none;
     stroke: rgba(255, 255, 255, 0.85);
-    stroke-width: 4px;
+    stroke-width: 8px;
     stroke-linejoin: round;
     vector-effect: non-scaling-stroke;
   }
