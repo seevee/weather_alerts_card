@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, InmetAlert, WeatherAlert } from '../types';
-import { extractPoint, parseTimestamp } from '../utils';
+import { parseTimestamp } from '../utils';
 
 const INMET_SOURCE = 'inmet';
 
@@ -28,6 +28,21 @@ function timestamp(v: unknown): number {
   const s = str(v).trim();
   if (!s) return 0;
   return parseTimestamp(/(?:[zZ]|[+-]\d\d:?\d\d)$/.test(s) ? s : `${s}-03:00`);
+}
+
+function bbox(v: unknown): [number, number, number, number] | undefined {
+  if (!Array.isArray(v) || v.length !== 4) return undefined;
+  const values: readonly unknown[] = v;
+  const [minLon, minLat, maxLon, maxLat] = values;
+  if (!isFiniteNumber(minLon) || !isFiniteNumber(minLat)
+    || !isFiniteNumber(maxLon) || !isFiniteNumber(maxLat)) return undefined;
+  if (minLon < -180 || maxLon > 180 || minLat < -90 || maxLat > 90) return undefined;
+  if (minLon > maxLon || minLat > maxLat) return undefined;
+  return [minLon, minLat, maxLon, maxLat];
+}
+
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
 }
 
 function titleCase(s: string): string {
@@ -62,12 +77,9 @@ export class InmetAdapter implements AlertAdapter {
   provider: AlertProvider = 'inmet';
 
   feedSources = [INMET_SOURCE];
-  // No carriesPoint. The integration stamps every alert with the *configured
-  // city's* coordinates, not the alert's, so `point` is the same for all of
-  // them: it still places the mini-map marker and the distance row (distance
-  // to that city), but a radius filter over it is a constant, and one set
-  // below home-to-city would hide every alert. The editor therefore does not
-  // offer the control; the YAML key still works for anyone who wants it.
+  // INMET alerts cover an area, not an incident point. The integration exposes
+  // that extent as a bbox; its geo_location coordinates name the configured
+  // city and must not drive distance filtering or a map marker.
   stableIds = true;
 
   canHandle(attributes: Record<string, unknown>): boolean {
@@ -83,10 +95,10 @@ export class InmetAdapter implements AlertAdapter {
     const alertId = stringish(alert.alert_id);
     const event = str(alert.description) || 'INMET Alert';
     const { severity, label: severityLabel, inferred } = severityAndLabel(alert);
-    const sentTs = timestamp(alert.updated) || timestamp(alert.start_date);
+    const sentTs = timestamp(alert.updated_at) || timestamp(alert.start_date);
     const onsetTs = timestamp(alert.start_date) || sentTs;
     const endsTs = timestamp(alert.end_date);
-    const point = extractPoint(alert.latitude, alert.longitude);
+    const alertBbox = bbox(alert.bbox);
     const phase = alert.finished ? 'Final' : alert.updated ? 'Update' : alert.future ? 'Future' : '';
 
     return [{
@@ -103,7 +115,7 @@ export class InmetAdapter implements AlertAdapter {
       instruction: textList(alert.instructions),
       url: str(alert.url),
       headline: event,
-      areaDesc: 'Brazil',
+      areaDesc: str(alert.area) || 'Brazil',
       zones: [],
       // `sequence` is the alert's update counter (1, 2, …), not an event type;
       // INMET publishes no code, so this stays empty like NSW RFS and BoM.
@@ -114,7 +126,7 @@ export class InmetAdapter implements AlertAdapter {
       certaintyInferred: false,
       providerIcon: str(attributes['icon']) || 'mdi:alert',
       colorHint: str(alert.color),
-      ...(point !== undefined && { point }),
+      ...(alertBbox !== undefined && { bbox: alertBbox }),
     }];
   }
 }

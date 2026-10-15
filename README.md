@@ -20,7 +20,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
 - **Expandable details** — sanitized description, instructions, and source link
-- **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, or a marker at a point incident's location (NSW RFS, INMET, CAP Alerts point feeds), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
+- **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, bounding-box frame for INMET alerts, or a marker at a point incident's location (NSW RFS and CAP Alerts point feeds), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
 - **Zone filtering** — show only alerts for specific zone codes (CAP Alerts geocodes, BoM `area_id`); see the `zones` note for provider support
@@ -540,7 +540,7 @@ Geometry is a tier: **polygon** (fetched out of band by `geometry_ref`, with `bb
 | MeteoSwiss | card adapter (`meteoswiss`) | none | — | no | Raw integer level | Absent | E (the warning type name, e.g. `Wind`, not a code), S, X |
 | ECCC | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
-| INMET | card adapter (`geo_location`, `inmet`) | point | The configured city, the same point on every alert | yes | Raw `severity` text; the colour fallback is tilde | Absent | S, X. D applies from YAML, but every alert is the same distance away, so the editor does not offer it |
+| INMET | card adapter (`geo_location`, `inmet`) | bbox | The alert's published affected-area bounds | no | Raw `severity` text; the colour fallback is tilde | Absent | S, X |
 | PirateWeather | card adapter | none | — | no | Raw `severity`; tilde when empty or unknown | Absent | S, X |
 | CAP Alerts: NWS | cap_alerts (zone, GPS, tracker) | polygon or none | The warning's own polygon on storm-based warnings; zone-based alerts carry no shape, only `geocodes.UGC` | no | VTEC significance (warning severe, watch moderate, advisory minor; tornado and extreme-wind warnings extreme), else CAP; never marked | Raw CAP | Z (UGC, SAME), E (`parameters.NationalWeatherService`, `parameters.SAME`; the 1.x `event_code_*` keys still read), S, X |
 | CAP Alerts: ECCC | cap_alerts (province, GPS, tracker) | polygon | Severe thunderstorm and tornado warnings: the forecaster-drawn threat area; everything else the union of the zone polygons | rare (zero-radius circles) | Raw CAP; never marked | Raw CAP | Z (CLC, SGC), S, X. E hides everything: the CAP-CP event code lives in `parameters` |

@@ -231,15 +231,11 @@ Potencial` to moderate, `Perigo` to severe, and `Grande Perigo` to extreme.
 the alert URL opens the matching INMET aviso page. Set `providerColors: true` to paint
 each alert in the color INMET published for it (`aviso_cor`).
 
-INMET entities carry the coordinates of the city you configured in the
-integration, identical on every alert, rather than the alert's own location.
-So `showGeometry` draws a marker at that city, the distance row reads as the
-distance to it, and `maxDistanceKm` is deliberately not offered in the editor:
-over a constant point it either changes nothing or, set below the home-to-city
-distance, hides every alert. The YAML key still applies if you set it. The
-alert's real extent is a polygon the integration does not expose; INMET's own
-CAP feed carries it, which is a CAP Alerts provider candidate rather than a
-card change.
+Recent versions of the integration publish `updated_at`, an `area` description,
+and a compact `bbox` around the alert's real extent. The card uses the issued
+time and area text, and `showGeometry` draws the bounding-box frame. INMET
+alerts are area warnings, so they have no incident marker, distance row, or
+`maxDistanceKm` filtering.
 
 ### PirateWeather
 
@@ -368,7 +364,7 @@ not set it for that source.
 | MeteoSwiss | card adapter (`meteoswiss`) | none | — | no | Raw integer level | Absent | E (the warning type name, e.g. `Wind`, not a code), S, X |
 | ECCC | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
-| INMET | card adapter (`geo_location`, `inmet`) | point | The configured city, the same point on every alert | yes | Raw `severity` text; the colour fallback is tilde | Absent | S, X. D applies from YAML, but every alert is the same distance away, so the editor does not offer it |
+| INMET | card adapter (`geo_location`, `inmet`) | bbox | The alert's published affected-area bounds | no | Raw `severity` text; the colour fallback is tilde | Absent | S, X |
 | PirateWeather | card adapter | none | — | no | Raw `severity`; tilde when empty or unknown | Absent | S, X |
 | CAP Alerts: NWS | cap_alerts (zone, GPS, tracker) | polygon or none | The warning's own polygon on storm-based warnings; zone-based alerts carry no shape, only `geocodes.UGC` | no | VTEC significance (warning severe, watch moderate, advisory minor; tornado and extreme-wind warnings extreme), else CAP; never marked | Raw CAP | Z (UGC, SAME), E (`parameters.NationalWeatherService`, `parameters.SAME`; the 1.x `event_code_*` keys still read), S, X |
 | CAP Alerts: ECCC | cap_alerts (province, GPS, tracker) | polygon | Severe thunderstorm and tornado warnings: the forecaster-drawn threat area; everything else the union of the zone polygons | rare (zero-radius circles) | Raw CAP; never marked | Raw CAP | Z (CLC, SGC), S, X. E hides everything: the CAP-CP event code lives in `parameters` |

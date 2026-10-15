@@ -13,14 +13,15 @@ function makeAlert(overrides: Partial<InmetAlert> = {}): Record<string, unknown>
     instructions: ['Não se abrigue debaixo de árvores.', 'Evite usar aparelhos eletrônicos ligados à tomada.'],
     color: 'Laranja',
     updated: false,
+    updated_at: '2026-01-08T09:00:00.000Z',
     finished: false,
     future: false,
     start_date: '2026-01-08T10:00:00',
     end_date: '2026-01-08T23:59:00',
     sequence: 42,
     url: 'https://avisos.inmet.gov.br/12345',
-    latitude: -22.9056,
-    longitude: -47.0608,
+    area: 'SP',
+    bbox: [-47.0608, -23.1056, -46.9056, -22.9056],
   };
   return { ...defaults, ...overrides };
 }
@@ -84,7 +85,7 @@ describe('InmetAdapter', () => {
       expect(alert.event).toBe('Chuvas Intensas');
       expect(alert.headline).toBe('Chuvas Intensas');
       expect(alert.severityLabel).toBe('Perigo');
-      expect(alert.sentTs).toBe(parseTimestamp('2026-01-08T10:00:00-03:00'));
+      expect(alert.sentTs).toBe(parseTimestamp('2026-01-08T09:00:00.000Z'));
       expect(alert.onsetTs).toBe(parseTimestamp('2026-01-08T10:00:00-03:00'));
       expect(alert.endsTs).toBe(parseTimestamp('2026-01-08T23:59:00-03:00'));
       expect(alert.url).toBe('https://avisos.inmet.gov.br/12345');
@@ -92,7 +93,9 @@ describe('InmetAdapter', () => {
       expect(alert.eventCode).toBe('');
       expect(alert.providerIcon).toBe('mdi:alert');
       expect(alert.colorHint).toBe('Laranja');
-      expect(alert.point).toEqual([-47.0608, -22.9056]);
+      expect(alert.areaDesc).toBe('SP');
+      expect(alert.bbox).toEqual([-47.0608, -23.1056, -46.9056, -22.9056]);
+      expect('point' in alert).toBe(false);
     });
 
     it('normalizes numeric ids from current INMET attributes', () => {
@@ -125,9 +128,34 @@ describe('InmetAdapter', () => {
       expect(adapter.parseAlerts(makeAlert({ finished: true, updated: true }))[0].phase).toBe('Final');
     });
 
-    it('omits the point when coordinates are malformed', () => {
-      const [alert] = adapter.parseAlerts(makeAlert({ latitude: 999 }));
+    it('does not use the configured city as an alert point', () => {
+      const [alert] = adapter.parseAlerts(makeAlert({
+        latitude: -22.9056,
+        longitude: -47.0608,
+      } as Record<string, unknown>));
       expect('point' in alert).toBe(false);
+    });
+
+    it('falls back for an older INMET integration without card metadata', () => {
+      const attributes = makeAlert();
+      delete attributes['updated_at'];
+      delete attributes['area'];
+      delete attributes['bbox'];
+      const [alert] = adapter.parseAlerts(attributes);
+      expect(alert.sentTs).toBe(parseTimestamp('2026-01-08T10:00:00-03:00'));
+      expect(alert.areaDesc).toBe('Brazil');
+      expect('bbox' in alert).toBe(false);
+    });
+
+    it('omits malformed INMET bounding boxes', () => {
+      const [wrongLength] = adapter.parseAlerts(makeAlert({
+        bbox: [-47, -23, -46] as unknown as [number, number, number, number],
+      }));
+      const [reversed] = adapter.parseAlerts(makeAlert({
+        bbox: [-46, -23, -47, -22],
+      }));
+      expect('bbox' in wrongLength).toBe(false);
+      expect('bbox' in reversed).toBe(false);
     });
 
     it('returns [] for attributes that do not satisfy canHandle', () => {
@@ -138,8 +166,7 @@ describe('InmetAdapter', () => {
   describe('adapter capabilities', () => {
     it('declares source collection but not the radius control', () => {
       expect(adapter.feedSources).toEqual(['inmet']);
-      // The point is the configured city, identical on every alert, so a
-      // radius over it is a constant: the marker stays, the control does not.
+      // An INMET bbox is an area extent, never an incident point.
       expect((adapter as { carriesPoint?: boolean }).carriesPoint).toBeFalsy();
       expect(adapter.stableIds).toBe(true);
     });

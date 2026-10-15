@@ -371,15 +371,16 @@ export interface InmetAlert {
   risks?: string | string[];
   instructions?: string | string[];
   color?: string;
-  updated?: string | Date | boolean;
+  updated?: boolean;
+  updated_at?: string | Date;
   finished?: boolean;
   future?: boolean;
   start_date?: string | Date;
   end_date?: string | Date;
   sequence?: string | number;
   url?: string;
-  latitude?: number;
-  longitude?: number;
+  area?: string;
+  bbox?: [number, number, number, number];
 }
 
 export interface AlertProgress {
