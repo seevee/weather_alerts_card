@@ -168,7 +168,7 @@ npm run docs:preview  # serve the production build
 | File | Purpose |
 |------|---------|
 | `docs/.vitepress/config.mts` | Site config. **Must be `.mts`** — this package is CJS (no `"type": "module"`), so a `.ts` config is loaded as CommonJS and fails on VitePress's ESM-only export, same reason `rolldown.config.mjs` is `.mjs`. |
-| `docs/*.md`, `docs/recipes/*.md` | Content: overview, getting-started, configuration, theming, providers, two recipe pages, development. |
+| `docs/*.md`, `docs/recipes/*.md` | Content: overview, getting-started, configuration, theming, providers, recipe pages, development. |
 | `scripts/build-docs-media.sh` | Builds `dist/`, runs `screenshot.js` + `encode-adaptive-svgs.sh`, copies `img/` output into `docs/public/img/`. |
 | `.github/workflows/docs.yml` | Pages build + deploy on push to `main` and `workflow_dispatch`. Installs Playwright Chromium; `build.yml`/`release.yml` stay Playwright-free. |
 
