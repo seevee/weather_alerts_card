@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { InmetAdapter } from '../../src/adapters/inmet';
-import { parseTimestamp, reflowAlertText } from '../../src/utils';
+import { parseTimestamp, reflowAlertText, summarizeAreaDesc } from '../../src/utils';
 import type { InmetAlert } from '../../src/types';
 
 function makeAlert(overrides: Partial<InmetAlert> = {}): Record<string, unknown> {
@@ -145,6 +145,30 @@ describe('InmetAdapter', () => {
       expect(alert.sentTs).toBe(parseTimestamp('2026-01-08T10:00:00-03:00'));
       expect(alert.areaDesc).toBe('Brazil');
       expect('bbox' in alert).toBe(false);
+    });
+
+    it('reads the sigrist/inmet 1.2.0 attribute shape as published', () => {
+      // 1.2.0 attaches America/Sao_Paulo to start/end, so HA serialises them
+      // with an offset; `updated_at` is INMET's own stamp, which on the live
+      // feed is a midnight-UTC date; `area` is `estados`, comma-joined with
+      // no spaces; `bbox` is the multi-state polygon's extent (alert 56070,
+      // 2026-10-15, 19 states).
+      const [alert] = adapter.parseAlerts(makeAlert({
+        start_date: '2026-10-15T00:01:00-03:00',
+        end_date: '2026-10-15T23:59:00-03:00',
+        updated_at: '2026-10-14T00:00:00.000Z',
+        area: 'Goiás,Minas Gerais,Bahia,Paraná,Santa Catarina,Tocantins,Mato Grosso,Acre,São Paulo,Espírito Santo,Mato Grosso do Sul,Rio Grande do Sul,Rondônia,Pará,Maranhão,Amazonas,Rio de Janeiro,Distrito Federal,Mato Grosso',
+        bbox: [-73.6, -33.7, -38.7, -0.2],
+      }));
+      // The offset is honoured, not re-pinned.
+      expect(alert.onsetTs).toBe(parseTimestamp('2026-10-15T03:01:00Z'));
+      expect(alert.endsTs).toBe(parseTimestamp('2026-10-16T02:59:00Z'));
+      expect(alert.sentTs).toBe(parseTimestamp('2026-10-14T00:00:00Z'));
+      expect(alert.sentTs).toBeLessThan(alert.onsetTs);
+      // The state list reaches the area row verbatim and collapses there.
+      expect(alert.areaDesc.startsWith('Goiás,Minas Gerais')).toBe(true);
+      expect(summarizeAreaDesc(alert.areaDesc)).toEqual({ first: 'Goiás', more: 18 });
+      expect(alert.bbox).toEqual([-73.6, -33.7, -38.7, -0.2]);
     });
 
     it('omits malformed INMET bounding boxes', () => {
