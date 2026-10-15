@@ -1,4 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import type { Connection } from 'home-assistant-js-websocket';
 
 import {
@@ -280,5 +281,112 @@ describe('map_tiles basemap token (#259)', () => {
     c.fire('ready');
     await new Promise(r => setTimeout(r, 0));
     expect(c.calls['map_tiles/access_token']).toBe(1);
+  });
+});
+
+// One shape, not N regions (#348): every outer ring is a subpath of a single
+// path, the fill is painted once over the union, and the outline stroke is
+// masked to the outside of that same path so interior region borders vanish.
+describe('merged outline (#348)', () => {
+  // Two overlapping squares that between them span the bbox: A top-left,
+  // B bottom-right, overlapping in the middle. Listed with OPPOSITE winding
+  // so the union also proves the builder's normalisation end to end.
+  const TWO_REGIONS = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: { ref: REF },
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [[[-105.3, 40.1], [-105.18, 40.1], [-105.18, 39.98], [-105.3, 39.98], [-105.3, 40.1]]],
+          [[[-105.22, 40.02], [-105.22, 39.9], [-105.1, 39.9], [-105.1, 40.02], [-105.22, 40.02]]],
+        ],
+      },
+    }],
+  };
+
+  function shapeParts(card: WeatherAlertsCard, scope: string) {
+    const fill = q(card, `${scope} .geometry-fill`)!;
+    const stroke = q(card, `${scope} .geometry-shape`)!;
+    const maskRef = stroke.getAttribute('mask') || '';
+    const maskId = maskRef.replace(/^url\(#(.*)\)$/, '$1');
+    const mask = q(card, `${scope} mask`)!;
+    return { fill, stroke, maskRef, maskId, mask };
+  }
+
+  it('draws one fill and one masked stroke over the same path, shape style', async () => {
+    const c = makeConn({ geometry: [TWO_REGIONS] });
+    const card = await mount({}, makeHass(c.conn));
+    const { fill, stroke, maskRef, maskId, mask } = shapeParts(card, '.alert-geometry');
+    expect(card.shadowRoot!.querySelectorAll('.geometry-fill')).toHaveLength(1);
+    expect(card.shadowRoot!.querySelectorAll('.geometry-shape')).toHaveLength(1);
+    const d = fill.getAttribute('d')!;
+    expect(d.match(/M[^M]*Z/g)).toHaveLength(2);
+    expect(stroke.getAttribute('d')).toBe(d);
+    expect(fill.getAttribute('fill-rule')).toBe('nonzero');
+    // The stroke's mask is a <mask> in the same SVG, hiding that same shape.
+    expect(maskRef).toMatch(/^url\(#wac-geometry-mask-/);
+    expect(mask.getAttribute('id')).toBe(maskId);
+    expect(mask.querySelector('path')!.getAttribute('d')).toBe(d);
+    expect(q(card, '.alert-geometry .geometry-shape-casing')).toBeNull();
+  });
+
+  it('masks the white casing as well as the stroke, map style', async () => {
+    const c = makeConn({ token: [{ token: 'tok1' }], geometry: [TWO_REGIONS] });
+    const card = await mount({ geometryStyle: 'map' }, makeHass(c.conn));
+    const { stroke, maskRef, maskId, mask } = shapeParts(card, '.alert-geometry.map');
+    const casing = q(card, '.alert-geometry.map .geometry-shape-casing')!;
+    expect(casing.getAttribute('d')).toBe(stroke.getAttribute('d'));
+    expect(casing.getAttribute('mask')).toBe(maskRef);
+    expect(mask.getAttribute('id')).toBe(maskId);
+  });
+
+  it('paints the union once and no interior border, measured in pixels', async () => {
+    const c = makeConn({ geometry: [TWO_REGIONS] });
+    const card = await mount({}, makeHass(c.conn));
+    // The severe ladder colour is HA's --error-color, which this page does
+    // not define; without it the stroke computes to `none` and nothing can
+    // be measured.
+    card.style.setProperty('--error-color', '#db4437');
+    await flush(card);
+    const svg = q(card, '.alert-geometry')!;
+    const fillRect = q(card, '.alert-geometry .geometry-fill')!.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    // With `save: false` vitest 5.0.2 hands back the base64 string itself,
+    // not the `{ path, base64 }` its typings promise (checked 2026-10-15).
+    const base64 = await page.elementLocator(svg).screenshot({ base64: true, save: false }) as unknown as string;
+
+    const img = new Image();
+    img.src = `data:image/png;base64,${base64}`;
+    await img.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    const scale = img.naturalWidth / svgRect.width;
+    // Sample at a fraction of the shape's on-screen box (0,0 = top-left).
+    const at = (fx: number, fy: number, dx = 0) => {
+      const x = (fillRect.left - svgRect.left + fx * fillRect.width + dx) * scale;
+      const y = (fillRect.top - svgRect.top + fy * fillRect.height) * scale;
+      const [r, g, b] = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+      return [r, g, b];
+    };
+    // Distance from white: the 18% tint is shallow, the solid stroke is deep.
+    const depth = ([r, g, b]: number[]) => (255 - r) + (255 - g) + (255 - b);
+
+    const singleA = at(0.2, 0.2);       // inside A only
+    const overlap = at(0.5, 0.5);       // inside both
+    const sharedEdge = at(0.6, 0.5);    // A's right edge, inside B: an interior border
+    const outerEdge = at(0, 0.3, -1);   // just outside A's left edge: the merged outline
+    expect(depth(singleA)).toBeGreaterThan(0);
+    expect(depth(singleA)).toBeLessThan(120);
+    // No double paint in the overlap, and no hole from the mixed winding.
+    expect(overlap).toEqual(singleA);
+    // The interior border is gone: that pixel is plain tint.
+    expect(sharedEdge).toEqual(singleA);
+    // The outline survives on the outside.
+    expect(depth(outerEdge)).toBeGreaterThan(200);
   });
 });

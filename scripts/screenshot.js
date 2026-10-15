@@ -352,8 +352,8 @@ const PORT = 3742;
 
         // The MultiPolygon arrives via cap_alerts/geometry on a later render
         // (fetched from the static server, then handed to the card). Wait for
-        // the resolved shapes so the capture shows the municipalities, not
-        // just the province-scale bbox frame.
+        // the resolved shape so the capture shows the 112 regions merged into
+        // one outline (#348), not just the province-scale bbox frame.
         await page.waitForFunction(() => {
           const root = document.getElementById('card-geometry-watch')?.shadowRoot;
           return !!root?.querySelector('.alert-geometry .geometry-shape');

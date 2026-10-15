@@ -39,9 +39,9 @@ describe('buildGeometrySvg', () => {
     expect(w).toBeLessThan(h);
   });
 
-  it('returns empty polygonPaths for a valid bbox with no geometry', () => {
-    const { polygonPaths } = buildGeometrySvg(BBOX);
-    expect(polygonPaths).toEqual([]);
+  it('returns an empty shapePath for a valid bbox with no geometry', () => {
+    const { shapePath } = buildGeometrySvg(BBOX);
+    expect(shapePath).toBe('');
   });
 
   it('builds one path for a Polygon and emits a closed M…Z path', () => {
@@ -55,12 +55,12 @@ describe('buildGeometrySvg', () => {
         [-105.3, 39.9],
       ]],
     };
-    const { polygonPaths } = buildGeometrySvg(BBOX, poly);
-    expect(polygonPaths).toHaveLength(1);
-    expect(polygonPaths[0]).toMatch(/^M/);
-    expect(polygonPaths[0]).toMatch(/Z$/);
+    const { shapePath } = buildGeometrySvg(BBOX, poly);
+    expect(subpaths(shapePath)).toHaveLength(1);
+    expect(shapePath).toMatch(/^M/);
+    expect(shapePath).toMatch(/Z$/);
     // Top-left corner of the box projects to (0, 0): minlon, maxlat.
-    expect(polygonPaths[0]).toContain('M0,0');
+    expect(shapePath).toContain('M0,0');
   });
 
   it('ignores interior holes — one outer ring per Polygon', () => {
@@ -71,10 +71,10 @@ describe('buildGeometrySvg', () => {
         [[-105.25, 39.95], [-105.15, 39.95], [-105.15, 40.05], [-105.25, 39.95]],
       ],
     };
-    expect(buildGeometrySvg(BBOX, poly).polygonPaths).toHaveLength(1);
+    expect(subpaths(buildGeometrySvg(BBOX, poly).shapePath)).toHaveLength(1);
   });
 
-  it('builds one path per polygon for a MultiPolygon', () => {
+  it('builds one path with one closed subpath per polygon for a MultiPolygon (#348)', () => {
     const multi: GeoJsonMultiPolygon = {
       type: 'MultiPolygon',
       coordinates: [
@@ -82,13 +82,38 @@ describe('buildGeometrySvg', () => {
         [[[-105.2, 40.0], [-105.1, 40.0], [-105.1, 40.1], [-105.2, 40.0]]],
       ],
     };
-    expect(buildGeometrySvg(BBOX, multi).polygonPaths).toHaveLength(2);
+    const { shapePath } = buildGeometrySvg(BBOX, multi);
+    expect(subpaths(shapePath)).toHaveLength(2);
+    // One `d`, so the card can fill the union once and mask one stroke.
+    expect(shapePath).toMatch(/^M[^M]*ZM[^M]*Z$/);
   });
 
-  it('returns empty paths for an unknown geometry type without throwing', () => {
+  it('winds every ring the same way so a nonzero fill is the union, not a hole (#348)', () => {
+    // The same square, listed clockwise and counter-clockwise.
+    const cw: GeoJsonPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-105.3, 40.1], [-105.1, 40.1], [-105.1, 39.9], [-105.3, 39.9], [-105.3, 40.1]]],
+    };
+    const ccw: GeoJsonPolygon = {
+      type: 'Polygon',
+      coordinates: [[[-105.3, 40.1], [-105.3, 39.9], [-105.1, 39.9], [-105.1, 40.1], [-105.3, 40.1]]],
+    };
+    const a = buildGeometrySvg(BBOX, cw).shapePath;
+    const b = buildGeometrySvg(BBOX, ccw).shapePath;
+    expect(pathNumbers(a)).toEqual(pathNumbers(b));
+    // Both land on the orientation with positive shoelace area in y-down space.
+    expect(shoelace(pathNumbers(a))).toBeGreaterThan(0);
+    // Mixed rings in one MultiPolygon come out uniformly wound too.
+    const mixed: GeoJsonMultiPolygon = { type: 'MultiPolygon', coordinates: [cw.coordinates, ccw.coordinates] };
+    const [first, second] = subpaths(buildGeometrySvg(BBOX, mixed).shapePath);
+    expect(shoelace(pathNumbers(first))).toBeGreaterThan(0);
+    expect(shoelace(pathNumbers(second))).toBeGreaterThan(0);
+  });
+
+  it('returns an empty shapePath for an unknown geometry type without throwing', () => {
     const point = { type: 'Point', coordinates: [-105.2, 40.0] } as unknown as GeoJsonGeometry;
     expect(() => buildGeometrySvg(BBOX, point)).not.toThrow();
-    expect(buildGeometrySvg(BBOX, point).polygonPaths).toEqual([]);
+    expect(buildGeometrySvg(BBOX, point).shapePath).toBe('');
   });
 
   it('clamps a degenerate (zero-span) bbox to a non-zero viewBox', () => {
@@ -100,7 +125,7 @@ describe('buildGeometrySvg', () => {
 
   it('tolerates a Polygon with empty coordinates', () => {
     const empty = { type: 'Polygon', coordinates: [] } as GeoJsonPolygon;
-    expect(buildGeometrySvg(BBOX, empty).polygonPaths).toEqual([]);
+    expect(buildGeometrySvg(BBOX, empty).shapePath).toBe('');
   });
 
   describe('markers', () => {
@@ -218,6 +243,22 @@ const BBOX_POLY: GeoJsonPolygon = {
   ]],
 };
 
+// Splits a multi-subpath `d` into its closed "M…Z" pieces.
+function subpaths(d: string): string[] {
+  return d.match(/M[^M]*Z/g) ?? [];
+}
+
+// Shoelace area over a flat [x0, y0, x1, y1, …] list; the sign is the winding.
+function shoelace(nums: number[]): number {
+  let area = 0;
+  const n = nums.length / 2;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    area += nums[2 * i] * nums[2 * j + 1] - nums[2 * j] * nums[2 * i + 1];
+  }
+  return area / 2;
+}
+
 function pathNumbers(d: string): number[] {
   return (d.match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
 }
@@ -230,7 +271,7 @@ function tileZoom(href: string): number {
 
 describe('buildGeometryMap', () => {
   it('returns bounded tiles + a valid viewBox/aspect for a bbox alone', () => {
-    const { viewBox, aspect, tiles, polygonPaths, attribution } = buildGeometryMap(BBOX);
+    const { viewBox, aspect, tiles, shapePath, attribution } = buildGeometryMap(BBOX);
     const { x, y, w, h } = viewBoxDims(viewBox);
     expect(x).toBe(0);
     expect(y).toBe(0);
@@ -239,7 +280,7 @@ describe('buildGeometryMap', () => {
     expect(aspect).toBe(`${w} / ${h}`);
     expect(tiles.length).toBeGreaterThan(0);
     expect(tiles.length).toBeLessThanOrEqual(16);
-    expect(polygonPaths).toEqual([]); // no geometry → tiles only
+    expect(shapePath).toBe(''); // no geometry → tiles only
     expect(attribution).toMatch(/OpenStreetMap/);
   });
 
@@ -269,10 +310,10 @@ describe('buildGeometryMap', () => {
   });
 
   it('projects the polygon into the tile viewBox (paths inside bounds)', () => {
-    const { viewBox, polygonPaths } = buildGeometryMap(BBOX, BBOX_POLY);
-    expect(polygonPaths).toHaveLength(1);
+    const { viewBox, shapePath } = buildGeometryMap(BBOX, BBOX_POLY);
+    expect(subpaths(shapePath)).toHaveLength(1);
     const { w, h } = viewBoxDims(viewBox);
-    const nums = pathNumbers(polygonPaths[0]);
+    const nums = pathNumbers(shapePath);
     for (let i = 0; i < nums.length; i += 2) {
       const px = nums[i];
       const py = nums[i + 1];
@@ -284,7 +325,7 @@ describe('buildGeometryMap', () => {
     }
   });
 
-  it('builds one path per polygon for a MultiPolygon', () => {
+  it('builds one path with one subpath per polygon for a MultiPolygon', () => {
     const multi: GeoJsonMultiPolygon = {
       type: 'MultiPolygon',
       coordinates: [
@@ -292,13 +333,13 @@ describe('buildGeometryMap', () => {
         [[[-105.2, 40.0], [-105.1, 40.0], [-105.1, 40.1], [-105.2, 40.0]]],
       ],
     };
-    expect(buildGeometryMap(BBOX, multi).polygonPaths).toHaveLength(2);
+    expect(subpaths(buildGeometryMap(BBOX, multi).shapePath)).toHaveLength(2);
   });
 
-  it('returns tiles but no paths for unknown geometry', () => {
+  it('returns tiles but an empty path for unknown geometry', () => {
     const point = { type: 'Point', coordinates: [-94.4, 37.7] } as unknown as GeoJsonGeometry;
     const out = buildGeometryMap(BBOX, point);
-    expect(out.polygonPaths).toEqual([]);
+    expect(out.shapePath).toBe('');
     expect(out.tiles.length).toBeGreaterThan(0);
   });
 

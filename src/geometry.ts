@@ -50,7 +50,7 @@ export interface GeometryMarker {
 
 export interface GeometrySvg {
   viewBox: string;
-  polygonPaths: string[];
+  shapePath: string;                // every outer ring as one path, '' when there is no geometry
   marker?: GeometryMarker;          // the incident (`point`), when supplied
   referenceMarker?: GeometryMarker; // the user's reference point, when supplied
 }
@@ -152,7 +152,8 @@ export function markerPath(m: GeometryMarker): string {
 
 /**
  * Projects a bbox (+ optional polygon geometry) into a compact SVG coordinate
- * space and returns the viewBox plus one path `d` per outer ring.
+ * space and returns the viewBox plus the affected area as ONE path `d` (see
+ * `shapePath`).
  *
  * Projection: cos-latitude-corrected equirectangular, y-flipped so north is up.
  *   kx = cos(centroidLat)
@@ -178,13 +179,9 @@ export function buildGeometrySvg(
     maxlat - lat,
   ];
 
-  const polygonPaths = outerRings(geometry)
-    .map(ring => ringToPath(ring, project))
-    .filter((d): d is string => d !== null);
-
   return {
     viewBox,
-    polygonPaths,
+    shapePath: shapePath(geometry, project),
     ...(point && { marker: projectMarker(point, project) }),
     ...(referencePoint && { referenceMarker: projectMarker(referencePoint, project) }),
   };
@@ -196,6 +193,39 @@ function projectMarker(
 ): GeometryMarker {
   const [x, y] = project(lon, lat);
   return { x: Number(fmt(x)), y: Number(fmt(y)) };
+}
+
+// --- One shape, not N regions ----------------------------------------------
+// Providers tile an alert's area into many rings: ECCC puts one <polygon> on
+// every forecast region (15 to 112 per alert, overlapping by 5-15%) and
+// cap_alerts stacks them into a MultiPolygon in feed order. Those interior
+// borders are the issuer's tiling, not alert information (#348), so the
+// builders emit every outer ring as a subpath of ONE path. Under the default
+// `fill-rule: nonzero` that paints the union once, and the card masks the
+// stroke to the outside of the same path so only the merged outline shows.
+// Nonzero only unions rings that wind the same way: opposite windings cancel
+// in the overlap and punch a hole, so `ringToPath` normalises every ring to
+// one orientation. Disjoint parts (islands) stay separate subpaths and draw
+// as separate outlines. Interior holes are still dropped (no provider sends
+// them); with the winding normalised they could be added as reversed subpaths.
+function shapePath(
+  geometry: GeoJsonGeometry | null | undefined,
+  project: (lon: number, lat: number) => [number, number],
+): string {
+  return outerRings(geometry)
+    .map(ring => ringToPath(ring, project))
+    .filter((d): d is string => d !== null)
+    .join('');
+}
+
+// Stable id for the SVG <mask> that trims the outline stroke to the outside
+// of the shape. Fragment ids resolve within the card's shadow root, so this
+// only has to be unique per alert there; it is derived from the alert rather
+// than counted at render time, which keeps render() pure. With `deduplicate:
+// false` the same alert can render twice and the two masks share an id; both
+// hold the same path, so whichever one resolves draws the same picture.
+export function geometryMaskId(provider: string, alertId: string): string {
+  return `wac-geometry-mask-${`${provider}-${alertId}`.replace(/[^A-Za-z0-9_-]+/g, '_')}`;
 }
 
 // Extracts the exterior ring of each polygon. Polygon → its one outer ring;
@@ -217,22 +247,38 @@ function outerRings(geometry?: GeoJsonGeometry | null): number[][][] {
   return [];
 }
 
+// One closed subpath per ring, every ring emitted in the same orientation
+// (positive shoelace area in the y-down projected space) so a nonzero fill
+// over several rings is their union. A ring whose points all project to the
+// same place has zero area and is emitted as it came. The sign of the total
+// area is only a reliable winding for a simple ring; a self-intersecting one
+// (figure-eight) could land either way, but no provider sends those.
 function ringToPath(
   ring: number[][],
   project: (lon: number, lat: number) => [number, number],
 ): string | null {
   if (!Array.isArray(ring) || ring.length === 0) return null;
-  let d = '';
-  for (let i = 0; i < ring.length; i++) {
-    const pt = ring[i];
+  const pts: [number, number][] = [];
+  for (const pt of ring) {
     if (!Array.isArray(pt)) continue;
     const [lon, lat] = pt;
     if (lon === undefined || lat === undefined) continue;
-    const [x, y] = project(lon, lat);
-    d += `${i === 0 ? 'M' : 'L'}${fmt(x)},${fmt(y)}`;
+    pts.push(project(lon, lat));
   }
-  if (!d) return null;
-  return `${d}Z`;
+  if (pts.length === 0) return null;
+  if (signedArea(pts) < 0) pts.reverse();
+  return `${pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${fmt(x)},${fmt(y)}`).join('')}Z`;
+}
+
+// Shoelace formula over projected points; sign gives the winding.
+function signedArea(pts: [number, number][]): number {
+  let area = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[(i + 1) % pts.length];
+    area += x0 * y1 - x1 * y0;
+  }
+  return area / 2;
 }
 
 // Deterministic compact number formatting: round to 5 decimals, trim trailing
@@ -308,7 +354,7 @@ export interface GeometryMap {
   viewBox: string;
   aspect: string;            // "w / h" for CSS aspect-ratio (no letterbox bars)
   tiles: MercatorTile[];
-  polygonPaths: string[];
+  shapePath: string;         // every outer ring as one path, '' when there is no geometry
   attribution: string;
   marker?: GeometryMarker;          // the incident (`point`), in tile space
   referenceMarker?: GeometryMarker; // the user's reference point, in tile space
@@ -352,9 +398,9 @@ function tileHref(template: string, z: number, x: number, y: number): string {
 
 /**
  * Projects the bbox (+ optional polygon) into Web-Mercator tile space and
- * returns the SVG viewBox, the covering raster tiles, and the polygon paths in
- * that same space. Tiles are bounded; geometry that is absent/unknown yields no
- * paths (tiles + frame still render). Pure — no DOM, no network.
+ * returns the SVG viewBox, the covering raster tiles, and the shape path in
+ * that same space. Tiles are bounded; geometry that is absent/unknown yields an
+ * empty path (tiles + frame still render). Pure — no DOM, no network.
  */
 export function buildGeometryMap(
   bbox: Bbox,
@@ -408,15 +454,11 @@ export function buildGeometryMap(
     const [px, py] = worldPx(lon, lat, z);
     return [px - ox, py - oyN];
   };
-  const polygonPaths = outerRings(geometry)
-    .map(ring => ringToPath(ring, project))
-    .filter((d): d is string => d !== null);
-
   return {
     viewBox,
     aspect,
     tiles,
-    polygonPaths,
+    shapePath: shapePath(geometry, project),
     attribution,
     ...(opts?.point && { marker: projectMarker(opts.point, project) }),
     ...(opts?.referencePoint && { referenceMarker: projectMarker(opts.referencePoint, project) }),

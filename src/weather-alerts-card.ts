@@ -65,6 +65,7 @@ import {
   buildGeometrySvg,
   buildGeometryMap,
   framePointsBbox,
+  geometryMaskId,
   markerPath,
   REFERENCE_FRAME_MAX_KM,
   Bbox,
@@ -1869,11 +1870,11 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   // Inline SVG mini-map: the affected area (cap_alerts polygon over its bbox
-  // frame) or, for point-incident sources, a marker at the incident inside a
-  // synthesized frame. bbox draws an immediate frame with zero network; the
-  // polygon overlays once the out-of-band fetch lands. Reads cache only —
-  // purity preserved. The severity color flows in via the inherited --color
-  // custom property.
+  // frame, merged into one outline) or, for point-incident sources, a marker
+  // at the incident inside a synthesized frame. bbox draws an immediate frame
+  // with zero network; the polygon overlays once the out-of-band fetch lands.
+  // Reads cache only — purity preserved. The severity color flows in via the
+  // inherited --color custom property.
   private _renderGeometry(alert: WeatherAlert): TemplateResult | typeof nothing {
     if (this._config?.showGeometry !== true) return nothing;
     const { bbox, point, referencePoint } = this._geometryPoints(alert);
@@ -1888,7 +1889,7 @@ export class WeatherAlertsCard extends LitElement {
         return this._renderGeometryMap(alert, bbox, geometry, point, referencePoint);
       }
     }
-    const { viewBox, polygonPaths, marker, referenceMarker } = buildGeometrySvg(bbox, geometry, point, referencePoint);
+    const { viewBox, shapePath, marker, referenceMarker } = buildGeometrySvg(bbox, geometry, point, referencePoint);
     return html`
       <svg
         class="alert-geometry${alert.bbox ? '' : ' point'}"
@@ -1898,9 +1899,41 @@ export class WeatherAlertsCard extends LitElement {
         aria-label=${this._geometryLabel(alert, referenceMarker !== undefined)}
       >
         <rect class="geometry-frame" x="0" y="0" width="100%" height="100%"></rect>
-        ${polygonPaths.map(d => svg`<path class="geometry-shape" d=${d}></path>`)}
+        ${this._renderGeometryShape(alert, viewBox, shapePath, false)}
         ${this._renderGeometryMarkers(marker, referenceMarker, false)}
       </svg>
+    `;
+  }
+
+  // The affected area as ONE shape (#348, the why is in geometry.ts): the
+  // nonzero fill paints the union once, and the outline is the same path
+  // stroked under a mask of itself, so interior region borders vanish and the
+  // merged edge keeps its outer half (stroke widths in the stylesheet are
+  // doubled to compensate). A cap_alerts bbox is the polygon's own extent, so
+  // the shape touches the viewBox edges and that outer half lies just outside
+  // them: the mask region reaches past the viewBox and the shape-style SVG
+  // lets it overflow. The mask is referenced by attribute, which resolves
+  // within the shadow root; an engine that cannot resolve it draws the stroke
+  // unmasked (the old per-region look at double weight) rather than dropping
+  // the shape.
+  private _renderGeometryShape(alert: WeatherAlert, viewBox: string, shapePath: string, casing: boolean): TemplateResult | typeof nothing {
+    if (!shapePath) return nothing;
+    const maskId = geometryMaskId(alert.provider, alert.id);
+    const maskRef = `url(#${maskId})`;
+    // Mask region: the viewBox plus a full viewBox on every side, in user
+    // units, so the outer stroke half is never trimmed by the region itself.
+    const [, , w, h] = viewBox.split(' ').map(Number);
+    const region = { x: -w, y: -h, width: 3 * w, height: 3 * h };
+    return svg`
+      <defs>
+        <mask id=${maskId} maskUnits="userSpaceOnUse" x=${region.x} y=${region.y} width=${region.width} height=${region.height}>
+          <rect x=${region.x} y=${region.y} width=${region.width} height=${region.height} fill="#fff"></rect>
+          <path d=${shapePath} fill="#000" fill-rule="nonzero"></path>
+        </mask>
+      </defs>
+      <path class="geometry-fill" d=${shapePath} fill-rule="nonzero"></path>
+      ${casing ? svg`<path class="geometry-shape-casing" d=${shapePath} mask=${maskRef}></path>` : nothing}
+      <path class="geometry-shape" d=${shapePath} mask=${maskRef}></path>
     `;
   }
 
@@ -1928,9 +1961,9 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   // 'map' style: OSM raster tiles (browser-loaded <image>) behind the polygon.
-  // Tiles/polygon share the Web-Mercator tile space so they align; the polygon
-  // gets a white casing for legibility over busy tiles. Tile failure / offline
-  // leaves the frame + polygon visible. The attribution lives in an HTML overlay
+  // Tiles/polygon share the Web-Mercator tile space so they align; the merged
+  // outline gets a white casing for legibility over busy tiles. Tile failure /
+  // offline leaves the frame + polygon visible. The attribution lives in an HTML overlay
   // (CSS-positioned) rather than the SVG so it doesn't scale with the viewBox.
   // Caller guarantees either a user tile override or a live proxy token.
   private _renderGeometryMap(
@@ -1950,7 +1983,7 @@ export class WeatherAlertsCard extends LitElement {
     const attribution = this._config?.geometryTileAttribution
       ?? (override ? '© OpenStreetMap' : DEFAULT_TILE_ATTRIBUTION);
     const invert = !override && this._themeMode === 'dark';
-    const { viewBox, aspect, tiles, polygonPaths, marker, referenceMarker } = buildGeometryMap(
+    const { viewBox, aspect, tiles, shapePath, marker, referenceMarker } = buildGeometryMap(
       bbox,
       geometry,
       { tileUrl, attribution, point, referencePoint },
@@ -1975,8 +2008,7 @@ export class WeatherAlertsCard extends LitElement {
             ></image>`)}
           </g>
           <rect class="geometry-frame" x="0" y="0" width="100%" height="100%"></rect>
-          ${polygonPaths.map(d => svg`<path class="geometry-shape-casing" d=${d}></path>`)}
-          ${polygonPaths.map(d => svg`<path class="geometry-shape" d=${d}></path>`)}
+          ${this._renderGeometryShape(alert, viewBox, shapePath, true)}
           ${this._renderGeometryMarkers(marker, referenceMarker, true)}
         </svg>
         <span class="geometry-attrib">${attribution}</span>
