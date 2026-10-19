@@ -225,7 +225,7 @@ WebP.
 
 ## Agent Rules
 
-These rules apply to all autonomous agent skills (`/explore`, `/plan`, `/implement`, `/fix`, `/review`).
+These rules apply to any autonomous agent working in this repository.
 
 ### Before editing
 - Read every file before referencing or modifying it
@@ -243,38 +243,28 @@ These rules apply to all autonomous agent skills (`/explore`, `/plan`, `/impleme
 - Build must pass; fix any new lint errors or test failures introduced
 
 ### Git discipline
-- Never auto-commit, push, or open PRs — defer to the user or `/commit-push-pr`
+- Never auto-commit, push, or open PRs — defer to the user
 - Commit format: `type(scope): description` (types: feat, fix, docs, refactor, test, chore)
 - Branch format: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`
 
 ### Output
 - Present results directly to the user
-- Do not save artifacts to disk unless the skill specifies it or the user requests it
-
-### Skills Reference
-All agent skills are defined in `.claude/commands/`. When modifying a skill, also update this documentation to reflect changes:
-- `/explore` — repository discovery and context reports
-- `/plan` — implementation plans (saves to `plans/<slug>.md`)
-- `/implement` — code implementation from an approved plan
-- `/fix` — lightweight bug fixes (skips full plan cycle)
-- `/review` — code review with confidence-based filtering
-- `/release` — automated release workflow
+- Do not save artifacts to disk unless the user requests it
 
 ## Workflow
 
 - `main` is protected: all changes go through PRs with required status checks (build, lint, test, HACS validation).
 - Only squash merges are allowed — one commit per PR on `main`.
 - Feature branches: `feat/<name>`, `fix/<name>`, `chore/<name>`, etc.
-- Use the `/release` skill to perform releases (creates a release branch, PR, tag, and GitHub Release)
-- New release workflow with deterministic releases:
-  - Prereleases (alpha/beta/rc) auto-promote to GA versions when no new commits exist
-  - Dry-run mode uses `origin/main` as base; actual releases validate strict conditions
+- Releases are two scripts: `scripts/release.sh` opens the release PR, `scripts/publish.sh` tags and publishes after merge (steps under HACS Distribution).
+  - `release.sh` picks the version from conventional commits; `--alpha`/`--beta`/`--rc` cut a prerelease, and a prerelease with no commits after it promotes to its GA version.
+  - `release.sh --dry-run` previews from `origin/main`; a real run requires a clean, synced `main` and passes lint, tests and the screenshot refresh first.
 
 ## HACS Distribution
 
 - `hacs.json` — HACS manifest (name, filename).
 - `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` to the release.
-- To release, use the `/release` skill or follow its steps manually:
+- To release, run `scripts/release.sh` (steps 1-3) and, after the PR merges, `scripts/publish.sh X.Y.Z` (steps 4-5). What they do:
   1. Create `release/vX.Y.Z` branch from `main`.
   2. Bump the version in `package.json` and regenerate `CHANGELOG.md` with
      `npx git-cliff --config cliff.toml --tag vX.Y.Z --output CHANGELOG.md`.
