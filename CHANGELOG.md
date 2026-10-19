@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.8.0 (2026-10-19)
+
+### Added
+- Inmet - adding bbox, area and timezone (#350)
+- Merge an alert's regions into one outline on the mini-map (#352)
+
+### Documentation
+- Add GeoSphere Austria (municipality warnings) recipe (#347)
+- Link the GeoSphere Austria recipe from the DWD provider notes (#349)
+- Finish the INMET move from city point to bbox (#351)
+
 ## 3.7.0 (2026-10-13)
 
 ### Added
