@@ -47,7 +47,6 @@ coverage/
 # AI tools
 .aider*
 .claude/*
-!.claude/commands/
 plans/
 analysis/
 
