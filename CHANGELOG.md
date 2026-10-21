@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.8.1 (2026-10-21)
+
+### Fixed
+- Don't read unknown on a diagnostic sibling as a dark device (#362)
+
+### Documentation
+- Drop the skill references from AGENTS.md and the CLAUDE.md shim (#355)
+
+### Internal
+- Bump dompurify from 3.4.16 to 3.4.17 (#359)
+- Bump the dev-deps group with 3 updates (#358)
+- Bump the vitest group across 1 directory with 3 updates (#356)
+- Bump the eslint group across 1 directory with 2 updates (#360)
+- Bump vite from 8.3.1 to 8.3.4 (#361)
+
 ## 3.8.0 (2026-10-19)
 
 ### Added
