@@ -6,7 +6,7 @@ import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, Al
 import {
   configuredDevices,
   resolveDeviceAlertEntities,
-  deviceEntityIds,
+  deviceRegistryEntries,
   deviceHasAnyEntity,
   subscribeEntityRegistry,
 } from './registry';
@@ -1208,7 +1208,13 @@ export class WeatherAlertsCard extends LitElement {
   //     the registry has no name for it.
   //
   // Command entities are excluded from the device scan (see COMMAND_DOMAINS):
-  // they carry no data, and their idle state is `unknown`.
+  // they carry no data, and their idle state is `unknown`. On a diagnostic
+  // entity (`entity_category`), `unknown` is likewise not a fault: cap_alerts
+  // 0.8 stamps its last-updated sensor on the first change to the alert set
+  // and leaves it `unknown` until then, so a quiet zero-alert device read as
+  // dark on every install for days. `unavailable` is the integration's failure
+  // signal and still counts on any entity, so a failed poll on a zero-alert
+  // device is caught through its count sensor as before.
   private _brokenSources(): BrokenSource[] {
     if (!this.hass) return [];
     const sources: BrokenSource[] = [];
@@ -1224,13 +1230,15 @@ export class WeatherAlertsCard extends LitElement {
     for (const deviceId of configuredDevices(this._config)) {
       let hasParseable = false;
       let hasErrored = false;
-      for (const id of deviceEntityIds(this.hass, deviceId, this._registryEntries)) {
+      for (const entry of deviceRegistryEntries(this.hass, deviceId, this._registryEntries)) {
+        const id = entry.entity_id;
         if (COMMAND_DOMAINS.has(id.split('.', 1)[0] ?? '')) continue;
         const e = this.hass.states[id];
         if (!e) continue;
         const parses = getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length > 0;
         if (parses) hasParseable = true;
-        else if (e.state === 'unavailable' || e.state === 'unknown') hasErrored = true;
+        else if (e.state === 'unavailable') hasErrored = true;
+        else if (e.state === 'unknown' && entry.entity_category !== 'diagnostic') hasErrored = true;
       }
       if (!hasParseable && hasErrored) sources.push({ name: this._deviceName(deviceId) });
     }

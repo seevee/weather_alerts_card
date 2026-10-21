@@ -329,6 +329,70 @@ function hasEl(card: CardInternals, selector: string): boolean {
   return shadow(card).querySelector(selector) !== null;
 }
 
+describe('WeatherAlertsCard dark-device detection and diagnostic siblings', () => {
+  // cap_alerts 0.8 leaves the last-updated sensor at `unknown` until the alert
+  // set first changes, so a quiet zero-alert device always has one `unknown`
+  // entity. That is a resting state on a diagnostic sibling, not a dark device.
+  const COUNT = 'sensor.cap_alerts_meteoalarm_cher_alert_count';
+  const LAST = 'sensor.cap_alerts_meteoalarm_cher_last_updated';
+  const BUTTON = 'button.cap_alerts_meteoalarm_cher_refresh';
+  const quietDevice = (countState: string) => makeHass(
+    [
+      entry(COUNT, DEVICE, { entity_category: 'diagnostic' }),
+      entry(LAST, DEVICE, { entity_category: 'diagnostic' }),
+      entry(BUTTON, DEVICE, { entity_category: 'diagnostic' }),
+    ],
+    {
+      [COUNT]: { state: countState, attributes: { friendly_name: 'Cher Alert count' } },
+      [LAST]: { state: 'unknown', attributes: { friendly_name: 'Cher Last updated', device_class: 'timestamp' } },
+      [BUTTON]: { state: 'unknown', attributes: { friendly_name: 'Cher Refresh' } },
+    },
+    { [DEVICE]: { id: DEVICE, name: 'CAP Alerts METEOALARM', name_by_user: 'CAP Alerts METEOALARM Cher' } },
+  );
+
+  it('does not read `unknown` on a diagnostic sibling as a dark device', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE },
+      quietDevice('0'),
+    );
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    expect(shadow(card).querySelector('.no-alerts-caveat')).toBeNull();
+    expect(shadow(card).querySelector('.degraded-badge')).toBeNull();
+    cleanup();
+  });
+
+  it('still reads `unavailable` on a diagnostic sibling as a dark device', async () => {
+    // A failed poll takes every coordinator entity to `unavailable`; on a
+    // zero-alert device the count sensor is the one that says so.
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE },
+      quietDevice('unavailable'),
+    );
+    const caveat = shadow(card).querySelector('.no-alerts-caveat')?.textContent || '';
+    expect(caveat).toContain('CAP Alerts METEOALARM Cher');
+    cleanup();
+  });
+
+  it('still reads `unknown` on a non-diagnostic entity with no alert as dark', async () => {
+    const ALERT = 'sensor.cap_alerts_meteoalarm_cher_cap_alert_wind_warning_0badf00d';
+    const hass = makeHass(
+      [entry(ALERT, DEVICE), entry(COUNT, DEVICE, { entity_category: 'diagnostic' })],
+      {
+        [ALERT]: { state: 'unknown', attributes: {} },
+        [COUNT]: { state: '1', attributes: {} },
+      },
+      { [DEVICE]: { id: DEVICE, name: 'CAP Alerts METEOALARM' } },
+    );
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE },
+      hass,
+    );
+    const caveat = shadow(card).querySelector('.no-alerts-caveat')?.textContent || '';
+    expect(caveat).toContain('CAP Alerts METEOALARM');
+    cleanup();
+  });
+});
+
 describe('WeatherAlertsCard render in device mode', () => {
   const ALERT_ID = 'sensor.cap_alerts_x_cap_alert_frost_aaa';
 
