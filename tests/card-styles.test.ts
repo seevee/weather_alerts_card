@@ -94,7 +94,7 @@ describe('cardStyles progress decorations', () => {
     // Stripe bands are the progress color everywhere; the --wac-stripe-paint
     // indirection (once used to pre-tint compact preparation) is gone.
     expect(css).not.toContain('--wac-stripe-paint');
-    expect(css).toMatch(/\.deco-striped \.progress-fill,\s*\.compact \.deco-striped\.alert-card::before\s*{[^}]*var\(--wac-progress-fg\) 25%/);
+    expect(css).toMatch(/\.deco-striped \.progress-fill::after,\s*\.compact \.deco-striped\.alert-card::before\s*{[^}]*var\(--wac-progress-fg\) 25%/);
   });
 
   it('renders every phase at full opacity (dimness is not a phase cue)', () => {
@@ -106,9 +106,12 @@ describe('cardStyles progress decorations', () => {
   });
 
   it('pulses the ongoing bar from full progress color (matches active brightness)', () => {
-    // The ongoing-pulse breathe now peaks at the solid progress color rather
-    // than a dimmed color-mix, so ongoing is never fainter than active.
-    expect(css).toMatch(/@keyframes ongoing-pulse\s*{[^}]*0%\s*{\s*background:\s*var\(--wac-progress-fg\)\s*;\s*}/);
+    // The ongoing-pulse breathe peaks at the solid progress color (opacity 1)
+    // and dips to ~70%, so ongoing is never fainter than active. It animates
+    // opacity rather than the background color so it stays off the paint path
+    // (#364).
+    expect(css).toMatch(/@keyframes ongoing-pulse\s*{[^}]*0%\s*{\s*opacity:\s*1\s*;\s*}/);
+    expect(css).toMatch(/@keyframes ongoing-pulse\s*{[\s\S]*?50%\s*{\s*opacity:\s*0\.7\s*;\s*}/);
   });
 
   it('keeps the expired fill as a fixed dimmed solid bar (no deco class)', () => {
@@ -127,7 +130,7 @@ describe('cardStyles progress decorations', () => {
     // Retargeted from .active to .deco-shimmer so the freeze follows the pattern
     // into any phase it is placed in.
     expect(css).toContain('.no-animations .deco-shimmer .progress-fill');
-    expect(css).toContain('.no-animations.compact .deco-shimmer.alert-card::before');
+    expect(css).toContain('.no-animations.compact:not(.fill-mode-background) .deco-shimmer.alert-card::before');
   });
 });
 
@@ -176,5 +179,54 @@ describe('cardStyles progress-fill wash', () => {
     // The wash is strictly additive: the thin track and its fill still exist.
     expect(css).toContain('.progress-track');
     expect(css).toContain('.progress-fill');
+  });
+});
+
+// Guard for #364: every keyframe animates only transform or opacity. Animating
+// box-shadow (the former severe/extreme pulse-border) or background-position
+// (the stripe march and shimmer sweep) repaints and re-rasters the card on
+// every frame; two idle compact alerts held an Echo Show 8 at ~78% CPU.
+describe('cardStyles compositor-only motion (#364)', () => {
+  const css = cardStyles.cssText;
+
+  it('declares only transform/opacity inside every @keyframes block', () => {
+    const blocks = [...css.matchAll(/@keyframes\s+([\w-]+)\s*{([\s\S]*?)}\s*}/g)];
+    expect(blocks.length).toBeGreaterThanOrEqual(4);
+    for (const [, name, body] of blocks) {
+      const props = [...body.matchAll(/([a-z-]+)\s*:/g)].map(m => m[1]);
+      expect(props.length, name).toBeGreaterThan(0);
+      for (const prop of props) expect(['transform', 'opacity'], `${name} animates ${prop}`).toContain(prop);
+    }
+  });
+
+  it('replaces the box-shadow pulse-border with an opacity-only .pulse-ring', () => {
+    expect(css).not.toContain('pulse-border');
+    expect(css).toContain('@keyframes pulse-ring');
+    expect(css).toMatch(/\.pulse-ring\s*{[^}]*animation:\s*pulse-ring/);
+    // The ring is hidden, not merely frozen, when animations are off: a static
+    // inner ring is not part of the still rendering.
+    expect(css).toMatch(/\.no-animations \.pulse-ring\s*{\s*display:\s*none/);
+  });
+
+  it('moves the stripe and shimmer patterns onto an overhanging, translated surface', () => {
+    // Full mode: the pattern lives on .progress-fill::after, clipped by the fill.
+    expect(css).toMatch(/\.progress-fill\s*{[^}]*overflow:\s*hidden/);
+    expect(css).toMatch(/\.deco-striped \.progress-fill::after,\s*\.deco-shimmer \.progress-fill::after\s*{[^}]*left:\s*-100%;\s*right:\s*-100%/);
+    // Compact: the ::before bar is itself the surface, and ::after covers the
+    // elapsed portion on top instead of laying a track underneath.
+    expect(css).toMatch(/\.compact \.alert-card::before\s*{[^}]*left:\s*-100%;\s*right:\s*-100%/);
+    expect(css).toMatch(/\.compact \.alert-card::after\s*{[^}]*width:\s*var\(--progress, 0%\)[^}]*z-index:\s*2/);
+    // The wash re-asserts a positioned edge: no cover, no pattern.
+    expect(css).toMatch(/\.fill-mode-background\.compact \.alert-card::before\s*{[^}]*left:\s*var\(--progress, 0%\)[^}]*transform:\s*none/);
+    expect(css).not.toContain('background-position: -33%');
+  });
+
+  it('steps the stripe march one device pixel at a time so the composited texture stays crisp', () => {
+    // A linear transform leaves the layer at fractional offsets, where it is
+    // bilinear-resampled and the diagonal edges blur; steps() tied to the tile
+    // size (and doubled/tripled per dppx) keeps every frame pixel-exact.
+    expect(css).toMatch(/animation:\s*stripe-march var\(--wac-stripe-dur, 6s\) steps\(var\(--wac-stripe-steps, 24\)\) infinite/);
+    expect(css).toMatch(/\.compact \.alert-card::before\s*{[^}]*--wac-stripe-steps:\s*12/);
+    expect(css).toMatch(/@media \(min-resolution: 2dppx\)\s*{[^@]*--wac-stripe-steps:\s*48[^@]*--wac-stripe-steps:\s*24/);
   });
 });

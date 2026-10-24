@@ -1,38 +1,52 @@
 import { css } from 'lit';
 
 export const cardStyles = css`
-  @keyframes pulse-border {
-    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wac-fg) 70%, transparent); }
-    70% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--wac-fg) 0%, transparent); }
-    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--wac-fg) 0%, transparent); }
+  /* --- MOTION -------------------------------------------------------------
+     Every keyframe below animates only transform or opacity. Those two run on
+     the compositor thread; anything else (box-shadow, background-position,
+     background color) forces a main-thread repaint and a re-raster on every
+     frame for as long as an alert is on screen. On a low-end kiosk tablet that
+     was 70%+ CPU for two idle alerts (#364). Keep it that way: no paint-path
+     property may be animated here. */
+
+  /* Severe/extreme breathe: an inset ring on .pulse-ring (a real child, since
+     .alert-card clips its overflow and both pseudo-elements are taken) fading
+     in and out. Peaks at ~70% like the former outward halo did. */
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.7; }
   }
 
   /* Indeterminate "ongoing" breathe. Peaks at the full progress color (same
      brightness as an active bar) and eases down to a still-prominent ~70%, so
-     ongoing reads as full-strength-and-alive rather than dimmed — opacity is not
-     a phase cue here (direction/fill/labels carry the phase). */
+     ongoing reads as full-strength-and-alive rather than dimmed — opacity here
+     is motion, not a phase cue (direction/fill/labels carry the phase). */
   @keyframes ongoing-pulse {
-    0% { background: var(--wac-progress-fg); }
-    50% { background: color-mix(in srgb, var(--wac-progress-fg) 70%, transparent); }
-    100% { background: var(--wac-progress-fg); }
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
   }
 
-  /* Shared, direction-parametrized stripe march. --wac-flow (±1) is set by the
-     phase and flips the direction; --wac-stripe-tile is the loop tile (24px full,
-     12px compact) so one keyframe loops seamlessly at either size. A negative
-     flow reproduces the former direction-specific marches (preparation flows
-     left); a positive flow marches right (e.g. a striped active fill). */
+  /* Shared, direction-parametrized stripe march. The striped surface is painted
+     one full width past each end of its bar (left/right: -100%) and the whole
+     surface slides by one tile, so the loop is seamless and the overhang is
+     clipped by the bar's own overflow. --wac-flow (±1) is set by the phase and
+     flips the direction; --wac-stripe-tile is the loop tile (24px full, 12px
+     compact). A negative flow marches left (preparation); positive marches
+     right (e.g. a striped active fill). */
   @keyframes stripe-march {
-    to { background-position: calc(var(--wac-flow, 1) * var(--wac-stripe-tile, 24px)) 0; }
+    to { transform: translateX(calc(var(--wac-flow, 1) * var(--wac-stripe-tile, 24px))); }
   }
 
-  /* Highlight sweep. Authored canonically in the positive (rightward) direction
-     and mirrored by --wac-flow: at flow 1 it sweeps -75%→175%, at flow -1 it
-     sweeps 175%→-75%. The old fixed -75%→175% is the flow-1 case. */
+  /* Highlight sweep. The band sits centered on a surface three bar-widths wide
+     (left/right: -100%), so one bar width is 33.33% of the surface and the
+     40%-of-bar band is 13.33%. Sliding the surface ±23.33% carries the band
+     from fully off one end to fully off the other. Authored rightward and
+     mirrored by --wac-flow. */
   @keyframes fill-shimmer {
-    0% { background-position: calc(50% - var(--wac-flow, 1) * 125%) 0; }
-    60% { background-position: calc(50% + var(--wac-flow, 1) * 125%) 0; }
-    100% { background-position: calc(50% + var(--wac-flow, 1) * 125%) 0; }
+    0% { transform: translateX(calc(var(--wac-flow, 1) * -23.333%)); }
+    60% { transform: translateX(calc(var(--wac-flow, 1) * 23.333%)); }
+    100% { transform: translateX(calc(var(--wac-flow, 1) * 23.333%)); }
   }
 
   :host {
@@ -215,8 +229,20 @@ export const cardStyles = css`
 
   .alert-card.severity-extreme,
   .alert-card.severity-severe {
-    animation: pulse-border 2s infinite;
     border-color: var(--color);
+  }
+
+  /* Rendered only for severe/extreme alerts. Sits under the content and the
+     compact bar (z-index 0 vs 1/2) so it reads as a glowing inner edge. */
+  .pulse-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    box-shadow: inset 0 0 0 2px var(--wac-fg);
+    opacity: 0;
+    animation: pulse-ring 2s ease-in-out infinite;
   }
 
   /* --- HEADER --- */
@@ -434,6 +460,7 @@ export const cardStyles = css`
     height: 100%;
     position: absolute;
     top: 0;
+    overflow: hidden;
     transition: width 0.3s ease;
   }
 
@@ -467,17 +494,34 @@ export const cardStyles = css`
 
   /* --- PROGRESS DECORATIONS (pattern + animation, phase-independent) ---
      Emitted as deco-<pattern> on the alert-card root from progressStyle. Each
-     rule pairs a full-mode selector (.deco-x .progress-fill) with its compact
-     equivalent (.compact .deco-x.alert-card::before). Direction/tile/duration are
-     supplied by the phase via --wac-flow / --wac-stripe-tile / --wac-stripe-dur so
-     any pattern adopts the phase it lands in. */
+     rule pairs a full-mode selector with its compact equivalent. Direction/tile/
+     duration are supplied by the phase via --wac-flow / --wac-stripe-tile /
+     --wac-stripe-dur so any pattern adopts the phase it lands in.
+
+     Moving patterns (striped, shimmer) are painted on a surface that overhangs
+     the bar by one bar width at each end and are animated with transform only
+     (see MOTION above). In full mode that surface is .progress-fill::after,
+     clipped by the fill's overflow:hidden. In compact mode the bar *is* the
+     ::before pseudo-element, which cannot carry children, so the ::before itself
+     is the overhanging surface (see .compact .alert-card::before) and ::after
+     covers the elapsed portion on top instead of laying a track underneath. */
   .deco-solid .progress-fill,
   .compact .deco-solid.alert-card::before {
     background-image: none;
     animation: none;
   }
 
-  .deco-striped .progress-fill,
+  .deco-striped .progress-fill::after,
+  .deco-shimmer .progress-fill::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -100%;
+    right: -100%;
+  }
+
+  .deco-striped .progress-fill::after,
   .compact .deco-striped.alert-card::before {
     background-image: linear-gradient(
       -45deg,
@@ -489,13 +533,27 @@ export const cardStyles = css`
       transparent 75%
     );
     background-size: var(--wac-stripe-tile, 24px) var(--wac-stripe-tile, 24px);
-    animation: stripe-march var(--wac-stripe-dur, 6s) linear infinite;
+    /* steps(), not linear: a composited texture drawn at a fractional pixel
+       offset is bilinear-resampled, which blurs the diagonal edges and makes
+       the slow (4px/s) crawl look like it swims. Stepping one device pixel at a
+       time keeps every frame pixel-exact. --wac-stripe-steps is the tile in
+       device pixels (24 full / 12 compact, scaled by the dppx blocks below). */
+    animation: stripe-march var(--wac-stripe-dur, 6s) steps(var(--wac-stripe-steps, 24)) infinite;
+  }
+  @media (min-resolution: 2dppx) {
+    .deco-striped .progress-fill::after { --wac-stripe-steps: 48; }
+    .compact .deco-striped.alert-card::before { --wac-stripe-steps: 24; }
+  }
+  @media (min-resolution: 3dppx) {
+    .deco-striped .progress-fill::after { --wac-stripe-steps: 72; }
+    .compact .deco-striped.alert-card::before { --wac-stripe-steps: 36; }
   }
 
-  .deco-shimmer .progress-fill,
+  .deco-shimmer .progress-fill::after,
   .compact .deco-shimmer.alert-card::before {
     background-image: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
-    background-size: 40% 100%;
+    background-size: 13.333% 100%;
+    background-position: 50% 0;
     background-repeat: no-repeat;
     animation: fill-shimmer 5s ease-in-out infinite;
   }
@@ -900,8 +958,12 @@ export const cardStyles = css`
     display: block;
     top: auto;
     bottom: 0;
-    left: var(--progress, 0%);
-    right: 0;
+    /* Spans the full width plus a one-width overhang each side so a moving
+       pattern (stripes, shimmer) can slide under the card's overflow clip. The
+       elapsed portion up to --progress is covered by ::after, which is what
+       gives the bar its visible left edge. */
+    left: -100%;
+    right: -100%;
     width: auto;
     height: 4px;
     border-radius: 0;
@@ -910,6 +972,7 @@ export const cardStyles = css`
        full progress-fill; scoped to the ::before so the compact-expanded
        .progress-fill keeps the 24px / 6s defaults. */
     --wac-stripe-tile: 12px;
+    --wac-stripe-steps: 12;
     --wac-stripe-dur: 3s;
   }
 
@@ -962,15 +1025,24 @@ export const cardStyles = css`
     border-top: 1px solid var(--divider-color);
   }
 
-  /* Compact progress track (bottom border) */
+  /* Compact track: ::after paints the elapsed portion (0 → --progress) in the
+     track color ON TOP of the full-width ::before fill, so the fill's visible
+     left edge is a clip, not a position, and the fill can translate freely. */
   .compact .alert-card::after {
     content: "";
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0;
+    width: var(--progress, 0%);
     height: 4px;
     background: var(--secondary-background-color);
+    z-index: 2;
+  }
+  /* Ongoing never has an elapsed portion, so ::after reverts to a full-width
+     track underneath the fill (keeps the pulse trough on the track color). */
+  .compact .ongoing.alert-card::after {
+    width: 100%;
+    z-index: 0;
   }
   /* Compact phase rules mirror the full-mode split: base color / position /
      flow only; the pattern + animation comes from the .deco-* classes above. */
@@ -991,10 +1063,12 @@ export const cardStyles = css`
   .compact .preparation.deco-striped.alert-card::before,
   .compact .active.deco-striped.alert-card::before,
   .compact .ongoing.deco-striped.alert-card::before {
-    background-color: transparent;
+    /* The track color, not transparent: nothing lies under the un-elapsed part
+       of the ::before any more (see the ::after cover), so the gaps between
+       stripes paint the track themselves. */
+    background-color: var(--secondary-background-color);
   }
   .compact .ongoing.alert-card::before {
-    left: 0;
     /* Color longhand only, so a non-default ongoing pattern's background-image
        (from a .deco-* class) survives; the shorthand would reset it. */
     background-color: var(--wac-progress-fg);
@@ -1039,6 +1113,12 @@ export const cardStyles = css`
   .fill-mode-background.compact .alert-card::before {
     top: 0;
     height: auto;
+    /* Back to a positioned edge: the wash has no ::after cover (hidden below)
+       and never carries a moving pattern (the frozen-shimmer freeze rule
+       excludes it too). */
+    left: var(--progress, 0%);
+    right: 0;
+    transform: none;
     z-index: 0;
     opacity: var(--wac-progress-fill-opacity);
     background-image: none;
@@ -1071,15 +1151,22 @@ export const cardStyles = css`
   .no-animations .alert-card {
     animation: none !important;
   }
+  .no-animations .pulse-ring {
+    display: none;
+  }
   .no-animations .progress-fill,
+  .no-animations .progress-fill::after,
   .no-animations .alert-card::before,
   .no-animations .alert-card::after {
     animation: none !important;
     transition: none !important;
   }
-  .no-animations .deco-shimmer .progress-fill,
-  .no-animations.compact .deco-shimmer.alert-card::before {
-    background-position: -33% 0 !important;
+  /* Frozen shimmer: park the band half-visible at the bar's leading edge (the
+     former -33% background-position), not off-screen, so the pattern still
+     reads as shimmer at rest. */
+  .no-animations .deco-shimmer .progress-fill::after,
+  .no-animations.compact:not(.fill-mode-background) .deco-shimmer.alert-card::before {
+    transform: translateX(calc(var(--wac-flow, 1) * -16.667%)) !important;
   }
 
   /* --- PREVIEW LABEL --- */
@@ -1160,9 +1247,9 @@ export const cardStyles = css`
     border: none;
     border-radius: 0;
     box-shadow: none;
-    /* No pulse-border for extreme/severe: a modal already has the user's full
-       attention, and a pulsing frame around it only competes with the text. */
-    animation: none;
+    /* No severe/extreme pulse here: the dialog renders the body straight into
+       its own frame (no .pulse-ring), since a modal already has the user's full
+       attention and a breathing edge would only compete with the text. */
   }
 
   /* --- EMPTY STATE --- */

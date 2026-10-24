@@ -1095,6 +1095,16 @@ export class WeatherAlertsCard extends LitElement {
     return `deco-${deco} icon-border-${icon}`;
   }
 
+  // Severe/extreme alerts breathe. The ring is a real child rather than a
+  // box-shadow keyframe on the card: animating box-shadow repaints the whole
+  // card every frame, which pinned a kiosk tablet at 70%+ CPU (#364). The ring
+  // animates opacity only, so it runs on the compositor.
+  private _renderPulseRing(alert: WeatherAlert): TemplateResult | typeof nothing {
+    return alert.severity === 'severe' || alert.severity === 'extreme'
+      ? html`<div class="pulse-ring" aria-hidden="true"></div>`
+      : nothing;
+  }
+
   // Resolves to 'light' or 'dark' so CSS boost rules only activate on the
   // matching side. Prefers HA's authoritative darkMode; falls back to
   // prefers-color-scheme when HA hasn't reported one yet (e.g., initial
@@ -1530,6 +1540,7 @@ export class WeatherAlertsCard extends LitElement {
         @click=${actionable ? () => this._onCardAction(alert) : nothing}
         @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
       >
+        ${this._renderPulseRing(alert)}
         <div
           class="alert-header-row compact-row"
           @click=${tapAction ? nothing : () => this._toggleDetails(alert.id)}
@@ -1620,6 +1631,7 @@ export class WeatherAlertsCard extends LitElement {
         @click=${actionable ? () => this._onCardAction(alert) : nothing}
         @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
       >
+        ${this._renderPulseRing(alert)}
         ${this._renderAlertBody(alert, progress, { expanded, inPopup: false })}
       </div>
     `;

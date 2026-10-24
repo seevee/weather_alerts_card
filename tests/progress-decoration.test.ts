@@ -149,3 +149,80 @@ describe('ongoing progress-fill regression', () => {
     cleanup();
   });
 });
+
+// #364: motion must stay on the compositor. These read the live animations the
+// browser actually runs on the mounted card and check both which elements carry
+// them and which properties they touch.
+describe('compositor-only motion (#364)', () => {
+  function severeHass(): HomeAssistant {
+    const hass = phasedHass();
+    const alerts = (hass.states['sensor.nws_alerts'].attributes as { Alerts: Array<{ ID: string; Severity: string }> }).Alerts;
+    alerts.find(a => a.ID === 'prep')!.Severity = 'Severe';
+    alerts.find(a => a.ID === 'ongoing')!.Severity = 'Extreme';
+    return hass;
+  }
+
+  function shadow(card: CardInternals): ShadowRoot {
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    return root;
+  }
+
+  function animatedProperties(root: ShadowRoot): Set<string> {
+    const props = new Set<string>();
+    for (const anim of root.getAnimations()) {
+      const effect = anim.effect as KeyframeEffect | null;
+      for (const frame of effect?.getKeyframes() ?? []) {
+        for (const key of Object.keys(frame)) {
+          if (!['offset', 'computedOffset', 'easing', 'composite'].includes(key)) props.add(key);
+        }
+      }
+    }
+    return props;
+  }
+
+  for (const layout of ['default', 'compact'] as const) {
+    it(`renders the pulse ring only on severe/extreme alerts (${layout})`, async () => {
+      const { card, cleanup } = await mountCard({ ...BASE, layout, animations: true }, severeHass());
+      try {
+        const classes = cardClassesByTitle(card);
+        const root = shadow(card);
+        const withRing = [...root.querySelectorAll('.alert-card')]
+          .filter(el => el.querySelector(':scope > .pulse-ring'))
+          .map(el => (el.querySelector('.alert-title')?.textContent || '').trim());
+        expect(withRing.sort()).toEqual(['Ongoing Warning', 'Prep Warning']);
+        expect(classes['Prep Warning'].contains('severity-severe')).toBe(true);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it(`animates nothing but transform and opacity (${layout})`, async () => {
+      const { card, cleanup } = await mountCard({ ...BASE, layout, animations: true }, severeHass());
+      try {
+        const root = shadow(card);
+        const names = root.getAnimations().map(a => (a as CSSAnimation).animationName).sort();
+        // prep: stripes + ring; active: shimmer; ongoing: pulse + ring; expired: nothing.
+        expect(names).toEqual(['fill-shimmer', 'ongoing-pulse', 'pulse-ring', 'pulse-ring', 'stripe-march']);
+        const props = [...animatedProperties(root)].sort();
+        expect(props).toEqual(['opacity', 'transform']);
+      } finally {
+        cleanup();
+      }
+    });
+  }
+
+  it('runs no animations at all when animations: false', async () => {
+    const { card, cleanup } = await mountCard({ ...BASE, layout: 'compact', animations: false }, severeHass());
+    try {
+      const root = shadow(card);
+      expect(root.getAnimations()).toEqual([]);
+      // The ring element is still in the DOM but display:none hides it.
+      const ring = root.querySelector('.pulse-ring') as HTMLElement;
+      expect(ring).not.toBeNull();
+      expect(getComputedStyle(ring).display).toBe('none');
+    } finally {
+      cleanup();
+    }
+  });
+});
