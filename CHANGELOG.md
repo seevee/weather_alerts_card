@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.8.2 (2026-10-26)
+
+### Fixed
+- Run every card animation on the compositor (#365) (closes #364)
+
 ## 3.8.1 (2026-10-21)
 
 ### Fixed
