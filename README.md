@@ -118,8 +118,8 @@ between releases. Prefer the tokens above where they suffice.
 
 `layout: timeline` draws every alert as a bar on one shared time axis, one lane per
 alert, so overlapping and back-to-back alerts read at a glance. The gutter carries the
-icon chip and the event name; tapping a row opens the detail pop-up below (or your own
-`tap_action`). Each bar end is its own sign: a rounded cap ends there, an arrowhead
+icon chip, the event name and the compact layout's one-phrase time state ("for 3h",
+"in 45m"); tapping a row opens the detail pop-up below (or your own `tap_action`). Each bar end is its own sign: a rounded cap ends there, an arrowhead
 continues past the window, and a bar that fades out has no known end. The window fits
 the alerts on screen by default, or a fixed `timelineHorizon`.
 

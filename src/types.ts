@@ -161,7 +161,7 @@ export interface WeatherAlertsCardConfig {
   progressStyle?: ProgressStyleConfig; // per-phase progress-bar decoration; omit for defaults (prep striped, active shimmer, ongoing pulse)
   iconBorderStyle?: IconBorderStyleConfig; // per-phase icon-ring border style; omit for defaults (prep dashed, active solid, ongoing solid)
   tap_action?: ActionConfig; // standard HA action fired when an alert row is tapped; presence replaces the inline expand/toggle affordance in both layouts. Absent = unchanged inline-expand behavior
-  layout?: 'default' | 'compact' | 'timeline'; // 'timeline': every alert is a bar on one shared time axis, one lane each, with a gutter (icon chip + event name); a row tap opens the detail pop-up unless tap_action says otherwise. progressFill/progressStyle do not apply; dismissal is button-only
+  layout?: 'default' | 'compact' | 'timeline'; // 'timeline': every alert is a bar on one shared time axis, one lane each, with a gutter (icon chip, event name, phase time label); a row tap opens the detail pop-up unless tap_action says otherwise. progressFill/progressStyle do not apply; dismissal is button-only
   timelineHorizon?: TimelineHorizon; // layout:'timeline' only. The forward span of the axis from now ('6h' … '72h'); undefined/'auto' fits the latest end or future onset, floored at 6 h and capped at 7 d. The lead shown before now is one eighth of the span
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   progressFill?: 'track' | 'background'; // undefined/'track': thin progress bar (full) / bottom mini-bar (compact); 'background': Bubble-Card-style whole-row low-opacity wash growing to --progress, behind the content (thin track hidden, labels kept)

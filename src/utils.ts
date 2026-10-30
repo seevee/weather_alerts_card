@@ -975,10 +975,12 @@ export function timelineBarGeometry(progress: AlertProgress, win: TimelineWindow
   };
 }
 
-// Candidate tick steps, seconds. The first that fits eight or fewer ticks in
-// the window wins; consecutive steps never more than double, so that choice
-// also leaves at least four.
-const TIMELINE_TICK_STEPS = [900, 1800, 3600, 7200, 10800, 21600, 43200, 86400];
+// Candidate tick steps, seconds. The first that fits the budget wins; up to a
+// day the steps never more than double, so that choice also leaves at least
+// half the budget. The two- and three-day steps exist for a narrow lane under
+// the seven-day cap, where a day step would overprint eight date labels on
+// room for three; both still land on local midnights.
+const TIMELINE_TICK_STEPS = [900, 1800, 3600, 7200, 10800, 21600, 43200, 86400, 172800, 259200];
 export const TIMELINE_MAX_TICKS = 8;
 
 export interface TimelineTick {
@@ -988,6 +990,9 @@ export interface TimelineTick {
   dayBoundary: boolean;
   /** The step is sub-hour, so the label needs minutes. */
   minutes: boolean;
+  /** A day mark between coarser labels (two- and three-day steps): drawn
+   *  mark-only, so the axis keeps its day rhythm when the labels thin out. */
+  minor: boolean;
 }
 
 // Wall-clock offset (seconds east of UTC) of `timeZone` at `ts`, so ticks can
@@ -1014,28 +1019,38 @@ function tzOffsetSeconds(ts: number, timeZone?: string): number {
 
 /**
  * Tick marks for the window, aligned to boundaries in the display timezone.
- * `maxTicks` is what the lane has room for (the card measures it); the
- * coarsest step that fits wins.
+ * `maxTicks` is how many labels the lane has room for (the card measures it);
+ * the finest step that fits wins. The budget is floored at two: the first
+ * step to fit two is longer than half the window, so the window always holds
+ * at least one of its boundaries. Past a day, the walk stays at a day and the
+ * off-step days come back as `minor` marks.
  */
 export function computeTimelineTicks(win: TimelineWindow, timeZone?: string, maxTicks = TIMELINE_MAX_TICKS): TimelineTick[] {
   const { startTs, endTs } = win;
   const width = endTs - startTs;
   if (width <= 0) return [];
-  const limit = Math.max(1, Math.min(TIMELINE_MAX_TICKS, maxTicks));
+  const limit = Math.max(2, Math.min(TIMELINE_MAX_TICKS, maxTicks));
   const step = TIMELINE_TICK_STEPS.find(s => width / s <= limit)
     ?? TIMELINE_TICK_STEPS[TIMELINE_TICK_STEPS.length - 1];
+  const walk = Math.min(step, 86400);
 
   // Walk in local wall-clock seconds and convert each candidate back with the
   // offset in force at that instant, so a DST change inside the window shifts
   // the later ticks rather than the whole axis.
   const ticks: TimelineTick[] = [];
   const startOffset = tzOffsetSeconds(startTs, timeZone);
-  let local = Math.ceil((startTs + startOffset) / step) * step;
-  for (let i = 0; i <= TIMELINE_MAX_TICKS * 2; i++, local += step) {
+  let local = Math.ceil((startTs + startOffset) / walk) * walk;
+  for (let i = 0; i <= TIMELINE_MAX_TICKS * 2; i++, local += walk) {
     const tick = local - tzOffsetSeconds(local - startOffset, timeZone);
     if (tick < startTs) continue;
     if (tick > endTs) break;
-    ticks.push({ ts: tick, pct: ((tick - startTs) / width) * 100, dayBoundary: local % 86400 === 0, minutes: step < 3600 });
+    ticks.push({
+      ts: tick,
+      pct: ((tick - startTs) / width) * 100,
+      dayBoundary: local % 86400 === 0,
+      minutes: step < 3600,
+      minor: local % step !== 0,
+    });
   }
   return ticks;
 }
@@ -1044,14 +1059,23 @@ export function computeTimelineTicks(win: TimelineWindow, timeZone?: string, max
  * Axis label for a tick: the weekday and day at local midnight; otherwise the
  * clock time, hour-only where the locale writes a day period ("6 PM") since
  * whole-hour ticks carry no minutes, and HH:MM where it does not ("18:00" is
- * already short and a bare "18" is not a time).
+ * already short and a bare "18" is not a time). An explicit HA date format
+ * decides whether the day leads ("16 Mon" under DMY, "Mon 16" otherwise);
+ * 'language' keeps the locale's own order.
  */
 export function formatTimelineTick(tick: TimelineTick, locale?: HaLocale): string {
   const d = new Date(tick.ts * 1000);
   if (tick.dayBoundary) {
-    return new Intl.DateTimeFormat(locale?.language, {
+    const parts = new Intl.DateTimeFormat(locale?.language, {
       weekday: 'short', day: 'numeric', timeZone: locale?.timeZone,
-    }).format(d);
+    }).formatToParts(d);
+    const fmt = locale?.date_format;
+    if (fmt && fmt !== 'language') {
+      const weekday = parts.find(p => p.type === 'weekday')?.value ?? '';
+      const day = parts.find(p => p.type === 'day')?.value ?? '';
+      return fmt === 'DMY' ? `${day} ${weekday}` : `${weekday} ${day}`;
+    }
+    return parts.map(p => p.value).join('');
   }
   if (!tick.minutes) {
     const fmt = timeFormatOptions(locale);

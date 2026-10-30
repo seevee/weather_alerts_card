@@ -175,7 +175,8 @@ legibility-safe opacity. The wash is always solid.
 
 `layout: timeline` draws every alert as a bar on one shared time axis, one lane per
 alert, so overlapping and back-to-back alerts read at a glance. The gutter carries the
-icon chip and the event name; tapping a row opens the
+icon chip, the event name and the same one-phrase time state the compact layout shows
+("for 3h", "in 45m"); tapping a row opens the
 [detail pop-up](./recipes/detail-popup) unless a `tap_action` is set (`none` keeps the
 row inert).
 
@@ -348,7 +349,8 @@ dismissed alerts back, and an alert re-surfaces on its own if its severity, issu
 expiry, or phase changes.
 
 `dismissButtonStyle` has no effect when `dismissTrigger: 'swipe'` (no button is
-rendered), and the compact and timeline layouts are always icon-only.
+rendered, except in the timeline layout, which always shows one), and the compact and
+timeline layouts are always icon-only.
 
 ## Tap actions
 

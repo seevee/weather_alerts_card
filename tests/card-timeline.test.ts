@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import { WeatherAlertsCard } from '../src/weather-alerts-card';
 import type { HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
+import { PROGRESS_DECO_DEFAULTS } from '../src/types';
 
 // layout: 'timeline' — one shared axis, one lane per alert, the detail pop-up
 // as the overlay. Runs in Chromium: real layout (the bars are positioned by
@@ -107,14 +108,19 @@ describe('timeline structure', () => {
       for (const t of ticks) {
         if (!t.classList.contains('quiet')) expect(t.textContent.trim()).not.toBe('');
       }
-      // … or because it sits under the now head.
-      const nowPct = 100 / 9;
       for (const q of [...ticks].filter(t => t.classList.contains('quiet'))) {
-        const onNow = Math.abs(pct((q as HTMLElement).style.left) - nowPct) < 10;
-        expect(onNow || q.nextElementSibling?.classList.contains('edge') === true).toBe(true);
+        expect(q.classList.contains('minor') || q.nextElementSibling?.classList.contains('edge') === true).toBe(true);
       }
+      // A tick under the now head is not rendered at all: the head is the mark.
+      const nowPct = 100 / 9;
+      for (const t of ticks) expect(Math.abs(pct((t as HTMLElement).style.left) - nowPct)).toBeGreaterThan(3);
       const now = r.querySelector<HTMLElement>('.timeline-body')!.style.getPropertyValue('--wac-tl-now');
       expect(pct(now)).toBeCloseTo(100 / 9, 1);
+      // The one-phrase time state is visible text under the name, not hover-only.
+      expect(rowByTitle(card, 'Active Warning').querySelector('.timeline-time')!.textContent.trim()).toMatch(/^for /);
+      expect(rowByTitle(card, 'Ongoing Warning').querySelector('.timeline-time')!.textContent.trim()).toBe('ongoing');
+      // No header: the axis starts at content-area padding, not flush with the edge.
+      expect(r.querySelector('.timeline-body')!.classList.contains('headed')).toBe(false);
     } finally {
       cleanup();
     }
@@ -163,7 +169,7 @@ describe('timeline structure', () => {
   });
 
   it('keeps the start arrowhead on an open-ended alert that began before the window', async () => {
-    const { card, cleanup } = await mountCard({ ...BASE, timelineHorizon: '6h' }, (() => {
+    const { card, cleanup } = await mountCard({ ...BASE, timelineHorizon: '6h', animations: true }, (() => {
       const hass = phasedHass();
       const alerts = (hass.states['sensor.nws_alerts'].attributes as { Alerts: Array<Record<string, string>> }).Alerts;
       alerts.find(a => a.ID === 'ongoing')!.Onset = new Date(Date.now() - 30 * HOUR).toISOString();
@@ -184,6 +190,12 @@ describe('timeline structure', () => {
       const rect = arrow.getBoundingClientRect();
       expect(rect.width).toBeGreaterThan(0);
       expect(rect.right).toBeLessThanOrEqual(lane.left + 1);
+      // The arrowhead breathes with the bar: same keyframes, same period, and
+      // the two animations began on the same frame, so they never drift apart.
+      expect(getComputedStyle(arrow).animationName).toBe('ongoing-pulse');
+      const anims = row.querySelector('.timeline-lane')!.getAnimations({ subtree: true }) as CSSAnimation[];
+      expect(anims.map(a => a.animationName)).toEqual(['ongoing-pulse', 'ongoing-pulse']);
+      expect(anims[0].startTime).toBe(anims[1].startTime);
     } finally {
       cleanup();
     }
@@ -244,9 +256,15 @@ describe('timeline structure', () => {
       await wide.card.updateComplete;
       const narrowTicks = root(wide.card).querySelectorAll('.timeline-tick').length;
       expect(wideTicks).toBeGreaterThan(narrowTicks);
-      // A phone-width lane (~170px) has room for about three labels.
+      // A phone-width lane (~170px) has room for about three labels; the
+      // auto window here (a three-day watch) steps to two days, so the day
+      // marks between the labels come back as minor ticks.
+      const narrowLabels = root(wide.card).querySelectorAll('.timeline-tick:not(.quiet)').length;
+      expect(narrowLabels).toBeLessThanOrEqual(3);
+      expect(narrowLabels).toBeGreaterThanOrEqual(1);
       expect(narrowTicks).toBeLessThanOrEqual(4);
       expect(narrowTicks).toBeGreaterThanOrEqual(2);
+      expect(root(wide.card).querySelector('.timeline-tick.minor.quiet')).not.toBeNull();
     } finally {
       wide.cleanup();
     }
@@ -310,11 +328,40 @@ describe('timeline row action', () => {
     }
   });
 
+  it('keeps the full view\'s progress decoration in the pop-up', async () => {
+    const { card, cleanup } = await mountCard(BASE, phasedHass());
+    try {
+      const row = rowByTitle(card, 'Prep Warning');
+      // The timeline bar has a fixed pattern, so the row carries no deco class …
+      expect([...row.classList].some(c => c.startsWith('deco-'))).toBe(false);
+      row.click();
+      await card.updateComplete;
+      // … but the pop-up is the full view and keeps the configured one.
+      const inner = dialog(card)!.querySelector('.alert-card')!;
+      expect(inner.classList.contains(`deco-${PROGRESS_DECO_DEFAULTS.preparation}`)).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('marks the body as headed under a card title', async () => {
+    const { card, cleanup } = await mountCard({ ...BASE, title: 'Alerts' }, phasedHass());
+    try {
+      expect(root(card).querySelector('.timeline-body')!.classList.contains('headed')).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
   it('leaves the row inert under tap_action: none', async () => {
     const { card, cleanup } = await mountCard({ ...BASE, tap_action: { action: 'none' } }, phasedHass());
     try {
       const row = rowByTitle(card, 'Active Warning');
       expect(row.getAttribute('role')).toBeNull();
+      // No role, so no aria-label either (prohibited on a plain div); the
+      // visible name and time label are the text.
+      expect(row.getAttribute('aria-label')).toBeNull();
+      expect(row.querySelector('.timeline-time')).not.toBeNull();
       expect(row.classList.contains('tappable')).toBe(false);
       row.click();
       await card.updateComplete;
@@ -364,6 +411,32 @@ describe('timeline dismissal', () => {
       for (const b of buttons) expect(b.classList.contains('labeled')).toBe(false);
     } finally {
       cleanup();
+    }
+  });
+
+  it('dismisses from the keyboard on the button, instead of opening the pop-up', async () => {
+    const { card, cleanup } = await mountCard({ ...BASE, allowDismiss: true, showDismissUndo: false }, phasedHass());
+    try {
+      const btn = rowByTitle(card, 'Active Warning').querySelector<HTMLButtonElement>('.dismiss-button')!;
+      btn.focus();
+      // Enter on a focused button is the button's to activate; the row's
+      // keydown handler must not preventDefault it into a pop-up.
+      const keydown = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      btn.dispatchEvent(keydown);
+      await card.updateComplete;
+      // Checked before the dismissal: a dismissed alert clears a stale pop-up
+      // id on its own, which would hide an intercept here.
+      expect(card._detailPopupAlertId).toBeNull();
+      expect(keydown.defaultPrevented).toBe(false);
+      // Chromium synthesises the click only for a trusted key press, so the
+      // click stands in for the activation the un-prevented keydown allows.
+      btn.click();
+      await card.updateComplete;
+      expect(root(card).querySelectorAll('.timeline-row')).toHaveLength(4);
+      expect(() => rowByTitle(card, 'Active Warning')).toThrow();
+    } finally {
+      cleanup();
+      localStorage.clear();
     }
   });
 

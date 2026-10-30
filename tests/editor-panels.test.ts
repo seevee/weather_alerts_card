@@ -427,6 +427,12 @@ describe('hidden-but-set dependents', () => {
     expect(alsoSet(byPanel.details)).toEqual(['Also set: Area map style · Show my location on the map Reset to default']);
   });
 
+  it('names the timeline window when the layout is not the timeline', () => {
+    const byPanel = panels(renderHost(makeEditor(base({ layout: 'compact', timelineHorizon: '24h' })).editor));
+    expect(alsoSet(byPanel.appearance)).toEqual(['Also set: Timeline window Reset to default']);
+    expect(alsoSet(panels(renderHost(makeEditor(base({ layout: 'timeline', timelineHorizon: '24h' })).editor)).appearance)).toEqual([]);
+  });
+
   it('names dismissal keys under an off master, and the button style under a swipe trigger', () => {
     const off = panels(renderHost(makeEditor(base({ dismissTrigger: 'swipe', showDismissUndo: false })).editor)).dismissal;
     expect(alsoSet(off)).toEqual(['Also set: Dismiss trigger · Show undo notification on dismiss Reset to default']);

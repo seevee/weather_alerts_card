@@ -1514,6 +1514,32 @@ describe('computeTimelineTicks', () => {
     expect(formatTimelineTick(plain, locale)).toMatch(/\d/);
   });
 
+  it('honours the budget under the seven-day cap with two- and three-day steps', () => {
+    const win = computeTimelineWindow([makeAlert({ endsTs: now + 400 * H })], 'auto', now);
+    expect(computeTimelineTicks(win, 'UTC').length).toBe(8); // a day step at the full budget
+    for (const budget of [2, 3, 4]) {
+      const ticks = computeTimelineTicks(win, 'UTC', budget);
+      const labeled = ticks.filter(t => !t.minor);
+      expect(labeled.length, `budget ${budget}`).toBeLessThanOrEqual(budget);
+      expect(labeled.length).toBeGreaterThan(0);
+      // The walk stays at a day: every midnight is still a mark.
+      expect(ticks.length).toBe(8);
+      expect(ticks.every(t => t.dayBoundary)).toBe(true);
+    }
+    // Under a day step nothing is minor.
+    expect(computeTimelineTicks(win, 'UTC').every(t => !t.minor)).toBe(true);
+  });
+
+  it('orders a midnight label by the HA date format, and by the locale under language', () => {
+    const win = computeTimelineWindow([], '72h', now);
+    const midnight = computeTimelineTicks(win, 'UTC').find(t => t.dayBoundary)!;
+    const base = { language: 'en', time_format: 'language' as const, timeZone: 'UTC' };
+    expect(formatTimelineTick(midnight, { ...base, date_format: 'DMY' })).toMatch(/^\d{1,2} [A-Z][a-z]{2}$/);
+    expect(formatTimelineTick(midnight, { ...base, date_format: 'MDY' })).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+    expect(formatTimelineTick(midnight, { ...base, date_format: 'YMD' })).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/);
+    expect(formatTimelineTick(midnight, { ...base, date_format: 'language' })).toMatch(/^([A-Z][a-z]{2} \d{1,2}|\d{1,2} [A-Z][a-z]{2})$/);
+  });
+
   it('coarsens the step to honour a smaller tick budget', () => {
     const win = computeTimelineWindow([], '24h', now);
     const wide = computeTimelineTicks(win, 'UTC');
@@ -1522,8 +1548,10 @@ describe('computeTimelineTicks', () => {
     expect(narrow.length).toBeLessThan(wide.length);
     // Every narrow tick is also a wide one: coarser, never shifted.
     for (const t of narrow) expect(wide.some(w => w.ts === t.ts)).toBe(true);
-    // Budgets below one and above the cap are clamped, never a crash.
-    expect(computeTimelineTicks(win, 'UTC', 0).length).toBeGreaterThan(0);
+    // Budgets below two and above the cap are clamped, never a crash or an
+    // empty axis: the first step to fit two labels is longer than half the
+    // window, so the window always holds a boundary.
+    expect(computeTimelineTicks(win, 'UTC', 0).filter(t => !t.minor).length).toBeGreaterThan(0);
     expect(computeTimelineTicks(win, 'UTC', 50).length).toBeLessThanOrEqual(8);
   });
 

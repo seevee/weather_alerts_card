@@ -319,6 +319,10 @@ export class WeatherAlertsCard extends LitElement {
     this._maybeSubscribeRegistry();
     this._maybeAcquireMapTilesToken();
     this._maybeArmTimelineTimer();
+    // A reconnect with no property change never reaches updated(), so the
+    // lane observer torn down on disconnect is rebuilt here (a no-op on the
+    // first mount, when nothing has rendered yet).
+    this._maybeObserveTimelineLane();
   }
 
   disconnectedCallback() {
@@ -1171,14 +1175,16 @@ export class WeatherAlertsCard extends LitElement {
   // pattern (deco-*) and icon-ring border (icon-border-*), each resolved from
   // config for the alert's phase with a byte-identical default. Empty for
   // expired alerts, which carry neither.
-  private _alertDecoClasses(progress: AlertProgress): string {
+  private _alertDecoClasses(progress: AlertProgress, timelineBar = false): string {
     const phase = this._decoPhase(progress);
     if (!phase) return '';
     const deco = this._config?.progressStyle?.[phase] ?? PROGRESS_DECO_DEFAULTS[phase];
     const icon = this._config?.iconBorderStyle?.[phase] ?? ICON_BORDER_DEFAULTS[phase];
     // The timeline bar carries a fixed pattern per phase (progressStyle does
-    // not apply); only the icon-chip ring is configurable there.
-    if (this._isTimeline) return `icon-border-${icon}`;
+    // not apply); only the icon-chip ring is configurable there. Keyed on the
+    // render site, not the layout: the detail pop-up opened from a timeline
+    // is the full view and keeps its decoration.
+    if (timelineBar) return `icon-border-${icon}`;
     return `deco-${deco} icon-border-${icon}`;
   }
 
@@ -1266,6 +1272,10 @@ export class WeatherAlertsCard extends LitElement {
 
   private _onCardActionKeydown(alert: WeatherAlert, e: KeyboardEvent): void {
     if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    // A key on a control inside the row (the dismiss button, a link) is that
+    // control's to activate; preventDefault here would swallow its click.
+    const target = e.target as Element | null;
+    if (target && target !== e.currentTarget && target.closest('button, a')) return;
     e.preventDefault();
     this._onCardAction(alert);
   }
@@ -1612,26 +1622,30 @@ export class WeatherAlertsCard extends LitElement {
     // has reported, a phone-width guess before that.
     const lanePx = this._timelineLanePx;
     const labelPct = lanePx > 0 ? (TIMELINE_LABEL_PX / lanePx) * 100 : TIMELINE_UNMEASURED_PCT;
-    const ticks = computeTimelineTicks(win, locale.timeZone, Math.floor(100 / labelPct));
+    // A tick sitting under the now head is dropped outright: the head is the
+    // mark there, and a second mark beside it reads as a stray.
+    const ticks = computeTimelineTicks(win, locale.timeZone, Math.floor(100 / labelPct))
+      .filter(tick => Math.abs(tick.pct - win.nowPct) >= labelPct / 2);
+    const labeled = ticks.filter(tick => !tick.minor);
     const dismissable = this._canDismiss();
+    const headed = !!this._config?.title;
     return html`
-      <div class="timeline-body ${dismissable ? 'dismissable' : ''}" style="--wac-tl-now: ${win.nowPct.toFixed(3)}%">
+      <div class="timeline-body ${dismissable ? 'dismissable' : ''} ${headed ? 'headed' : ''}" style="--wac-tl-now: ${win.nowPct.toFixed(3)}%">
         <div class="timeline-axis">
           <div class="timeline-gutter" aria-hidden="true"></div>
           <div class="timeline-lane">
-            ${ticks.map((tick, i) => {
-              // A tick near the right edge hangs its label leftward; the tick
-              // before it keeps its mark but drops its text when the two are
-              // closer than two labels' width, so the pair never overprints.
-              // A tick sitting on the now marker drops its text too: the head
-              // is the mark there.
-              const edge = tick.pct > TIMELINE_EDGE_PCT;
-              const next = ticks[i + 1];
-              const quiet = (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT
-                && next.pct - tick.pct < 2 * labelPct)
-                || Math.abs(tick.pct - win.nowPct) < labelPct / 2;
+            ${ticks.map(tick => {
+              // A tick near the right edge hangs its label leftward; the
+              // labelled tick before it keeps its mark but drops its text when
+              // the two are closer than two labels' width, so the pair never
+              // overprints. A minor tick (a day mark under a coarser label
+              // step) is mark-only by definition.
+              const edge = !tick.minor && tick.pct > TIMELINE_EDGE_PCT;
+              const next = labeled.find(other => other.pct > tick.pct);
+              const quiet = tick.minor || (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT
+                && next.pct - tick.pct < 2 * labelPct);
               return html`
-              <span class="timeline-tick ${tick.dayBoundary ? 'day' : ''} ${edge ? 'edge' : ''} ${quiet ? 'quiet' : ''}" style="left: ${tick.pct.toFixed(3)}%" aria-hidden="true">${quiet ? nothing : formatTimelineTick(tick, locale)}</span>
+              <span class="timeline-tick ${tick.dayBoundary ? 'day' : ''} ${edge ? 'edge' : ''} ${quiet ? 'quiet' : ''} ${tick.minor ? 'minor' : ''}" style="left: ${tick.pct.toFixed(3)}%" aria-hidden="true">${quiet ? nothing : formatTimelineTick(tick, locale)}</span>
             `;
             })}
             <span class="timeline-now-head" role="img" aria-label=${t('progress.now', this._lang)}></span>
@@ -1659,7 +1673,7 @@ export class WeatherAlertsCard extends LitElement {
       `severity-${alert.severity}`,
       progress.phaseText.toLowerCase(),
       isOngoing ? 'ongoing' : '',
-      this._alertDecoClasses(progress),
+      this._alertDecoClasses(progress, true),
       this._alertBoostClasses(alert),
       actionable ? 'tappable' : '',
     ].filter(Boolean).join(' ');
@@ -1672,13 +1686,19 @@ export class WeatherAlertsCard extends LitElement {
     ].filter(Boolean).join(' ');
     const barStyle = `left: ${bar.startPct.toFixed(3)}%; width: ${(bar.endPct - bar.startPct).toFixed(3)}%;`;
     const range = `${formatProgressTimestamp(progress.onsetTs, this._locale, lang)} – ${progress.hasEndTime ? formatProgressTimestamp(progress.endsTs, this._locale, lang) : t('progress.ongoing', lang)}`;
+    // The one-phrase time state sits under the name, so a touch user reads
+    // "for 3h" without a hover or a tap. The same phrase names the row for
+    // assistive tech; an inert row (tap_action: none) carries no role, and an
+    // aria-label on a plain div is prohibited, so there the visible text is
+    // the name.
+    const timeLabel = this._phaseTimeLabel(progress);
     return html`
       <div
         class=${rowClasses}
         style=${this._alertColorStyle(alert)}
         role=${actionable ? 'button' : nothing}
         tabindex=${actionable ? '0' : nothing}
-        aria-label="${alert.event}: ${this._phaseTimeLabel(progress)}"
+        aria-label=${actionable ? `${alert.event}: ${timeLabel}` : nothing}
         @click=${actionable ? () => this._onCardAction(alert) : nothing}
         @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
       >
@@ -1687,8 +1707,10 @@ export class WeatherAlertsCard extends LitElement {
             ${this._renderPulseRing(alert)}
             <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
           </div>
-          ${this._renderProviderHint(alert)}
-          <span class="alert-title">${alert.event}</span>
+          <div class="timeline-gutter-text">
+            <span class="alert-title">${this._renderProviderHint(alert)}${alert.event}</span>
+            <span class="timeline-time">${timeLabel}</span>
+          </div>
         </div>
         <div class="timeline-lane" aria-hidden="true">
           <div class=${barClasses} style=${barStyle} title=${range}></div>

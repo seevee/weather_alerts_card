@@ -1089,12 +1089,18 @@ export const cardStyles = css`
     --wac-tl-row: calc(36px * var(--wac-scale, 1));
     --wac-tl-axis: calc(18px * var(--wac-scale, 1));
     --wac-tl-gap: 4px;
-    --wac-tl-bar: 10px;
+    --wac-tl-bar: calc(10px * var(--wac-scale, 1));
+    --wac-tl-arrow-len: calc(7px * var(--wac-scale, 1));
     --wac-tl-now-color: var(--primary-text-color);
-    padding: 4px 16px 12px;
+    /* The axis is the first thing in the card: content-area padding when it
+       starts at the card edge, a smaller gap under a header's own padding. */
+    padding: 12px 16px;
     display: flex;
     flex-direction: column;
     gap: var(--wac-tl-gap);
+  }
+  .timeline-body.headed {
+    padding-top: 4px;
   }
   .timeline-axis,
   .timeline .alert-card {
@@ -1136,6 +1142,21 @@ export const cardStyles = css`
     gap: 8px;
     min-width: 0;
   }
+  /* Name over the one-phrase time state ("for 3h"), both ellipsized to the
+     gutter: the stack keeps the name's width instead of sharing a line. */
+  .timeline-gutter-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
+  }
+  .timeline-time {
+    font-size: calc(0.7rem * var(--wac-scale, 1));
+    color: var(--secondary-text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .timeline .icon-box {
     position: relative; /* hosts the severe/extreme .pulse-ring */
     width: calc(28px * var(--wac-scale, 1));
@@ -1151,6 +1172,13 @@ export const cardStyles = css`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  /* A bar's length is its duration, so the most urgent alert is often the
+     smallest mark on the axis. Weight on the name gives the severe tiers a
+     second channel that is not color (the chip's pulse ring is the first). */
+  .timeline .severity-extreme .alert-title,
+  .timeline .severity-severe .alert-title {
+    font-weight: 600;
   }
 
   .timeline-lane {
@@ -1203,7 +1231,11 @@ export const cardStyles = css`
   .timeline .expired .timeline-bar {
     background-color: var(--divider-color);
   }
-  .timeline .ongoing .timeline-bar {
+  /* The arrowhead is a lane child (see .timeline-clip), so it breathes by
+     its own rule, on the same keyframes and period as the bar it belongs to;
+     both start on the frame the row renders, so they stay in step. */
+  .timeline .ongoing .timeline-bar,
+  .timeline .ongoing .timeline-clip {
     animation: ongoing-pulse 5s infinite;
   }
 
@@ -1235,12 +1267,12 @@ export const cardStyles = css`
     border-bottom: var(--wac-tl-arrow) solid transparent;
   }
   .timeline-clip.start {
-    left: -7px;
-    border-right: 7px solid var(--wac-progress-fg);
+    left: calc(-1 * var(--wac-tl-arrow-len));
+    border-right: var(--wac-tl-arrow-len) solid var(--wac-progress-fg);
   }
   .timeline-clip.end {
-    right: -7px;
-    border-left: 7px solid var(--wac-progress-fg);
+    right: calc(-1 * var(--wac-tl-arrow-len));
+    border-left: var(--wac-tl-arrow-len) solid var(--wac-progress-fg);
   }
   .timeline .expired .timeline-clip.start { border-right-color: var(--divider-color); }
   .timeline .expired .timeline-clip.end { border-left-color: var(--divider-color); }
@@ -1250,12 +1282,15 @@ export const cardStyles = css`
   }
   /* No known end: run to the edge and dissolve. No glyph here on purpose —
      solid shapes (cap, arrowhead) are for known facts, and a second glyph in
-     the arrowhead's slot would read as inconsistency rather than meaning. */
+     the arrowhead's slot would read as inconsistency rather than meaning.
+     The fade is the last 64px, floored at half the bar so a short bar (an
+     open-ended alert starting late in the window) keeps a solid half rather
+     than dissolving entirely. */
   .timeline-bar.open-end {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
-    mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 max(50%, calc(100% - 64px * var(--wac-scale, 1))), transparent 100%);
+    mask-image: linear-gradient(to right, #000 max(50%, calc(100% - 64px * var(--wac-scale, 1))), transparent 100%);
   }
 
   .timeline-axis {
@@ -1395,7 +1430,8 @@ export const cardStyles = css`
   .no-animations .pulse-ring {
     display: none;
   }
-  .no-animations .timeline-bar {
+  .no-animations .timeline-bar,
+  .no-animations .timeline-clip {
     animation: none !important;
   }
   .no-animations .progress-fill,

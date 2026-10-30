@@ -1106,7 +1106,9 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _renderAppearanceSection(lang: string): TemplateResult {
     return html`
       ${this._renderSelect('layout')}
-      ${this._config.layout === 'timeline' ? this._renderSelect('timelineHorizon') : nothing}
+      ${this._config.layout === 'timeline'
+        ? this._renderSelect('timelineHorizon')
+        : this._renderAlsoSet(['timelineHorizon'], lang)}
       ${this._renderSelect('colorTheme')}
       ${this._renderToggle('providerColors')}
       ${this._renderSelect('fontSize')}
