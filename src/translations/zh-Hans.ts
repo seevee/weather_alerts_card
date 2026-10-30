@@ -134,7 +134,6 @@ export const zhHans: TranslationMap = {
   'editor.show_provider': '显示提供方标签',
   'editor.show_source_link': '显示来源链接',
   'editor.reformat_text': '重排警报文本（去除硬换行）',
-  'editor.compact': '紧凑布局',
   'editor.font_size': '字体大小',
   'editor.font_size_small': '小',
   'editor.font_size_default': '默认',

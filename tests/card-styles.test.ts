@@ -230,3 +230,33 @@ describe('cardStyles compositor-only motion (#364)', () => {
     expect(css).toMatch(/@media \(min-resolution: 2dppx\)\s*{[^@]*--wac-stripe-steps:\s*48[^@]*--wac-stripe-steps:\s*24/);
   });
 });
+
+describe('cardStyles timeline layout', () => {
+  const css = cardStyles.cssText;
+
+  it('strips the row chrome and both pseudo-elements under .timeline', () => {
+    expect(css).toMatch(/\.timeline \.alert-card\s*{[^}]*border:\s*none/);
+    expect(css).toMatch(/\.timeline \.alert-card::before,\s*\.timeline \.alert-card::after\s*{\s*content:\s*none/);
+  });
+
+  it('draws the now marker from one token on every lane and the axis head', () => {
+    expect(css).toMatch(/\.timeline-lane::after\s*{[^}]*left:\s*var\(--wac-tl-now, 11\.111%\)/);
+    expect(css).toMatch(/\.timeline-now-head\s*{[^}]*left:\s*var\(--wac-tl-now, 11\.111%\)/);
+  });
+
+  it('gives each phase a fixed bar: static stripes, divider grey, ongoing breathe', () => {
+    const prep = css.match(/\.timeline \.preparation \.timeline-bar\s*{([^}]*)}/)?.[1] ?? '';
+    expect(prep).toContain('background-image: linear-gradient(');
+    expect(prep).not.toContain('animation');
+    expect(css).toMatch(/\.timeline \.expired \.timeline-bar\s*{[^}]*background-color:\s*var\(--divider-color\)/);
+    expect(css).toMatch(/\.timeline \.ongoing \.timeline-bar\s*{\s*animation:\s*ongoing-pulse/);
+    expect(css).toMatch(/\.no-animations \.timeline-bar\s*{\s*animation:\s*none !important/);
+  });
+
+  it('gives each right end its own sign: arrowhead for clipped, a fade and no glyph for open-ended', () => {
+    expect(css).toMatch(/\.timeline-clip\.start\s*{[^}]*border-right:\s*7px solid var\(--wac-progress-fg\)/);
+    expect(css).toMatch(/\.timeline-clip\.end\s*{[^}]*border-left:\s*7px solid var\(--wac-progress-fg\)/);
+    expect(css).toMatch(/\.timeline-bar\.open-end\s*{[^}]*mask-image:\s*linear-gradient\(to right/);
+    expect(css).not.toContain('.timeline-open-tail');
+  });
+});

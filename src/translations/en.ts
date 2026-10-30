@@ -44,6 +44,10 @@ export const en: TranslationMap = {
   'progress.compact_ongoing': 'ongoing',
   'progress.compact_expired': 'expired {time} ago',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Started before this window',
+  'timeline.clipped_end': 'Continues past this window',
+
   // Relative time
   'time.just_now': 'just now',
   'time.in_less_than_1m': 'in <1m',
@@ -134,7 +138,18 @@ export const en: TranslationMap = {
   'editor.show_provider': 'Show provider label',
   'editor.show_source_link': 'Show source link',
   'editor.reformat_text': 'Reflow alert text (strip hard line breaks)',
-  'editor.compact': 'Compact layout',
+  'editor.layout': 'Layout',
+  'editor.layout_default': 'Default',
+  'editor.layout_compact': 'Compact',
+  'editor.layout_timeline': 'Timeline',
+  'editor.timeline_horizon': 'Timeline window',
+  'editor.timeline_horizon_auto': 'Fit alerts',
+  'editor.timeline_horizon_6h': '6 hours',
+  'editor.timeline_horizon_12h': '12 hours',
+  'editor.timeline_horizon_24h': '24 hours',
+  'editor.timeline_horizon_72h': '3 days',
+  'editor.timeline_styling_note': 'The timeline draws fixed per-phase bars; progress fill and decoration settings do not apply.',
+  'editor.timeline_dismiss_note': 'The timeline dismisses by button only.',
   'editor.font_size': 'Font size',
   'editor.font_size_small': 'Small',
   'editor.font_size_default': 'Default',

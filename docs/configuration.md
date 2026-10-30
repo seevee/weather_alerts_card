@@ -95,7 +95,8 @@ card's distances and radius agree with the integration's.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `title` | — | Card header title |
-| `layout` | `'default'` | `'default'` or `'compact'` |
+| `layout` | `'default'` | `'default'`, `'compact'`, or `'timeline'` — see [Timeline layout](#timeline-layout) |
+| `timelineHorizon` | `'auto'` | `layout: timeline` only. The axis span ahead of now: `'6h'`, `'12h'`, `'24h'`, `'72h'`, or `'auto'` to fit the alerts on screen |
 | `fontSize` | `'default'` | `'small'`, `'default'`, `'large'`, `'x-large'` — scales text and icons |
 | `colorTheme` | `'severity'` | `'severity'`, `'nws'`, `'meteoalarm'`, `'eccc'` — the palette every alert is painted from |
 | `providerColors` | `false` | Paint each alert in the color its issuing agency published for it, over the `colorTheme` palette. On by default under `colorTheme: 'eccc'` |
@@ -169,6 +170,47 @@ that reason.
 thin track the texture decorates, and a texture is imperceptible at the wash's
 legibility-safe opacity. The wash is always solid.
 :::
+
+### Timeline layout
+
+`layout: timeline` draws every alert as a bar on one shared time axis, one lane per
+alert, so overlapping and back-to-back alerts read at a glance. The gutter carries the
+icon chip and the event name; tapping a row opens the
+[detail pop-up](./recipes/detail-popup) unless a `tap_action` is set (`none` keeps the
+row inert).
+
+![Alerts as bars on a shared time axis](/img/timeline-adaptive.svg)
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+layout: timeline
+timelineHorizon: 24h
+sortOrder: onset
+```
+
+| `timelineHorizon` | Window |
+|---|---|
+| `'auto'` (default) | From a little before now to the latest end or future onset among the alerts, floored at 6 h and capped at 7 d |
+| `'6h'`, `'12h'`, `'24h'`, `'72h'` | A fixed span ahead of now |
+
+One eighth of the span is shown before now, so the now marker sits near the left edge.
+What the bars tell you:
+
+- A rounded cap means the alert ends (or began) there.
+- An **arrowhead** pointing off the axis means the alert continues past the window, or
+  started before it. An alert entirely outside the window collapses to the arrowhead
+  alone, at that edge.
+- A bar that **fades out** has **no end time**. That is a different claim from the
+  arrowhead: nothing is known about when it ends.
+- Preparation bars are striped, expired bars (with `hideExpired: false`) are dimmed, an
+  open-ended active alert breathes. The pattern is fixed per phase.
+
+The now marker carries progress here, so `progressFill` and `progressStyle` do not apply
+(`iconBorderStyle` still styles the chip). Dismissal is always by button, whatever
+`dismissTrigger` says, and `dismissButtonStyle` is icon-only. `sortOrder` applies to the
+lane order as in the other layouts; `onset` reads best. The marker advances once a
+minute on its own, independent of entity updates.
 
 ## The detail panel
 
@@ -306,7 +348,7 @@ dismissed alerts back, and an alert re-surfaces on its own if its severity, issu
 expiry, or phase changes.
 
 `dismissButtonStyle` has no effect when `dismissTrigger: 'swipe'` (no button is
-rendered), and the compact layout is always icon-only.
+rendered), and the compact and timeline layouts are always icon-only.
 
 ## Tap actions
 
@@ -427,7 +469,8 @@ interface WeatherAlertsCardConfig {
   myLocationEntity?: string;   // device_tracker / person / zone that replaces HA home as the reference point
   sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
   animations?: boolean;        // undefined: respect prefers-reduced-motion; true/false: force
-  layout?: 'default' | 'compact';
+  layout?: 'default' | 'compact' | 'timeline';
+  timelineHorizon?: 'auto' | '6h' | '12h' | '24h' | '72h'; // layout: timeline only — axis span ahead of now; auto fits the alerts
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc';
   providerColors?: boolean;    // undefined/false: colorTheme only; true: an alert's published color wins. Defaults on under colorTheme: 'eccc'

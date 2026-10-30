@@ -68,7 +68,8 @@ only have to point the card at an entity — the provider is auto-detected.
 
 - **Filtering** — restrict by zone code, event code, a minimum severity threshold, or
   distance from home for point incidents.
-- **Layouts** — a full card, or a `compact` one-row-per-alert list that expands on tap.
+- **Layouts** — a full card, a `compact` one-row-per-alert list that expands on tap, or a
+  `timeline` that draws every alert as a bar on one shared time axis.
 - **Dismissal** — optional per-alert dismiss by button or swipe, with undo and a
   restore-all control, stored browser-locally.
 - **Deduplication** — collapse the same alert repeated across zones and providers.

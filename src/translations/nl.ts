@@ -134,7 +134,6 @@ export const nl: TranslationMap = {
   'editor.show_provider': 'Providerlabel tonen',
   'editor.show_source_link': 'Bronlink tonen',
   'editor.reformat_text': 'Tekst automatisch omloop geven (harde afbrekingen verwijderen)',
-  'editor.compact': 'Compacte lay-out',
   'editor.font_size': 'Lettergrootte',
   'editor.font_size_small': 'Klein',
   'editor.font_size_default': 'Standaard',

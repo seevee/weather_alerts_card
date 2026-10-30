@@ -134,7 +134,6 @@ export const sr: TranslationMap = {
   'editor.show_provider': 'Прикажи ознаку провајдера',
   'editor.show_source_link': 'Прикажи линк ка извору',
   'editor.reformat_text': 'Прилагоди текст упозорења (уклони тврде преломе редова)',
-  'editor.compact': 'Компактан изглед',
   'editor.font_size': 'Величина фонта',
   'editor.font_size_small': 'Мало',
   'editor.font_size_default': 'Подразумевано',

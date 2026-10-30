@@ -134,7 +134,6 @@ export const srLatn: TranslationMap = {
   'editor.show_provider': 'Prikaži oznaku provajdera',
   'editor.show_source_link': 'Prikaži link ka izvoru',
   'editor.reformat_text': 'Prilagodi tekst upozorenja (ukloni tvrde prelome redova)',
-  'editor.compact': 'Kompaktan izgled',
   'editor.font_size': 'Veličina fonta',
   'editor.font_size_small': 'Malo',
   'editor.font_size_default': 'Podrazumevano',

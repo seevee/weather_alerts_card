@@ -1074,6 +1074,247 @@ export const cardStyles = css`
     background-color: var(--wac-progress-fg);
   }
 
+  /* --- TIMELINE LAYOUT ---
+     One shared axis; each alert is a row of gutter | lane (| dismiss). The row
+     keeps .alert-card for its token block only (--color, --wac-fg, boosts and
+     the phase classes) and every piece of row chrome is stripped here, as the
+     detail dialog does. The bar is a static per-phase surface: what moves is
+     the now marker, drawn as one segment per lane at --wac-tl-now (set once on
+     .timeline-body; the ha-card carries .timeline like .compact) and
+     overhanging the row gap so the segments join into a single line. The only
+     motion is the ongoing breathe on the bar and the severe/extreme ring on
+     the icon chip, both opacity-only (see MOTION). */
+  .timeline-body {
+    --wac-tl-gutter: clamp(96px, 40%, 280px);
+    --wac-tl-row: calc(36px * var(--wac-scale, 1));
+    --wac-tl-axis: calc(18px * var(--wac-scale, 1));
+    --wac-tl-gap: 4px;
+    --wac-tl-bar: 10px;
+    --wac-tl-now-color: var(--primary-text-color);
+    padding: 4px 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--wac-tl-gap);
+  }
+  .timeline-axis,
+  .timeline .alert-card {
+    display: grid;
+    grid-template-columns: var(--wac-tl-gutter) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+  }
+  /* The dismiss column exists only when the card can dismiss, on the axis too,
+     so the axis lane and the row lanes always share one width. */
+  .timeline-body.dismissable .timeline-axis,
+  .timeline-body.dismissable .alert-card {
+    grid-template-columns: var(--wac-tl-gutter) minmax(0, 1fr) auto;
+  }
+  .timeline-dismiss-spacer {
+    width: calc(24px * var(--wac-scale, 1));
+  }
+  .timeline .alert-card {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--wac-alert-border-radius, 8px);
+    box-shadow: none;
+    background: transparent;
+    min-height: var(--wac-tl-row);
+    overflow: visible; /* the now segments overhang the row gap */
+  }
+  .timeline .alert-card::before,
+  .timeline .alert-card::after {
+    content: none; /* no accent bar, no track */
+  }
+  .timeline .alert-card.tappable:hover {
+    background: rgba(var(--color-rgb), 0.05);
+  }
+
+  .timeline-gutter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .timeline .icon-box {
+    position: relative; /* hosts the severe/extreme .pulse-ring */
+    width: calc(28px * var(--wac-scale, 1));
+    height: calc(28px * var(--wac-scale, 1));
+  }
+  .timeline .icon-box ha-icon {
+    --mdc-icon-size: calc(16px * var(--wac-scale, 1));
+  }
+  .timeline .alert-title {
+    font-size: calc(0.9rem * var(--wac-scale, 1));
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .timeline-lane {
+    position: relative;
+    height: var(--wac-tl-row);
+    min-width: 0;
+  }
+  /* Now marker: one segment per lane, overhanging the row gap above and below
+     so the segments read as one line down the card. */
+  .timeline-lane::after {
+    content: "";
+    position: absolute;
+    top: calc(-1 * var(--wac-tl-gap));
+    bottom: calc(-1 * var(--wac-tl-gap));
+    left: var(--wac-tl-now, 11.111%);
+    width: 2px;
+    margin-left: -1px;
+    background: var(--wac-tl-now-color);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .timeline-bar {
+    position: absolute;
+    top: 50%;
+    height: var(--wac-tl-bar);
+    margin-top: calc(var(--wac-tl-bar) / -2);
+    min-width: 2px;
+    border-radius: calc(var(--wac-tl-bar) / 2);
+    background-color: var(--wac-progress-fg);
+    z-index: 1;
+  }
+  /* Phase surfaces, fixed (progressStyle does not apply): preparation is a
+     static barber pole on the track color, expired the divider grey (the row's
+     .expired opacity dims the rest), ongoing breathes. Active is the plain fill. */
+  .timeline .preparation .timeline-bar {
+    background-color: var(--secondary-background-color);
+    background-image: linear-gradient(
+      -45deg,
+      var(--wac-progress-fg) 25%,
+      transparent 25%,
+      transparent 50%,
+      var(--wac-progress-fg) 50%,
+      var(--wac-progress-fg) 75%,
+      transparent 75%
+    );
+    background-size: var(--wac-tl-bar) var(--wac-tl-bar);
+  }
+  .timeline .expired .timeline-bar {
+    background-color: var(--divider-color);
+  }
+  .timeline .ongoing .timeline-bar {
+    animation: ongoing-pulse 5s infinite;
+  }
+
+  /* Each right end is its own sign: a rounded cap ends here, an arrowhead
+     continues past the window (same on the left for "started before it"), and
+     a bar that dissolves has no known end. The arrowhead is a triangle in the
+     bar's color, a little taller than the bar and hung just past the lane edge,
+     so it points off the axis. It is a child of the LANE, not the bar: a cut
+     bar always meets the lane edge, and the open-end mask below would fade a
+     child of the bar to nothing (an open-ended alert that began before the
+     window lost its arrowhead that way). */
+  .timeline-bar.clip-start {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  .timeline-bar.clip-end {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .timeline-clip {
+    --wac-tl-arrow: calc(var(--wac-tl-bar) / 2 + 2px);
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    width: 0;
+    height: 0;
+    margin-top: calc(-1 * var(--wac-tl-arrow));
+    border-top: var(--wac-tl-arrow) solid transparent;
+    border-bottom: var(--wac-tl-arrow) solid transparent;
+  }
+  .timeline-clip.start {
+    left: -7px;
+    border-right: 7px solid var(--wac-progress-fg);
+  }
+  .timeline-clip.end {
+    right: -7px;
+    border-left: 7px solid var(--wac-progress-fg);
+  }
+  .timeline .expired .timeline-clip.start { border-right-color: var(--divider-color); }
+  .timeline .expired .timeline-clip.end { border-left-color: var(--divider-color); }
+  /* Entirely outside the window: no bar, just the arrowhead at that edge. */
+  .timeline-bar.off-axis {
+    display: none;
+  }
+  /* No known end: run to the edge and dissolve. No glyph here on purpose —
+     solid shapes (cap, arrowhead) are for known facts, and a second glyph in
+     the arrowhead's slot would read as inconsistency rather than meaning. */
+  .timeline-bar.open-end {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 64px), transparent 100%);
+  }
+
+  .timeline-axis {
+    font-size: calc(0.7rem * var(--wac-scale, 1));
+    color: var(--secondary-text-color);
+  }
+  .timeline-axis .timeline-lane {
+    height: var(--wac-tl-axis);
+  }
+  .timeline-axis .timeline-lane::after {
+    content: none; /* the head below stands in for the segment */
+  }
+  .timeline-tick {
+    position: absolute;
+    top: 0;
+    padding-left: 3px;
+    line-height: var(--wac-tl-axis);
+    white-space: nowrap;
+  }
+  .timeline-tick::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 1px;
+    height: 4px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  /* A tick near the right edge hangs its label to the left of the mark. */
+  .timeline-tick.edge {
+    padding-left: 0;
+    padding-right: 3px;
+    transform: translateX(-100%);
+  }
+  .timeline-tick.edge::before {
+    left: auto;
+    right: 0;
+  }
+  .timeline-tick.quiet {
+    padding: 0; /* mark only */
+  }
+  .timeline-tick.day {
+    font-weight: 600;
+    color: var(--primary-text-color);
+  }
+  .timeline-now-head {
+    position: absolute;
+    bottom: -3px;
+    left: var(--wac-tl-now, 11.111%);
+    width: 0;
+    height: 0;
+    margin-left: -5px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--wac-tl-now-color);
+    z-index: 3;
+  }
+
   /* --- PROGRESS FILL: whole-row wash (progressFill: background) ---
      Opt-in Bubble-Card-style surface: instead of the thin track, the entire
      alert row fills as a low-opacity wash of the progress color, behind the
@@ -1153,6 +1394,9 @@ export const cardStyles = css`
   }
   .no-animations .pulse-ring {
     display: none;
+  }
+  .no-animations .timeline-bar {
+    animation: none !important;
   }
   .no-animations .progress-fill,
   .no-animations .progress-fill::after,

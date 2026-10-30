@@ -134,7 +134,6 @@ export const fr: TranslationMap = {
   'editor.show_provider': 'Afficher le fournisseur',
   'editor.show_source_link': 'Afficher le lien source',
   'editor.reformat_text': 'Reformater le texte (supprimer les retours a la ligne)',
-  'editor.compact': 'Disposition compacte',
   'editor.font_size': 'Taille de police',
   'editor.font_size_small': 'Petit',
   'editor.font_size_default': 'Par défaut',

@@ -390,6 +390,16 @@ const PORT = 3742;
       ],
     },
     {
+      name: 'timeline',
+      url: `http://127.0.0.1:${PORT}/scripts/screenshot-timeline.html`,
+      canvasId: 'timeline-canvas',
+      cardIds: ['card-timeline'],
+      variants: [
+        { theme: 'theme-light', label: 'timeline light', out: 'img/timeline-light.png' },
+        { theme: 'theme-dark',  label: 'timeline dark ', out: 'img/timeline-dark.png' },
+      ],
+    },
+    {
       name: 'unavailable',
       url: `http://127.0.0.1:${PORT}/scripts/screenshot-unavailable.html`,
       canvasId: 'unavailable-canvas',

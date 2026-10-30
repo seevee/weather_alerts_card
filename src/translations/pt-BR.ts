@@ -134,7 +134,6 @@ export const ptBR: TranslationMap = {
   'editor.show_provider': 'Mostrar rótulo do provedor',
   'editor.show_source_link': 'Mostrar link da fonte',
   'editor.reformat_text': 'Reformatar texto do alerta (remover quebras fixas)',
-  'editor.compact': 'Layout compacto',
   'editor.font_size': 'Tamanho da fonte',
   'editor.font_size_small': 'Pequeno',
   'editor.font_size_default': 'Padrão',

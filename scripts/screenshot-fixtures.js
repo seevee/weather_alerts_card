@@ -119,6 +119,41 @@ export const ALERTS = [
 
 // Extended set with a Minor alert — used by MeteoAlarm theme screenshots
 // to showcase all four awareness level colors.
+// Timeline figure (layout: 'timeline'): six rows that between them cover all
+// four severity tiers, six distinct icons and every bar form — a long watch
+// whose start is cut by the window's lead, an alert with no end time (fades
+// off the right edge), three active bars and a prep bar. Same placeholder
+// voice as ALERTS.
+function makeTimelineAlert(id, event, severity, { onset, ends, certainty = 'Likely', urgency = 'Expected', area = 'Sampletown County', headline = '' }) {
+  return {
+    ID: `urn:oid:2.49.0.1.840.0.screenshot-tl-${id}`,
+    Event: event,
+    Severity: severity,
+    Certainty: certainty,
+    Urgency: urgency,
+    Sent: iso(Math.min(onset, 0) * H - H),
+    Onset: iso(onset * H),
+    Ends: ends === null ? '' : iso(ends * H),
+    Expires: ends === null ? '' : iso(ends * H),
+    Headline: headline,
+    AreaDesc: area,
+    Description: 'This is sample data for the card preview. No real action is needed.',
+    Instruction: 'Enjoy the show. No real action is needed.',
+    URL: `https://example.com/alerts/screenshot-tl-${id}`,
+    AffectedZones: ['https://api.weather.gov/zones/county/SAM001'],
+    Geocode: { UGC: ['SAM001'], SAME: ['000001'] },
+  };
+}
+
+export const ALERTS_TIMELINE = [
+  makeTimelineAlert('1', 'Red Flag of Enthusiasm Watch', 'Moderate', { onset: -26, ends: 60, certainty: 'Possible', urgency: 'Future', area: 'Sampletown County; Demoville', headline: 'RED FLAG OF ENTHUSIASM WATCH REMAINS IN EFFECT THROUGH WEDNESDAY' }),
+  makeTimelineAlert('2', 'Heat of the Moment Advisory', 'Moderate', { onset: -3, ends: null, certainty: 'Observed', urgency: 'Immediate', area: 'Sunnyside', headline: 'WARM FEELINGS CONTINUE UNTIL FURTHER NOTICE' }),
+  makeTimelineAlert('3', 'Tornado of Compliments', 'Extreme', { onset: -2, ends: 1.5, certainty: 'Observed', urgency: 'Immediate', area: 'Pleasantville; Sunnyside' }),
+  makeTimelineAlert('4', 'Flash Flood of Confetti Warning', 'Severe', { onset: -1, ends: 4, certainty: 'Likely', urgency: 'Expected', area: 'Demoville' }),
+  makeTimelineAlert('5', 'Dense Fog of Nostalgia Advisory', 'Minor', { onset: -0.5, ends: 3, certainty: 'Likely', urgency: 'Expected', area: 'Testburg' }),
+  makeTimelineAlert('6', 'Thunderstorm of Applause Watch', 'Severe', { onset: 2.25, ends: 10, certainty: 'Possible', urgency: 'Future', area: 'Sampletown County' }),
+];
+
 export const ALERT_MINOR = {
   ID: ALERT_ID_4,
   Event: 'Drizzle Advisory',

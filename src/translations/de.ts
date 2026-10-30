@@ -134,7 +134,6 @@ export const de: TranslationMap = {
   'editor.show_provider': 'Anbieter anzeigen',
   'editor.show_source_link': 'Quelllink anzeigen',
   'editor.reformat_text': 'Text umformatieren (harte Zeilenumbrüche entfernen)',
-  'editor.compact': 'Kompaktes Layout',
   'editor.font_size': 'Schriftgröße',
   'editor.font_size_small': 'Klein',
   'editor.font_size_default': 'Standard',

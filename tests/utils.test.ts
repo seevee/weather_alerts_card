@@ -29,6 +29,12 @@ import {
   displayToKm,
   toLengthUnit,
   formatDistance,
+  computeTimelineWindow,
+  timelineBarGeometry,
+  computeTimelineTicks,
+  formatTimelineTick,
+  TIMELINE_LEAD_FRACTION,
+  TIMELINE_AUTO_PAD,
 } from '../src/utils';
 import type { WeatherAlert, WeatherAlertsCardConfig, AlertProvider, HomeAssistant } from '../src/types';
 
@@ -1370,5 +1376,174 @@ describe('resolveReferencePoint', () => {
   it('returns undefined without a hass object', () => {
     expect(resolveReferencePoint(undefined)).toBeUndefined();
     expect(resolveReferencePoint(undefined, 'zone.work')).toBeUndefined();
+  });
+});
+
+describe('computeTimelineWindow', () => {
+  const H = 3600;
+  const now = 1_800_000_000;
+
+  it('fixed horizon: forward span from now with a one-eighth lead, now at 11%', () => {
+    const win = computeTimelineWindow([], '24h', now);
+    expect(win.endTs).toBe(now + 24 * H);
+    expect(win.startTs).toBe(now - 24 * H * TIMELINE_LEAD_FRACTION);
+    expect(win.nowPct).toBeCloseTo(100 / 9, 5);
+    for (const [h, hours] of [['6h', 6], ['12h', 12], ['72h', 72]] as const) {
+      expect(computeTimelineWindow([], h, now).endTs).toBe(now + hours * H);
+    }
+  });
+
+  it('auto fits the latest end, counts a future onset, ignores open-ended alerts', () => {
+    const alerts = [
+      makeAlert({ onsetTs: now - H, endsTs: now + 10 * H }),
+      makeAlert({ onsetTs: now + 30 * H, endsTs: now + 31 * H }), // prep: onset and end both count
+      makeAlert({ onsetTs: now - 5 * H, endsTs: 0 }),             // open-ended: no contribution
+    ];
+    // Plus the pad, so the last bar's cap sits inside the axis.
+    expect(computeTimelineWindow(alerts, 'auto', now).endTs).toBeCloseTo(now + 31 * H * (1 + TIMELINE_AUTO_PAD), 3);
+    expect(computeTimelineWindow(alerts, undefined, now).endTs).toBeCloseTo(now + 31 * H * (1 + TIMELINE_AUTO_PAD), 3);
+  });
+
+  it('auto floors the span at 6 h and caps it at 7 d', () => {
+    expect(computeTimelineWindow([makeAlert({ endsTs: now + 600 })], 'auto', now).endTs).toBe(now + 6 * H);
+    expect(computeTimelineWindow([makeAlert({ endsTs: 0 })], 'auto', now).endTs).toBe(now + 6 * H);
+    expect(computeTimelineWindow([], 'auto', now).endTs).toBe(now + 6 * H);
+    expect(computeTimelineWindow([makeAlert({ endsTs: now + 400 * H })], 'auto', now).endTs).toBe(now + 168 * H);
+  });
+});
+
+describe('timelineBarGeometry', () => {
+  const H = 3600;
+  const now = Date.now() / 1000;
+  const win = computeTimelineWindow([], '24h', now); // [now-3h, now+24h]
+  const geo = (overrides: Partial<WeatherAlert>) =>
+    timelineBarGeometry(computeAlertProgress(makeAlert({ sentTs: now - 10 * H, ...overrides })), win);
+
+  it('places an active alert inside the window with no clipping', () => {
+    const g = geo({ onsetTs: now - H, endsTs: now + 5 * H });
+    expect(g.offAxis).toBeNull();
+    expect(g.clipStart).toBe(false);
+    expect(g.clipEnd).toBe(false);
+    expect(g.openEnd).toBe(false);
+    expect(g.startPct).toBeCloseTo((2 / 27) * 100, 3);
+    expect(g.endPct).toBeCloseTo((8 / 27) * 100, 3);
+  });
+
+  it('clips a bar that crosses the window start and one that crosses the end', () => {
+    const early = geo({ onsetTs: now - 10 * H, endsTs: now + H });
+    expect(early.clipStart).toBe(true);
+    expect(early.startPct).toBe(0);
+    const late = geo({ onsetTs: now - H, endsTs: now + 48 * H });
+    expect(late.clipEnd).toBe(true);
+    expect(late.endPct).toBe(100);
+  });
+
+  it('collapses a bar entirely outside the window to its edge', () => {
+    const past = geo({ onsetTs: now - 30 * H, endsTs: now - 20 * H });
+    expect(past.offAxis).toBe('start');
+    expect(past.startPct).toBe(0);
+    expect(past.endPct).toBe(0);
+    expect(past.clipStart).toBe(true);
+    const future = geo({ onsetTs: now + 40 * H, endsTs: now + 50 * H });
+    expect(future.offAxis).toBe('end');
+    expect(future.startPct).toBe(100);
+    expect(future.clipEnd).toBe(true);
+  });
+
+  it('runs an open-ended alert to the right edge with no end chevron, active or prep', () => {
+    const ongoing = geo({ onsetTs: now - H, endsTs: 0 });
+    expect(ongoing.openEnd).toBe(true);
+    expect(ongoing.endPct).toBe(100);
+    expect(ongoing.clipEnd).toBe(false);
+    expect(ongoing.offAxis).toBeNull();
+    const prep = geo({ onsetTs: now + 2 * H, endsTs: 0 });
+    expect(prep.openEnd).toBe(true);
+    expect(prep.startPct).toBeGreaterThan(win.nowPct);
+    expect(prep.endPct).toBe(100);
+    // Never the synthesized one-hour end computeAlertProgress reports for itself.
+    expect(computeAlertProgress(makeAlert({ onsetTs: now - H, endsTs: 0 })).endsTs).toBe(now - H + H);
+  });
+
+  it('never draws the synthesized end: an open-ended alert beyond the window is still off-axis at the end', () => {
+    const g = geo({ onsetTs: now + 40 * H, endsTs: 0 });
+    expect(g.offAxis).toBe('end');
+    expect(g.clipEnd).toBe(false);
+  });
+});
+
+describe('computeTimelineTicks', () => {
+  const H = 3600;
+  // 2026-03-06T12:00:00Z — no DST edge nearby in Europe or the US.
+  const now = Date.UTC(2026, 2, 6, 12, 0, 0) / 1000;
+
+  it('picks a step that yields four to eight ticks for every horizon', () => {
+    for (const h of ['6h', '12h', '24h', '72h'] as const) {
+      const ticks = computeTimelineTicks(computeTimelineWindow([], h, now), 'UTC');
+      expect(ticks.length).toBeGreaterThanOrEqual(4);
+      expect(ticks.length).toBeLessThanOrEqual(8);
+      for (const t of ticks) {
+        expect(t.pct).toBeGreaterThanOrEqual(0);
+        expect(t.pct).toBeLessThanOrEqual(100);
+      }
+    }
+    const week = computeTimelineTicks(computeTimelineWindow([makeAlert({ endsTs: now + 400 * H })], 'auto', now), 'UTC');
+    expect(week.length).toBeGreaterThanOrEqual(4);
+    expect(week.length).toBeLessThanOrEqual(8);
+  });
+
+  it('aligns ticks to whole hours in the display timezone, including a half-hour zone', () => {
+    const win = computeTimelineWindow([], '6h', now);
+    const utc = computeTimelineTicks(win, 'UTC');
+    expect(utc.every(t => t.ts % H === 0)).toBe(true);
+    const kolkata = computeTimelineTicks(win, 'Asia/Kolkata'); // UTC+5:30
+    expect(kolkata.every(t => (t.ts + 5.5 * H) % H === 0)).toBe(true);
+    expect(kolkata.every(t => t.ts % H !== 0)).toBe(true);
+  });
+
+  it('marks local midnight as a day boundary and labels it with the date', () => {
+    const win = computeTimelineWindow([], '72h', now);
+    const ticks = computeTimelineTicks(win, 'America/Denver');
+    const midnights = ticks.filter(t => t.dayBoundary);
+    expect(midnights.length).toBeGreaterThan(0);
+    const locale = { language: 'en', time_format: 'language' as const, date_format: 'language' as const, timeZone: 'America/Denver' };
+    for (const m of midnights) {
+      expect(new Date(m.ts * 1000).toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour12: false })).toMatch(/^(24|00):00:00$/);
+      expect(formatTimelineTick(m, locale)).toMatch(/^([A-Z][a-z]{2} \d{1,2}|\d{1,2} [A-Z][a-z]{2})$/);
+    }
+    const plain = ticks.find(t => !t.dayBoundary)!;
+    expect(formatTimelineTick(plain, locale)).toMatch(/\d/);
+  });
+
+  it('coarsens the step to honour a smaller tick budget', () => {
+    const win = computeTimelineWindow([], '24h', now);
+    const wide = computeTimelineTicks(win, 'UTC');
+    const narrow = computeTimelineTicks(win, 'UTC', 3);
+    expect(narrow.length).toBeLessThanOrEqual(3);
+    expect(narrow.length).toBeLessThan(wide.length);
+    // Every narrow tick is also a wide one: coarser, never shifted.
+    for (const t of narrow) expect(wide.some(w => w.ts === t.ts)).toBe(true);
+    // Budgets below one and above the cap are clamped, never a crash.
+    expect(computeTimelineTicks(win, 'UTC', 0).length).toBeGreaterThan(0);
+    expect(computeTimelineTicks(win, 'UTC', 50).length).toBeLessThanOrEqual(8);
+  });
+
+  it('labels whole-hour ticks hour-only in a day-period locale and HH:MM otherwise', () => {
+    const win = computeTimelineWindow([], '6h', now);
+    const [tick] = computeTimelineTicks(win, 'UTC');
+    expect(tick.minutes).toBe(false);
+    const twelve = { language: 'en', time_format: '12' as const, date_format: 'language' as const, timeZone: 'UTC' };
+    expect(formatTimelineTick(tick, twelve)).toMatch(/^\d{1,2} [AP]M$/);
+    const twentyFour = { ...twelve, time_format: '24' as const };
+    expect(formatTimelineTick(tick, twentyFour)).toMatch(/^\d{2}:00$/);
+    // A sub-hour step keeps its minutes.
+    const short = computeTimelineTicks({ startTs: now, endTs: now + 3600, nowPct: 0 }, 'UTC');
+    expect(short.every(t => t.minutes)).toBe(true);
+    expect(formatTimelineTick(short[1], twelve)).toMatch(/^\d{1,2}:\d{2} [AP]M$/);
+  });
+
+  it('falls back to the browser zone for an unknown timezone and yields nothing for an empty window', () => {
+    const win = computeTimelineWindow([], '6h', now);
+    expect(computeTimelineTicks(win, 'Not/AZone').length).toBeGreaterThan(0);
+    expect(computeTimelineTicks({ startTs: now, endTs: now, nowPct: 0 })).toEqual([]);
   });
 });
