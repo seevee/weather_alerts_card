@@ -23,6 +23,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 - **Affected-area mini-map** — optional inline outline of a CAP alert's polygon, bounding-box frame for INMET alerts, or a marker at a point incident's location (NSW RFS and CAP Alerts point feeds), with an opt-in raster-tile basemap and an opt-in you-are-here dot (`showGeometry`, `showMyLocation`)
 - **BoM phase badges** — New, Updated, Renewed lifecycle indicators
 - **Compact layout** — collapsed single-row alerts with progress bars that expand on tap
+- **Timeline layout** — every alert as a bar on one shared time axis, so overlapping and back-to-back alerts read at a glance; a tap opens the detail pop-up
 - **Zone filtering** — show only alerts for specific zone codes (CAP Alerts geocodes, BoM `area_id`); see the `zones` note for provider support
 - **Dismissable alerts** — optional per-alert dismiss (button or swipe) with undo and a restore-all control, stored browser-locally
 - **Broken-source safety badge** — when a configured sensor goes unavailable/unknown, a degraded indicator names the broken source instead of silently showing "no alerts" (a dead feed is never treated as proof of safety) (`unavailableBehavior`)
@@ -112,6 +113,29 @@ card_mod:
 Deeper layout tweaks (row height, icon chip size) still require reaching into the
 card's internal class names, which are **not** a stable public API and may change
 between releases. Prefer the tokens above where they suffice.
+
+### Timeline layout
+
+`layout: timeline` draws every alert as a bar on one shared time axis, one lane per
+alert, so overlapping and back-to-back alerts read at a glance. The gutter carries the
+icon chip, the event name and the compact layout's one-phrase time state ("for 3h",
+"in 45m"); tapping a row opens the detail pop-up below (or your own `tap_action`). Each bar end is its own sign: a rounded cap ends there, an arrowhead
+continues past the window, and a bar that fades out from now has no known end. The window fits
+the alerts on screen by default, or a fixed `timelineHorizon`. The now marker carries the current time, and the part of each bar behind it is dimmed, so the bright part is what remains. Severe and extreme alerts draw a thicker bar, and a window of two days or more marks each midnight down every lane.
+
+[![Alerts as bars on a shared time axis](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/timeline-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/timeline-light.webp)
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.nws_alerts_alerts
+layout: timeline
+timelineHorizon: 24h
+sortOrder: onset
+```
+
+The now marker carries progress here, so `progressFill` and `progressStyle` do not
+apply (the bar pattern is fixed per phase; `iconBorderStyle` still styles the chip), and
+dismissal is always by button, whatever `dismissTrigger` says.
 
 **Per-alert detail pop-up (built in)** — `tap_action: { action: details }` opens
 the tapped alert in a modal instead of expanding it in place. No add-ons
@@ -253,10 +277,11 @@ Then click the Download button, and click Reload when prompted.
 | `fontSize` | `'default'` | `'small'`, `'default'`, `'large'`, `'x-large'` — scales text and icons |
 | `progressFill` | `'track'` | Progress-indication surface. `'track'`: the thin progress bar (full) / bottom mini-bar (compact). `'background'`: a [Bubble Card](https://github.com/Clooos/Bubble-Card)-style whole-row wash — the entire alert row fills as a low-opacity tint of the alert color, growing to the current progress point behind the content (the thin track is hidden; the textual progress labels stay). Tune or disable the wash via the `--wac-progress-fill-*` [surface tokens](#surface-theming---wac--tokens). Note: `progressStyle` textures do not apply here — the wash is always solid (the thin track is hidden, and texture is imperceptible at the wash's legibility-safe opacity). |
 | `reformatText` | `true` | Strip hard line wraps from alert text (NWS 69-char teletype breaks) while preserving paragraph breaks |
-| `layout` | `'default'` | `'default'` or `'compact'` |
+| `layout` | `'default'` | `'default'`, `'compact'`, or `'timeline'` — the timeline draws every alert as a bar on one shared time axis (see [Timeline layout](#timeline-layout)) |
+| `timelineHorizon` | `'auto'` | `layout: timeline` only. The axis span ahead of now: `'6h'`, `'12h'`, `'24h'`, `'72h'`, or `'auto'` to fit the alerts on screen (floored at 6 h, capped at 7 d). One eighth of the span is shown before now |
 | `allowDismiss` | `false` | Let users dismiss individual alerts (browser-local). Adds a × button and/or swipe gesture |
 | `dismissTrigger` | `'button'` | `'button'`, `'swipe'`, or `'both'` — how an alert is dismissed (swipe covers touch + mouse drag). Requires `allowDismiss` |
-| `dismissButtonStyle` | `'icon'` | `'icon'` or `'labeled'` (icon + "Dismiss" text). No effect when `dismissTrigger: 'swipe'`; compact layout is always icon-only |
+| `dismissButtonStyle` | `'icon'` | `'icon'` or `'labeled'` (icon + "Dismiss" text). No effect when `dismissTrigger: 'swipe'`; the compact and timeline layouts are always icon-only |
 | `showDismissUndo` | `true` | Show an Undo toast when an alert is dismissed. No effect when `allowDismiss` is off |
 | `tap_action` | — | Standard Home Assistant action fired when an alert row is tapped. **When set, the inline expand affordance is replaced** — the whole row becomes the tap target and the compact chevron / "Read Details" toggle is removed (in the default layout, `expandDetails: true` still renders the always-on detail panel below the row). Supported actions: `details`, `more-info`, `navigate`, `url`, `toggle`, `call-service` (alias `perform-action`), `fire-dom-event`, `none` (`assist` is intentionally unsupported — it has no meaning on an alert row; `none` is an inert chip: the toggle is removed but tapping does nothing). For `more-info`/`toggle`, the default entity is resolved **per tapped alert** — `tap_action.entity` (explicit) → the alert's own source sensor → `entity` — so per-alert providers (CAP Alerts, NSW RFS) open *that* alert's sensor while aggregate providers (NWS, DWD, …) fall back to the aggregate sensor. `toggle` uses the generic `homeassistant.toggle` service. `details` is card-owned rather than a standard HA action: it opens the tapped alert in a modal showing the whole alert body (per-alert for every provider, no add-ons — see [Themes](#themes) for an example). Absent = today's inline expand/toggle behavior, unchanged. The visual editor covers the action itself plus the `navigate` and `url` parameters; `perform-action` / `call-service` / `fire-dom-event` carry payloads that stay YAML-edited, and the editor preserves them untouched. |
 

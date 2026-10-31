@@ -1074,6 +1074,347 @@ export const cardStyles = css`
     background-color: var(--wac-progress-fg);
   }
 
+  /* --- TIMELINE LAYOUT ---
+     One shared axis; each alert is a row of gutter | lane (| dismiss). The row
+     keeps .alert-card for its token block only (--color, --wac-fg, boosts and
+     the phase classes) and every piece of row chrome is stripped here, as the
+     detail dialog does. The bar is a static per-phase surface: what moves is
+     the now marker, drawn as one segment per lane at --wac-tl-now (set once on
+     .timeline-body; the ha-card carries .timeline like .compact) and
+     overhanging the row gap so the segments join into a single line. The only
+     motion is the ongoing breathe on the bar and the severe/extreme ring on
+     the icon chip, both opacity-only (see MOTION). */
+  .timeline-body {
+    --wac-tl-gutter: clamp(96px, 40%, 280px);
+    --wac-tl-row: calc(36px * var(--wac-scale, 1));
+    --wac-tl-axis: calc(18px * var(--wac-scale, 1));
+    --wac-tl-gap: 4px;
+    --wac-tl-bar: calc(10px * var(--wac-scale, 1));
+    --wac-tl-arrow-len: calc(7px * var(--wac-scale, 1));
+    --wac-tl-now-color: var(--primary-text-color);
+    /* The axis is the first thing in the card: content-area padding when it
+       starts at the card edge, a smaller gap under a header's own padding. */
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--wac-tl-gap);
+  }
+  .timeline-body.headed {
+    padding-top: 4px;
+  }
+  .timeline-axis,
+  .timeline .alert-card {
+    display: grid;
+    grid-template-columns: var(--wac-tl-gutter) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 10px;
+  }
+  /* The dismiss column exists only when the card can dismiss, on the axis too,
+     so the axis lane and the row lanes always share one width. */
+  .timeline-body.dismissable .timeline-axis,
+  .timeline-body.dismissable .alert-card {
+    grid-template-columns: var(--wac-tl-gutter) minmax(0, 1fr) auto;
+  }
+  .timeline-dismiss-spacer {
+    width: calc(24px * var(--wac-scale, 1));
+  }
+  .timeline .alert-card {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--wac-alert-border-radius, 8px);
+    box-shadow: none;
+    background: transparent;
+    min-height: var(--wac-tl-row);
+    overflow: visible; /* the now segments overhang the row gap */
+  }
+  .timeline .alert-card::before,
+  .timeline .alert-card::after {
+    content: none; /* no accent bar, no track */
+  }
+  .timeline .alert-card.tappable:hover {
+    background: rgba(var(--color-rgb), 0.05);
+  }
+
+  .timeline-gutter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  /* Name over the one-phrase time state ("for 3h"), both ellipsized to the
+     gutter: the stack keeps the name's width instead of sharing a line. */
+  .timeline-gutter-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
+  }
+  .timeline-time {
+    font-size: calc(0.7rem * var(--wac-scale, 1));
+    color: var(--secondary-text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .timeline .icon-box {
+    position: relative; /* hosts the severe/extreme .pulse-ring */
+    width: calc(28px * var(--wac-scale, 1));
+    height: calc(28px * var(--wac-scale, 1));
+  }
+  .timeline .icon-box ha-icon {
+    --mdc-icon-size: calc(16px * var(--wac-scale, 1));
+  }
+  .timeline .alert-title {
+    font-size: calc(0.9rem * var(--wac-scale, 1));
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A bar's length is its duration, so the most urgent alert is often the
+     smallest mark on the axis. Weight on the name gives the severe tiers a
+     second channel that is not color (the chip's pulse ring is the first). */
+  .timeline .severity-extreme .alert-title,
+  .timeline .severity-severe .alert-title {
+    font-weight: 600;
+  }
+
+  .timeline-lane {
+    position: relative;
+    height: var(--wac-tl-row);
+    min-width: 0;
+  }
+  /* Now marker: one segment per lane, reaching up through the row gap above
+     so the segments read as one line down the card. Only upward: the marker
+     is translucent, and segments overhanging both ways stacked in every gap,
+     a brighter dash between each pair of rows. The first row's segment meets
+     the axis head. */
+  .timeline-lane::after {
+    content: "";
+    position: absolute;
+    top: calc(-1 * var(--wac-tl-gap));
+    bottom: 0;
+    left: var(--wac-tl-now, 11.111%);
+    width: 2px;
+    margin-left: -1px;
+    background: var(--wac-tl-now-color);
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .timeline-bar {
+    position: absolute;
+    top: 50%;
+    height: var(--wac-tl-bar);
+    margin-top: calc(var(--wac-tl-bar) / -2);
+    min-width: 2px;
+    border-radius: calc(var(--wac-tl-bar) / 2);
+    background-color: var(--wac-progress-fg);
+    z-index: 1;
+  }
+  /* Phase surfaces, fixed (progressStyle does not apply): preparation is a
+     static barber pole on the track color, expired the divider grey (the row's
+     .expired opacity dims the rest), ongoing breathes. Active is the plain fill. */
+  .timeline .preparation .timeline-bar {
+    background-color: var(--secondary-background-color);
+    background-image: linear-gradient(
+      -45deg,
+      var(--wac-progress-fg) 25%,
+      transparent 25%,
+      transparent 50%,
+      var(--wac-progress-fg) 50%,
+      var(--wac-progress-fg) 75%,
+      transparent 75%
+    );
+    background-size: var(--wac-tl-bar) var(--wac-tl-bar);
+  }
+  .timeline .expired .timeline-bar {
+    background-color: var(--divider-color);
+  }
+  /* Bar and arrowheads breathe as one layer. Two animations would stay in
+     step only if both elements were created on the same frame, and an
+     arrowhead is added whenever a re-render first clips the bar, so it drifted
+     out of phase with a bar already running.
+     The span hangs one arrowhead past each lane edge, because a mask clips
+     everything outside its box, and the inner lane box puts the bar's
+     percentages back in lane coordinates. */
+  .timeline-span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--wac-tl-arrow-len));
+    right: calc(-1 * var(--wac-tl-arrow-len));
+  }
+  .timeline-span-lane {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--wac-tl-arrow-len);
+    right: var(--wac-tl-arrow-len);
+  }
+  /* Elapsed time recedes: everything left of now, arrowhead included, drops
+     to 40% so the bright part of a bar is what remains (the default layout's
+     fill reads the same way). One mask over bar and arrowheads, so they dim
+     as a unit, and its hard edge sits under the now marker. An expired bar is
+     all past and already grey, so it is left alone. */
+  .timeline-row:not(.expired) .timeline-span {
+    --wac-tl-elapsed: calc(var(--wac-tl-arrow-len) + (100% - 2 * var(--wac-tl-arrow-len)) * var(--wac-tl-now-f, 0.11111));
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.4) var(--wac-tl-elapsed), #000 var(--wac-tl-elapsed));
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.4) var(--wac-tl-elapsed), #000 var(--wac-tl-elapsed));
+  }
+  /* Severity in shape: a bar's length is its duration, so the most urgent
+     alert is often the smallest mark. The severe tiers draw a thicker bar,
+     and the arrowheads, sized off it, follow. */
+  .timeline .severity-extreme,
+  .timeline .severity-severe {
+    --wac-tl-bar: calc(14px * var(--wac-scale, 1));
+  }
+  /* Local midnights in wide windows: a divider-grey line down every lane,
+     under the bars, reaching up through the gap like the now marker (HA's
+     divider is translucent too, so the same no-overlap rule applies). */
+  .timeline-day-line {
+    position: absolute;
+    top: calc(-1 * var(--wac-tl-gap));
+    bottom: 0;
+    width: 1px;
+    background: var(--divider-color);
+    pointer-events: none;
+  }
+  .timeline .ongoing .timeline-span {
+    animation: ongoing-pulse 5s infinite;
+  }
+
+  /* Each right end is its own sign: a rounded cap ends here, an arrowhead
+     continues past the window (same on the left for "started before it"), and
+     a bar that dissolves has no known end. The arrowhead is a triangle in the
+     bar's color, a little taller than the bar and hung just past the lane edge,
+     so it points off the axis. It is a sibling of the bar, not a child: a cut
+     bar always meets the lane edge, and the open-end mask below would fade a
+     child of the bar to nothing (an open-ended alert that began before the
+     window lost its arrowhead that way). */
+  .timeline-bar.clip-start {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  .timeline-bar.clip-end {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .timeline-clip {
+    --wac-tl-arrow: calc(var(--wac-tl-bar) / 2 + 2px);
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    width: 0;
+    height: 0;
+    margin-top: calc(-1 * var(--wac-tl-arrow));
+    border-top: var(--wac-tl-arrow) solid transparent;
+    border-bottom: var(--wac-tl-arrow) solid transparent;
+  }
+  /* Each arrowhead overlaps its bar by 1px. Butted exactly, both edges land
+     on the same fractional pixel and anti-alias, leaving a dark seam. The
+     overlap cannot double up: the span's opacity applies to the group. */
+  .timeline-clip.start {
+    left: calc(1px - var(--wac-tl-arrow-len));
+    border-right: var(--wac-tl-arrow-len) solid var(--wac-progress-fg);
+  }
+  .timeline-clip.end {
+    right: calc(1px - var(--wac-tl-arrow-len));
+    border-left: var(--wac-tl-arrow-len) solid var(--wac-progress-fg);
+  }
+  .timeline .expired .timeline-clip.start { border-right-color: var(--divider-color); }
+  .timeline .expired .timeline-clip.end { border-left-color: var(--divider-color); }
+  /* Entirely outside the window: no bar, just the arrowhead at that edge. */
+  .timeline-bar.off-axis {
+    display: none;
+  }
+  /* No known end: full strength at now (or at a future onset), then fading
+     across the rest of the window. Reaching the edge says it has not ended;
+     losing most of its strength in the first quarter says nothing is known
+     past now, so a wide window does not draw days of solid bar. No glyph here
+     on purpose: solid shapes (cap, arrowhead) are for known facts, and a
+     second glyph in the arrowhead's slot would read as inconsistency rather
+     than meaning. The fade start is per bar, in its own width, set inline. */
+  .timeline-bar.open-end {
+    --wac-tl-fade-mid: calc(var(--wac-tl-fade-from, 0%) + (100% - var(--wac-tl-fade-from, 0%)) * 0.25);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    -webkit-mask-image: linear-gradient(to right, #000 var(--wac-tl-fade-from, 0%), rgba(0, 0, 0, 0.35) var(--wac-tl-fade-mid), transparent 100%);
+    mask-image: linear-gradient(to right, #000 var(--wac-tl-fade-from, 0%), rgba(0, 0, 0, 0.35) var(--wac-tl-fade-mid), transparent 100%);
+  }
+
+  .timeline-axis {
+    font-size: calc(0.7rem * var(--wac-scale, 1));
+    color: var(--secondary-text-color);
+  }
+  .timeline-axis .timeline-lane {
+    height: var(--wac-tl-axis);
+  }
+  .timeline-axis .timeline-lane::after {
+    content: none; /* the head below stands in for the segment */
+  }
+  .timeline-tick {
+    position: absolute;
+    top: 0;
+    padding-left: 3px;
+    line-height: var(--wac-tl-axis);
+    white-space: nowrap;
+  }
+  .timeline-tick::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 1px;
+    height: 4px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  /* A tick near the right edge hangs its label to the left of the mark. */
+  .timeline-tick.edge {
+    padding-left: 0;
+    padding-right: 3px;
+    transform: translateX(-100%);
+  }
+  .timeline-tick.edge::before {
+    left: auto;
+    right: 0;
+  }
+  .timeline-tick.quiet {
+    padding: 0; /* mark only */
+  }
+  .timeline-tick.day {
+    font-weight: 600;
+    color: var(--primary-text-color);
+  }
+  /* The clock time beside the head, so "now" needs no reading off the ticks.
+     Neighbouring ticks within a label of it go mark-only. */
+  .timeline-now-label {
+    position: absolute;
+    top: 0;
+    left: var(--wac-tl-now, 11.111%);
+    padding-left: 6px;
+    line-height: var(--wac-tl-axis);
+    white-space: nowrap;
+    font-weight: 500;
+    color: var(--primary-text-color);
+  }
+  .timeline-now-head {
+    position: absolute;
+    bottom: -3px;
+    left: var(--wac-tl-now, 11.111%);
+    width: 0;
+    height: 0;
+    margin-left: -5px;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--wac-tl-now-color);
+    z-index: 3;
+  }
+
   /* --- PROGRESS FILL: whole-row wash (progressFill: background) ---
      Opt-in Bubble-Card-style surface: instead of the thin track, the entire
      alert row fills as a low-opacity wash of the progress color, behind the
@@ -1153,6 +1494,9 @@ export const cardStyles = css`
   }
   .no-animations .pulse-ring {
     display: none;
+  }
+  .no-animations .timeline-span {
+    animation: none !important;
   }
   .no-animations .progress-fill,
   .no-animations .progress-fill::after,

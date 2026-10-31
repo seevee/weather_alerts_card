@@ -44,6 +44,10 @@ export const fr: TranslationMap = {
   'progress.compact_ongoing': 'en cours',
   'progress.compact_expired': 'expiré il y a {time}',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Commencée avant cette fenêtre',
+  'timeline.clipped_end': 'Se poursuit au-delà de cette fenêtre',
+
   // Relative time
   'time.just_now': 'a l\'instant',
   'time.in_less_than_1m': 'dans <1m',
@@ -134,7 +138,18 @@ export const fr: TranslationMap = {
   'editor.show_provider': 'Afficher le fournisseur',
   'editor.show_source_link': 'Afficher le lien source',
   'editor.reformat_text': 'Reformater le texte (supprimer les retours a la ligne)',
-  'editor.compact': 'Disposition compacte',
+  'editor.layout': 'Disposition',
+  'editor.layout_default': 'Par défaut',
+  'editor.layout_compact': 'Compacte',
+  'editor.layout_timeline': 'Chronologie',
+  'editor.timeline_horizon': 'Fenêtre de la chronologie',
+  'editor.timeline_horizon_auto': 'Ajuster aux alertes',
+  'editor.timeline_horizon_6h': '6 heures',
+  'editor.timeline_horizon_12h': '12 heures',
+  'editor.timeline_horizon_24h': '24 heures',
+  'editor.timeline_horizon_72h': '3 jours',
+  'editor.timeline_styling_note': 'La chronologie affiche des barres fixes par phase ; les réglages de remplissage et de décoration de la progression ne s\'appliquent pas.',
+  'editor.timeline_dismiss_note': 'Dans la chronologie, seul le bouton permet d\'ignorer une alerte.',
   'editor.font_size': 'Taille de police',
   'editor.font_size_small': 'Petit',
   'editor.font_size_default': 'Par défaut',

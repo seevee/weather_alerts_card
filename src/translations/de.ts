@@ -44,6 +44,10 @@ export const de: TranslationMap = {
   'progress.compact_ongoing': 'laufend',
   'progress.compact_expired': 'abgelaufen vor {time}',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Hat vor diesem Zeitfenster begonnen',
+  'timeline.clipped_end': 'Geht über dieses Zeitfenster hinaus',
+
   // Relative time
   'time.just_now': 'gerade eben',
   'time.in_less_than_1m': 'in <1 Min',
@@ -134,7 +138,18 @@ export const de: TranslationMap = {
   'editor.show_provider': 'Anbieter anzeigen',
   'editor.show_source_link': 'Quelllink anzeigen',
   'editor.reformat_text': 'Text umformatieren (harte Zeilenumbrüche entfernen)',
-  'editor.compact': 'Kompaktes Layout',
+  'editor.layout': 'Layout',
+  'editor.layout_default': 'Standard',
+  'editor.layout_compact': 'Kompakt',
+  'editor.layout_timeline': 'Zeitleiste',
+  'editor.timeline_horizon': 'Zeitfenster der Zeitleiste',
+  'editor.timeline_horizon_auto': 'An Warnungen anpassen',
+  'editor.timeline_horizon_6h': '6 Stunden',
+  'editor.timeline_horizon_12h': '12 Stunden',
+  'editor.timeline_horizon_24h': '24 Stunden',
+  'editor.timeline_horizon_72h': '3 Tage',
+  'editor.timeline_styling_note': 'Die Zeitleiste zeichnet feste Balken je Phase; Fortschrittsfüllung und Dekoration gelten hier nicht.',
+  'editor.timeline_dismiss_note': 'In der Zeitleiste wird nur per Schaltfläche ausgeblendet.',
   'editor.font_size': 'Schriftgröße',
   'editor.font_size_small': 'Klein',
   'editor.font_size_default': 'Standard',

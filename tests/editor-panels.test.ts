@@ -78,7 +78,8 @@ describe('panel layout', () => {
   });
 
   it('places every registry field in the panel the registry names', () => {
-    const host = renderHost(makeEditor(base({ showGeometry: true, allowDismiss: true })).editor);
+    // layout: 'timeline' exposes the timeline window select.
+    const host = renderHost(makeEditor(base({ showGeometry: true, allowDismiss: true, layout: 'timeline' })).editor);
     const byPanel = panels(host);
     for (const f of TOGGLE_FIELDS) {
       const label = en[f.label];
@@ -136,7 +137,7 @@ describe('panel header summaries', () => {
     });
     const byPanel = panels(renderHost(makeEditor(cfg).editor));
     expect(byPanel.filtering.secondary).toBe('Zones · Minimum severity');
-    expect(byPanel.appearance.secondary).toBe('Compact layout · Show provider label · Progress bar decoration');
+    expect(byPanel.appearance.secondary).toBe('Layout · Show provider label · Progress bar decoration');
     expect(byPanel.details.secondary).toBe('Show detail panel · Show area map');
     expect(byPanel.behavior.secondary).toBe('Tap action · Hide card when there are no active alerts');
     expect(byPanel.dismissal.secondary).toBe('Allow dismissing alerts');
@@ -186,7 +187,7 @@ describe('changed-row markers', () => {
     const host = renderHost(makeEditor(cfg).editor);
     expect(markedLabels(host).sort()).toEqual([
       'Zones (optional)', 'Maximum distance (km)', 'My location',
-      'Compact layout', 'Active',
+      'Layout', 'Active',
       'Area map style',
       'Tap action', 'Hide card when there are no active alerts', 'Sort order',
       'Allow dismissing alerts', 'Dismiss trigger',
@@ -352,14 +353,14 @@ describe('reset links', () => {
     expect(r.every(x => x.link !== null)).toBe(true);
     expect(r.map(x => x.label).sort()).toEqual([
       'Alert provider', 'Zones (optional)', 'Maximum distance (km)', 'My location',
-      'Compact layout', 'Active', 'Ongoing', 'Tap action',
+      'Layout', 'Active', 'Ongoing', 'Tap action',
       'Hide card when there are no active alerts', 'Timezone',
     ].sort());
   });
 
   it('resets a registry key to its default in one event', () => {
     const { editor, events } = makeEditor(base({ layout: 'compact', colorTheme: 'nws' }));
-    click(rows(renderHost(editor)).find(x => x.label === 'Compact layout')?.link);
+    click(rows(renderHost(editor)).find(x => x.label === 'Layout')?.link);
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual(base({ colorTheme: 'nws' }));
   });
@@ -424,6 +425,12 @@ describe('hidden-but-set dependents', () => {
   it('names geometry keys set while the map is off', () => {
     const byPanel = panels(renderHost(makeEditor(base({ geometryStyle: 'map', showMyLocation: true })).editor));
     expect(alsoSet(byPanel.details)).toEqual(['Also set: Area map style · Show my location on the map Reset to default']);
+  });
+
+  it('names the timeline window when the layout is not the timeline', () => {
+    const byPanel = panels(renderHost(makeEditor(base({ layout: 'compact', timelineHorizon: '24h' })).editor));
+    expect(alsoSet(byPanel.appearance)).toEqual(['Also set: Timeline window Reset to default']);
+    expect(alsoSet(panels(renderHost(makeEditor(base({ layout: 'timeline', timelineHorizon: '24h' })).editor)).appearance)).toEqual([]);
   });
 
   it('names dismissal keys under an off master, and the button style under a swipe trigger', () => {

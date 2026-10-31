@@ -181,14 +181,25 @@ describe('compositor-only motion (#364)', () => {
     return props;
   }
 
-  for (const layout of ['default', 'compact'] as const) {
+  // prep: stripes + ring; active: shimmer; ongoing: pulse + ring; expired: nothing.
+  const ROW_NAMES = ['fill-shimmer', 'ongoing-pulse', 'pulse-ring', 'pulse-ring', 'stripe-march'];
+  const LAYOUTS = [
+    { layout: 'default', names: ROW_NAMES, props: ['opacity', 'transform'], ring: ':scope > .pulse-ring' },
+    { layout: 'compact', names: ROW_NAMES, props: ['opacity', 'transform'], ring: ':scope > .pulse-ring' },
+    // The timeline bar carries no fill motion (prep stripes are static); the
+    // ongoing breathe is one animation on the span holding the bar and its
+    // start arrowhead (the onset an hour ago falls before the auto window's
+    // 45-minute lead), and the ring wraps the icon chip.
+    { layout: 'timeline', names: ['ongoing-pulse', 'pulse-ring', 'pulse-ring'], props: ['opacity'], ring: ':scope > .timeline-gutter > .icon-box > .pulse-ring' },
+  ] as const;
+  for (const { layout, names: expected, props: expectedProps, ring } of LAYOUTS) {
     it(`renders the pulse ring only on severe/extreme alerts (${layout})`, async () => {
       const { card, cleanup } = await mountCard({ ...BASE, layout, animations: true }, severeHass());
       try {
         const classes = cardClassesByTitle(card);
         const root = shadow(card);
         const withRing = [...root.querySelectorAll('.alert-card')]
-          .filter(el => el.querySelector(':scope > .pulse-ring'))
+          .filter(el => el.querySelector(ring))
           .map(el => (el.querySelector('.alert-title')?.textContent || '').trim());
         expect(withRing.sort()).toEqual(['Ongoing Warning', 'Prep Warning']);
         expect(classes['Prep Warning'].contains('severity-severe')).toBe(true);
@@ -202,10 +213,9 @@ describe('compositor-only motion (#364)', () => {
       try {
         const root = shadow(card);
         const names = root.getAnimations().map(a => (a as CSSAnimation).animationName).sort();
-        // prep: stripes + ring; active: shimmer; ongoing: pulse + ring; expired: nothing.
-        expect(names).toEqual(['fill-shimmer', 'ongoing-pulse', 'pulse-ring', 'pulse-ring', 'stripe-march']);
+        expect(names).toEqual(expected);
         const props = [...animatedProperties(root)].sort();
-        expect(props).toEqual(['opacity', 'transform']);
+        expect(props).toEqual(expectedProps);
       } finally {
         cleanup();
       }

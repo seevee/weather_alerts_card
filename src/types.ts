@@ -116,6 +116,15 @@ export interface IconBorderStyleConfig {
   ongoing?: IconBorderStyle;     // default 'solid'
 }
 
+// Timeline axis span (layout: 'timeline'). Fixed values are the forward span
+// from now; 'auto' fits the alerts on screen. Shared by the card (window math)
+// and the editor (option list) so the two can never drift.
+export type TimelineHorizon = 'auto' | '6h' | '12h' | '24h' | '72h';
+export const TIMELINE_HORIZONS: readonly TimelineHorizon[] = ['auto', '6h', '12h', '24h', '72h'];
+export const TIMELINE_HORIZON_HOURS: Record<Exclude<TimelineHorizon, 'auto'>, number> = {
+  '6h': 6, '12h': 12, '24h': 24, '72h': 72,
+};
+
 // Configurable temporal phases for progress/icon decoration (expired is fixed,
 // always dimmed-solid, so it is never a configurable phase).
 export type DecoPhase = 'preparation' | 'active' | 'ongoing';
@@ -152,7 +161,8 @@ export interface WeatherAlertsCardConfig {
   progressStyle?: ProgressStyleConfig; // per-phase progress-bar decoration; omit for defaults (prep striped, active shimmer, ongoing pulse)
   iconBorderStyle?: IconBorderStyleConfig; // per-phase icon-ring border style; omit for defaults (prep dashed, active solid, ongoing solid)
   tap_action?: ActionConfig; // standard HA action fired when an alert row is tapped; presence replaces the inline expand/toggle affordance in both layouts. Absent = unchanged inline-expand behavior
-  layout?: 'default' | 'compact';
+  layout?: 'default' | 'compact' | 'timeline'; // 'timeline': every alert is a bar on one shared time axis, one lane each, with a gutter (icon chip, event name, phase time label); a row tap opens the detail pop-up unless tap_action says otherwise. progressFill/progressStyle do not apply; dismissal is button-only
+  timelineHorizon?: TimelineHorizon; // layout:'timeline' only. The forward span of the axis from now ('6h' … '72h'); undefined/'auto' fits the latest end or future onset, floored at 6 h and capped at 7 d. The lead shown before now is one eighth of the span
   fontSize?: 'small' | 'default' | 'large' | 'x-large';
   progressFill?: 'track' | 'background'; // undefined/'track': thin progress bar (full) / bottom mini-bar (compact); 'background': Bubble-Card-style whole-row low-opacity wash growing to --progress, behind the content (thin track hidden, labels kept)
   colorTheme?: 'severity' | 'nws' | 'meteoalarm' | 'eccc'; // the ladder every alert is painted from: the card's own tiers, NWS's per-event table (tier when no event matches), MeteoAlarm's tiers, ECCC's tiers

@@ -15,6 +15,7 @@ const BROWSER_SUITES = [
   'tests/card-geometry.test.ts',
   'tests/card-radius.test.ts',
   'tests/card-swipe-dismiss.test.ts',
+  'tests/card-timeline.test.ts',
   'tests/card-tap-action.test.ts',
   'tests/color-theme.test.ts',
   'tests/device-mode.test.ts',

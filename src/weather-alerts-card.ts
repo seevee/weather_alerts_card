@@ -2,7 +2,7 @@ import { LitElement, html, svg, nothing, TemplateResult, PropertyValues } from '
 import { customElement, property, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import type { Connection } from 'home-assistant-js-websocket';
-import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry, HassEntity, DecoPhase, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
+import { HomeAssistant, WeatherAlertsCardConfig, WeatherAlert, AlertProgress, AlertProvider, ActionConfig, ContrastMode, DismissalRecord, EntityRegistryDisplayEntry, HassEntity, DecoPhase, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import {
   configuredDevices,
   resolveDeviceAlertEntities,
@@ -56,6 +56,12 @@ import {
   getDisplayHeadline,
   reflowAlertText,
   summarizeAreaDesc,
+  computeTimelineWindow,
+  timelineBarGeometry,
+  computeTimelineTicks,
+  formatTimelineTick,
+  formatTimelineNow,
+  type TimelineWindow,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
 import {
@@ -214,6 +220,20 @@ function getPreviewAlerts(): WeatherAlert[] {
   ];
 }
 
+// Windows at least this wide draw a faint line down every lane at each local
+// midnight, so "ends tomorrow night" reads from any row, not only the axis.
+const TIMELINE_DAY_LINES_S = 48 * 3600;
+
+// Axis label placement. TIMELINE_LABEL_PX is the room one tick label needs
+// ("12 PM", "16 Mon" at 0.7rem plus its gap); the lane's measured width over it
+// is how many ticks fit. Past TIMELINE_EDGE_PCT a label hangs left of its
+// mark, so it and the label before it face each other across the gap and need
+// two labels' room between them. Until the lane has been measured the card
+// assumes TIMELINE_UNMEASURED_PCT per label, a phone-width guess.
+const TIMELINE_LABEL_PX = 52;
+const TIMELINE_EDGE_PCT = 88;
+const TIMELINE_UNMEASURED_PCT = 25;
+
 @customElement('weather-alerts-card')
 export class WeatherAlertsCard extends LitElement {
   static styles = cardStyles;
@@ -276,6 +296,20 @@ export class WeatherAlertsCard extends LitElement {
   private _mapTilesTimer: ReturnType<typeof setInterval> | null = null;
   private _onMapTilesReady = () => this._refreshMapTilesToken();
 
+  // layout: 'timeline' re-renders once a minute so the now marker keeps moving
+  // between hass pushes (the full/compact progress bars ride on pushes alone;
+  // a bar that is 8px tall hides the lag, a marker on a 6 h axis does not).
+  // Armed from connectedCallback/updated(), never from render.
+  private static readonly TIMELINE_TICK_MS = 60_000;
+  private _timelineTimer: ReturnType<typeof setInterval> | null = null;
+  private _onTimelineTick = () => this.requestUpdate();
+  // Measured width of the axis lane, in whole 8px steps so a sub-pixel resize
+  // never re-renders. 0 until the ResizeObserver has reported. Observed from
+  // updated(), never from render.
+  @state() private _timelineLanePx = 0;
+  private _timelineLaneObserver: ResizeObserver | null = null;
+  private _timelineLaneEl: Element | null = null;
+
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
 
@@ -289,6 +323,11 @@ export class WeatherAlertsCard extends LitElement {
     }
     this._maybeSubscribeRegistry();
     this._maybeAcquireMapTilesToken();
+    this._maybeArmTimelineTimer();
+    // A reconnect with no property change never reaches updated(), so the
+    // lane observer torn down on disconnect is rebuilt here (a no-op on the
+    // first mount, when nothing has rendered yet).
+    this._maybeObserveTimelineLane();
   }
 
   disconnectedCallback() {
@@ -298,6 +337,8 @@ export class WeatherAlertsCard extends LitElement {
     this._unsubscribeDismissals = undefined;
     this._teardownRegistrySubscription();
     this._teardownMapTilesToken();
+    this._teardownTimelineTimer();
+    this._teardownTimelineLaneObserver();
     // Drop any in-flight geometry fetches; the cache may persist for a quick
     // remount (connection-swap detection re-validates it on next fetch).
     this._geometryInFlight.clear();
@@ -326,7 +367,9 @@ export class WeatherAlertsCard extends LitElement {
       this._maybeSubscribeRegistry();
       this._maybeFetchGeometry();
       this._maybeAcquireMapTilesToken();
+      this._maybeArmTimelineTimer();
     }
+    this._maybeObserveTimelineLane();
     // The detail pop-up is reconciled after render, never during it, so
     // render() stays side-effect free:
     //   - alert churned out of the feed (or the card dropped to preview /
@@ -511,6 +554,46 @@ export class WeatherAlertsCard extends LitElement {
     if (this._mapTilesToken !== null) this._mapTilesToken = null;
   }
 
+  private _maybeArmTimelineTimer(): void {
+    if (!this._isTimeline || !this.isConnected) {
+      this._teardownTimelineTimer();
+      return;
+    }
+    if (this._timelineTimer !== null) return;
+    this._timelineTimer = setInterval(this._onTimelineTick, WeatherAlertsCard.TIMELINE_TICK_MS);
+  }
+
+  private _teardownTimelineTimer(): void {
+    if (this._timelineTimer === null) return;
+    clearInterval(this._timelineTimer);
+    this._timelineTimer = null;
+  }
+
+  // Watch the axis lane's width so the tick count can follow it. A lane only
+  // exists once the timeline has rendered, so this runs from updated(); the
+  // observer is rebuilt whenever the lane element is replaced.
+  private _maybeObserveTimelineLane(): void {
+    const lane = this._isTimeline
+      ? this.shadowRoot?.querySelector('.timeline-axis .timeline-lane') ?? null
+      : null;
+    if (lane === this._timelineLaneEl) return;
+    this._teardownTimelineLaneObserver();
+    if (!lane || typeof ResizeObserver === 'undefined') return;
+    this._timelineLaneEl = lane;
+    this._timelineLaneObserver = new ResizeObserver(entries => {
+      const width = entries[entries.length - 1]?.contentRect.width ?? 0;
+      const px = Math.round(width / 8) * 8;
+      if (px !== this._timelineLanePx) this._timelineLanePx = px;
+    });
+    this._timelineLaneObserver.observe(lane);
+  }
+
+  private _teardownTimelineLaneObserver(): void {
+    this._timelineLaneObserver?.disconnect();
+    this._timelineLaneObserver = null;
+    this._timelineLaneEl = null;
+  }
+
   public setConfig(config: WeatherAlertsCardConfig): void {
     const hasEntity = !!config.entity || !!config.entities?.length;
     if (!hasEntity && !config.device && !config.devices?.length && !config.sources?.length) {
@@ -577,6 +660,8 @@ export class WeatherAlertsCard extends LitElement {
     // masonry engine and must not trigger localStorage writes or reactive
     // state mutations as a side effect.
     const alerts = this._getAlerts(false);
+    // Timeline rows are 36px on a 50px HA size unit, plus one unit for the axis.
+    if (this._isTimeline) return 1 + Math.ceil((alerts.length * 36) / 50);
     const perAlert = this._isCompact ? 1 : 3;
     // Availability signalling never adds a row: the strip is a thin band over
     // alerts, the dot is an overlay, and the zero-alert caveat rides inside the
@@ -893,12 +978,16 @@ export class WeatherAlertsCard extends LitElement {
     return this._canDismiss()
       && this._config?.dismissTrigger !== 'swipe'
       && this._config?.dismissButtonStyle === 'labeled'
-      && !this._isCompact;
+      && !this._isCompact
+      && !this._isTimeline;
   }
 
   private _renderDismissButton(alert: WeatherAlert): TemplateResult | typeof nothing {
     if (!this._canDismiss()) return nothing;
-    if (this._config?.dismissTrigger === 'swipe') return nothing;
+    // The timeline attaches no swipe handlers (a drag on a time axis reads as
+    // a pan), so every trigger value renders the button there rather than
+    // leaving 'swipe' with no dismiss path at all.
+    if (this._config?.dismissTrigger === 'swipe' && !this._isTimeline) return nothing;
     if (this._isLabeledDismissActive()) {
       return html`
         <button
@@ -1007,6 +1096,10 @@ export class WeatherAlertsCard extends LitElement {
     return !this._motionQuery.matches; // undefined → respect OS prefers-reduced-motion
   }
   private get _isCompact(): boolean { return this._config?.layout === 'compact'; }
+  private get _isTimeline(): boolean { return this._config?.layout === 'timeline'; }
+  private get _layoutClass(): string {
+    return this._isTimeline ? 'timeline' : this._isCompact ? 'compact' : '';
+  }
   private get _colorTheme(): 'severity' | 'nws' | 'meteoalarm' | 'eccc' { return this._config?.colorTheme || 'severity'; }
   private get _providerColors(): boolean { return !!this._config && providerColorsEnabled(this._config); }
   private get _fontScale(): number | undefined {
@@ -1087,11 +1180,16 @@ export class WeatherAlertsCard extends LitElement {
   // pattern (deco-*) and icon-ring border (icon-border-*), each resolved from
   // config for the alert's phase with a byte-identical default. Empty for
   // expired alerts, which carry neither.
-  private _alertDecoClasses(progress: AlertProgress): string {
+  private _alertDecoClasses(progress: AlertProgress, timelineBar = false): string {
     const phase = this._decoPhase(progress);
     if (!phase) return '';
     const deco = this._config?.progressStyle?.[phase] ?? PROGRESS_DECO_DEFAULTS[phase];
     const icon = this._config?.iconBorderStyle?.[phase] ?? ICON_BORDER_DEFAULTS[phase];
+    // The timeline bar carries a fixed pattern per phase (progressStyle does
+    // not apply); only the icon-chip ring is configurable there. Keyed on the
+    // render site, not the layout: the detail pop-up opened from a timeline
+    // is the full view and keeps its decoration.
+    if (timelineBar) return `icon-border-${icon}`;
     return `deco-${deco} icon-border-${icon}`;
   }
 
@@ -1143,7 +1241,7 @@ export class WeatherAlertsCard extends LitElement {
       this._swipeJustDragged = false;
       return;
     }
-    const cfg = this._config?.tap_action;
+    const cfg = this._rowAction();
     if (!cfg || cfg.action === 'none') return;
     // 'details' is card-owned: opening the pop-up needs card state and the
     // in-hand alert object, so it is intercepted here rather than added to the
@@ -1153,6 +1251,15 @@ export class WeatherAlertsCard extends LitElement {
       return;
     }
     handleTapAction(this, this.hass, cfg, alert.sourceEntityId ?? this._config?.entity);
+  }
+
+  // The action a row tap fires. The timeline has no inline expand, so its rows
+  // open the detail pop-up unless tap_action says otherwise ('none' included).
+  // The full and compact layouts keep tap_action's presence as the switch.
+  private static readonly TIMELINE_DEFAULT_ACTION: ActionConfig = { action: 'details' };
+  private _rowAction(): ActionConfig | undefined {
+    return this._config?.tap_action
+      ?? (this._isTimeline ? WeatherAlertsCard.TIMELINE_DEFAULT_ACTION : undefined);
   }
 
   // The pop-up alternative to the inline expand: shows only the tapped alert's
@@ -1170,6 +1277,10 @@ export class WeatherAlertsCard extends LitElement {
 
   private _onCardActionKeydown(alert: WeatherAlert, e: KeyboardEvent): void {
     if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    // A key on a control inside the row (the dismiss button, a link) is that
+    // control's to activate; preventDefault here would swallow its click.
+    const target = e.target as Element | null;
+    if (target && target !== e.currentTarget && target.closest('button, a')) return;
     e.preventDefault();
     this._onCardAction(alert);
   }
@@ -1347,7 +1458,7 @@ export class WeatherAlertsCard extends LitElement {
     this.style.display = '';
 
     const animClass = this._animationsEnabled ? '' : 'no-animations';
-    const layoutClass = this._isCompact ? 'compact' : '';
+    const layoutClass = this._layoutClass;
     const fillClass = this._config.progressFill === 'background' ? 'fill-mode-background' : '';
 
     // The strip and dot are anchored forms — they only render over real alerts.
@@ -1359,7 +1470,7 @@ export class WeatherAlertsCard extends LitElement {
         ${dot ? this._renderDegradedDot(brokenSources) : nothing}
         ${strip ? this._renderDegradedStrip(brokenSources) : nothing}
         ${hasAlerts
-        ? alerts.map(alert => this._renderAlert(alert))
+        ? this._renderAlertList(alerts)
         : this._renderNoAlerts(signalAvailability ? brokenSources : [])}
       </ha-card>
       ${this._renderDetailPopup(alerts)}
@@ -1465,13 +1576,13 @@ export class WeatherAlertsCard extends LitElement {
   private _renderPreview(): TemplateResult {
     const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true });
     const animClass = this._animationsEnabled ? '' : 'no-animations';
-    const layoutClass = this._isCompact ? 'compact' : '';
+    const layoutClass = this._layoutClass;
     const fillClass = this._config?.progressFill === 'background' ? 'fill-mode-background' : '';
 
     return html`
       <ha-card .header=${this._config.title || ''} class="${animClass} ${layoutClass} ${fillClass}" data-theme-mode=${this._themeMode} style=${this._scaleStyle}>
         <div class="preview-label">${t('card.preview', this._lang)}</div>
-        ${alerts.map(alert => this._renderAlert(alert))}
+        ${this._renderAlertList(alerts)}
       </ha-card>
     `;
   }
@@ -1493,6 +1604,151 @@ export class WeatherAlertsCard extends LitElement {
     `;
   }
 
+  // The alert list in the configured layout: the timeline is one block (axis
+  // + rows) rather than a row per alert, so both render() and the preview
+  // route through here.
+  private _renderAlertList(alerts: WeatherAlert[]): TemplateResult | TemplateResult[] {
+    return this._isTimeline
+      ? this._renderTimeline(alerts)
+      : alerts.map(alert => this._renderAlert(alert));
+  }
+
+  // layout: 'timeline' — every alert as a bar on one shared axis, one lane
+  // each, a gutter (icon chip + event name) on the left. The now marker, not a
+  // per-bar fill, carries progress: each lane draws its own segment at
+  // --wac-tl-now (set once here) and the segments join across the row gap, so
+  // no cross-row geometry is computed. Window and tick math is pure (utils.ts)
+  // and takes the clock once per render.
+  private _renderTimeline(alerts: WeatherAlert[]): TemplateResult {
+    const nowTs = Date.now() / 1000;
+    const win = computeTimelineWindow(alerts, this._config?.timelineHorizon, nowTs);
+    const locale = this._locale;
+    // One label's share of the lane, as a percentage: measured when the lane
+    // has reported, a phone-width guess before that.
+    const lanePx = this._timelineLanePx;
+    const labelPct = lanePx > 0 ? (TIMELINE_LABEL_PX / lanePx) * 100 : TIMELINE_UNMEASURED_PCT;
+    // A tick sitting under the now head is dropped outright: the head is the
+    // mark there, and a second mark beside it reads as a stray.
+    const ticks = computeTimelineTicks(win, locale.timeZone, Math.floor(100 / labelPct))
+      .filter(tick => Math.abs(tick.pct - win.nowPct) >= labelPct / 2);
+    const labeled = ticks.filter(tick => !tick.minor);
+    const nowText = formatTimelineNow(nowTs, locale);
+    const dayLines = win.endTs - win.startTs >= TIMELINE_DAY_LINES_S
+      ? ticks.filter(tick => tick.dayBoundary).map(tick => tick.pct)
+      : [];
+    const dismissable = this._canDismiss();
+    const headed = !!this._config?.title;
+    return html`
+      <div class="timeline-body ${dismissable ? 'dismissable' : ''} ${headed ? 'headed' : ''}" style="--wac-tl-now: ${win.nowPct.toFixed(3)}%; --wac-tl-now-f: ${(win.nowPct / 100).toFixed(5)}">
+        <div class="timeline-axis">
+          <div class="timeline-gutter" aria-hidden="true"></div>
+          <div class="timeline-lane">
+            ${ticks.map(tick => {
+              // A tick near the right edge hangs its label leftward; the
+              // labelled tick before it keeps its mark but drops its text when
+              // the two are closer than two labels' width, so the pair never
+              // overprints. A minor tick (a day mark under a coarser label
+              // step) is mark-only by definition, and so is any tick within a
+              // label of the now head, whose time label wins that space.
+              const edge = !tick.minor && tick.pct > TIMELINE_EDGE_PCT;
+              const next = labeled.find(other => other.pct > tick.pct);
+              const quiet = tick.minor || Math.abs(tick.pct - win.nowPct) < labelPct
+                || (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT && next.pct - tick.pct < 2 * labelPct);
+              return html`
+              <span class="timeline-tick ${tick.dayBoundary ? 'day' : ''} ${edge ? 'edge' : ''} ${quiet ? 'quiet' : ''} ${tick.minor ? 'minor' : ''}" style="left: ${tick.pct.toFixed(3)}%" aria-hidden="true">${quiet ? nothing : formatTimelineTick(tick, locale)}</span>
+            `;
+            })}
+            <span class="timeline-now-head" role="img" aria-label="${t('progress.now', this._lang)} ${nowText}"></span>
+            <span class="timeline-now-label" aria-hidden="true">${nowText}</span>
+          </div>
+          ${dismissable ? html`<span class="timeline-dismiss-spacer" aria-hidden="true"></span>` : nothing}
+        </div>
+        ${alerts.map(alert => this._renderTimelineRow(alert, win, dayLines))}
+      </div>
+    `;
+  }
+
+  private _renderTimelineRow(alert: WeatherAlert, win: TimelineWindow, dayLines: number[]): TemplateResult {
+    const lang = this._lang;
+    const progress = computeAlertProgress(alert);
+    const bar = timelineBarGeometry(progress, win);
+    const isOngoing = progress.isActive && !progress.hasEndTime;
+    const action = this._rowAction();
+    const actionable = !!action && action.action !== 'none';
+    // The row re-uses .alert-card for its token block only (--color, --wac-fg,
+    // boost and phase classes); styles.ts strips the row chrome under .timeline,
+    // as the detail dialog does.
+    const rowClasses = [
+      'alert-card',
+      'timeline-row',
+      `severity-${alert.severity}`,
+      progress.phaseText.toLowerCase(),
+      isOngoing ? 'ongoing' : '',
+      this._alertDecoClasses(progress, true),
+      this._alertBoostClasses(alert),
+      actionable ? 'tappable' : '',
+    ].filter(Boolean).join(' ');
+    const barClasses = [
+      'timeline-bar',
+      bar.clipStart ? 'clip-start' : '',
+      bar.clipEnd ? 'clip-end' : '',
+      bar.openEnd ? 'open-end' : '',
+      bar.offAxis ? `off-axis off-${bar.offAxis}` : '',
+    ].filter(Boolean).join(' ');
+    const barStyle = `left: ${bar.startPct.toFixed(3)}%; width: ${(bar.endPct - bar.startPct).toFixed(3)}%;`
+      + (bar.fadeFromPct !== null ? ` --wac-tl-fade-from: ${bar.fadeFromPct.toFixed(3)}%;` : '');
+    const range = `${formatProgressTimestamp(progress.onsetTs, this._locale, lang)} – ${progress.hasEndTime ? formatProgressTimestamp(progress.endsTs, this._locale, lang) : t('progress.ongoing', lang)}`;
+    // The one-phrase time state sits under the name, so a touch user reads
+    // "for 3h" without a hover or a tap. The same phrase names the row for
+    // assistive tech; an inert row (tap_action: none) carries no role, and an
+    // aria-label on a plain div is prohibited, so there the visible text is
+    // the name.
+    const timeLabel = this._phaseTimeLabel(progress);
+    return html`
+      <div
+        class=${rowClasses}
+        style=${this._alertColorStyle(alert)}
+        role=${actionable ? 'button' : nothing}
+        tabindex=${actionable ? '0' : nothing}
+        aria-label=${actionable ? `${alert.event}: ${timeLabel}` : nothing}
+        @click=${actionable ? () => this._onCardAction(alert) : nothing}
+        @keydown=${actionable ? (e: KeyboardEvent) => this._onCardActionKeydown(alert, e) : nothing}
+      >
+        <div class="timeline-gutter" title=${alert.event}>
+          <div class="icon-box">
+            ${this._renderPulseRing(alert)}
+            <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
+          </div>
+          <div class="timeline-gutter-text">
+            <span class="alert-title">${this._renderProviderHint(alert)}${alert.event}</span>
+            <span class="timeline-time">${timeLabel}</span>
+          </div>
+        </div>
+        <div class="timeline-lane" aria-hidden="true">
+          ${dayLines.map(pct => html`<span class="timeline-day-line" style="left: ${pct.toFixed(3)}%"></span>`)}
+          <div class="timeline-span">
+            <div class="timeline-span-lane">
+              <div class=${barClasses} style=${barStyle} title=${range}></div>
+              ${bar.clipStart ? html`<span class="timeline-clip start" title=${t('timeline.clipped_start', lang)}></span>` : nothing}
+              ${bar.clipEnd ? html`<span class="timeline-clip end" title=${t('timeline.clipped_end', lang)}></span>` : nothing}
+            </div>
+          </div>
+        </div>
+        ${this._renderDismissButton(alert)}
+      </div>
+    `;
+  }
+
+  // The one-phrase temporal state the compact row and the timeline row share:
+  // "for 3h" / "in 45m" / "ongoing" / "expired 2h ago".
+  private _phaseTimeLabel(progress: AlertProgress): string {
+    const lang = this._lang;
+    if (progress.isExpired) return t('progress.compact_expired', lang, { time: formatDuration(progress.endsTs, progress.nowTs) });
+    if (progress.isActive && !progress.hasEndTime) return t('progress.compact_ongoing', lang);
+    if (progress.isActive) return t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) });
+    return t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
+  }
+
   private _renderAlert(alert: WeatherAlert): TemplateResult {
     const className = `severity-${alert.severity}`;
     const progress = computeAlertProgress(alert);
@@ -1510,15 +1766,8 @@ export class WeatherAlertsCard extends LitElement {
     alert: WeatherAlert, className: string, phaseClass: string,
     progress: AlertProgress, expanded: boolean,
   ): TemplateResult {
-    const lang = this._lang;
     const isOngoing = progress.isActive && !progress.hasEndTime;
-    const compactTimeLabel = progress.isExpired
-      ? t('progress.compact_expired', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
-      : isOngoing
-        ? t('progress.compact_ongoing', lang)
-        : progress.isActive
-          ? t('progress.compact_active', lang, { time: formatDuration(progress.endsTs, progress.nowTs) })
-          : t('progress.compact_prep', lang, { time: formatDuration(progress.onsetTs, progress.nowTs) });
+    const compactTimeLabel = this._phaseTimeLabel(progress);
     const ongoingClass = isOngoing ? 'ongoing' : '';
     const boostClasses = this._alertBoostClasses(alert);
     const decoClasses = this._alertDecoClasses(progress);

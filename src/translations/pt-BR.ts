@@ -44,6 +44,10 @@ export const ptBR: TranslationMap = {
   'progress.compact_ongoing': 'em andamento',
   'progress.compact_expired': 'expirou há {time}',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Começou antes desta janela',
+  'timeline.clipped_end': 'Continua além desta janela',
+
   // Relative time
   'time.just_now': 'agora mesmo',
   'time.in_less_than_1m': 'em <1 min',
@@ -134,7 +138,18 @@ export const ptBR: TranslationMap = {
   'editor.show_provider': 'Mostrar rótulo do provedor',
   'editor.show_source_link': 'Mostrar link da fonte',
   'editor.reformat_text': 'Reformatar texto do alerta (remover quebras fixas)',
-  'editor.compact': 'Layout compacto',
+  'editor.layout': 'Layout',
+  'editor.layout_default': 'Padrão',
+  'editor.layout_compact': 'Compacto',
+  'editor.layout_timeline': 'Linha do tempo',
+  'editor.timeline_horizon': 'Janela da linha do tempo',
+  'editor.timeline_horizon_auto': 'Ajustar aos alertas',
+  'editor.timeline_horizon_6h': '6 horas',
+  'editor.timeline_horizon_12h': '12 horas',
+  'editor.timeline_horizon_24h': '24 horas',
+  'editor.timeline_horizon_72h': '3 dias',
+  'editor.timeline_styling_note': 'A linha do tempo desenha barras fixas por fase; as configurações de preenchimento e decoração do progresso não se aplicam.',
+  'editor.timeline_dismiss_note': 'Na linha do tempo, dispensar é somente pelo botão.',
   'editor.font_size': 'Tamanho da fonte',
   'editor.font_size_small': 'Pequeno',
   'editor.font_size_default': 'Padrão',

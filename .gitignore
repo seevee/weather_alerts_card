@@ -22,6 +22,8 @@ img/*
 !img/themes-light.webp
 !img/surface-theming-adaptive.svg
 !img/surface-theming-light.webp
+!img/timeline-adaptive.svg
+!img/timeline-light.webp
 # The editor figure is photographed from a live HA (scripts/capture-editor.js),
 # which the Pages workflow cannot do, so it is tracked and refreshed by hand.
 !img/editor-adaptive.svg

@@ -1105,7 +1105,10 @@ export class WeatherAlertsCardEditor extends LitElement {
 
   private _renderAppearanceSection(lang: string): TemplateResult {
     return html`
-      ${this._renderToggle('layout')}
+      ${this._renderSelect('layout')}
+      ${this._config.layout === 'timeline'
+        ? this._renderSelect('timelineHorizon')
+        : this._renderAlsoSet(['timelineHorizon'], lang)}
       ${this._renderSelect('colorTheme')}
       ${this._renderToggle('providerColors')}
       ${this._renderSelect('fontSize')}
@@ -1126,6 +1129,9 @@ export class WeatherAlertsCardEditor extends LitElement {
         .secondary=${this._changedSummary(STYLING_KEYS, lang)}
       >
         <div class="content">
+          ${this._config.layout === 'timeline'
+            ? html`<div class="preview-hint">${t('editor.timeline_styling_note', lang)}</div>`
+            : nothing}
           ${this._renderSelect('progressFill')}
 
           <div class="sub-label">${t('editor.progress_style', lang)}</div>
@@ -1291,6 +1297,9 @@ export class WeatherAlertsCardEditor extends LitElement {
 
       ${allow ? html`
         ${this._renderSelect('dismissTrigger')}
+        ${this._config.layout === 'timeline'
+          ? html`<div class="preview-hint">${t('editor.timeline_dismiss_note', lang)}</div>`
+          : nothing}
         ${this._config.dismissTrigger !== 'swipe'
           ? this._renderSelect('dismissButtonStyle')
           : this._renderAlsoSet(['dismissButtonStyle'], lang)}

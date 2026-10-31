@@ -52,6 +52,7 @@ PAIRS=(
   "unavailable-light.png unavailable-dark.png unavailable-adaptive.svg lossless -"
   "surface-theming-light.png surface-theming-dark.png surface-theming-adaptive.svg lossy -"
   "tap-action-light.png tap-action-dark.png tap-action-adaptive.svg lossless 690"
+  "timeline-light.png timeline-dark.png timeline-adaptive.svg lossless 690"
   # Captured from a live HA by capture-editor.js, not by screenshot.js, so the
   # PNGs are absent on CI and the pair is skipped there; its SVG is tracked.
   # Seven stacked panels can't fit under the clamp at any sensible width and a

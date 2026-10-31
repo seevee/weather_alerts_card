@@ -1,5 +1,5 @@
 import DOMPurify from 'dompurify';
-import { WeatherAlert, WeatherAlertsCardConfig, AlertProgress, AlertProvider, ContrastMode, HomeAssistant } from './types';
+import { WeatherAlert, WeatherAlertsCardConfig, AlertProgress, AlertProvider, ContrastMode, HomeAssistant, TimelineHorizon, TIMELINE_HORIZON_HOURS } from './types';
 import { t } from './localize';
 import { NWS_EVENT_COLORS } from './nws-colors';
 
@@ -880,3 +880,224 @@ export function deduplicateAlerts(
   return result;
 }
 
+
+// --- Timeline layout (layout: 'timeline') ------------------------------------
+// Pure window / bar / tick math. The card passes `nowTs` in so a render never
+// reads the clock twice and the tests pin it.
+
+/** Fraction of the forward span shown as lead before now: the now marker sits
+ *  at lead / (lead + span) = 1/9 ≈ 11% of the axis. */
+export const TIMELINE_LEAD_FRACTION = 1 / 8;
+const TIMELINE_AUTO_MIN_S = 6 * 3600;
+const TIMELINE_AUTO_MAX_S = 168 * 3600;
+/** Auto adds this much past the latest end, so a bar that genuinely ends there
+ *  shows its rounded cap with daylight before the edge instead of sitting on
+ *  it like a clipped one. */
+export const TIMELINE_AUTO_PAD = 0.04;
+
+export interface TimelineWindow {
+  startTs: number;
+  endTs: number;
+  nowTs: number;
+  /** Position of now along the axis, 0–100. */
+  nowPct: number;
+}
+
+/**
+ * The axis window. A fixed horizon is the forward span from now; 'auto'
+ * (or undefined) fits the latest end or future onset among `alerts` plus a
+ * small pad, floored at 6 h so a lone short warning is not a nervous zoom and
+ * capped at 7 d so one long watch cannot squash the rest (it clips instead). Open-ended alerts
+ * contribute nothing: they run off the right edge whatever the span.
+ */
+export function computeTimelineWindow(
+  alerts: readonly WeatherAlert[],
+  horizon: TimelineHorizon | undefined,
+  nowTs: number,
+): TimelineWindow {
+  let span: number;
+  if (horizon && horizon !== 'auto') {
+    span = TIMELINE_HORIZON_HOURS[horizon] * 3600;
+  } else {
+    let latest = 0;
+    for (const a of alerts) {
+      if (a.endsTs > 0) latest = Math.max(latest, a.endsTs);
+      if (a.onsetTs > nowTs) latest = Math.max(latest, a.onsetTs);
+    }
+    span = Math.min(TIMELINE_AUTO_MAX_S, Math.max(TIMELINE_AUTO_MIN_S, (latest - nowTs) * (1 + TIMELINE_AUTO_PAD)));
+  }
+  const lead = span * TIMELINE_LEAD_FRACTION;
+  return {
+    startTs: nowTs - lead,
+    endTs: nowTs + span,
+    nowTs,
+    nowPct: (lead / (lead + span)) * 100,
+  };
+}
+
+export interface TimelineBar {
+  /** Left and right edges along the axis, 0–100, already clamped. */
+  startPct: number;
+  endPct: number;
+  /** The bar crosses the window start / end (a chevron marks the cut). */
+  clipStart: boolean;
+  clipEnd: boolean;
+  /** No known end: the bar runs to the right edge, fading out from now. */
+  openEnd: boolean;
+  /** Open-ended only: where the fade starts (now, or a future onset), as a
+   *  percentage of the bar's own width. It runs from there to the edge. */
+  fadeFromPct: number | null;
+  /** Entirely outside the window: collapses to its chevron at that edge. */
+  offAxis: 'start' | 'end' | null;
+}
+
+/**
+ * Where an alert's bar sits in the window. Works from the resolved progress
+ * (onset defaults applied) but branches on `hasEndTime` so the synthesized
+ * one-hour end computeAlertProgress uses for its own bar is never drawn.
+ */
+export function timelineBarGeometry(progress: AlertProgress, win: TimelineWindow): TimelineBar {
+  const { startTs, endTs } = win;
+  const width = endTs - startTs || 1;
+  const pct = (ts: number) => Math.max(0, Math.min(100, ((ts - startTs) / width) * 100));
+  const start = progress.onsetTs;
+  const openEnd = !progress.hasEndTime;
+  const end = openEnd ? Infinity : progress.endsTs;
+
+  if (end <= startTs) {
+    return { startPct: 0, endPct: 0, clipStart: true, clipEnd: false, openEnd, fadeFromPct: null, offAxis: 'start' };
+  }
+  if (start >= endTs) {
+    return { startPct: 100, endPct: 100, clipStart: false, clipEnd: !openEnd, openEnd, fadeFromPct: null, offAxis: 'end' };
+  }
+  const startPct = pct(start);
+  const endPct = openEnd ? 100 : pct(end);
+  return {
+    startPct,
+    endPct,
+    clipStart: start < startTs,
+    clipEnd: !openEnd && end > endTs,
+    openEnd,
+    fadeFromPct: openEnd ? ((pct(Math.max(start, win.nowTs)) - startPct) / (endPct - startPct || 1)) * 100 : null,
+    offAxis: null,
+  };
+}
+
+// Candidate tick steps, seconds. The first that fits the budget wins; up to a
+// day the steps never more than double, so that choice also leaves at least
+// half the budget. The two- and three-day steps exist for a narrow lane under
+// the seven-day cap, where a day step would overprint eight date labels on
+// room for three; both still land on local midnights.
+const TIMELINE_TICK_STEPS = [900, 1800, 3600, 7200, 10800, 21600, 43200, 86400, 172800, 259200];
+export const TIMELINE_MAX_TICKS = 8;
+
+export interface TimelineTick {
+  ts: number;
+  pct: number;
+  /** Local midnight in the display timezone: labelled with the date. */
+  dayBoundary: boolean;
+  /** The step is sub-hour, so the label needs minutes. */
+  minutes: boolean;
+  /** A day mark between coarser labels (two- and three-day steps): drawn
+   *  mark-only, so the axis keeps its day rhythm when the labels thin out. */
+  minor: boolean;
+}
+
+// Wall-clock offset (seconds east of UTC) of `timeZone` at `ts`, so ticks can
+// align to local hours and local midnight even for half-hour zones and across
+// a DST change. No timezone (or an invalid one) means the browser's.
+function tzOffsetSeconds(ts: number, timeZone?: string): number {
+  const d = new Date(ts * 1000);
+  if (timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone, hourCycle: 'h23',
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+      }).formatToParts(d);
+      const get = (type: string) => Number(parts.find(p => p.type === type)?.value ?? NaN);
+      const asUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second')) / 1000;
+      if (!isNaN(asUtc)) return asUtc - Math.floor(ts);
+    } catch {
+      // Unknown zone: fall through to the browser's offset.
+    }
+  }
+  return -d.getTimezoneOffset() * 60;
+}
+
+/**
+ * Tick marks for the window, aligned to boundaries in the display timezone.
+ * `maxTicks` is how many labels the lane has room for (the card measures it);
+ * the finest step that fits wins. The budget is floored at two: the first
+ * step to fit two is longer than half the window, so the window always holds
+ * at least one of its boundaries. Past a day, the walk stays at a day and the
+ * off-step days come back as `minor` marks.
+ */
+export function computeTimelineTicks(win: TimelineWindow, timeZone?: string, maxTicks = TIMELINE_MAX_TICKS): TimelineTick[] {
+  const { startTs, endTs } = win;
+  const width = endTs - startTs;
+  if (width <= 0) return [];
+  const limit = Math.max(2, Math.min(TIMELINE_MAX_TICKS, maxTicks));
+  const step = TIMELINE_TICK_STEPS.find(s => width / s <= limit)
+    ?? TIMELINE_TICK_STEPS[TIMELINE_TICK_STEPS.length - 1];
+  const walk = Math.min(step, 86400);
+
+  // Walk in local wall-clock seconds and convert each candidate back with the
+  // offset in force at that instant, so a DST change inside the window shifts
+  // the later ticks rather than the whole axis.
+  const ticks: TimelineTick[] = [];
+  const startOffset = tzOffsetSeconds(startTs, timeZone);
+  let local = Math.ceil((startTs + startOffset) / walk) * walk;
+  for (let i = 0; i <= TIMELINE_MAX_TICKS * 2; i++, local += walk) {
+    const tick = local - tzOffsetSeconds(local - startOffset, timeZone);
+    if (tick < startTs) continue;
+    if (tick > endTs) break;
+    ticks.push({
+      ts: tick,
+      pct: ((tick - startTs) / width) * 100,
+      dayBoundary: local % 86400 === 0,
+      minutes: step < 3600,
+      minor: local % step !== 0,
+    });
+  }
+  return ticks;
+}
+
+/** The now head's label: the clock time, always with minutes. */
+export function formatTimelineNow(ts: number, locale?: HaLocale): string {
+  return formatTime(new Date(ts * 1000), locale, 'numeric');
+}
+
+/**
+ * Axis label for a tick: the weekday and day at local midnight; otherwise the
+ * clock time, hour-only where the locale writes a day period ("6 PM") since
+ * whole-hour ticks carry no minutes, and HH:MM where it does not ("18:00" is
+ * already short and a bare "18" is not a time). An explicit HA date format
+ * decides whether the day leads ("16 Mon" under DMY, "Mon 16" otherwise);
+ * 'language' keeps the locale's own order.
+ */
+export function formatTimelineTick(tick: TimelineTick, locale?: HaLocale): string {
+  const d = new Date(tick.ts * 1000);
+  if (tick.dayBoundary) {
+    const parts = new Intl.DateTimeFormat(locale?.language, {
+      weekday: 'short', day: 'numeric', timeZone: locale?.timeZone,
+    }).formatToParts(d);
+    const fmt = locale?.date_format;
+    if (fmt && fmt !== 'language') {
+      const weekday = parts.find(p => p.type === 'weekday')?.value ?? '';
+      const day = parts.find(p => p.type === 'day')?.value ?? '';
+      return fmt === 'DMY' ? `${day} ${weekday}` : `${weekday} ${day}`;
+    }
+    return parts.map(p => p.value).join('');
+  }
+  if (!tick.minutes) {
+    const fmt = timeFormatOptions(locale);
+    const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', timeZone: locale?.timeZone };
+    if (fmt.hour12 !== undefined) opts.hour12 = fmt.hour12;
+    const parts = new Intl.DateTimeFormat(fmt.locale, opts).formatToParts(d);
+    if (parts.some(p => p.type === 'dayPeriod')) {
+      return parts.map(p => p.value).join('').replace(/\s+/g, ' ').trim();
+    }
+  }
+  return formatTime(d, locale, tick.minutes ? 'numeric' : '2-digit');
+}

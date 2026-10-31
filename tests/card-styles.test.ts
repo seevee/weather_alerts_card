@@ -230,3 +230,39 @@ describe('cardStyles compositor-only motion (#364)', () => {
     expect(css).toMatch(/@media \(min-resolution: 2dppx\)\s*{[^@]*--wac-stripe-steps:\s*48[^@]*--wac-stripe-steps:\s*24/);
   });
 });
+
+describe('cardStyles timeline layout', () => {
+  const css = cardStyles.cssText;
+
+  it('strips the row chrome and both pseudo-elements under .timeline', () => {
+    expect(css).toMatch(/\.timeline \.alert-card\s*{[^}]*border:\s*none/);
+    expect(css).toMatch(/\.timeline \.alert-card::before,\s*\.timeline \.alert-card::after\s*{\s*content:\s*none/);
+  });
+
+  it('draws the now marker from one token on every lane and the axis head', () => {
+    expect(css).toMatch(/\.timeline-lane::after\s*{[^}]*left:\s*var\(--wac-tl-now, 11\.111%\)/);
+    expect(css).toMatch(/\.timeline-now-head\s*{[^}]*left:\s*var\(--wac-tl-now, 11\.111%\)/);
+  });
+
+  it('gives each phase a fixed bar: static stripes, divider grey, ongoing breathe', () => {
+    const prep = css.match(/\.timeline \.preparation \.timeline-bar\s*{([^}]*)}/)?.[1] ?? '';
+    expect(prep).toContain('background-image: linear-gradient(');
+    expect(prep).not.toContain('animation');
+    expect(css).toMatch(/\.timeline \.expired \.timeline-bar\s*{[^}]*background-color:\s*var\(--divider-color\)/);
+    // Bar and arrowheads breathe as one layer, the span that holds them both.
+    expect(css).toMatch(/\.timeline \.ongoing \.timeline-span\s*{\s*animation:\s*ongoing-pulse 5s infinite/);
+    expect(css).not.toMatch(/\.timeline-(bar|clip)[^{]*{[^}]*animation/);
+    expect(css).toMatch(/\.no-animations \.timeline-span\s*{\s*animation:\s*none !important/);
+  });
+
+  it('gives each right end its own sign: arrowhead for clipped, a fade and no glyph for open-ended', () => {
+    expect(css).toMatch(/\.timeline-clip\.start\s*{[^}]*border-right:\s*var\(--wac-tl-arrow-len\) solid var\(--wac-progress-fg\)/);
+    expect(css).toMatch(/\.timeline-clip\.end\s*{[^}]*border-left:\s*var\(--wac-tl-arrow-len\) solid var\(--wac-progress-fg\)/);
+    // Full strength at now (a per-bar stop the card sets), fading to the edge.
+    expect(css).toMatch(/\.timeline-bar\.open-end\s*{[^}]*mask-image:\s*linear-gradient\(to right, #000 var\(--wac-tl-fade-from, 0%\), [^;]*transparent 100%\)/);
+    // Bar and arrowhead follow --wac-scale like the row and the chip.
+    expect(css).toMatch(/--wac-tl-bar:\s*calc\(10px \* var\(--wac-scale, 1\)\)/);
+    expect(css).toMatch(/--wac-tl-arrow-len:\s*calc\(7px \* var\(--wac-scale, 1\)\)/);
+    expect(css).not.toContain('.timeline-open-tail');
+  });
+});

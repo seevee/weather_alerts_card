@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Alerts Card – Timeline layout</title>
+  <link rel="stylesheet" href="/scripts/screenshot-fonts.css">
+  <style>
+    /* ---- HA theme variables, toggled via .theme-light / .theme-dark on the canvas ----
+       One card in layout: 'timeline' over the six ALERTS_TIMELINE fixtures, so
+       the figure shows every bar form at once: a prep bar (static stripes), two
+       active bars, an open-ended bar fading off the right edge, and a long
+       watch whose start is cut by the window's lead. Landscape by nature, so it
+       cooks under Discourse's 500 px clamp at the 690 forum width. */
+    .theme-light {
+      --primary-text-color: #1a1c22;
+      --secondary-text-color: #4a4e59;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: rgba(0, 0, 0, 0.08);
+      --card-background-color: #ffffff;
+      --divider-color: rgba(0, 0, 0, 0.14);
+      --error-color: #db4437;
+      --warning-color: #ffa600;
+      --info-color: #4f86f7;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 26, 28, 34;
+      --ha-card-box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+    }
+    .theme-dark {
+      --primary-text-color: #f2f4f8;
+      --secondary-text-color: #b8c0cc;
+      --primary-background-color: #0b0e14;
+      --secondary-background-color: rgba(255, 255, 255, 0.10);
+      --card-background-color: #1c1c1e;
+      --divider-color: rgba(255, 255, 255, 0.16);
+      --error-color: #cf6679;
+      --warning-color: #e68900;
+      --info-color: #6aa8ff;
+      --text-primary-color: #ffffff;
+      --rgb-primary-text-color: 242, 244, 248;
+      --ha-card-box-shadow:
+        0px 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      font-family: Roboto, "Noto Sans", sans-serif;
+    }
+
+    .timeline-canvas {
+      background: var(--primary-background-color);
+      padding: 24px;
+      width: 690px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="timeline-canvas" id="timeline-canvas">
+    <weather-alerts-card id="card-timeline"></weather-alerts-card>
+  </div>
+
+  <script type="module">
+    import '/dist/weather-alerts-card.js';
+    import { ALERTS_TIMELINE } from '/scripts/screenshot-fixtures.js';
+
+    // ---- ha-card stub ----
+    class HaCard extends HTMLElement {
+      set header(v) {
+        this._header = v;
+        this._render();
+      }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this._render();
+      }
+      _render() {
+        this.shadowRoot.innerHTML = `
+          <style>
+            :host {
+              display: block;
+              background: var(--ha-card-background, var(--card-background-color, white));
+              border-radius: var(--ha-card-border-radius, 12px);
+              box-shadow: var(--ha-card-box-shadow);
+              overflow: hidden;
+              color: var(--primary-text-color);
+            }
+            h1 {
+              font-family: inherit;
+              font-size: 24px;
+              font-weight: 400;
+              letter-spacing: -0.012em;
+              line-height: 48px;
+              padding: 12px 16px 8px;
+              margin: 0;
+            }
+          </style>
+          ${this._header ? `<h1>${this._header}</h1>` : ''}
+          <slot></slot>
+        `;
+      }
+    }
+    customElements.define('ha-card', HaCard);
+
+    // ---- ha-icon stub ----
+    class HaIcon extends HTMLElement {
+      static get observedAttributes() { return ['icon']; }
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+      }
+      connectedCallback() { this._render(); }
+      attributeChangedCallback() { this._render(); }
+
+      _render() {
+        const icon = this.getAttribute('icon') || '';
+        const path = (window.__MDI_ICONS__ || {})[icon];
+        const size = this.style.width || 'var(--mdc-icon-size, 24px)';
+        this.style.display = 'inline-flex';
+        this.style.alignItems = 'center';
+        this.style.justifyContent = 'center';
+        this.shadowRoot.innerHTML = path
+          ? `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <path d="${path}"/>
+             </svg>`
+          : `<svg viewBox="0 0 24 24"
+               style="width:${size};height:${size};display:block;fill:currentColor">
+               <circle cx="12" cy="12" r="9"/>
+             </svg>`;
+      }
+    }
+    customElements.define('ha-icon', HaIcon);
+
+    // ---- Mock hass ----
+    const ENTITY = 'sensor.nws_alerts_alerts';
+    const MOCK_HASS = {
+      locale: { language: 'en', time_format: '12', date_format: 'MDY' },
+      config: { time_zone: 'America/Denver' },
+      states: {
+        [ENTITY]: {
+          state: String(ALERTS_TIMELINE.length),
+          attributes: { Alerts: ALERTS_TIMELINE },
+        },
+      },
+    };
+
+    const card = document.getElementById('card-timeline');
+    card.setConfig({
+      type: 'custom:weather-alerts-card',
+      entity: ENTITY,
+      title: 'Weather Alerts',
+      layout: 'timeline',
+      sortOrder: 'onset',
+      animations: false,
+    });
+    card.hass = MOCK_HASS;
+  </script>
+</body>
+</html>

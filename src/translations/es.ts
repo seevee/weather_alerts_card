@@ -44,6 +44,10 @@ export const es: TranslationMap = {
   'progress.compact_ongoing': 'en curso',
   'progress.compact_expired': 'expiró hace {time}',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Comenzó antes de esta ventana',
+  'timeline.clipped_end': 'Continúa después de esta ventana',
+
   // Relative time
   'time.just_now': 'ahora mismo',
   'time.in_less_than_1m': 'en <1m',
@@ -134,7 +138,18 @@ export const es: TranslationMap = {
   'editor.show_provider': 'Mostrar proveedor',
   'editor.show_source_link': 'Mostrar enlace de fuente',
   'editor.reformat_text': 'Reformatear texto (eliminar saltos de linea)',
-  'editor.compact': 'Disposicion compacta',
+  'editor.layout': 'Diseño',
+  'editor.layout_default': 'Predeterminado',
+  'editor.layout_compact': 'Compacto',
+  'editor.layout_timeline': 'Cronología',
+  'editor.timeline_horizon': 'Ventana de la cronología',
+  'editor.timeline_horizon_auto': 'Ajustar a las alertas',
+  'editor.timeline_horizon_6h': '6 horas',
+  'editor.timeline_horizon_12h': '12 horas',
+  'editor.timeline_horizon_24h': '24 horas',
+  'editor.timeline_horizon_72h': '3 días',
+  'editor.timeline_styling_note': 'La cronología dibuja barras fijas por fase; los ajustes de relleno y decoración del progreso no se aplican.',
+  'editor.timeline_dismiss_note': 'En la cronología solo se descarta con el botón.',
   'editor.font_size': 'Tamaño de fuente',
   'editor.font_size_small': 'Pequeño',
   'editor.font_size_default': 'Predeterminado',

@@ -44,6 +44,10 @@ export const zhHans: TranslationMap = {
   'progress.compact_ongoing': '进行中',
   'progress.compact_expired': '已于 {time} 前过期',
 
+  // Timeline layout
+  'timeline.clipped_start': '开始于此时间窗口之前',
+  'timeline.clipped_end': '持续到此时间窗口之后',
+
   // Relative time
   'time.just_now': '刚刚',
   'time.in_less_than_1m': '1分钟内',
@@ -134,7 +138,18 @@ export const zhHans: TranslationMap = {
   'editor.show_provider': '显示提供方标签',
   'editor.show_source_link': '显示来源链接',
   'editor.reformat_text': '重排警报文本（去除硬换行）',
-  'editor.compact': '紧凑布局',
+  'editor.layout': '布局',
+  'editor.layout_default': '默认',
+  'editor.layout_compact': '紧凑',
+  'editor.layout_timeline': '时间线',
+  'editor.timeline_horizon': '时间线窗口',
+  'editor.timeline_horizon_auto': '适应警报',
+  'editor.timeline_horizon_6h': '6 小时',
+  'editor.timeline_horizon_12h': '12 小时',
+  'editor.timeline_horizon_24h': '24 小时',
+  'editor.timeline_horizon_72h': '3 天',
+  'editor.timeline_styling_note': '时间线按阶段绘制固定样式的条形；进度填充和装饰设置不适用。',
+  'editor.timeline_dismiss_note': '时间线中仅可通过按钮忽略警报。',
   'editor.font_size': '字体大小',
   'editor.font_size_small': '小',
   'editor.font_size_default': '默认',

@@ -54,7 +54,8 @@ function makeEditor(config: WeatherAlertsCardConfig): { editor: EditorInternals;
  *  elements in the test page (no HA frontend registers them), so their
  *  children stay ordinary light DOM. */
 function everythingVisible(): WeatherAlertsCardConfig {
-  return base({ showGeometry: true, allowDismiss: true });
+  // layout: 'timeline' exposes the timeline window select.
+  return base({ showGeometry: true, allowDismiss: true, layout: 'timeline' });
 }
 
 // The five detail-section toggles render as options of one list selector
@@ -85,9 +86,9 @@ function renderControls(editor: EditorInternals): Control[] {
 }
 
 describe('registry shape', () => {
-  it('holds 18 toggles and 12 selects with unique keys', () => {
-    expect(TOGGLE_FIELDS).toHaveLength(18);
-    expect(SELECT_FIELDS).toHaveLength(12);
+  it('holds 17 toggles and 14 selects with unique keys', () => {
+    expect(TOGGLE_FIELDS).toHaveLength(17);
+    expect(SELECT_FIELDS).toHaveLength(14);
     expect(new Set(ALL.map(f => f.key)).size).toBe(ALL.length);
     expect(Object.keys(FIELDS)).toHaveLength(ALL.length);
   });
@@ -151,13 +152,37 @@ describe('withKey', () => {
   });
 
   it('reads a toggle as on only when the effective value equals `on`', () => {
+    const field = FIELDS.showProvider;
+    expect(field.kind).toBe('toggle');
+    if (field.kind !== 'toggle') return;
+    expect(isOn(base(), field)).toBe(false);
+    expect(isOn(base({ showProvider: true }), field)).toBe(true);
+    expect(isOn(base({ showProvider: false }), field)).toBe(false);
+    expect(withKey(base({ showProvider: true }), 'showProvider', false)).toEqual(base());
+  });
+
+  it('offers layout as a three-way select whose default sentinel deletes the key', () => {
     const layout = FIELDS.layout;
-    expect(layout.kind).toBe('toggle');
-    if (layout.kind !== 'toggle') return;
-    expect(isOn(base(), layout)).toBe(false);
-    expect(isOn(base({ layout: 'compact' }), layout)).toBe(true);
-    expect(isOn(base({ layout: 'default' }), layout)).toBe(false);
-    expect(withKey(base({ layout: 'compact' }), 'layout', 'default')).toEqual(base());
+    expect(layout.kind).toBe('select');
+    if (layout.kind !== 'select') return;
+    expect(layout.options.map(o => o.value)).toEqual(['default', 'compact', 'timeline']);
+    expect(effectiveValue(base(), 'layout')).toBe('default');
+    expect(effectiveValue(base({ layout: 'compact' }), 'layout')).toBe('compact');
+    // A `layout: compact` card round-trips untouched through the control.
+    const compact = base({ layout: 'compact' });
+    expect(withKey(compact, 'layout', 'compact')).toBe(compact);
+    expect(withKey(compact, 'layout', 'default')).toEqual(base());
+    expect(withKey(base(), 'layout', 'timeline')).toEqual(base({ layout: 'timeline' }));
+    expect(withKey(base({ layout: 'timeline' }), 'layout', 'default')).toEqual(base());
+  });
+
+  it('offers the timeline window with auto as the deleting default', () => {
+    const horizon = FIELDS.timelineHorizon;
+    expect(horizon.kind).toBe('select');
+    if (horizon.kind !== 'select') return;
+    expect(horizon.options.map(o => o.value)).toEqual(['auto', '6h', '12h', '24h', '72h']);
+    expect(withKey(base({ layout: 'timeline' }), 'timelineHorizon', '24h')).toEqual(base({ layout: 'timeline', timelineHorizon: '24h' }));
+    expect(withKey(base({ layout: 'timeline', timelineHorizon: '24h' }), 'timelineHorizon', 'auto')).toEqual(base({ layout: 'timeline' }));
   });
 });
 

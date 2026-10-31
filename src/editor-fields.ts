@@ -1,4 +1,4 @@
-import type { WeatherAlertsCardConfig } from './types';
+import { TIMELINE_HORIZONS, type WeatherAlertsCardConfig } from './types';
 
 // The visual editor's field registry: the single place a *simple* config key is
 // declared. A simple key is one whose editor control is a switch or a
@@ -40,8 +40,7 @@ export type ToggleKey =
   | 'hideExpired'
   | 'allowDismiss'
   | 'showDismissUndo'
-  | 'reformatText'
-  | 'layout';
+  | 'reformatText';
 
 export type SelectKey =
   | 'provider'
@@ -55,7 +54,9 @@ export type SelectKey =
   | 'geometryStyle'
   | 'dismissTrigger'
   | 'dismissButtonStyle'
-  | 'progressFill';
+  | 'progressFill'
+  | 'layout'
+  | 'timelineHorizon';
 
 export type SimpleKey = ToggleKey | SelectKey;
 export type SimpleValue = string | boolean;
@@ -112,9 +113,6 @@ export const TOGGLE_FIELDS: readonly ToggleField[] = [
   // always meant this, so the card treats it as on there (see
   // providerColorsEnabled in utils) and the editor normalises the config to say so.
   bool('providerColors', 'appearance', false, 'editor.provider_colors'),
-  // `layout` is a two-value enum driven by one switch: checked writes
-  // 'compact', unchecked writes the 'default' sentinel, which deletes the key.
-  { kind: 'toggle', key: 'layout', panel: 'appearance', default: 'default', on: 'compact', off: 'default', label: 'editor.compact' },
   bool('animations', 'appearance', true, 'editor.animations'),
   bool('reformatText', 'advanced', true, 'editor.reformat_text'),
   bool('showDetails', 'details', true, 'editor.show_details'),
@@ -145,6 +143,13 @@ export const SELECT_FIELDS: readonly SelectField[] = [
     opts('editor.color_', 'severity', 'nws', 'meteoalarm', 'eccc')),
   select('enhanceContrast', 'advanced', 'subtle', 'editor.enhance_contrast',
     opts('editor.enhance_contrast_', 'off', 'subtle', 'strict')),
+  // 'default' is the sentinel that deletes the key, so a `layout: compact`
+  // card round-trips byte-identical through the control.
+  select('layout', 'appearance', 'default', 'editor.layout',
+    opts('editor.layout_', 'default', 'compact', 'timeline')),
+  // layout: 'timeline' only; the editor renders it under that layout alone.
+  select('timelineHorizon', 'appearance', 'auto', 'editor.timeline_horizon',
+    opts('editor.timeline_horizon_', ...TIMELINE_HORIZONS)),
   select('fontSize', 'appearance', 'default', 'editor.font_size',
     opts('editor.font_size_', 'small', 'default', 'large', 'x-large')),
   select('progressFill', 'appearance', 'track', 'editor.progress_fill',
@@ -179,7 +184,7 @@ export const FIELDS: Readonly<Record<SimpleKey, Field>> = { ...TOGGLES, ...SELEC
 export const PANELS: Readonly<Record<Panel, readonly (keyof WeatherAlertsCardConfig)[]>> = {
   source: ['entity', 'entities', 'device', 'devices', 'sources', 'title'],
   filtering: ['zones', 'eventCodes', 'excludeEventCodes', 'minSeverity', 'maxDistanceKm', 'myLocationEntity'],
-  appearance: ['layout', 'colorTheme', 'providerColors', 'fontSize', 'animations', 'showProvider', 'progressFill', 'progressStyle', 'iconBorderStyle'],
+  appearance: ['layout', 'timelineHorizon', 'colorTheme', 'providerColors', 'fontSize', 'animations', 'showProvider', 'progressFill', 'progressStyle', 'iconBorderStyle'],
   details: ['showDetails', 'expandDetails', 'showMetadata', 'showDescription', 'showInstructions', 'showGeometry', 'geometryStyle', 'showMyLocation', 'showSourceLink'],
   behavior: ['tap_action', 'sortOrder', 'hideExpired', 'hideNoAlerts', 'unavailableBehavior'],
   dismissal: ['allowDismiss', 'dismissTrigger', 'dismissButtonStyle', 'showDismissUndo'],
