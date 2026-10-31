@@ -44,6 +44,10 @@ export const sr: TranslationMap = {
   'progress.compact_ongoing': 'у току',
   'progress.compact_expired': 'истекло пре {time}',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Почело пре овог прозора',
+  'timeline.clipped_end': 'Наставља се после овог прозора',
+
   // Relative time
   'time.just_now': 'управо сада',
   'time.in_less_than_1m': 'за <1 мин',
@@ -134,6 +138,18 @@ export const sr: TranslationMap = {
   'editor.show_provider': 'Прикажи ознаку провајдера',
   'editor.show_source_link': 'Прикажи линк ка извору',
   'editor.reformat_text': 'Прилагоди текст упозорења (уклони тврде преломе редова)',
+  'editor.layout': 'Изглед',
+  'editor.layout_default': 'Подразумевано',
+  'editor.layout_compact': 'Компактно',
+  'editor.layout_timeline': 'Временска линија',
+  'editor.timeline_horizon': 'Прозор временске линије',
+  'editor.timeline_horizon_auto': 'Прилагоди упозорењима',
+  'editor.timeline_horizon_6h': '6 сати',
+  'editor.timeline_horizon_12h': '12 сати',
+  'editor.timeline_horizon_24h': '24 сата',
+  'editor.timeline_horizon_72h': '3 дана',
+  'editor.timeline_styling_note': 'Временска линија црта фиксне траке по фази; подешавања испуне и декорације напретка се не примењују.',
+  'editor.timeline_dismiss_note': 'На временској линији затварање је само дугметом.',
   'editor.font_size': 'Величина фонта',
   'editor.font_size_small': 'Мало',
   'editor.font_size_default': 'Подразумевано',

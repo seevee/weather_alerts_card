@@ -44,6 +44,10 @@ export const it: TranslationMap = {
   'progress.compact_ongoing': 'in corso',
   'progress.compact_expired': 'scaduta {time} fa',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Iniziata prima di questa finestra',
+  'timeline.clipped_end': 'Prosegue oltre questa finestra',
+
   // Relative time
   'time.just_now': 'proprio ora',
   'time.in_less_than_1m': 'in <1m',
@@ -134,6 +138,18 @@ export const it: TranslationMap = {
   'editor.show_provider': 'Mostra fornitore',
   'editor.show_source_link': 'Mostra link alla fonte',
   'editor.reformat_text': 'Riformatta testo (rimuovi interruzioni di riga)',
+  'editor.layout': 'Layout',
+  'editor.layout_default': 'Predefinito',
+  'editor.layout_compact': 'Compatto',
+  'editor.layout_timeline': 'Cronologia',
+  'editor.timeline_horizon': 'Finestra della cronologia',
+  'editor.timeline_horizon_auto': 'Adatta alle allerte',
+  'editor.timeline_horizon_6h': '6 ore',
+  'editor.timeline_horizon_12h': '12 ore',
+  'editor.timeline_horizon_24h': '24 ore',
+  'editor.timeline_horizon_72h': '3 giorni',
+  'editor.timeline_styling_note': 'La cronologia disegna barre fisse per fase; le impostazioni di riempimento e decorazione dell\'avanzamento non si applicano.',
+  'editor.timeline_dismiss_note': 'Nella cronologia le allerte si ignorano solo con il pulsante.',
   'editor.font_size': 'Dimensione testo',
   'editor.font_size_small': 'Piccolo',
   'editor.font_size_default': 'Predefinito',

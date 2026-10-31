@@ -44,6 +44,10 @@ export const nl: TranslationMap = {
   'progress.compact_ongoing': 'lopend',
   'progress.compact_expired': '{time} geleden verlopen',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Begonnen vóór dit venster',
+  'timeline.clipped_end': 'Loopt door na dit venster',
+
   // Relative time
   'time.just_now': 'zojuist',
   'time.in_less_than_1m': 'binnen 1m',
@@ -134,6 +138,18 @@ export const nl: TranslationMap = {
   'editor.show_provider': 'Providerlabel tonen',
   'editor.show_source_link': 'Bronlink tonen',
   'editor.reformat_text': 'Tekst automatisch omloop geven (harde afbrekingen verwijderen)',
+  'editor.layout': 'Lay-out',
+  'editor.layout_default': 'Standaard',
+  'editor.layout_compact': 'Compact',
+  'editor.layout_timeline': 'Tijdlijn',
+  'editor.timeline_horizon': 'Tijdlijnvenster',
+  'editor.timeline_horizon_auto': 'Passend bij waarschuwingen',
+  'editor.timeline_horizon_6h': '6 uur',
+  'editor.timeline_horizon_12h': '12 uur',
+  'editor.timeline_horizon_24h': '24 uur',
+  'editor.timeline_horizon_72h': '3 dagen',
+  'editor.timeline_styling_note': 'De tijdlijn tekent vaste balken per fase; instellingen voor voortgangsinvulling en decoratie zijn niet van toepassing.',
+  'editor.timeline_dismiss_note': 'In de tijdlijn wordt alleen met de knop afgewezen.',
   'editor.font_size': 'Lettergrootte',
   'editor.font_size_small': 'Klein',
   'editor.font_size_default': 'Standaard',

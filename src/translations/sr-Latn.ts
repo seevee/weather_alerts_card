@@ -44,6 +44,10 @@ export const srLatn: TranslationMap = {
   'progress.compact_ongoing': 'u toku',
   'progress.compact_expired': 'isteklo pre {time}',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Počelo pre ovog prozora',
+  'timeline.clipped_end': 'Nastavlja se posle ovog prozora',
+
   // Relative time
   'time.just_now': 'upravo sada',
   'time.in_less_than_1m': 'za <1min',
@@ -134,6 +138,18 @@ export const srLatn: TranslationMap = {
   'editor.show_provider': 'Prikaži oznaku provajdera',
   'editor.show_source_link': 'Prikaži link ka izvoru',
   'editor.reformat_text': 'Prilagodi tekst upozorenja (ukloni tvrde prelome redova)',
+  'editor.layout': 'Izgled',
+  'editor.layout_default': 'Podrazumevano',
+  'editor.layout_compact': 'Kompaktno',
+  'editor.layout_timeline': 'Vremenska linija',
+  'editor.timeline_horizon': 'Prozor vremenske linije',
+  'editor.timeline_horizon_auto': 'Prilagodi upozorenjima',
+  'editor.timeline_horizon_6h': '6 sati',
+  'editor.timeline_horizon_12h': '12 sati',
+  'editor.timeline_horizon_24h': '24 sata',
+  'editor.timeline_horizon_72h': '3 dana',
+  'editor.timeline_styling_note': 'Vremenska linija crta fiksne trake po fazi; podešavanja ispune i dekoracije napretka se ne primenjuju.',
+  'editor.timeline_dismiss_note': 'Na vremenskoj liniji zatvaranje je samo dugmetom.',
   'editor.font_size': 'Veličina fonta',
   'editor.font_size_small': 'Malo',
   'editor.font_size_default': 'Podrazumevano',

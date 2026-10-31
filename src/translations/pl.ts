@@ -44,6 +44,10 @@ export const pl: TranslationMap = {
   'progress.compact_ongoing': 'trwa',
   'progress.compact_expired': 'wygasło {time} temu',
 
+  // Timeline layout
+  'timeline.clipped_start': 'Rozpoczęte przed tym oknem',
+  'timeline.clipped_end': 'Trwa dłużej niż to okno',
+
   // Relative time
   'time.just_now': 'przed chwilą',
   'time.in_less_than_1m': 'za <1m',
@@ -134,6 +138,18 @@ export const pl: TranslationMap = {
   'editor.show_provider': 'Pokaż etykietę dostawcy',
   'editor.show_source_link': 'Pokaż link do źródła',
   'editor.reformat_text': 'Przeformatuj tekst alertu (usuń twarde złamania linii)',
+  'editor.layout': 'Układ',
+  'editor.layout_default': 'Domyślny',
+  'editor.layout_compact': 'Kompaktowy',
+  'editor.layout_timeline': 'Oś czasu',
+  'editor.timeline_horizon': 'Okno osi czasu',
+  'editor.timeline_horizon_auto': 'Dopasuj do alertów',
+  'editor.timeline_horizon_6h': '6 godzin',
+  'editor.timeline_horizon_12h': '12 godzin',
+  'editor.timeline_horizon_24h': '24 godziny',
+  'editor.timeline_horizon_72h': '3 dni',
+  'editor.timeline_styling_note': 'Oś czasu rysuje stałe paski dla każdej fazy; ustawienia wypełnienia i dekoracji postępu nie mają zastosowania.',
+  'editor.timeline_dismiss_note': 'Na osi czasu odrzucanie działa tylko przyciskiem.',
   'editor.font_size': 'Rozmiar czcionki',
   'editor.font_size_small': 'Mała',
   'editor.font_size_default': 'Domyślna',
