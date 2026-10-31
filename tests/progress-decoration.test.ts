@@ -187,10 +187,10 @@ describe('compositor-only motion (#364)', () => {
     { layout: 'default', names: ROW_NAMES, props: ['opacity', 'transform'], ring: ':scope > .pulse-ring' },
     { layout: 'compact', names: ROW_NAMES, props: ['opacity', 'transform'], ring: ':scope > .pulse-ring' },
     // The timeline bar carries no fill motion (prep stripes are static); the
-    // ongoing breathe is on the bar and on its start arrowhead (the onset an
-    // hour ago falls before the auto window's 45-minute lead), and the ring
-    // wraps the icon chip.
-    { layout: 'timeline', names: ['ongoing-pulse', 'ongoing-pulse', 'pulse-ring', 'pulse-ring'], props: ['opacity'], ring: ':scope > .timeline-gutter > .icon-box > .pulse-ring' },
+    // ongoing breathe is one animation on the span holding the bar and its
+    // start arrowhead (the onset an hour ago falls before the auto window's
+    // 45-minute lead), and the ring wraps the icon chip.
+    { layout: 'timeline', names: ['ongoing-pulse', 'pulse-ring', 'pulse-ring'], props: ['opacity'], ring: ':scope > .timeline-gutter > .icon-box > .pulse-ring' },
   ] as const;
   for (const { layout, names: expected, props: expectedProps, ring } of LAYOUTS) {
     it(`renders the pulse ring only on severe/extreme alerts (${layout})`, async () => {

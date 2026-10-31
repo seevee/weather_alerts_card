@@ -1713,9 +1713,11 @@ export class WeatherAlertsCard extends LitElement {
           </div>
         </div>
         <div class="timeline-lane" aria-hidden="true">
-          <div class=${barClasses} style=${barStyle} title=${range}></div>
-          ${bar.clipStart ? html`<span class="timeline-clip start" title=${t('timeline.clipped_start', lang)}></span>` : nothing}
-          ${bar.clipEnd ? html`<span class="timeline-clip end" title=${t('timeline.clipped_end', lang)}></span>` : nothing}
+          <div class="timeline-span">
+            <div class=${barClasses} style=${barStyle} title=${range}></div>
+            ${bar.clipStart ? html`<span class="timeline-clip start" title=${t('timeline.clipped_start', lang)}></span>` : nothing}
+            ${bar.clipEnd ? html`<span class="timeline-clip end" title=${t('timeline.clipped_end', lang)}></span>` : nothing}
+          </div>
         </div>
         ${this._renderDismissButton(alert)}
       </div>

@@ -249,9 +249,10 @@ describe('cardStyles timeline layout', () => {
     expect(prep).toContain('background-image: linear-gradient(');
     expect(prep).not.toContain('animation');
     expect(css).toMatch(/\.timeline \.expired \.timeline-bar\s*{[^}]*background-color:\s*var\(--divider-color\)/);
-    // The arrowhead breathes with its bar (a lane child, so it needs its own rule).
-    expect(css).toMatch(/\.timeline \.ongoing \.timeline-bar,\s*\.timeline \.ongoing \.timeline-clip\s*{\s*animation:\s*ongoing-pulse 5s infinite/);
-    expect(css).toMatch(/\.no-animations \.timeline-bar,\s*\.no-animations \.timeline-clip\s*{\s*animation:\s*none !important/);
+    // Bar and arrowheads breathe as one layer, the span that holds them both.
+    expect(css).toMatch(/\.timeline \.ongoing \.timeline-span\s*{\s*animation:\s*ongoing-pulse 5s infinite/);
+    expect(css).not.toMatch(/\.timeline-(bar|clip)[^{]*{[^}]*animation/);
+    expect(css).toMatch(/\.no-animations \.timeline-span\s*{\s*animation:\s*none !important/);
   });
 
   it('gives each right end its own sign: arrowhead for clipped, a fade and no glyph for open-ended', () => {

@@ -1231,11 +1231,15 @@ export const cardStyles = css`
   .timeline .expired .timeline-bar {
     background-color: var(--divider-color);
   }
-  /* The arrowhead is a lane child (see .timeline-clip), so it breathes by
-     its own rule, on the same keyframes and period as the bar it belongs to;
-     both start on the frame the row renders, so they stay in step. */
-  .timeline .ongoing .timeline-bar,
-  .timeline .ongoing .timeline-clip {
+  /* Bar and arrowheads breathe as one layer. Two animations would stay in
+     step only if both elements were created on the same frame, and an
+     arrowhead is added whenever a re-render first clips the bar, so it drifted
+     out of phase with a bar already running. */
+  .timeline-span {
+    position: absolute;
+    inset: 0;
+  }
+  .timeline .ongoing .timeline-span {
     animation: ongoing-pulse 5s infinite;
   }
 
@@ -1243,7 +1247,7 @@ export const cardStyles = css`
      continues past the window (same on the left for "started before it"), and
      a bar that dissolves has no known end. The arrowhead is a triangle in the
      bar's color, a little taller than the bar and hung just past the lane edge,
-     so it points off the axis. It is a child of the LANE, not the bar: a cut
+     so it points off the axis. It is a sibling of the bar, not a child: a cut
      bar always meets the lane edge, and the open-end mask below would fade a
      child of the bar to nothing (an open-ended alert that began before the
      window lost its arrowhead that way). */
@@ -1266,12 +1270,15 @@ export const cardStyles = css`
     border-top: var(--wac-tl-arrow) solid transparent;
     border-bottom: var(--wac-tl-arrow) solid transparent;
   }
+  /* Each arrowhead overlaps its bar by 1px. Butted exactly, both edges land
+     on the same fractional pixel and anti-alias, leaving a dark seam. The
+     overlap cannot double up: the span's opacity applies to the group. */
   .timeline-clip.start {
-    left: calc(-1 * var(--wac-tl-arrow-len));
+    left: calc(1px - var(--wac-tl-arrow-len));
     border-right: var(--wac-tl-arrow-len) solid var(--wac-progress-fg);
   }
   .timeline-clip.end {
-    right: calc(-1 * var(--wac-tl-arrow-len));
+    right: calc(1px - var(--wac-tl-arrow-len));
     border-left: var(--wac-tl-arrow-len) solid var(--wac-progress-fg);
   }
   .timeline .expired .timeline-clip.start { border-right-color: var(--divider-color); }
@@ -1430,8 +1437,7 @@ export const cardStyles = css`
   .no-animations .pulse-ring {
     display: none;
   }
-  .no-animations .timeline-bar,
-  .no-animations .timeline-clip {
+  .no-animations .timeline-span {
     animation: none !important;
   }
   .no-animations .progress-fill,

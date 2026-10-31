@@ -157,7 +157,7 @@ describe('timeline structure', () => {
       expect(pct(watch.style.left) + pct(watch.style.width)).toBeGreaterThan(95);
       // … but its onset a day ago is before the lead, so its start is cut.
       expect(watch.classList.contains('clip-start')).toBe(true);
-      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-lane > .timeline-clip.start')).not.toBeNull();
+      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-span > .timeline-clip.start')).not.toBeNull();
       expect(pct(watch.style.left)).toBe(0);
 
       const expiredRow = rowByTitle(card, 'Expired Warning');
@@ -180,7 +180,7 @@ describe('timeline structure', () => {
       const b = bar(row);
       expect(b.classList.contains('open-end')).toBe(true);
       expect(b.classList.contains('clip-start')).toBe(true);
-      const arrow = row.querySelector<HTMLElement>('.timeline-lane > .timeline-clip.start')!;
+      const arrow = row.querySelector<HTMLElement>('.timeline-span > .timeline-clip.start')!;
       expect(arrow).not.toBeNull();
       // Visible: it sits outside the masked bar, just past the lane's left edge.
       const lane = row.querySelector('.timeline-lane')!.getBoundingClientRect();
@@ -190,12 +190,14 @@ describe('timeline structure', () => {
       const rect = arrow.getBoundingClientRect();
       expect(rect.width).toBeGreaterThan(0);
       expect(rect.right).toBeLessThanOrEqual(lane.left + 1);
-      // The arrowhead breathes with the bar: same keyframes, same period, and
-      // the two animations began on the same frame, so they never drift apart.
-      expect(getComputedStyle(arrow).animationName).toBe('ongoing-pulse');
+      // It overlaps the bar rather than butting it, or the shared edge seams.
+      expect(rect.right).toBeGreaterThan(b.getBoundingClientRect().left);
+      // The arrowhead breathes with the bar because one layer carries both:
+      // a single animation, on the span that holds them, so they cannot drift.
       const anims = row.querySelector('.timeline-lane')!.getAnimations({ subtree: true }) as CSSAnimation[];
-      expect(anims.map(a => a.animationName)).toEqual(['ongoing-pulse', 'ongoing-pulse']);
-      expect(anims[0].startTime).toBe(anims[1].startTime);
+      expect(anims.map(a => a.animationName)).toEqual(['ongoing-pulse']);
+      expect((anims[0].effect as KeyframeEffect).target).toBe(arrow.parentElement);
+      expect(arrow.parentElement).toBe(b.parentElement);
     } finally {
       cleanup();
     }
@@ -206,7 +208,7 @@ describe('timeline structure', () => {
     try {
       const watch = bar(rowByTitle(card, 'Long Watch'));
       expect(watch.classList.contains('clip-end')).toBe(true);
-      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-lane > .timeline-clip.end')).not.toBeNull();
+      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-span > .timeline-clip.end')).not.toBeNull();
       expect(pct(watch.style.left) + pct(watch.style.width)).toBeCloseTo(100, 3);
       // 4h ahead still fits inside 6h.
       expect(bar(rowByTitle(card, 'Prep Warning')).classList.contains('clip-end')).toBe(false);
@@ -233,10 +235,10 @@ describe('timeline structure', () => {
       const past = bar(rowByTitle(card, 'Expired Warning'));
       expect(past.classList.contains('off-axis')).toBe(true);
       expect(past.classList.contains('off-start')).toBe(true);
-      expect(rowByTitle(card, 'Expired Warning').querySelector('.timeline-lane > .timeline-clip.start')).not.toBeNull();
+      expect(rowByTitle(card, 'Expired Warning').querySelector('.timeline-span > .timeline-clip.start')).not.toBeNull();
       const future = bar(rowByTitle(card, 'Prep Warning'));
       expect(future.classList.contains('off-end')).toBe(true);
-      expect(rowByTitle(card, 'Prep Warning').querySelector('.timeline-lane > .timeline-clip.end')).not.toBeNull();
+      expect(rowByTitle(card, 'Prep Warning').querySelector('.timeline-span > .timeline-clip.end')).not.toBeNull();
       // The arrowhead is all that renders: the bar itself is gone.
       expect(getComputedStyle(future).display).toBe('none');
     } finally {
