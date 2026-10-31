@@ -1450,16 +1450,21 @@ describe('timelineBarGeometry', () => {
     expect(future.clipEnd).toBe(true);
   });
 
-  it('runs an open-ended alert to the right edge with no end chevron, active or prep', () => {
+  it('runs an open-ended alert to the right edge, fading from now or its onset, with no end chevron', () => {
     const ongoing = geo({ onsetTs: now - H, endsTs: 0 });
     expect(ongoing.openEnd).toBe(true);
     expect(ongoing.endPct).toBe(100);
     expect(ongoing.clipEnd).toBe(false);
     expect(ongoing.offAxis).toBeNull();
+    // [now-1h, now+24h] of a 27 h axis: the fade starts at now, 1/25 in.
+    expect(ongoing.fadeFromPct).toBeCloseTo(4, 3);
     const prep = geo({ onsetTs: now + 2 * H, endsTs: 0 });
     expect(prep.openEnd).toBe(true);
     expect(prep.startPct).toBeGreaterThan(win.nowPct);
     expect(prep.endPct).toBe(100);
+    expect(prep.fadeFromPct).toBeCloseTo(0, 3);
+    // A bounded bar has no fade.
+    expect(geo({ onsetTs: now - H, endsTs: now + 5 * H }).fadeFromPct).toBeNull();
     // Never the synthesized one-hour end computeAlertProgress reports for itself.
     expect(computeAlertProgress(makeAlert({ onsetTs: now - H, endsTs: 0 })).endsTs).toBe(now - H + H);
   });
@@ -1564,7 +1569,7 @@ describe('computeTimelineTicks', () => {
     const twentyFour = { ...twelve, time_format: '24' as const };
     expect(formatTimelineTick(tick, twentyFour)).toMatch(/^\d{2}:00$/);
     // A sub-hour step keeps its minutes.
-    const short = computeTimelineTicks({ startTs: now, endTs: now + 3600, nowPct: 0 }, 'UTC');
+    const short = computeTimelineTicks({ startTs: now, endTs: now + 3600, nowTs: now, nowPct: 0 }, 'UTC');
     expect(short.every(t => t.minutes)).toBe(true);
     expect(formatTimelineTick(short[1], twelve)).toMatch(/^\d{1,2}:\d{2} [AP]M$/);
   });
@@ -1572,6 +1577,6 @@ describe('computeTimelineTicks', () => {
   it('falls back to the browser zone for an unknown timezone and yields nothing for an empty window', () => {
     const win = computeTimelineWindow([], '6h', now);
     expect(computeTimelineTicks(win, 'Not/AZone').length).toBeGreaterThan(0);
-    expect(computeTimelineTicks({ startTs: now, endTs: now, nowPct: 0 })).toEqual([]);
+    expect(computeTimelineTicks({ startTs: now, endTs: now, nowTs: now, nowPct: 0 })).toEqual([]);
   });
 });

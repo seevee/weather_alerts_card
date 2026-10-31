@@ -147,6 +147,7 @@ describe('timeline structure', () => {
       expect(ongoing.classList.contains('open-end')).toBe(true);
       expect(ongoing.classList.contains('clip-end')).toBe(false);
       expect(pct(ongoing.style.left) + pct(ongoing.style.width)).toBeCloseTo(100, 3);
+      expect(ongoing.style.getPropertyValue('--wac-tl-fade-from')).toMatch(/^\d+(\.\d+)?%$/);
       expect(rowByTitle(card, 'Ongoing Warning').classList.contains('ongoing')).toBe(true);
       // The fade is the open end's only sign: no glyph shares the arrowhead's slot.
       expect(rowByTitle(card, 'Ongoing Warning').querySelector('.timeline-clip')).toBeNull();

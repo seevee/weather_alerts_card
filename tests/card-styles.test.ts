@@ -258,8 +258,8 @@ describe('cardStyles timeline layout', () => {
   it('gives each right end its own sign: arrowhead for clipped, a fade and no glyph for open-ended', () => {
     expect(css).toMatch(/\.timeline-clip\.start\s*{[^}]*border-right:\s*var\(--wac-tl-arrow-len\) solid var\(--wac-progress-fg\)/);
     expect(css).toMatch(/\.timeline-clip\.end\s*{[^}]*border-left:\s*var\(--wac-tl-arrow-len\) solid var\(--wac-progress-fg\)/);
-    // The fade is floored at half the bar so a short open-ended bar keeps a solid half.
-    expect(css).toMatch(/\.timeline-bar\.open-end\s*{[^}]*mask-image:\s*linear-gradient\(to right, #000 max\(50%,/);
+    // Full strength at now (a per-bar stop the card sets), fading to the edge.
+    expect(css).toMatch(/\.timeline-bar\.open-end\s*{[^}]*mask-image:\s*linear-gradient\(to right, #000 var\(--wac-tl-fade-from, 0%\), [^;]*transparent 100%\)/);
     // Bar and arrowhead follow --wac-scale like the row and the chip.
     expect(css).toMatch(/--wac-tl-bar:\s*calc\(10px \* var\(--wac-scale, 1\)\)/);
     expect(css).toMatch(/--wac-tl-arrow-len:\s*calc\(7px \* var\(--wac-scale, 1\)\)/);

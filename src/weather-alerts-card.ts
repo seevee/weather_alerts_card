@@ -1695,7 +1695,8 @@ export class WeatherAlertsCard extends LitElement {
       bar.openEnd ? 'open-end' : '',
       bar.offAxis ? `off-axis off-${bar.offAxis}` : '',
     ].filter(Boolean).join(' ');
-    const barStyle = `left: ${bar.startPct.toFixed(3)}%; width: ${(bar.endPct - bar.startPct).toFixed(3)}%;`;
+    const barStyle = `left: ${bar.startPct.toFixed(3)}%; width: ${(bar.endPct - bar.startPct).toFixed(3)}%;`
+      + (bar.fadeFromPct !== null ? ` --wac-tl-fade-from: ${bar.fadeFromPct.toFixed(3)}%;` : '');
     const range = `${formatProgressTimestamp(progress.onsetTs, this._locale, lang)} – ${progress.hasEndTime ? formatProgressTimestamp(progress.endsTs, this._locale, lang) : t('progress.ongoing', lang)}`;
     // The one-phrase time state sits under the name, so a touch user reads
     // "for 3h" without a hover or a tap. The same phrase names the row for

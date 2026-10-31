@@ -1331,17 +1331,19 @@ export const cardStyles = css`
   .timeline-bar.off-axis {
     display: none;
   }
-  /* No known end: run to the edge and dissolve. No glyph here on purpose —
-     solid shapes (cap, arrowhead) are for known facts, and a second glyph in
-     the arrowhead's slot would read as inconsistency rather than meaning.
-     The fade is the last 64px, floored at half the bar so a short bar (an
-     open-ended alert starting late in the window) keeps a solid half rather
-     than dissolving entirely. */
+  /* No known end: full strength at now (or at a future onset), then fading
+     across the rest of the window. Reaching the edge says it has not ended;
+     losing most of its strength in the first quarter says nothing is known
+     past now, so a wide window does not draw days of solid bar. No glyph here
+     on purpose: solid shapes (cap, arrowhead) are for known facts, and a
+     second glyph in the arrowhead's slot would read as inconsistency rather
+     than meaning. The fade start is per bar, in its own width, set inline. */
   .timeline-bar.open-end {
+    --wac-tl-fade-mid: calc(var(--wac-tl-fade-from, 0%) + (100% - var(--wac-tl-fade-from, 0%)) * 0.25);
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    -webkit-mask-image: linear-gradient(to right, #000 max(50%, calc(100% - 64px * var(--wac-scale, 1))), transparent 100%);
-    mask-image: linear-gradient(to right, #000 max(50%, calc(100% - 64px * var(--wac-scale, 1))), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, #000 var(--wac-tl-fade-from, 0%), rgba(0, 0, 0, 0.35) var(--wac-tl-fade-mid), transparent 100%);
+    mask-image: linear-gradient(to right, #000 var(--wac-tl-fade-from, 0%), rgba(0, 0, 0, 0.35) var(--wac-tl-fade-mid), transparent 100%);
   }
 
   .timeline-axis {

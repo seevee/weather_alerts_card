@@ -898,6 +898,7 @@ export const TIMELINE_AUTO_PAD = 0.04;
 export interface TimelineWindow {
   startTs: number;
   endTs: number;
+  nowTs: number;
   /** Position of now along the axis, 0–100. */
   nowPct: number;
 }
@@ -929,6 +930,7 @@ export function computeTimelineWindow(
   return {
     startTs: nowTs - lead,
     endTs: nowTs + span,
+    nowTs,
     nowPct: (lead / (lead + span)) * 100,
   };
 }
@@ -940,8 +942,11 @@ export interface TimelineBar {
   /** The bar crosses the window start / end (a chevron marks the cut). */
   clipStart: boolean;
   clipEnd: boolean;
-  /** No known end: the bar runs to the right edge and fades. */
+  /** No known end: the bar runs to the right edge, fading out from now. */
   openEnd: boolean;
+  /** Open-ended only: where the fade starts (now, or a future onset), as a
+   *  percentage of the bar's own width. It runs from there to the edge. */
+  fadeFromPct: number | null;
   /** Entirely outside the window: collapses to its chevron at that edge. */
   offAxis: 'start' | 'end' | null;
 }
@@ -960,17 +965,20 @@ export function timelineBarGeometry(progress: AlertProgress, win: TimelineWindow
   const end = openEnd ? Infinity : progress.endsTs;
 
   if (end <= startTs) {
-    return { startPct: 0, endPct: 0, clipStart: true, clipEnd: false, openEnd, offAxis: 'start' };
+    return { startPct: 0, endPct: 0, clipStart: true, clipEnd: false, openEnd, fadeFromPct: null, offAxis: 'start' };
   }
   if (start >= endTs) {
-    return { startPct: 100, endPct: 100, clipStart: false, clipEnd: !openEnd, openEnd, offAxis: 'end' };
+    return { startPct: 100, endPct: 100, clipStart: false, clipEnd: !openEnd, openEnd, fadeFromPct: null, offAxis: 'end' };
   }
+  const startPct = pct(start);
+  const endPct = openEnd ? 100 : pct(end);
   return {
-    startPct: pct(start),
-    endPct: openEnd ? 100 : pct(end),
+    startPct,
+    endPct,
     clipStart: start < startTs,
     clipEnd: !openEnd && end > endTs,
     openEnd,
+    fadeFromPct: openEnd ? ((pct(Math.max(start, win.nowTs)) - startPct) / (endPct - startPct || 1)) * 100 : null,
     offAxis: null,
   };
 }

@@ -205,7 +205,8 @@ What the bars tell you:
   started before it. An alert entirely outside the window collapses to the arrowhead
   alone, at that edge.
 - A bar that **fades out** has **no end time**. That is a different claim from the
-  arrowhead: nothing is known about when it ends.
+  arrowhead: nothing is known about when it ends. It is strongest at now (or at a future
+  start) and fades across the window, so a wide one does not draw days of solid bar.
 - Preparation bars are striped, expired bars (with `hideExpired: false`) are dimmed, an
   open-ended active alert breathes. The pattern is fixed per phase.
 
