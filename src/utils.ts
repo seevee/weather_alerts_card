@@ -1055,6 +1055,11 @@ export function computeTimelineTicks(win: TimelineWindow, timeZone?: string, max
   return ticks;
 }
 
+/** The now head's label: the clock time, always with minutes. */
+export function formatTimelineNow(ts: number, locale?: HaLocale): string {
+  return formatTime(new Date(ts * 1000), locale, 'numeric');
+}
+
 /**
  * Axis label for a tick: the weekday and day at local midnight; otherwise the
  * clock time, hour-only where the locale writes a day period ("6 PM") since

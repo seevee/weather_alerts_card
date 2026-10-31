@@ -1186,13 +1186,16 @@ export const cardStyles = css`
     height: var(--wac-tl-row);
     min-width: 0;
   }
-  /* Now marker: one segment per lane, overhanging the row gap above and below
-     so the segments read as one line down the card. */
+  /* Now marker: one segment per lane, reaching up through the row gap above
+     so the segments read as one line down the card. Only upward: the marker
+     is translucent, and segments overhanging both ways stacked in every gap,
+     a brighter dash between each pair of rows. The first row's segment meets
+     the axis head. */
   .timeline-lane::after {
     content: "";
     position: absolute;
     top: calc(-1 * var(--wac-tl-gap));
-    bottom: calc(-1 * var(--wac-tl-gap));
+    bottom: 0;
     left: var(--wac-tl-now, 11.111%);
     width: 2px;
     margin-left: -1px;
@@ -1234,10 +1237,51 @@ export const cardStyles = css`
   /* Bar and arrowheads breathe as one layer. Two animations would stay in
      step only if both elements were created on the same frame, and an
      arrowhead is added whenever a re-render first clips the bar, so it drifted
-     out of phase with a bar already running. */
+     out of phase with a bar already running.
+     The span hangs one arrowhead past each lane edge, because a mask clips
+     everything outside its box, and the inner lane box puts the bar's
+     percentages back in lane coordinates. */
   .timeline-span {
     position: absolute;
-    inset: 0;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--wac-tl-arrow-len));
+    right: calc(-1 * var(--wac-tl-arrow-len));
+  }
+  .timeline-span-lane {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--wac-tl-arrow-len);
+    right: var(--wac-tl-arrow-len);
+  }
+  /* Elapsed time recedes: everything left of now, arrowhead included, drops
+     to 40% so the bright part of a bar is what remains (the default layout's
+     fill reads the same way). One mask over bar and arrowheads, so they dim
+     as a unit, and its hard edge sits under the now marker. An expired bar is
+     all past and already grey, so it is left alone. */
+  .timeline-row:not(.expired) .timeline-span {
+    --wac-tl-elapsed: calc(var(--wac-tl-arrow-len) + (100% - 2 * var(--wac-tl-arrow-len)) * var(--wac-tl-now-f, 0.11111));
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.4) var(--wac-tl-elapsed), #000 var(--wac-tl-elapsed));
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 0.4) var(--wac-tl-elapsed), #000 var(--wac-tl-elapsed));
+  }
+  /* Severity in shape: a bar's length is its duration, so the most urgent
+     alert is often the smallest mark. The severe tiers draw a thicker bar,
+     and the arrowheads, sized off it, follow. */
+  .timeline .severity-extreme,
+  .timeline .severity-severe {
+    --wac-tl-bar: calc(14px * var(--wac-scale, 1));
+  }
+  /* Local midnights in wide windows: a divider-grey line down every lane,
+     under the bars, reaching up through the gap like the now marker (HA's
+     divider is translucent too, so the same no-overlap rule applies). */
+  .timeline-day-line {
+    position: absolute;
+    top: calc(-1 * var(--wac-tl-gap));
+    bottom: 0;
+    width: 1px;
+    background: var(--divider-color);
+    pointer-events: none;
   }
   .timeline .ongoing .timeline-span {
     animation: ongoing-pulse 5s infinite;
@@ -1342,6 +1386,18 @@ export const cardStyles = css`
   }
   .timeline-tick.day {
     font-weight: 600;
+    color: var(--primary-text-color);
+  }
+  /* The clock time beside the head, so "now" needs no reading off the ticks.
+     Neighbouring ticks within a label of it go mark-only. */
+  .timeline-now-label {
+    position: absolute;
+    top: 0;
+    left: var(--wac-tl-now, 11.111%);
+    padding-left: 6px;
+    line-height: var(--wac-tl-axis);
+    white-space: nowrap;
+    font-weight: 500;
     color: var(--primary-text-color);
   }
   .timeline-now-head {

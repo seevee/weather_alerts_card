@@ -60,6 +60,7 @@ import {
   timelineBarGeometry,
   computeTimelineTicks,
   formatTimelineTick,
+  formatTimelineNow,
   type TimelineWindow,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
@@ -218,6 +219,10 @@ function getPreviewAlerts(): WeatherAlert[] {
     },
   ];
 }
+
+// Windows at least this wide draw a faint line down every lane at each local
+// midnight, so "ends tomorrow night" reads from any row, not only the axis.
+const TIMELINE_DAY_LINES_S = 48 * 3600;
 
 // Axis label placement. TIMELINE_LABEL_PX is the room one tick label needs
 // ("12 PM", "16 Mon" at 0.7rem plus its gap); the lane's measured width over it
@@ -1627,10 +1632,14 @@ export class WeatherAlertsCard extends LitElement {
     const ticks = computeTimelineTicks(win, locale.timeZone, Math.floor(100 / labelPct))
       .filter(tick => Math.abs(tick.pct - win.nowPct) >= labelPct / 2);
     const labeled = ticks.filter(tick => !tick.minor);
+    const nowText = formatTimelineNow(nowTs, locale);
+    const dayLines = win.endTs - win.startTs >= TIMELINE_DAY_LINES_S
+      ? ticks.filter(tick => tick.dayBoundary).map(tick => tick.pct)
+      : [];
     const dismissable = this._canDismiss();
     const headed = !!this._config?.title;
     return html`
-      <div class="timeline-body ${dismissable ? 'dismissable' : ''} ${headed ? 'headed' : ''}" style="--wac-tl-now: ${win.nowPct.toFixed(3)}%">
+      <div class="timeline-body ${dismissable ? 'dismissable' : ''} ${headed ? 'headed' : ''}" style="--wac-tl-now: ${win.nowPct.toFixed(3)}%; --wac-tl-now-f: ${(win.nowPct / 100).toFixed(5)}">
         <div class="timeline-axis">
           <div class="timeline-gutter" aria-hidden="true"></div>
           <div class="timeline-lane">
@@ -1639,25 +1648,27 @@ export class WeatherAlertsCard extends LitElement {
               // labelled tick before it keeps its mark but drops its text when
               // the two are closer than two labels' width, so the pair never
               // overprints. A minor tick (a day mark under a coarser label
-              // step) is mark-only by definition.
+              // step) is mark-only by definition, and so is any tick within a
+              // label of the now head, whose time label wins that space.
               const edge = !tick.minor && tick.pct > TIMELINE_EDGE_PCT;
               const next = labeled.find(other => other.pct > tick.pct);
-              const quiet = tick.minor || (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT
-                && next.pct - tick.pct < 2 * labelPct);
+              const quiet = tick.minor || Math.abs(tick.pct - win.nowPct) < labelPct
+                || (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT && next.pct - tick.pct < 2 * labelPct);
               return html`
               <span class="timeline-tick ${tick.dayBoundary ? 'day' : ''} ${edge ? 'edge' : ''} ${quiet ? 'quiet' : ''} ${tick.minor ? 'minor' : ''}" style="left: ${tick.pct.toFixed(3)}%" aria-hidden="true">${quiet ? nothing : formatTimelineTick(tick, locale)}</span>
             `;
             })}
-            <span class="timeline-now-head" role="img" aria-label=${t('progress.now', this._lang)}></span>
+            <span class="timeline-now-head" role="img" aria-label="${t('progress.now', this._lang)} ${nowText}"></span>
+            <span class="timeline-now-label" aria-hidden="true">${nowText}</span>
           </div>
           ${dismissable ? html`<span class="timeline-dismiss-spacer" aria-hidden="true"></span>` : nothing}
         </div>
-        ${alerts.map(alert => this._renderTimelineRow(alert, win))}
+        ${alerts.map(alert => this._renderTimelineRow(alert, win, dayLines))}
       </div>
     `;
   }
 
-  private _renderTimelineRow(alert: WeatherAlert, win: TimelineWindow): TemplateResult {
+  private _renderTimelineRow(alert: WeatherAlert, win: TimelineWindow, dayLines: number[]): TemplateResult {
     const lang = this._lang;
     const progress = computeAlertProgress(alert);
     const bar = timelineBarGeometry(progress, win);
@@ -1713,10 +1724,13 @@ export class WeatherAlertsCard extends LitElement {
           </div>
         </div>
         <div class="timeline-lane" aria-hidden="true">
+          ${dayLines.map(pct => html`<span class="timeline-day-line" style="left: ${pct.toFixed(3)}%"></span>`)}
           <div class="timeline-span">
-            <div class=${barClasses} style=${barStyle} title=${range}></div>
-            ${bar.clipStart ? html`<span class="timeline-clip start" title=${t('timeline.clipped_start', lang)}></span>` : nothing}
-            ${bar.clipEnd ? html`<span class="timeline-clip end" title=${t('timeline.clipped_end', lang)}></span>` : nothing}
+            <div class="timeline-span-lane">
+              <div class=${barClasses} style=${barStyle} title=${range}></div>
+              ${bar.clipStart ? html`<span class="timeline-clip start" title=${t('timeline.clipped_start', lang)}></span>` : nothing}
+              ${bar.clipEnd ? html`<span class="timeline-clip end" title=${t('timeline.clipped_end', lang)}></span>` : nothing}
+            </div>
           </div>
         </div>
         ${this._renderDismissButton(alert)}

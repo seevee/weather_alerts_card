@@ -178,7 +178,9 @@ alert, so overlapping and back-to-back alerts read at a glance. The gutter carri
 icon chip, the event name and the same one-phrase time state the compact layout shows
 ("for 3h", "in 45m"); tapping a row opens the
 [detail pop-up](./recipes/detail-popup) unless a `tap_action` is set (`none` keeps the
-row inert).
+row inert). The now marker carries the current time, and the part of each bar behind it
+is dimmed, so the bright part is what remains. Severe and extreme alerts draw a thicker
+bar, and a window of two days or more marks each midnight down every lane.
 
 ![Alerts as bars on a shared time axis](/img/timeline-adaptive.svg)
 

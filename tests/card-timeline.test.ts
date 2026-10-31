@@ -104,13 +104,17 @@ describe('timeline structure', () => {
       const ticks = r.querySelectorAll('.timeline-tick');
       expect(ticks.length).toBeGreaterThanOrEqual(4);
       expect(ticks.length).toBeLessThanOrEqual(8);
-      // A tick drops its text only to make room for an edge-hung neighbour.
+      // A tick drops its text only to make room for an edge-hung neighbour or
+      // the now head's time label.
+      const laneW = r.querySelector('.timeline-axis .timeline-lane')!.getBoundingClientRect().width;
+      const nearNow = (t: Element) => Math.abs(pct((t as HTMLElement).style.left) - 100 / 9) < (52 / laneW) * 100;
       for (const t of ticks) {
         if (!t.classList.contains('quiet')) expect(t.textContent.trim()).not.toBe('');
       }
       for (const q of [...ticks].filter(t => t.classList.contains('quiet'))) {
-        expect(q.classList.contains('minor') || q.nextElementSibling?.classList.contains('edge') === true).toBe(true);
+        expect(q.classList.contains('minor') || nearNow(q) || q.nextElementSibling?.classList.contains('edge') === true).toBe(true);
       }
+      expect(r.querySelector('.timeline-now-label')!.textContent.trim()).toMatch(/\d:\d\d/);
       // A tick under the now head is not rendered at all: the head is the mark.
       const nowPct = 100 / 9;
       for (const t of ticks) expect(Math.abs(pct((t as HTMLElement).style.left) - nowPct)).toBeGreaterThan(3);
@@ -157,7 +161,7 @@ describe('timeline structure', () => {
       expect(pct(watch.style.left) + pct(watch.style.width)).toBeGreaterThan(95);
       // … but its onset a day ago is before the lead, so its start is cut.
       expect(watch.classList.contains('clip-start')).toBe(true);
-      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-span > .timeline-clip.start')).not.toBeNull();
+      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-span-lane > .timeline-clip.start')).not.toBeNull();
       expect(pct(watch.style.left)).toBe(0);
 
       const expiredRow = rowByTitle(card, 'Expired Warning');
@@ -180,7 +184,7 @@ describe('timeline structure', () => {
       const b = bar(row);
       expect(b.classList.contains('open-end')).toBe(true);
       expect(b.classList.contains('clip-start')).toBe(true);
-      const arrow = row.querySelector<HTMLElement>('.timeline-span > .timeline-clip.start')!;
+      const arrow = row.querySelector<HTMLElement>('.timeline-span-lane > .timeline-clip.start')!;
       expect(arrow).not.toBeNull();
       // Visible: it sits outside the masked bar, just past the lane's left edge.
       const lane = row.querySelector('.timeline-lane')!.getBoundingClientRect();
@@ -196,7 +200,7 @@ describe('timeline structure', () => {
       // a single animation, on the span that holds them, so they cannot drift.
       const anims = row.querySelector('.timeline-lane')!.getAnimations({ subtree: true }) as CSSAnimation[];
       expect(anims.map(a => a.animationName)).toEqual(['ongoing-pulse']);
-      expect((anims[0].effect as KeyframeEffect).target).toBe(arrow.parentElement);
+      expect((anims[0].effect as KeyframeEffect).target).toBe(row.querySelector('.timeline-span'));
       expect(arrow.parentElement).toBe(b.parentElement);
     } finally {
       cleanup();
@@ -208,12 +212,69 @@ describe('timeline structure', () => {
     try {
       const watch = bar(rowByTitle(card, 'Long Watch'));
       expect(watch.classList.contains('clip-end')).toBe(true);
-      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-span > .timeline-clip.end')).not.toBeNull();
+      expect(rowByTitle(card, 'Long Watch').querySelector('.timeline-span-lane > .timeline-clip.end')).not.toBeNull();
       expect(pct(watch.style.left) + pct(watch.style.width)).toBeCloseTo(100, 3);
       // 4h ahead still fits inside 6h.
       expect(bar(rowByTitle(card, 'Prep Warning')).classList.contains('clip-end')).toBe(false);
     } finally {
       cleanup();
+    }
+  });
+
+  it('dims elapsed time under one mask, keeping the bar in lane coordinates', async () => {
+    const { card, cleanup } = await mountCard(BASE, phasedHass());
+    try {
+      const row = rowByTitle(card, 'Long Watch');
+      const lane = row.querySelector('.timeline-lane')!.getBoundingClientRect();
+      const inner = row.querySelector('.timeline-span-lane')!.getBoundingClientRect();
+      expect(inner.left).toBeCloseTo(lane.left, 1);
+      expect(inner.width).toBeCloseTo(lane.width, 1);
+      // The span hangs past the lane so its mask reaches the arrowheads.
+      const span = row.querySelector<HTMLElement>('.timeline-span')!;
+      expect(span.getBoundingClientRect().left).toBeLessThan(lane.left);
+      expect(getComputedStyle(span).maskImage).toContain('linear-gradient');
+      // An expired bar is all past and already grey: no second dim.
+      const expired = rowByTitle(card, 'Expired Warning').querySelector<HTMLElement>('.timeline-span')!;
+      expect(getComputedStyle(expired).maskImage).toBe('none');
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('draws the severe tiers thicker, arrowheads included', async () => {
+    const { card, cleanup } = await mountCard(BASE, phasedHass());
+    try {
+      const severe = bar(rowByTitle(card, 'Long Watch')).getBoundingClientRect().height;
+      const other = bar(rowByTitle(card, 'Active Warning')).getBoundingClientRect().height;
+      expect(severe).toBeGreaterThan(other);
+      const arrow = rowByTitle(card, 'Long Watch').querySelector('.timeline-clip')!.getBoundingClientRect().height;
+      expect(arrow).toBeGreaterThan(severe);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('draws midnight lines down every lane in wide windows only', async () => {
+    const wide = await mountCard({ ...BASE, timelineHorizon: '72h' }, phasedHass());
+    try {
+      const rows = root(wide.card).querySelectorAll('.timeline-row');
+      const lines = rows[0].querySelectorAll('.timeline-lane > .timeline-day-line');
+      expect(lines.length).toBeGreaterThanOrEqual(2);
+      for (const row of rows) expect(row.querySelectorAll('.timeline-day-line')).toHaveLength(lines.length);
+      // Segments meet across the gap without stacking: the line and the now
+      // marker are translucent, so an overlap shows as a brighter dash.
+      const below = rows[1].querySelector('.timeline-day-line')!.getBoundingClientRect();
+      expect(lines[0].getBoundingClientRect().bottom).toBeLessThanOrEqual(below.top + 0.5);
+      expect(below.top).toBeLessThanOrEqual(lines[0].getBoundingClientRect().bottom + 0.5);
+      expect(getComputedStyle(rows[0].querySelector('.timeline-lane')!, '::after').bottom).toBe('0px');
+    } finally {
+      wide.cleanup();
+    }
+    const narrow = await mountCard({ ...BASE, timelineHorizon: '6h' }, phasedHass());
+    try {
+      expect(root(narrow.card).querySelector('.timeline-day-line')).toBeNull();
+    } finally {
+      narrow.cleanup();
     }
   });
 
@@ -235,10 +296,10 @@ describe('timeline structure', () => {
       const past = bar(rowByTitle(card, 'Expired Warning'));
       expect(past.classList.contains('off-axis')).toBe(true);
       expect(past.classList.contains('off-start')).toBe(true);
-      expect(rowByTitle(card, 'Expired Warning').querySelector('.timeline-span > .timeline-clip.start')).not.toBeNull();
+      expect(rowByTitle(card, 'Expired Warning').querySelector('.timeline-span-lane > .timeline-clip.start')).not.toBeNull();
       const future = bar(rowByTitle(card, 'Prep Warning'));
       expect(future.classList.contains('off-end')).toBe(true);
-      expect(rowByTitle(card, 'Prep Warning').querySelector('.timeline-span > .timeline-clip.end')).not.toBeNull();
+      expect(rowByTitle(card, 'Prep Warning').querySelector('.timeline-span-lane > .timeline-clip.end')).not.toBeNull();
       // The arrowhead is all that renders: the bar itself is gone.
       expect(getComputedStyle(future).display).toBe('none');
     } finally {
@@ -495,7 +556,10 @@ describe('timeline accessibility and motion', () => {
       for (const lane of root(card).querySelectorAll('.timeline-row .timeline-lane')) {
         expect(lane.getAttribute('aria-hidden')).toBe('true');
       }
-      expect(root(card).querySelector('.timeline-now-head')!.getAttribute('aria-label')).toBe('Now');
+      // The head names the time it marks; the visible label beside it is hidden.
+      const label = root(card).querySelector('.timeline-now-label')!;
+      expect(label.getAttribute('aria-hidden')).toBe('true');
+      expect(root(card).querySelector('.timeline-now-head')!.getAttribute('aria-label')).toBe(`Now ${label.textContent.trim()}`);
       expect(bar(rowByTitle(card, 'Ongoing Warning')).getAttribute('title')).toContain('Ongoing');
     } finally {
       cleanup();

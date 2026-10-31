@@ -121,7 +121,7 @@ alert, so overlapping and back-to-back alerts read at a glance. The gutter carri
 icon chip, the event name and the compact layout's one-phrase time state ("for 3h",
 "in 45m"); tapping a row opens the detail pop-up below (or your own `tap_action`). Each bar end is its own sign: a rounded cap ends there, an arrowhead
 continues past the window, and a bar that fades out has no known end. The window fits
-the alerts on screen by default, or a fixed `timelineHorizon`.
+the alerts on screen by default, or a fixed `timelineHorizon`. The now marker carries the current time, and the part of each bar behind it is dimmed, so the bright part is what remains. Severe and extreme alerts draw a thicker bar, and a window of two days or more marks each midnight down every lane.
 
 [![Alerts as bars on a shared time axis](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/timeline-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/timeline-light.webp)
 
