@@ -56,6 +56,10 @@ New translations are welcome as standalone PRs — copy `en.ts` to
 to `index.ts`. Use the Home Assistant locale code (`nl`, `pt-BR`, `nb`, …), and
 keep any `{placeholder}` tokens intact.
 
+The ten `badge.*` severity and certainty labels deserve extra consideration.
+They form a ladder, so Severe has to read stronger than Moderate and weaker
+than Extreme in your language too.
+
 There is a shorter PR template for translation-only changes. GitHub cannot offer
 it as a choice, so it has to be requested in the URL: once you are on the compare
 page for your own branch, append `&template=translation.md` and reload.
