@@ -46,7 +46,7 @@ export const pl: TranslationMap = {
 
   // Timeline layout
   'timeline.clipped_start': 'Rozpoczęte przed tym oknem',
-  'timeline.clipped_end': 'Trwa dłużej niż to okno',
+  'timeline.clipped_end': 'Trwa dalej poza tym oknem',
 
   // Relative time
   'time.just_now': 'przed chwilą',
@@ -148,8 +148,8 @@ export const pl: TranslationMap = {
   'editor.timeline_horizon_12h': '12 godzin',
   'editor.timeline_horizon_24h': '24 godziny',
   'editor.timeline_horizon_72h': '3 dni',
-  'editor.timeline_styling_note': 'Oś czasu rysuje stałe paski dla każdej fazy; ustawienia wypełnienia i dekoracji postępu nie mają zastosowania.',
-  'editor.timeline_dismiss_note': 'Na osi czasu odrzucanie działa tylko przyciskiem.',
+  'editor.timeline_styling_note': 'Oś czasu rysuje stałe paski dla każdej fazy; ustawienia wypełnienia postępu oraz dekoracji nie mają zastosowania.',
+  'editor.timeline_dismiss_note': 'Oś czasu można zamknąć wyłącznie za pomocą przycisku.',
   'editor.font_size': 'Rozmiar czcionki',
   'editor.font_size_small': 'Mała',
   'editor.font_size_default': 'Domyślna',
