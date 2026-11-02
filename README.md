@@ -497,18 +497,18 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | NINA | Germany (civil protection) | Built-in [nina](https://www.home-assistant.io/integrations/nina/) — one `binary_sensor` per region per message slot; point the card at the NINA **device** so slots are picked up as warnings land in them. Carries DWD weather, LHP flood and MoWaS/KATWARN/BIWAPP civil-protection messages alike |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) — point the card at `sensor.weather_warnings_at_<postcode>` |
-| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — the recommended ECCC source; see note below |
+| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts), set up with its ECCC provider — the recommended ECCC source; see note below |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; auto-collect the whole feed with `sources: [nsw_rural_fire_service_feed]` |
 | INMET | Brazil | [sigrist/inmet](https://github.com/sigrist/inmet) — one `geo_location.*` entity per active INMET alert; auto-collect the whole feed with `sources: [inmet]` |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
-> **Note on ECCC.** For Environment and Climate Change Canada alerts, use [CAP Alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`). It is the only ECCC source this card recommends — neither the bundled HA core `environment_canada` integration nor the HACS `environment_canada` fork is routed to. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below for why.
+> **Note on ECCC.** For Environment and Climate Change Canada alerts, use [CAP Alerts](https://github.com/seevee/cap_alerts) with its ECCC provider. It is the only ECCC source this card recommends — neither the bundled HA core `environment_canada` integration nor the HACS `environment_canada` fork is routed to. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below for why.
 
 ### Canada: ECCC via CAP Alerts
 
 For Environment and Climate Change Canada (ECCC) alerts, [CAP Alerts](https://github.com/seevee/cap_alerts)
-(`provider: eccc`) is the source to use. It ingests the NAAD CAP firehose,
+with its ECCC provider is the source to use. It ingests the NAAD CAP firehose,
 creating one sensor per active alert under a Home Assistant device. That carries
 **raw** CAP severity and certainty, preserves the original multi-region alert
 polygons, and unlocks the `showGeometry` affected-area mini-map.
@@ -524,8 +524,9 @@ showGeometry: true    # affected-area mini-map
 ```
 
 Pick the device from the editor's **Alert devices** selector rather than
-hand-typing the id. The provider auto-detects as `eccc`; set `provider: eccc`
-explicitly only if you've disabled auto-detection.
+hand-typing the id. The card detects these entities as CAP Alerts (`cap`), so
+leave `provider:` unset. `provider: eccc` is for the HACS `environment_canada`
+fork; the card ignores it on a CAP Alerts entity.
 
 > **Why not the other ECCC integrations?** Two other ECCC integrations exist,
 > but neither is the right source for this card:

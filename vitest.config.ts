@@ -13,6 +13,7 @@ const BROWSER_SUITES = [
   'tests/card-filter.test.ts',
   'tests/card-geometry-fetch.test.ts',
   'tests/card-geometry.test.ts',
+  'tests/card-preview.test.ts',
   'tests/card-radius.test.ts',
   'tests/card-swipe-dismiss.test.ts',
   'tests/card-timeline.test.ts',
