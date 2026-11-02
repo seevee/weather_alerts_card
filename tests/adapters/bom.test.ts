@@ -194,3 +194,34 @@ describe('BomAdapter', () => {
     });
   });
 });
+
+// Review finding 7: parsing runs inside the card's render, so a malformed
+// warning must degrade, never throw.
+describe('BomAdapter on a malformed feed', () => {
+  const adapter = new BomAdapter();
+  const base = {
+    id: 'NSW_IDN1', area_id: 'NSW_ME001', type: 'flood_warning', title: 'Minor Flood Warning',
+    short_title: 'Flood', state: 'NSW', warning_group_type: 'minor',
+    issue_time: '2026-03-06T14:30:00Z', expiry_time: '2026-03-06T20:00:00Z', phase: 'new',
+  };
+  const parse = (...warnings: Record<string, unknown>[]) => adapter.parseAlerts({ warnings });
+  const without = (keys: string[]) => Object.fromEntries(Object.entries(base).filter(([k]) => !keys.includes(k)));
+
+  it('keeps a warning that lacks type, titles and group type', () => {
+    const alerts = parse(without(['type', 'title', 'short_title', 'warning_group_type']));
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]?.id).toBe('NSW_IDN1');
+    expect(alerts[0]?.severity).toBe('minor');
+  });
+
+  it('reads a non-string field as absent', () => {
+    const alerts = parse({ ...base, type: 42, phase: null, title: ['x'], area_id: {} });
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]?.phase).toBe('');
+    expect(alerts[0]?.zones).toEqual([]);
+  });
+
+  it('drops a warning with no id and keeps its siblings', () => {
+    expect(parse(without(['id']), { ...base, id: 'NSW_IDN2' }).map(a => a.id)).toEqual(['NSW_IDN2']);
+  });
+});
