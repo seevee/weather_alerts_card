@@ -16,7 +16,8 @@ import { InmetAdapter } from './inmet';
 // NWS is the default adapter for backwards compatibility, so it is named
 // rather than found in the registry when falling back.
 const nwsAdapter = new NwsAdapter();
-const adapters: AlertAdapter[] = [new CapAdapter(), nwsAdapter, new BomAdapter(), new NswRfsAdapter(), new InmetAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
+const capAdapter = new CapAdapter();
+const adapters: AlertAdapter[] = [capAdapter, nwsAdapter, new BomAdapter(), new NswRfsAdapter(), new InmetAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
@@ -76,6 +77,11 @@ export function getAdapter(
   provider: AlertProvider | undefined,
   attributes: Record<string, unknown>,
 ): AlertAdapter {
+  // A CAP Alerts entity is identified by its own marker, and no other adapter
+  // reads that shape: forcing one returns [] and the card would show a false
+  // all-clear. The marker wins over an explicit provider, whatever upstream
+  // service (ECCC, NWS, MeteoAlarm) the integration was configured for.
+  if (provider && provider !== 'cap' && capAdapter.canHandle(attributes)) return capAdapter;
   // Explicit provider selection
   if (provider) {
     const match = adapters.find(a => a.provider === provider);

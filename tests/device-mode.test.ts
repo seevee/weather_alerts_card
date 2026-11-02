@@ -305,10 +305,12 @@ async function flushAsync(): Promise<void> {
 async function mountCard(
   config: LooseConfig,
   hass: HomeAssistant,
+  preview?: boolean,
 ): Promise<{ card: CardInternals; cleanup: () => void }> {
   const card = document.createElement('weather-alerts-card') as unknown as CardInternals;
   card.setConfig(config);
   card.hass = hass;
+  if (preview !== undefined) (card as unknown as { preview: boolean }).preview = preview;
   document.body.appendChild(card);
   await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
   await flushAsync();
@@ -424,13 +426,54 @@ describe('WeatherAlertsCard render in device mode', () => {
     cleanup();
   });
 
-  it('renders preview when device has no entries at all', async () => {
+  it('renders preview in the editor when the device has no entries at all', async () => {
     const hass = makeHass([], {});
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
+      true,
     );
     expect(hasEl(card, '.preview-label')).toBe(true);
+    cleanup();
+  });
+
+  it('renders the empty state on a dashboard when the device has no entries at all', async () => {
+    const hass = makeHass([], {});
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE },
+      hass,
+      false,
+    );
+    expect(hasEl(card, '.preview-label')).toBe(false);
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    cleanup();
+  });
+
+  it('renders an empty shell while no registry has arrived', async () => {
+    // Neither hass.entities nor a WS connection: the card cannot know the
+    // device's children, so it claims neither samples nor an all-clear.
+    const hass = { states: {}, locale: { language: 'en' }, entities: undefined } as unknown as HomeAssistant;
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE },
+      hass,
+      false,
+    );
+    expect(hasEl(card, 'ha-card')).toBe(true);
+    expect(hasEl(card, '.preview-label')).toBe(false);
+    expect(hasEl(card, '.no-alerts')).toBe(false);
+    cleanup();
+  });
+
+  it('names a device the loaded registry no longer has as unavailable', async () => {
+    const hass = makeHass([], {}, { other: { id: 'other', name: 'Other' } });
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', device: DEVICE },
+      hass,
+      false,
+    );
+    expect(hasEl(card, '.preview-label')).toBe(false);
+    expect(hasEl(card, '.no-alerts')).toBe(true);
+    expect(hasEl(card, '.no-alerts-caveat')).toBe(true);
     cleanup();
   });
 
@@ -449,7 +492,9 @@ describe('WeatherAlertsCard render in device mode', () => {
       { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
-    expect(hasEl(card, '.preview-label')).toBe(true);
+    // The first snapshot is empty: a known registry with no children for the
+    // device, so a dashboard reads it as no alerts, never as sample data.
+    expect(hasEl(card, '.preview-label')).toBe(false);
 
     mock.setSnapshot([entry(ALERT_ID)]);
     mock.fireEvent();
@@ -466,7 +511,7 @@ describe('WeatherAlertsCard reactive registry updates', () => {
   const ALERT_ID_1 = 'sensor.cap_alerts_x_cap_alert_frost_aaa';
   const ALERT_ID_2 = 'sensor.cap_alerts_x_cap_alert_wind_bbb';
 
-  it('renders preview → alert → no-alerts as the registry mutates', async () => {
+  it('renders no-alerts → alert → no-alerts as the registry mutates', async () => {
     const mock = makeMockConnection([]);
     const hass = {
       states: {
@@ -482,8 +527,8 @@ describe('WeatherAlertsCard reactive registry updates', () => {
       { type: 'custom:weather-alerts-card', device: DEVICE },
       hass,
     );
-    // Phase 1: empty registry → preview.
-    expect(hasEl(card, '.preview-label')).toBe(true);
+    // Phase 1: empty snapshot → no alerts, not sample data.
+    expect(hasEl(card, '.preview-label')).toBe(false);
 
     // Phase 2: one matching entry → alert renders.
     mock.setSnapshot([entry(ALERT_ID_1)]);
@@ -956,7 +1001,7 @@ describe('WeatherAlertsCard with multiple devices (#256)', () => {
       { type: 'custom:weather-alerts-card', devices: [DEVICE] },
       hass,
     );
-    expect(hasEl(card, '.preview-label')).toBe(true);
+    expect(hasEl(card, '.preview-label')).toBe(false);
 
     mock.setSnapshot([entry(A1)]);
     mock.fireEvent();

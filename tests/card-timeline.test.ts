@@ -51,10 +51,11 @@ const BASE: WeatherAlertsCardConfig = {
   type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', layout: 'timeline', hideExpired: false,
 };
 
-async function mountCard(config: WeatherAlertsCardConfig, hass: HomeAssistant): Promise<{ card: CardInternals; cleanup: () => void }> {
+async function mountCard(config: WeatherAlertsCardConfig, hass: HomeAssistant, preview?: boolean): Promise<{ card: CardInternals; cleanup: () => void }> {
   const card = document.createElement('weather-alerts-card') as unknown as CardInternals;
   card.setConfig(config);
   card.hass = hass;
+  if (preview !== undefined) (card as unknown as { preview: boolean }).preview = preview;
   document.body.appendChild(card);
   await card.updateComplete;
   return { card, cleanup: () => card.remove() };
@@ -335,7 +336,8 @@ describe('timeline structure', () => {
   });
 
   it('renders the timeline in preview mode too', async () => {
-    const { card, cleanup } = await mountCard({ ...BASE, _preview: true }, phasedHass());
+    // HA flags the editor's card with `preview`; `_preview` only counts there.
+    const { card, cleanup } = await mountCard({ ...BASE, _preview: true }, phasedHass(), true);
     try {
       expect(root(card).querySelector('.preview-label')).not.toBeNull();
       expect(root(card).querySelector('.timeline-body')).not.toBeNull();

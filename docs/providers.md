@@ -12,7 +12,7 @@ below lists the ones that are actually tested.
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | NINA | Germany (civil protection) | Built-in [nina](https://www.home-assistant.io/integrations/nina/) — see [the note below](#nina-german-civil-protection) |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) |
-| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) — see [below](#canada-eccc-via-cap-alerts) |
+| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts), set up with its ECCC provider — see [below](#canada-eccc-via-cap-alerts) |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) |
 | INMET | Brazil | [sigrist/inmet](https://github.com/sigrist/inmet) |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
@@ -293,8 +293,8 @@ polygon as its frame.
 ## Canada: ECCC via CAP Alerts
 
 For Environment and Climate Change Canada alerts,
-[CAP Alerts](https://github.com/seevee/cap_alerts) (`provider: eccc`) is the source to
-use. It ingests the NAAD CAP firehose, creating one sensor per active alert under a
+[CAP Alerts](https://github.com/seevee/cap_alerts), set up with its ECCC provider, is the
+source to use. It ingests the NAAD CAP firehose, creating one sensor per active alert under a
 device. That carries **raw** CAP severity and certainty, preserves the original
 multi-region polygons, and unlocks the affected-area mini-map.
 
@@ -305,8 +305,9 @@ colorTheme: eccc      # ECCC's official red/orange/yellow/grey palette
 showGeometry: true    # affected-area mini-map
 ```
 
-The provider auto-detects as `eccc`; set `provider: eccc` explicitly only if you have
-disabled auto-detection.
+The card detects these entities as CAP Alerts (`cap`), so leave `provider:` unset.
+`provider: eccc` is for the HACS `environment_canada` fork; the card ignores it on a CAP
+Alerts entity.
 
 ### Why not the other ECCC integrations?
 
