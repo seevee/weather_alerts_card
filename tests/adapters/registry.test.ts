@@ -7,6 +7,22 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('nws');
   });
 
+  it('routes a CAP Alerts entity to the CAP adapter over an explicit provider', () => {
+    // `provider: eccc` on a cap_alerts device was the docs' own advice; the
+    // env_canada adapter reads `alerts` and returned [], a false all-clear.
+    const cap = { incident_platform_version: '1.0', id: 'urn:oid:x' };
+    expect(getAdapter('eccc', cap).provider).toBe('cap');
+    expect(getAdapter('nws', cap).provider).toBe('cap');
+    expect(getAdapter('cap', cap).provider).toBe('cap');
+  });
+
+  it('keeps an explicit provider for an entity that is not CAP Alerts', () => {
+    const envCanada = { attribution: 'Data provided by Environment Canada', alerts: [] };
+    expect(getAdapter('eccc', envCanada).provider).toBe('eccc');
+    // A bare id is not the marker: the version string must be there too.
+    expect(getAdapter('eccc', { id: 'x' }).provider).toBe('eccc');
+  });
+
   it('returns BoM adapter for explicit bom provider', () => {
     const adapter = getAdapter('bom', {});
     expect(adapter.provider).toBe('bom');

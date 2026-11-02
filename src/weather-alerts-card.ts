@@ -130,6 +130,9 @@ const PROVIDER_SHORT: Record<string, string> = {
 // in, an unpressed button marks every zero-alert device unavailable.
 const COMMAND_DOMAINS = new Set(['button', 'scene', 'script', 'input_button']);
 
+// getStubConfig's answer when no alert entity is found; see _isPickerStub.
+const STUB_FALLBACK_ENTITY = 'sensor.nws_alerts_alerts';
+
 // Entity name patterns are now in adapters/index.ts (ENTITY_NAME_PATTERNS).
 // Registry helpers (resolveDeviceAlertEntities, deviceHasAnyEntity,
 // subscribeEntityRegistry) live in ./registry and are re-exported above.
@@ -222,6 +225,14 @@ export class WeatherAlertsCard extends LitElement {
   private static _editorExpandedState: Map<string, Map<string, boolean>> = new Map();
 
   @property({ attribute: false }) public hass!: HomeAssistant;
+  // Set by HA's `hui-card` wrapper on every card it creates (frontend 2024.7+,
+  // #21344): true in the edit-card dialog and in dashboard edit mode, false on
+  // a dashboard in normal view. `editMode` is the same value under its older
+  // name. Left undefined by the card picker, by HA before 2024.7, and by any
+  // wrapper that builds the card without `hui-card`. Only an explicit true
+  // counts as the editor: sample data must never reach a live dashboard.
+  @property({ attribute: false }) public preview?: boolean;
+  @property({ attribute: false }) public editMode?: boolean;
   @state() private _config!: WeatherAlertsCardConfig;
   @state() private _expandedAlerts: Map<string, boolean> = new Map();
   @state() private _forcePreview = false;
@@ -601,10 +612,35 @@ export class WeatherAlertsCard extends LitElement {
         return (s.state !== '0' && s.state !== 'off' && s.state !== 'unknown' && s.state !== 'unavailable');
       });
       if (withAlerts) return { entity: withAlerts };
-      // No entity has active alerts → fall through to hardcoded default
-      // so the placeholder preview shows instead of "No active alerts"
+      // No entity has active alerts → fall through to the fallback stub, which
+      // the card picker renders as sample data (see _isPickerStub).
     }
-    return { entity: 'sensor.nws_alerts_alerts' };
+    return { entity: STUB_FALLBACK_ENTITY };
+  }
+
+  // True only where HA has said so (see the `preview` property).
+  private get _inEditor(): boolean {
+    return this.preview === true || this.editMode === true;
+  }
+
+  // The card picker renders getStubConfig's fallback with no `preview` flag at
+  // all. That exact config, with its entity absent, is the one case outside
+  // the editor that still shows sample data, so the picker keeps a useful
+  // tile without a marker key that would follow the card onto a dashboard.
+  private _isPickerStub(): boolean {
+    const c = this._config;
+    return this.preview === undefined && this.editMode === undefined
+      && c.entity === STUB_FALLBACK_ENTITY && !c.entities?.length
+      && configuredDevices(c).length === 0 && !c.sources?.length
+      && !this.hass?.states[STUB_FALLBACK_ENTITY];
+  }
+
+  // A configured device whose children cannot be known yet: neither the WS
+  // registry copy nor `hass.entities` has arrived. An all-clear here would be
+  // a guess, so render() shows an empty shell until one does.
+  private _registryPending(): boolean {
+    return configuredDevices(this._config).length > 0
+      && this._registryEntries === null && !this.hass?.entities;
   }
 
   private _getAllEntities(): string[] {
@@ -1234,10 +1270,18 @@ export class WeatherAlertsCard extends LitElement {
       if (!id || seen.has(id)) continue;
       seen.add(id);
       const e = this.hass.states[id];
-      if (e && this._isBroken(e)) sources.push({ name: this._friendlyName(id) });
+      // An id HA does not know (a typo, a removed integration, one not loaded
+      // yet) is a dark source, not an empty one.
+      if (!e || this._isBroken(e)) sources.push({ name: this._friendlyName(id) });
     }
 
+    const registry = this.hass.devices;
     for (const deviceId of configuredDevices(this._config)) {
+      // Likewise a device the loaded registry no longer has.
+      if (registry && !registry[deviceId]) {
+        sources.push({ name: null });
+        continue;
+      }
       let hasParseable = false;
       let hasErrored = false;
       for (const entry of deviceRegistryEntries(this.hass, deviceId, this._registryEntries)) {
@@ -1310,12 +1354,22 @@ export class WeatherAlertsCard extends LitElement {
     const allEntityIds = this._getAllEntities();
     const resolvedEntities = allEntityIds.map(id => this.hass.states[id]).filter(Boolean);
 
+    // Sample data is an editor tool. `_preview` (the editor's switch) is only
+    // honoured where HA says this is the editor; saved into a dashboard it is
+    // inert. With nothing resolved, the editor and the picker's fallback stub
+    // show samples, and a dashboard shows real state: the registry still
+    // loading renders an empty shell, everything else falls through to the
+    // empty state, where a missing source is a broken one (_brokenSources).
+    if (this._forcePreview && this._inEditor) return this._renderPreview();
     // Device mode: if any configured device is registered (even when no
-    // per-alert children currently exist), treat zero-resolved as "no active
-    // alerts" rather than falling back to preview.
+    // per-alert children currently exist), zero-resolved is "no active alerts".
     const deviceLinked = configuredDevices(this._config).some(id => this._deviceHasAnyEntity(id));
-    if ((resolvedEntities.length === 0 && !deviceLinked) || this._forcePreview) {
-      return this._renderPreview();
+    if (resolvedEntities.length === 0 && !deviceLinked) {
+      if (this._inEditor || this._isPickerStub()) return this._renderPreview();
+      if (this._registryPending()) {
+        this.style.display = '';
+        return html`<ha-card .header=${this._config.title || ''}></ha-card>`;
+      }
     }
 
     // Availability is its own display channel, independent of the alert list.
