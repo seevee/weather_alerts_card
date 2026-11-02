@@ -31,6 +31,7 @@ import {
   subscribeToDismissalChanges,
 } from './dismissal';
 import {
+  cachedDateTimeFormat,
   getWeatherIcon,
   getCertaintyIcon,
   computeAlertProgress,
@@ -1117,7 +1118,7 @@ export class WeatherAlertsCard extends LitElement {
       return { language: navigator.language || 'en', time_format: 'language' as const, date_format: 'language' as const, timeZone: undefined };
     }
     const timeZone = this._config?.timezone === 'browser'
-      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      ? cachedDateTimeFormat(undefined, {}).resolvedOptions().timeZone
       : this.hass.config?.time_zone;
     return { ...this.hass.locale, timeZone };
   }
