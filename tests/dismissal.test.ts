@@ -15,6 +15,7 @@ import {
   applyDismissals,
   subscribeToDismissalChanges,
 } from '../src/dismissal';
+import { deduplicateAlerts } from '../src/utils';
 import type { WeatherAlert, DismissalRecord } from '../src/types';
 
 function makeAlert(overrides: Partial<WeatherAlert> = {}): WeatherAlert {
@@ -412,5 +413,56 @@ describe('applyDismissals', () => {
     const snapshot = new Map(map);
     applyDismissals([alert], map, 1_700_000_000);
     expect([...map]).toEqual([...snapshot]);
+  });
+});
+
+// Review finding 6: a merged alert's dismissal must survive what zone-split
+// alerts actually do upstream, run through the same dedup the card uses.
+describe('dismissal of a merged alert', () => {
+  const now = 1_700_000_500;
+  // Two zone-split segments of one product, updated at different times.
+  const segA = makeAlert({ id: 'seg-a', zones: ['Z1'], sentTs: 1_700_000_000, phase: 'New' });
+  const segB = makeAlert({ id: 'seg-b', zones: ['Z2'], sentTs: 1_700_000_300, phase: 'Update' });
+
+  function dismissed(alerts: WeatherAlert[]): Map<string, DismissalRecord> {
+    const [shown] = deduplicateAlerts(alerts);
+    return new Map([[shown.id, makeRecord(computeAlertSignature(shown), now)]]);
+  }
+
+  it('stays dismissed when upstream reorders the segments', () => {
+    const map = dismissed([segA, segB]);
+    const { visible, updatedMap } = applyDismissals(deduplicateAlerts([segB, segA]), map, now);
+    expect(visible).toHaveLength(0);
+    expect(updatedMap).toBe(map);
+  });
+
+  it('stays dismissed when the group shrinks to one segment', () => {
+    const map = dismissed([segA, segB]);
+    const { visible, updatedMap } = applyDismissals(deduplicateAlerts([segA]), map, now);
+    expect(visible).toHaveLength(0);
+    // Carried to the lone alert's own id, so the next render matches directly.
+    expect([...updatedMap.keys()]).toEqual(['seg-a']);
+    expect(updatedMap.get('seg-a')!.sig).toBe(computeAlertSignature(segA));
+  });
+
+  it('stays dismissed when a lone alert gains a second segment', () => {
+    const map = dismissed([segA]);
+    const [merged] = deduplicateAlerts([segA, segB]);
+    const { visible, updatedMap } = applyDismissals([merged], map, now);
+    expect(visible).toHaveLength(0);
+    expect([...updatedMap.keys()]).toEqual([merged.id]);
+  });
+
+  it('still resurfaces on a real change after being carried over', () => {
+    const { updatedMap } = applyDismissals(deduplicateAlerts([segA]), dismissed([segA, segB]), now);
+    const reissued = { ...segA, sentTs: segA.sentTs + 600 };
+    expect(applyDismissals(deduplicateAlerts([reissued]), updatedMap, now).visible).toHaveLength(1);
+  });
+
+  it('a different alert never inherits it', () => {
+    // Another event in the same zones: a different group key, so no alias.
+    const map = dismissed([segA, segB]);
+    const other = makeAlert({ id: 'other', event: 'Other Alert', zones: ['Z1'] });
+    expect(applyDismissals(deduplicateAlerts([other]), map, now).visible).toHaveLength(1);
   });
 });

@@ -234,6 +234,7 @@ export interface WeatherAlert {
   iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
   providerIcon?: string;   // Raw MDI icon from provider (e.g. 'mdi:weather-tornado'); bypasses dictionary when present
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
+  dismissAliases?: string[]; // Other ids a dismissal of this alert may be stored under: a lone alert's `merged:` group id, a merged alert's member ids. Same group key by construction (see deduplicateAlerts)
   colorHint?: string;      // The color the issuing agency published for this alert, as a `#rrggbb` hex the adapter resolved (ECCC's red/orange/yellow/grey tag, MeteoAlarm's awareness token, INMET's literal hex); painted by getProviderColor when providerColors is on. Absent = the ladder paints it
   severityBadgeLabel?: string | undefined; // Optional override for the severity badge text (rendered raw, e.g. ECCC's `impact` field "High"/"Élevée"). Falls back to localized tier when absent.
   bbox?: [number, number, number, number]; // [minlon, minlat, maxlon, maxlat] (lon-first); synchronous from cap_alerts and INMET attributes. Drives the geometry mini-map frame.

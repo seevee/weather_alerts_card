@@ -864,10 +864,19 @@ export function deduplicateAlerts(
 
   let result = order.map(key => {
     const group = groups.get(key)!;
-    const first = group[0];
-    if (group.length === 1) return first;
+    const mergedId = `merged:${key}`;
+    // A lone alert keeps its own id, but a dismissal made while it was merged
+    // is stored under the group's id: the alias carries it across a group
+    // shrinking to one, which is zone-set churn like any other.
+    if (group.length === 1) return { ...group[0], dismissAliases: [mergedId] };
 
-    const representative = { ...first };
+    // The representative is the latest-issued member, ties by id, not
+    // whichever one upstream emitted first. Its sentTs and phase feed the
+    // dismissal signature, so taking group[0] meant a reorder changed the
+    // signature and resurfaced a dismissed alert.
+    const latest = group.reduce((best, a) =>
+      a.sentTs > best.sentTs || (a.sentTs === best.sentTs && a.id < best.id) ? a : best);
+    const representative = { ...latest };
     const zoneSet = new Set<string>();
     const areaDescs = new Set<string>();
 
@@ -879,13 +888,15 @@ export function deduplicateAlerts(
     representative.zones = [...zoneSet];
     representative.areaDesc = [...areaDescs].join('; ');
     representative.mergedCount = group.length;
-    // Use a stable id derived from the merge key rather than group[0].id.
+    // Use a stable id derived from the merge key rather than a member's id.
     // The group key (event/severity/onset/ends/provider) is invariant to the
     // order in which the integration emits zone-split alerts, so browser-local
     // dismissals keyed on this id survive upstream array reordering and
     // zone-set churn (zones are intentionally excluded from the dismissal
-    // signature, so identity must not depend on them either).
-    representative.id = `merged:${key}`;
+    // signature, so identity must not depend on them either). The member ids
+    // are aliases for a dismissal made before the group grew past one.
+    representative.id = mergedId;
+    representative.dismissAliases = group.map(a => a.id);
     return representative;
   });
 
