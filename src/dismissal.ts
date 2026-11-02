@@ -255,7 +255,18 @@ export function applyDismissals(
   for (const alert of alerts) {
     const rec = map.get(alert.id);
     if (!rec) {
-      visible.push(alert);
+      // A dismissal stored under another id of the same group (a merge that
+      // grew or shrank): carry it to this id rather than resurface the alert.
+      // The group key already pins event, severity, onset and ends, so the
+      // stored signature is replaced with this alert's rather than compared.
+      const alias = alert.dismissAliases?.find(id => map.has(id));
+      if (alias === undefined) {
+        visible.push(alert);
+        continue;
+      }
+      if (!updated) updated = new Map(map);
+      updated.set(alert.id, { ...map.get(alias)!, sig: computeAlertSignature(alert), lastSeenAt: now });
+      updated.delete(alias);
       continue;
     }
     const sig = computeAlertSignature(alert);

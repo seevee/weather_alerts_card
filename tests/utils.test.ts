@@ -833,6 +833,35 @@ describe('deduplicateAlerts', () => {
     expect(forward[0].id).toBe(reversed[0].id);
   });
 
+  it('represents a merged group by its latest-issued member, whatever the order', () => {
+    // Review finding 6: sentTs and phase feed the dismissal signature, so
+    // taking group[0] let a reorder resurface a dismissed alert.
+    const a = makeAlert({ id: 'a', zones: ['Z1'], sentTs: 100, phase: 'New' });
+    const b = makeAlert({ id: 'b', zones: ['Z2'], sentTs: 200, phase: 'Update' });
+    for (const order of [[a, b], [b, a]]) {
+      const [merged] = deduplicateAlerts(order);
+      expect(merged.sentTs).toBe(200);
+      expect(merged.phase).toBe('Update');
+      expect(merged.dismissAliases).toEqual(order.map(x => x.id));
+    }
+  });
+
+  it('breaks a sentTs tie by id, so the representative is still order-free', () => {
+    const a = makeAlert({ id: 'a', zones: ['Z1'], sentTs: 100, headline: 'from a' });
+    const b = makeAlert({ id: 'b', zones: ['Z2'], sentTs: 100, headline: 'from b' });
+    expect(deduplicateAlerts([a, b])[0].headline).toBe('from a');
+    expect(deduplicateAlerts([b, a])[0].headline).toBe('from a');
+  });
+
+  it('gives a lone alert its group id as a dismissal alias', () => {
+    const a = makeAlert({ id: 'a', zones: ['Z1'] });
+    const b = makeAlert({ id: 'b', zones: ['Z2'] });
+    const [merged] = deduplicateAlerts([a, b]);
+    const [alone] = deduplicateAlerts([a]);
+    expect(alone.id).toBe('a');
+    expect(alone.dismissAliases).toEqual([merged.id]);
+  });
+
   it('merges three alerts with same key', () => {
     const a = makeAlert({ id: 'a', zones: ['Z1'], areaDesc: 'Area 1' });
     const b = makeAlert({ id: 'b', zones: ['Z2'], areaDesc: 'Area 2' });
