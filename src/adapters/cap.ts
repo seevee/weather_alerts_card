@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
-import { extractPoint, meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '../utils';
+import { extractPoint, httpUrl, meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '../utils';
 
 // CAP Alerts integration sets one entity per active alert. Each entity's
 // extra_state_attributes is a flat dict of CAP 1.2 fields plus an
@@ -190,8 +190,4 @@ function singlePoint(v: unknown): [number, number] | undefined {
   const pair: unknown = v[0];
   if (!Array.isArray(pair) || pair.length !== 2) return undefined;
   return extractPoint(pair[1], pair[0]);
-}
-
-function httpUrl(v: string): string {
-  return v.startsWith('http://') || v.startsWith('https://') ? v : '';
 }

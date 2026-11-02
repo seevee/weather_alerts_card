@@ -32,6 +32,7 @@ import {
 } from './dismissal';
 import {
   cachedDateTimeFormat,
+  httpUrl,
   getWeatherIcon,
   getCertaintyIcon,
   computeAlertProgress,
@@ -2081,6 +2082,9 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderDetailsContent(alert: WeatherAlert, progress: AlertProgress): TemplateResult {
     const reformat = this._config?.reformatText !== false;
+    // Adapters build their own links, so the guard sits at the one place a
+    // URL becomes an href rather than in each adapter.
+    const sourceHref = httpUrl(alert.url);
     let desc = this._normalizeText(alert.description);
     let instr = this._normalizeText(alert.instruction);
     if (reformat) {
@@ -2128,9 +2132,9 @@ export class WeatherAlertsCard extends LitElement {
         ${this._config?.showDescription !== false ? this._renderTextBlock(t('detail.description', lang), desc) : nothing}
         ${this._config?.showInstructions !== false ? this._renderTextBlock(t('detail.instructions', lang), instr) : nothing}
 
-        ${alert.url && this._config?.showSourceLink !== false ? html`
+        ${sourceHref && this._config?.showSourceLink !== false ? html`
           <div class="footer-link">
-            <a href=${alert.url} target="_blank" rel="noopener noreferrer">
+            <a href=${sourceHref} target="_blank" rel="noopener noreferrer">
               ${this._sourceLinkLabel(alert)}
               <ha-icon icon="mdi:open-in-new" style="width:${this._scaledPx(14)}px;"></ha-icon>
             </a>

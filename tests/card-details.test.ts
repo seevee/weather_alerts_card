@@ -35,7 +35,7 @@ function meteoSwissHass(validFrom: string, validTo: string | null): HomeAssistan
 }
 
 // An NWS alert carries full timing (Sent/Onset/Ends) — the seam's untouched path.
-function nwsFullTimingHass(): HomeAssistant {
+function nwsFullTimingHass(url = ''): HomeAssistant {
   const now = Date.now();
   return {
     states: {
@@ -52,7 +52,7 @@ function nwsFullTimingHass(): HomeAssistant {
             Expires: new Date(now + 3 * HOUR).toISOString(),
             Description: 'Damaging winds.',
             Instruction: '',
-            URL: '',
+            URL: url,
             Headline: '',
           }],
         },
@@ -332,4 +332,26 @@ describe('area row collapse', () => {
     expect(toggle(card)?.textContent?.trim()).toBe('and 111 more areas');
     cleanup();
   });
+});
+
+// Review finding 7: adapters pass provider strings through as `url`, and the
+// card renders one as an href. Only http(s) may reach it.
+describe('source link', () => {
+  const config: WeatherAlertsCardConfig = { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts', expandDetails: true };
+  const link = (card: CardInternals) => card.shadowRoot?.querySelector<HTMLAnchorElement>('.footer-link a') ?? null;
+
+  it('renders an https link', async () => {
+    const { card, cleanup } = await mountCard(config, nwsFullTimingHass('https://alerts.weather.gov/x'));
+    expect(link(card)?.getAttribute('href')).toBe('https://alerts.weather.gov/x');
+    cleanup();
+  });
+
+  it.each(['javascript:alert(1)', 'data:text/html,hi', 'ftp://example.org/x', '//example.org/x'])(
+    'renders no link for %s',
+    async url => {
+      const { card, cleanup } = await mountCard(config, nwsFullTimingHass(url));
+      expect(link(card)).toBeNull();
+      cleanup();
+    },
+  );
 });

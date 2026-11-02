@@ -43,6 +43,31 @@ function bomUrl(warning: BomWarning): string {
   return 'https://www.bom.gov.au/weather-and-climate/warnings-and-alerts';
 }
 
+// The warning as the adapter reads it: every field a string, '' when the feed
+// omits it or sends another type. Parsing runs inside the card's render, so
+// one warning without `type` used to throw there and blank the whole card.
+// A warning with no id is dropped, since nothing downstream can key it.
+function bomWarning(v: unknown): BomWarning | null {
+  if (typeof v !== 'object' || v === null) return null;
+  const o = v as Record<string, unknown>;
+  const s = (k: string): string => (typeof o[k] === 'string' ? o[k] : '');
+  const id = s('id');
+  if (!id) return null;
+  const areaId = s('area_id');
+  return {
+    id,
+    ...(areaId ? { area_id: areaId } : {}),
+    type: s('type'),
+    title: s('title'),
+    short_title: s('short_title'),
+    state: s('state'),
+    warning_group_type: s('warning_group_type'),
+    issue_time: s('issue_time'),
+    expiry_time: s('expiry_time'),
+    phase: s('phase'),
+  };
+}
+
 const PHASE_LABELS: Record<string, string> = {
   new: 'New',
   update: 'Updated',
@@ -80,7 +105,8 @@ export class BomAdapter implements AlertAdapter {
     const raw = attributes['warnings'];
     if (!Array.isArray(raw)) return [];
     return (raw as unknown[])
-      .filter((w): w is BomWarning => typeof w === 'object' && w !== null)
+      .map(bomWarning)
+      .filter((w): w is BomWarning => w !== null)
       .filter(w => w.phase !== 'cancelled')
       .map(w => this._normalize(w));
   }

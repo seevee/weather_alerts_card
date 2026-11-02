@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
-import { normalizeSeverity, parseTimestamp } from '../utils';
+import { httpUrl, normalizeSeverity, parseTimestamp } from '../utils';
 
 // NINA (BBK, Germany) surfaces one `binary_sensor` per region *per message
 // slot* (CONF_MESSAGE_SLOTS). An occupied slot carries the whole warning as
@@ -121,8 +121,4 @@ export class NinaAdapter implements AlertAdapter {
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
-}
-
-function httpUrl(v: string): string {
-  return v.startsWith('http://') || v.startsWith('https://') ? v : '';
 }

@@ -353,6 +353,13 @@ export function normalizeColorConfig(config: WeatherAlertsCardConfig): WeatherAl
   return { ...config, providerColors: true };
 }
 
+/** `v` when it is an http(s) URL, else ''. A provider string reaches an
+ *  `href`, and anything else there (`javascript:`, `data:`) would run or
+ *  load on tap, so every link the card renders goes through this. */
+export function httpUrl(v: string): string {
+  return v.startsWith('http://') || v.startsWith('https://') ? v : '';
+}
+
 export function parseTimestamp(raw: string | undefined | null): number {
   if (!raw || raw === 'None' || raw.trim() === '') return 0;
   const d = new Date(raw.trim());
