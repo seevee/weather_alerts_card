@@ -67,9 +67,10 @@ function renderControls(editor: EditorInternals): Control[] {
   const host = document.createElement('div');
   render(editor.render(), host, { host: editor });
   const out: Control[] = [];
-  for (const f of host.querySelectorAll('ha-formfield')) {
-    const sw = f.querySelector('ha-switch');
-    if (sw) out.push({ kind: 'toggle', el: sw, label: (f as unknown as { label: string }).label });
+  // No ha-formfield on the test page: switches render the 2026.11 shape, with
+  // the label slotted inside.
+  for (const sw of host.querySelectorAll('ha-switch')) {
+    out.push({ kind: 'toggle', el: sw, label: sw.querySelector('.switch-label')?.textContent?.trim() ?? '' });
   }
   for (const sel of host.querySelectorAll('ha-select')) {
     out.push({ kind: 'select', el: sel, label: (sel as unknown as { label: string }).label });

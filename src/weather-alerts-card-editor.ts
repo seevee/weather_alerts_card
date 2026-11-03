@@ -154,6 +154,33 @@ export class WeatherAlertsCardEditor extends LitElement {
     return true;
   }
 
+  // HA 2026.11 dropped `ha-formfield`. A switch wrapped in one still renders
+  // (an unknown element shows its children) but its label silently vanishes.
+  // The WebAwesome `ha-switch` takes the label as slotted content instead, the
+  // way core's own `ha-selector-boolean` does; the MWC switch has no slot, so
+  // older cores keep the wrapper. Only a registered `ha-formfield` is a
+  // definite answer: `ha-switch` exists on both sides, so its presence says
+  // nothing. So the answer latches once the wrapper is seen and is re-checked
+  // until then (same lazy-load rule).
+  private static _haFormfield?: boolean;
+
+  private get _useHaFormfield(): boolean {
+    return (WeatherAlertsCardEditor._haFormfield ||= !!customElements.get('ha-formfield'));
+  }
+
+  // One labelled switch, whichever shape this core understands.
+  private _renderSwitch(label: string, checked: boolean, onChange: (ev: Event) => void): TemplateResult {
+    return this._useHaFormfield ? html`
+        <ha-formfield .label=${label}>
+          <ha-switch .checked=${checked} @change=${onChange}></ha-switch>
+        </ha-formfield>
+      ` : html`
+        <ha-switch .checked=${checked} @change=${onChange}>
+          <span class="switch-label">${label}</span>
+        </ha-switch>
+      `;
+  }
+
   // One text field, whichever element this core registers. Both read back
   // through `ev.target.value` on `change`; only the helper differs (`.hint` on
   // ha-input, `.helper` + persistent on ha-textfield).
@@ -869,14 +896,11 @@ export class WeatherAlertsCardEditor extends LitElement {
 
   private _renderToggle(key: ToggleKey): TemplateResult {
     const field = TOGGLES[key];
-    return this._field(isChanged(this._config, key), html`
-      <ha-formfield .label=${t(field.label, this._lang)}>
-        <ha-switch
-          .checked=${isOn(this._config, field)}
-          @change=${(ev: Event) => this._writeKey(key, (ev.target as HTMLInputElement).checked ? field.on : field.off)}
-        ></ha-switch>
-      </ha-formfield>
-    `, () => this._resetKeys([key]));
+    return this._field(isChanged(this._config, key), this._renderSwitch(
+      t(field.label, this._lang),
+      isOn(this._config, field),
+      (ev: Event) => this._writeKey(key, (ev.target as HTMLInputElement).checked ? field.on : field.off),
+    ), () => this._resetKeys([key]));
   }
 
   private _renderSelect(key: SelectKey): TemplateResult {
@@ -955,12 +979,7 @@ export class WeatherAlertsCardEditor extends LitElement {
   private _renderPreviewTools(lang: string): TemplateResult {
     return html`
       <div class="preview-tools">
-        <ha-formfield .label=${t('editor.show_preview', lang)}>
-          <ha-switch
-            .checked=${this._showPreview}
-            @change=${this._previewChanged}
-          ></ha-switch>
-        </ha-formfield>
+        ${this._renderSwitch(t('editor.show_preview', lang), this._showPreview, this._previewChanged)}
         ${this._hasNoRealAlerts() && !this._showPreview
           ? html`<div class="preview-nudge">${t('editor.preview_nudge', lang)}</div>`
           : html`<div class="preview-hint">${t('editor.preview_hint', lang)}</div>`}
@@ -1220,14 +1239,11 @@ export class WeatherAlertsCardEditor extends LitElement {
       ${this._renderSelect('sortOrder')}
       ${this._renderToggle('hideExpired')}
 
-      ${this._field(this._config.hideNoAlerts !== undefined, html`
-        <ha-formfield .label=${t('editor.hide_no_alerts', lang)}>
-          <ha-switch
-            .checked=${this._config.hideNoAlerts === true}
-            @change=${this._hideNoAlertsChanged}
-          ></ha-switch>
-        </ha-formfield>
-      `, () => this._setHideNoAlerts(false))}
+      ${this._field(
+        this._config.hideNoAlerts !== undefined,
+        this._renderSwitch(t('editor.hide_no_alerts', lang), this._config.hideNoAlerts === true, this._hideNoAlertsChanged),
+        () => this._setHideNoAlerts(false),
+      )}
 
       ${this._renderSelect('unavailableBehavior')}
       ${this._config.unavailableBehavior === 'hide'
@@ -1409,6 +1425,11 @@ export class WeatherAlertsCardEditor extends LitElement {
       align-self: flex-end;
       font-size: 0.8rem;
       margin: -8px 0 0;
+    }
+    /* Slotted switch label (2026.11+): beside the switch, like the
+       formfield it replaces, so the 48px hint indent still lines up. */
+    .switch-label {
+      color: var(--primary-text-color);
     }
     /* Hidden-but-set dependents named under their master switch. */
     .also-set {
