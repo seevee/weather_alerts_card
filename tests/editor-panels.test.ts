@@ -56,7 +56,11 @@ function panels(host: HTMLElement): Record<Panel, PanelEl> {
   return Object.fromEntries(ORDER.map(id => [id, byHeader.get(en[PANEL_LABELS[id]])])) as Record<Panel, PanelEl>;
 }
 
-const formfieldLabels = (root: Element) => [...root.querySelectorAll('ha-formfield')].map(f => (f as Labelled).label);
+// No ha-formfield on the test page, so switches carry their label slotted
+// inside (the 2026.11 shape); every other control carries `.label`.
+const labelOf = (el: Element | null | undefined) =>
+  el?.localName === 'ha-switch' ? el.querySelector('.switch-label')?.textContent?.trim() : (el as Labelled | null | undefined)?.label;
+const switchLabels = (root: Element) => [...root.querySelectorAll('ha-switch')].map(labelOf);
 const selectLabels = (root: Element) => [...root.querySelectorAll('ha-select')].map(s => (s as Labelled).label);
 const sectionsList = (root: Element) =>
   ([...root.querySelectorAll('ha-selector')] as Labelled[]).find(s => s.label === 'Sections');
@@ -87,7 +91,7 @@ describe('panel layout', () => {
       if ((DETAIL_SECTIONS as readonly string[]).includes(f.key)) {
         expect(sectionsList(panel)?.selector?.select?.options?.map(o => o.label.replace(/ •$/, '')), f.key).toContain(label);
       } else {
-        expect(formfieldLabels(panel), f.key).toContain(label);
+        expect(switchLabels(panel), f.key).toContain(label);
       }
     }
     for (const f of SELECT_FIELDS) {
@@ -98,11 +102,11 @@ describe('panel layout', () => {
   it('moves the provider override, timezone, contrast, text and dedup keys to Advanced', () => {
     const byPanel = panels(renderHost(makeEditor(base()).editor));
     expect(selectLabels(byPanel.advanced)).toEqual(['Alert provider', 'Timezone', 'Enhance contrast']);
-    expect(formfieldLabels(byPanel.advanced)).toEqual([
+    expect(switchLabels(byPanel.advanced)).toEqual([
       'Reflow alert text (strip hard line breaks)', 'Deduplicate alerts', 'Deduplicate headlines',
     ]);
-    expect(formfieldLabels(byPanel.source)).toEqual([]);
-    expect(formfieldLabels(byPanel.appearance)).toContain('Show provider label');
+    expect(switchLabels(byPanel.source)).toEqual([]);
+    expect(switchLabels(byPanel.appearance)).toContain('Show provider label');
   });
 
   it('nests the styling group inside Appearance as a non-outlined panel', () => {
@@ -171,8 +175,7 @@ describe('panel header summaries', () => {
 describe('changed-row markers', () => {
   const markedLabels = (root: Element) =>
     [...root.querySelectorAll('.field.changed')].map(f => {
-      const el = f.querySelector<Labelled>('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector');
-      return el?.label;
+      return labelOf(f.querySelector('ha-switch, ha-select, ha-input, ha-textfield, ha-selector'));
     });
 
   it('marks exactly the customised rows, registry and bespoke alike', () => {
@@ -201,7 +204,7 @@ describe('changed-row markers', () => {
   it('marks nothing on a default card, and every row is still a .field', () => {
     const host = renderHost(makeEditor(base()).editor);
     expect(host.querySelectorAll('.field.changed')).toHaveLength(0);
-    expect(host.querySelectorAll('.editor > ha-expansion-panel .content > ha-formfield, .editor > ha-expansion-panel .content > ha-select')).toHaveLength(0);
+    expect(host.querySelectorAll('.editor > ha-expansion-panel .content > ha-switch, .editor > ha-expansion-panel .content > ha-select')).toHaveLength(0);
   });
 
   it('suffixes a customised section in the list options', () => {
@@ -224,23 +227,23 @@ describe('hide, not disable', () => {
 
   it('removes the detail dependents while the detail panel is off, and restores them', () => {
     const off = panels(renderHost(makeEditor(base({ showDetails: false, showGeometry: true })).editor)).details;
-    expect(formfieldLabels(off)).toEqual(['Show detail panel']);
+    expect(switchLabels(off)).toEqual(['Show detail panel']);
     expect(sectionsList(off)).toBeUndefined();
     expect(selectLabels(off)).toEqual([]);
 
     const on = panels(renderHost(makeEditor(base({ showGeometry: true })).editor)).details;
-    expect(formfieldLabels(on)).toEqual(['Show detail panel', 'Always expand details', 'Show my location on the map']);
+    expect(switchLabels(on)).toEqual(['Show detail panel', 'Always expand details', 'Show my location on the map']);
     expect(sectionsList(on)).toBeDefined();
     expect(selectLabels(on)).toEqual(['Area map style']);
   });
 
   it('removes the dismissal dependents until dismissing is allowed', () => {
     const off = panels(renderHost(makeEditor(base({ showDismissUndo: false })).editor)).dismissal;
-    expect(formfieldLabels(off)).toEqual(['Allow dismissing alerts']);
+    expect(switchLabels(off)).toEqual(['Allow dismissing alerts']);
     expect(selectLabels(off)).toEqual([]);
 
     const on = panels(renderHost(makeEditor(base({ allowDismiss: true })).editor)).dismissal;
-    expect(formfieldLabels(on)).toEqual(['Allow dismissing alerts', 'Show undo notification on dismiss']);
+    expect(switchLabels(on)).toEqual(['Allow dismissing alerts', 'Show undo notification on dismiss']);
     expect(selectLabels(on)).toEqual(['Dismiss trigger', 'Button style']);
 
     const swipe = panels(renderHost(makeEditor(base({ allowDismiss: true, dismissTrigger: 'swipe' })).editor)).dismissal;
@@ -334,7 +337,7 @@ describe('default option suffix', () => {
 describe('reset links', () => {
   const rows = (host: HTMLElement) =>
     [...host.querySelectorAll('.field.changed')].map(f => ({
-      label: f.querySelector<Labelled>('ha-formfield, ha-select, ha-input, ha-textfield, ha-selector')?.label,
+      label: labelOf(f.querySelector('ha-switch, ha-select, ha-input, ha-textfield, ha-selector')),
       link: f.querySelector(':scope > .reset-link'),
     }));
   const click = (el: Element | null | undefined) => el!.dispatchEvent(new Event('click'));

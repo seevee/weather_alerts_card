@@ -6,7 +6,8 @@ import type { WeatherAlertsCardConfig } from '../src/types';
 // Component-system compatibility (#239). HA 2026.02 replaced MWC with
 // WebAwesome; emitting only the new item element left every dropdown inert on
 // older cores, and by 2026.09 `ha-textfield` was gone outright, so every text
-// field rendered as nothing on a current core. These tests pin the detection,
+// field rendered as nothing on a current core. 2026.11 then dropped
+// `ha-formfield`, which left every switch without a label. These tests pin the detection,
 // the event-shape fallback, and the element each renderer emits on each path.
 //
 // They cannot substitute for a real install — the test page has neither component set —
@@ -15,13 +16,15 @@ type EditorInternals = {
   _config: WeatherAlertsCardConfig;
   readonly _useWebAwesome: boolean;
   readonly _useHaInput: boolean;
+  readonly _useHaFormfield: boolean;
+  _renderSwitch(label: string, checked: boolean, onChange: (ev: Event) => void): unknown;
   _selectValue(ev: Event): string;
   _renderSelectItem(value: string, label: string): unknown;
   _renderTextField(o: { label: string; value: string; helper?: string; type?: 'number'; min?: string; step?: string; onChange: (ev: Event) => void }): unknown;
   _tapActionChanged(ev: Event): void;
 };
 
-type EditorStatics = { _webAwesome: boolean | undefined; _haInput: boolean | undefined };
+type EditorStatics = { _webAwesome: boolean | undefined; _haInput: boolean | undefined; _haFormfield: boolean | undefined };
 
 function makeEditor(): EditorInternals {
   const editor = new WeatherAlertsCardEditor() as unknown as EditorInternals;
@@ -49,6 +52,7 @@ function resetDetection(): void {
   const statics = WeatherAlertsCardEditor as unknown as EditorStatics;
   statics._webAwesome = undefined;
   statics._haInput = undefined;
+  statics._haFormfield = undefined;
 }
 
 beforeEach(resetDetection);
@@ -175,6 +179,70 @@ describe('_renderTextField', () => {
       (el as unknown as { value: string }).value = 'C';
       el.dispatchEvent(new Event('change'));
       expect(seen).toBe('C');
+    }
+  });
+});
+
+describe('_useHaFormfield', () => {
+  it('takes the legacy wrapper only when ha-formfield is registered', () => {
+    registryHas('ha-formfield', 'ha-switch');
+    expect(makeEditor()._useHaFormfield).toBe(true);
+    resetDetection();
+    // ha-switch exists on both sides of the swap, so it decides nothing.
+    registryHas('ha-switch');
+    expect(makeEditor()._useHaFormfield).toBe(false);
+    resetDetection();
+    registryHas();
+    expect(makeEditor()._useHaFormfield).toBe(false);
+  });
+
+  it('re-checks while ha-formfield is absent, and caches it once seen', () => {
+    // An old core may lazy-load ha-formfield after the first render.
+    registryHas();
+    expect(makeEditor()._useHaFormfield).toBe(false);
+    registryHas('ha-formfield');
+    expect(makeEditor()._useHaFormfield).toBe(true);
+    registryHas();
+    expect(makeEditor()._useHaFormfield).toBe(true);
+  });
+});
+
+describe('_renderSwitch', () => {
+  function switchOf(template: unknown): { host: HTMLElement; sw: Element & { checked?: boolean } } {
+    const host = document.createElement('div');
+    render(template, host);
+    return { host, sw: host.querySelector('ha-switch')! };
+  }
+
+  it('slots the label inside ha-switch when ha-formfield is gone (2026.11+)', () => {
+    registryHas('ha-switch');
+    const { host, sw } = switchOf(makeEditor()._renderSwitch('Show provider label', true, () => {}));
+    expect(host.querySelector('ha-formfield')).toBeNull();
+    expect(sw.querySelector('.switch-label')?.textContent?.trim()).toBe('Show provider label');
+    expect(sw.checked).toBe(true);
+  });
+
+  it('wraps ha-switch in a labelled ha-formfield on older cores', () => {
+    registryHas('ha-formfield');
+    const { host, sw } = switchOf(makeEditor()._renderSwitch('Show provider label', false, () => {}));
+    const ff = host.querySelector<Element & { label?: string }>('ha-formfield');
+    expect(ff?.label).toBe('Show provider label');
+    expect(sw.parentElement).toBe(ff);
+    expect(sw.childElementCount).toBe(0);
+    expect(sw.checked).toBe(false);
+  });
+
+  it('delivers change from the switch on both paths', () => {
+    for (const registered of ['ha-switch', 'ha-formfield']) {
+      resetDetection();
+      registryHas(registered);
+      let seen: boolean | undefined;
+      const { sw } = switchOf(makeEditor()._renderSwitch('X', false, (ev) => {
+        seen = (ev.target as HTMLInputElement).checked;
+      }));
+      sw.checked = true;
+      sw.dispatchEvent(new Event('change'));
+      expect(seen, registered).toBe(true);
     }
   });
 });
