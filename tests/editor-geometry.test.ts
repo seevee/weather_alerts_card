@@ -41,9 +41,11 @@ function renderEditor(editor: EditorInternals): Rendered {
   const host = document.createElement('div');
   render(editor.render(), host);
   const selectors = [...host.querySelectorAll('ha-selector')] as unknown as Rendered['selectors'];
-  const switches = [...host.querySelectorAll('ha-formfield')].map(f => ({
-    label: (f as unknown as { label?: string }).label ?? '',
-    checked: (f.querySelector('ha-switch') as unknown as { checked?: boolean } | null)?.checked,
+  // The test page registers no ha-formfield, so switches render the 2026.11
+  // shape: label slotted inside the switch.
+  const switches = [...host.querySelectorAll('ha-switch')].map(sw => ({
+    label: sw.querySelector('.switch-label')?.textContent?.trim() ?? '',
+    checked: (sw as unknown as { checked?: boolean }).checked,
   }));
   return { selectors, switches };
 }
