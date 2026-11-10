@@ -114,7 +114,9 @@ Deeper layout tweaks (row height, icon chip size) still require reaching into th
 card's internal class names, which are **not** a stable public API and may change
 between releases. Prefer the tokens above where they suffice.
 
-### Timeline layout
+</details>
+
+## Timeline layout
 
 `layout: timeline` draws every alert as a bar on one shared time axis, one lane per
 alert, so overlapping and back-to-back alerts read at a glance. The gutter carries the
@@ -136,6 +138,8 @@ sortOrder: onset
 The now marker carries progress here, so `progressFill` and `progressStyle` do not
 apply (the bar pattern is fixed per phase; `iconBorderStyle` still styles the chip), and
 dismissal is always by button, whatever `dismissTrigger` says.
+
+## Detail pop-ups
 
 **Per-alert detail pop-up (built in)** — `tap_action: { action: details }` opens
 the tapped alert in a modal instead of expanding it in place. No add-ons
@@ -207,8 +211,6 @@ card:
 To open a `browser_mod`-style pop-up instead, use
 `tap_action: { action: fire-dom-event, browser_mod: { ... } }` — the card fires
 the standard `ll-custom` event `browser_mod` listens for.
-
-</details>
 
 ## Quick Start
 
@@ -285,7 +287,7 @@ Then click the Download button, and click Reload when prompted.
 | `dismissTrigger` | `'button'` | `'button'`, `'swipe'`, or `'both'` — how an alert is dismissed (swipe covers touch + mouse drag). Requires `allowDismiss` |
 | `dismissButtonStyle` | `'icon'` | `'icon'` or `'labeled'` (icon + "Dismiss" text). No effect when `dismissTrigger: 'swipe'`; the compact and timeline layouts are always icon-only |
 | `showDismissUndo` | `true` | Show an Undo toast when an alert is dismissed. No effect when `allowDismiss` is off |
-| `tap_action` | — | Standard Home Assistant action fired when an alert row is tapped. **When set, the inline expand affordance is replaced** — the whole row becomes the tap target and the compact chevron / "Read Details" toggle is removed (in the default layout, `expandDetails: true` still renders the always-on detail panel below the row). Supported actions: `details`, `more-info`, `navigate`, `url`, `toggle`, `call-service` (alias `perform-action`), `fire-dom-event`, `none` (`assist` is intentionally unsupported — it has no meaning on an alert row; `none` is an inert chip: the toggle is removed but tapping does nothing). For `more-info`/`toggle`, the default entity is resolved **per tapped alert** — `tap_action.entity` (explicit) → the alert's own source sensor → `entity` — so per-alert providers (CAP Alerts, NSW RFS) open *that* alert's sensor while aggregate providers (NWS, DWD, …) fall back to the aggregate sensor. `toggle` uses the generic `homeassistant.toggle` service. `details` is card-owned rather than a standard HA action: it opens the tapped alert in a modal showing the whole alert body (per-alert for every provider, no add-ons — see [Themes](#themes) for an example). Absent = today's inline expand/toggle behavior, unchanged. The visual editor covers the action itself plus the `navigate` and `url` parameters; `perform-action` / `call-service` / `fire-dom-event` carry payloads that stay YAML-edited, and the editor preserves them untouched. |
+| `tap_action` | — | Standard Home Assistant action fired when an alert row is tapped. **When set, the inline expand affordance is replaced** — the whole row becomes the tap target and the compact chevron / "Read Details" toggle is removed (in the default layout, `expandDetails: true` still renders the always-on detail panel below the row). Supported actions: `details`, `more-info`, `navigate`, `url`, `toggle`, `call-service` (alias `perform-action`), `fire-dom-event`, `none` (`assist` is intentionally unsupported — it has no meaning on an alert row; `none` is an inert chip: the toggle is removed but tapping does nothing). For `more-info`/`toggle`, the default entity is resolved **per tapped alert** — `tap_action.entity` (explicit) → the alert's own source sensor → `entity` — so per-alert providers (CAP Alerts, NSW RFS) open *that* alert's sensor while aggregate providers (NWS, DWD, …) fall back to the aggregate sensor. `toggle` uses the generic `homeassistant.toggle` service. `details` is card-owned rather than a standard HA action: it opens the tapped alert in a modal showing the whole alert body (per-alert for every provider, no add-ons — see [Detail pop-ups](#detail-pop-ups) for an example). Absent = today's inline expand/toggle behavior, unchanged. The visual editor covers the action itself plus the `navigate` and `url` parameters; `perform-action` / `call-service` / `fire-dom-event` carry payloads that stay YAML-edited, and the editor preserves them untouched. |
 
 <details>
 <summary><strong>Examples</strong></summary>
