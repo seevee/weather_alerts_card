@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.9.0 (2026-11-10)
+
+### Added
+- Add a timeline layout (#370)
+
+### Fixed
+- Apply Polish timeline corrections (#372)
+- Keep sample data off live dashboards (#378)
+- Reuse Intl formatters across renders (#380)
+- Dismissals survive merge reorders and churn (#381)
+- A malformed feed can't blank the card or plant a link (#382)
+- Label switches on cores without ha-formfield (#385)
+- Repair umlauts and quotes, quote the switch's own label (#387)
+
+### Documentation
+- Slim the translation request form and cover corrections (#375)
+
+### Internal
+- Bump rolldown (#368)
+- Bump typescript-eslint (#367)
+- Bump the dev-deps group with 2 updates (#377)
+- Bump typescript-eslint (#376)
+- Bump the vitest group with 3 updates (#388)
+- Bump eslint from 10.13.0 to 10.14.0 in the eslint group (#389)
+- Bump the dev-deps group across 1 directory with 5 updates (#390)
+- Bump jsdom from 30.1.3 to 31.0.0 (#391)
+- Declare a Home Assistant 2026.7 floor, retire the MWC dropdown shim (#392) (closes #384)
+- Strip comments from css templates in the bundle (#395)
+
 ## 3.8.2 (2026-10-26)
 
 ### Fixed
