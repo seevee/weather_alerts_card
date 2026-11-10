@@ -452,8 +452,9 @@ export function formatDistance(km: number, unit: LengthUnit, lang: string): stri
   return `${text} ${unit}`;
 }
 
-export function computeAlertProgress(alert: WeatherAlert): AlertProgress {
-  const nowTs = Date.now() / 1000;
+// `nowTs` lets one update share a single clock read across every alert, so a
+// render never shows two rows judged at different instants.
+export function computeAlertProgress(alert: WeatherAlert, nowTs: number = Date.now() / 1000): AlertProgress {
 
   const sentTs = alert.sentTs;
   const onsetTsDefault = sentTs > 0 ? sentTs : nowTs;
@@ -615,10 +616,10 @@ function formatTime(d: Date, locale: HaLocale | undefined, hour: '2-digit' | 'nu
   return cachedDateTimeFormat(fmt.locale, opts).format(d);
 }
 
-export function formatProgressTimestamp(ts: number, locale?: HaLocale, lang = 'en'): string {
+export function formatProgressTimestamp(ts: number, locale?: HaLocale, lang = 'en', nowTs?: number): string {
   if (ts <= 0) return t('progress.na', lang);
   const d = new Date(ts * 1000);
-  const now = new Date();
+  const now = nowTs !== undefined ? new Date(nowTs * 1000) : new Date();
   const tzAbbr = getTzAbbr(d, locale);
   const time = formatTime(d, locale, '2-digit');
   const timeWithTz = tzAbbr ? `${time} ${tzAbbr}` : time;
@@ -1155,4 +1156,99 @@ export function formatTimelineTick(tick: TimelineTick, locale?: HaLocale): strin
     }
   }
   return formatTime(d, locale, tick.minutes ? 'numeric' : '2-digit');
+}
+
+// ---------------------------------------------------------------------------
+// Card clock (#393). The card re-renders on its own only when something on
+// screen is due to change, so it can ignore hass pushes that touch nothing it
+// shows. Pure: the clock is passed in, like the timeline math above.
+
+export const CLOCK_MIN_MS = 1000;
+export const CLOCK_MAX_MS = 60_000;
+/** Bar width assumed until the card has been measured, a phone-width guess. */
+export const CLOCK_UNMEASURED_PX = 400;
+// Each tick lands this far past its (whole-second) boundary, so the render sees the new
+// minute instead of arriving a hair early and needing another tick at 1 s.
+const CLOCK_SLACK_S = 0.05;
+// progressPct is rounded to 0.1 %, so a bar never moves in finer steps.
+const PROGRESS_RESOLUTION = 0.001;
+
+export interface ClockOptions {
+  /** Display timezone: a timestamp gains its date suffix at local midnight. */
+  timeZone?: string | undefined;
+  /** Width of a progress bar in px. 0 means no bar is on screen. */
+  barPx?: number;
+  /** layout: 'timeline': the axis span in seconds and the lane width in px. */
+  timeline?: { spanS: number; lanePx: number } | undefined;
+}
+
+// Next local midnight in `timeZone`, as epoch seconds. The second offset read
+// takes a DST change between now and midnight into account.
+function nextLocalMidnight(nowTs: number, timeZone?: string): number {
+  const offset = tzOffsetSeconds(nowTs, timeZone);
+  const local = Math.floor((nowTs + offset) / 86400) * 86400 + 86400;
+  return local - tzOffsetSeconds(local - offset, timeZone);
+}
+
+/**
+ * Milliseconds until the next moment anything the card shows changes: a
+ * phase flip (onset, end), a countdown or relative time rolling over (each
+ * alert has its own minute phase, hour resolution past a day), the "now"
+ * clock text, the date suffix at local midnight, or a progress bar or
+ * timeline marker moving one pixel. Floored at 1 s, capped at 60 s.
+ */
+export function nextClockDelayMs(
+  alerts: readonly WeatherAlert[],
+  nowTs: number,
+  opts: ClockOptions = {},
+): number {
+  if (alerts.length === 0) return CLOCK_MAX_MS;
+  let next = nowTs + CLOCK_MAX_MS / 1000;
+  const at = (ts: number) => {
+    if (ts >= nowTs && ts < next) next = ts;
+  };
+  // formatDuration / formatRelativeTime change when |ts - now| crosses a
+  // whole minute (a whole hour past a day), counted from ts, not the clock.
+  const rollover = (ts: number) => {
+    const diff = ts - nowTs;
+    const unit = Math.abs(diff) < 86400 ? 60 : 3600;
+    const r = Math.abs(diff) % unit;
+    at(nowTs + (diff > 0 ? r : unit - r));
+  };
+
+  const barPx = opts.barPx ?? 0;
+  let wallMinute = !!opts.timeline;
+  for (const alert of alerts) {
+    const p = computeAlertProgress(alert, nowTs);
+    at(p.onsetTs);
+    rollover(p.onsetTs);
+    if (p.hasEndTime) {
+      at(p.endsTs);
+      rollover(p.endsTs);
+    }
+    // A pending alert's progress label reads "Now 14:05".
+    if (!p.isActive) wallMinute = true;
+    if (barPx > 0 && p.hasEndTime && !p.isExpired) {
+      const frac = Math.max(1 / barPx, PROGRESS_RESOLUTION);
+      const span = Math.max(p.endsTs - p.onsetTs, 1);
+      // Active: the fill edge moves at 1/span per second. Pending: the edge
+      // sits at (onset - now) / (ends - now), which moves at
+      // span / (ends - now)^2.
+      const step = p.isActive ? frac * span : (frac * (p.endsTs - nowTs) ** 2) / span;
+      at(nowTs + step);
+    }
+  }
+  if (wallMinute) at(Math.floor(nowTs / 60) * 60 + 60);
+  at(nextLocalMidnight(nowTs, opts.timeZone));
+  if (opts.timeline) {
+    const lanePx = opts.timeline.lanePx > 0 ? opts.timeline.lanePx : CLOCK_UNMEASURED_PX;
+    at(nowTs + opts.timeline.spanS / lanePx);
+  }
+
+  // Snap to the next whole wall-clock second: every card on a dashboard then
+  // wakes on the same grid, and cards due in the same second share one frame
+  // of style and layout instead of paying for one each. A countdown at minute
+  // resolution never shows the second it waits.
+  const ms = (Math.ceil(next) - nowTs + CLOCK_SLACK_S) * 1000;
+  return Math.min(CLOCK_MAX_MS, Math.max(CLOCK_MIN_MS, ms));
 }

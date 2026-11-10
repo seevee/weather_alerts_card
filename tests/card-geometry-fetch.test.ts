@@ -117,13 +117,20 @@ async function mount(config: Partial<WeatherAlertsCardConfig>, hass: HomeAssista
   return card;
 }
 
-// Re-assigning a fresh hass object is what a state update looks like to the
-// card: same connection, new object identity.
-async function tick(card: WeatherAlertsCard, hass: HomeAssistant): Promise<HomeAssistant> {
-  const next = { ...hass };
-  card.hass = next;
+// An update with nothing changed, which is what the card clock's tick is (an
+// argument-less requestUpdate). On a quiet feed no hass push arrives, so the
+// clock (#393) is what carries a miss retry.
+async function tick(card: WeatherAlertsCard): Promise<void> {
+  card.requestUpdate();
   await flush(card);
-  return next;
+}
+
+// A hass push: the entity's state object is replaced, as HA does on any
+// change to it.
+async function push(card: WeatherAlertsCard): Promise<void> {
+  const hass = card.hass;
+  card.hass = { ...hass, states: { ...hass.states, [ENTITY]: { ...hass.states[ENTITY] } } };
+  await flush(card);
 }
 
 const q = (card: WeatherAlertsCard, sel: string) => card.shadowRoot!.querySelector(sel);
@@ -138,26 +145,25 @@ describe('geometry miss cooldown (#258)', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => now);
     const c = makeConn({ geometry: [new Error('not_found'), POLYGON] });
     const card = await mount({}, makeHass(c.conn));
-    let hass = card.hass;
     expect(c.calls['cap_alerts/geometry']).toBe(1);
     expect(q(card, '.geometry-shape')).toBeNull();
 
     // Inside the cooldown: no request, however many updates arrive.
     for (let i = 0; i < 5; i++) {
       now += 5_000;
-      hass = await tick(card, hass);
+      await tick(card);
     }
     expect(c.calls['cap_alerts/geometry']).toBe(1);
 
     // Past the cooldown: exactly one retry, and it lands.
     now += GEOMETRY_MISS_COOLDOWN_MS;
-    hass = await tick(card, hass);
+    await tick(card);
     expect(c.calls['cap_alerts/geometry']).toBe(2);
     expect(q(card, '.geometry-shape')).not.toBeNull();
 
     // A hit is final: further updates and cooldowns never refetch.
     now += GEOMETRY_MISS_COOLDOWN_MS * 3;
-    await tick(card, hass);
+    await tick(card);
     expect(c.calls['cap_alerts/geometry']).toBe(2);
   });
 
@@ -166,10 +172,9 @@ describe('geometry miss cooldown (#258)', () => {
     vi.spyOn(Date, 'now').mockImplementation(() => now);
     const c = makeConn({ geometry: [new Error('not_found')] });
     const card = await mount({}, makeHass(c.conn));
-    let hass = card.hass;
     for (let i = 0; i < GEOMETRY_MISS_MAX_ATTEMPTS + 3; i++) {
       now += GEOMETRY_MISS_COOLDOWN_MS + 1;
-      hass = await tick(card, hass);
+      await tick(card);
     }
     expect(c.calls['cap_alerts/geometry']).toBe(GEOMETRY_MISS_MAX_ATTEMPTS);
     // Still drawing the bbox frame, never an error.
@@ -225,16 +230,14 @@ describe('map_tiles basemap token (#259)', () => {
   it('asks once per connection, not once per hass update', async () => {
     const c = makeConn({ token: [{ token: 'tok1' }], geometry: [POLYGON] });
     const card = await mount(MAP, makeHass(c.conn));
-    let hass = card.hass;
-    for (let i = 0; i < 5; i++) hass = await tick(card, hass);
+    for (let i = 0; i < 5; i++) await push(card);
     expect(c.calls['map_tiles/access_token']).toBe(1);
   });
 
   it('falls back to the outline on a core without map_tiles, with no retry storm', async () => {
     const c = makeConn({ geometry: [POLYGON] }); // token command unknown → rejects
     const card = await mount(MAP, makeHass(c.conn));
-    let hass = card.hass;
-    for (let i = 0; i < 5; i++) hass = await tick(card, hass);
+    for (let i = 0; i < 5; i++) await push(card);
     expect(c.calls['map_tiles/access_token']).toBe(1);
     expect(q(card, '.alert-geometry.map')).toBeNull();
     // The plain outline still shows the polygon.

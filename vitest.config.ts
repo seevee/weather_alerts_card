@@ -9,6 +9,7 @@ import { mouseDrag, mouseUp, setReducedMotion } from './tests/browser-commands';
 // Everything else (adapters, utils, geometry, localize, styles) is pure and
 // stays on jsdom, which is far cheaper to spin up.
 const BROWSER_SUITES = [
+  'tests/card-clock.test.ts',
   'tests/card-details.test.ts',
   'tests/card-filter.test.ts',
   'tests/card-geometry-fetch.test.ts',

@@ -16,7 +16,6 @@ interface CardInternals extends HTMLElement {
   getCardSize(): number;
   updateComplete: Promise<void>;
   _detailPopupAlertId: string | null;
-  _timelineTimer: ReturnType<typeof setInterval> | null;
 }
 
 const HOUR = 3600 * 1000;
@@ -514,36 +513,6 @@ describe('timeline dismissal', () => {
       expect(root(card).querySelector('.dismiss-button')).toBeNull();
     } finally {
       cleanup();
-    }
-  });
-});
-
-describe('timeline minute tick', () => {
-  it('arms a timer for the timeline only, and clears it on layout change and disconnect', async () => {
-    const { card, cleanup } = await mountCard(BASE, phasedHass());
-    try {
-      expect(card._timelineTimer).not.toBeNull();
-      card.setConfig({ ...BASE, layout: 'compact' });
-      await card.updateComplete;
-      expect(card._timelineTimer).toBeNull();
-      card.setConfig(BASE);
-      await card.updateComplete;
-      expect(card._timelineTimer).not.toBeNull();
-      card.remove();
-      expect(card._timelineTimer).toBeNull();
-    } finally {
-      cleanup();
-    }
-  });
-
-  it('never arms it for the full or compact layouts', async () => {
-    for (const layout of ['default', 'compact'] as const) {
-      const { card, cleanup } = await mountCard({ ...BASE, layout }, phasedHass());
-      try {
-        expect(card._timelineTimer, layout).toBeNull();
-      } finally {
-        cleanup();
-      }
     }
   });
 });

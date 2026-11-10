@@ -63,6 +63,8 @@ import {
   computeTimelineTicks,
   formatTimelineTick,
   formatTimelineNow,
+  nextClockDelayMs,
+  CLOCK_UNMEASURED_PX,
   type TimelineWindow,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
@@ -309,13 +311,34 @@ export class WeatherAlertsCard extends LitElement {
   private _mapTilesTimer: ReturnType<typeof setInterval> | null = null;
   private _onMapTilesReady = () => this._refreshMapTilesToken();
 
-  // layout: 'timeline' re-renders once a minute so the now marker keeps moving
-  // between hass pushes (the full/compact progress bars ride on pushes alone;
-  // a bar that is 8px tall hides the lag, a marker on a 6 h axis does not).
-  // Armed from connectedCallback/updated(), never from render.
-  private static readonly TIMELINE_TICK_MS = 60_000;
-  private _timelineTimer: ReturnType<typeof setInterval> | null = null;
-  private _onTimelineTick = () => this.requestUpdate();
+  // The card clock (#393). Time-driven change (countdowns, progress bars, the
+  // timeline marker, phase flips, hideExpired removal) used to ride on hass
+  // pushes, so a quiet house froze them: "expires in 12m" stayed put and an
+  // ended alert stayed on screen until something unrelated changed. The
+  // timeline alone had a 60 s interval. One timeout per card, aimed at the
+  // next moment anything on screen changes (nextClockDelayMs) and re-aimed
+  // after every update. Armed from updated(), never from render; cleared
+  // while the page is hidden.
+  private _clockTimer: ReturnType<typeof setTimeout> | null = null;
+  private _onClockTick = () => {
+    this._clockTimer = null;
+    this.requestUpdate();
+  };
+  private _onVisibilityChange = () => {
+    // A kiosk waking from a locked screen must show real time on its first
+    // frame, so render now rather than waiting out a stale timeout.
+    if (document.hidden) this._teardownClock();
+    else this.requestUpdate();
+  };
+  // Host width in px, for the clock's one-pixel progress step. Not reactive:
+  // it feeds the scheduler only, so a resize never renders by itself.
+  private _hostPx = 0;
+  private _hostObserver: ResizeObserver | null = null;
+
+  // Captured once per update in willUpdate, read by render and the side work
+  // in updated(): one clock read and one feed parse per update.
+  private _now = Date.now() / 1000;
+  private _alerts: WeatherAlert[] = [];
   // Measured width of the axis lane, in whole 8px steps so a sub-pixel resize
   // never re-renders. 0 until the ResizeObserver has reported. Observed from
   // updated(), never from render.
@@ -336,7 +359,11 @@ export class WeatherAlertsCard extends LitElement {
     }
     this._maybeSubscribeRegistry();
     this._maybeAcquireMapTilesToken();
-    this._maybeArmTimelineTimer();
+    document.addEventListener('visibilitychange', this._onVisibilityChange);
+    this._observeHost();
+    // A reconnect re-renders: time has passed while detached, and the update
+    // re-arms the clock. The first mount already has one pending.
+    if (this.hasUpdated) this.requestUpdate();
     // A reconnect with no property change never reaches updated(), so the
     // lane observer torn down on disconnect is rebuilt here (a no-op on the
     // first mount, when nothing has rendered yet).
@@ -350,7 +377,10 @@ export class WeatherAlertsCard extends LitElement {
     this._unsubscribeDismissals = undefined;
     this._teardownRegistrySubscription();
     this._teardownMapTilesToken();
-    this._teardownTimelineTimer();
+    document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    this._teardownClock();
+    this._hostObserver?.disconnect();
+    this._hostObserver = null;
     this._teardownTimelineLaneObserver();
     // Drop any in-flight geometry fetches; the cache may persist for a quick
     // remount (connection-swap detection re-validates it on next fetch).
@@ -370,6 +400,12 @@ export class WeatherAlertsCard extends LitElement {
     }
   }
 
+  protected willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    this._now = Date.now() / 1000;
+    this._alerts = this._getAlerts(true, this._now);
+  }
+
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     // `hass` is set as a property after the element mounts, so the WS
@@ -378,10 +414,13 @@ export class WeatherAlertsCard extends LitElement {
     // connection object swaps (e.g., after a reconnect).
     if ((changed.has('hass') || changed.has('_config')) && this.isConnected) {
       this._maybeSubscribeRegistry();
-      this._maybeFetchGeometry();
       this._maybeAcquireMapTilesToken();
-      this._maybeArmTimelineTimer();
     }
+    // Every update, not only hass pushes: a miss retry (60 s cooldown) must
+    // not stall on a quiet feed, and the clock's 60 s cap guarantees an
+    // update to carry it.
+    if (this.isConnected) this._maybeFetchGeometry();
+    this._armClock();
     this._maybeObserveTimelineLane();
     // The detail pop-up is reconciled after render, never during it, so
     // render() stays side-effect free:
@@ -461,7 +500,7 @@ export class WeatherAlertsCard extends LitElement {
 
     // Collect the refs of currently-filtered alerts.
     const refs = new Set<string>();
-    for (const alert of this._getAlerts(false)) {
+    for (const alert of this._alerts) {
       if (alert.geometryRef) refs.add(alert.geometryRef);
     }
 
@@ -567,19 +606,37 @@ export class WeatherAlertsCard extends LitElement {
     if (this._mapTilesToken !== null) this._mapTilesToken = null;
   }
 
-  private _maybeArmTimelineTimer(): void {
-    if (!this._isTimeline || !this.isConnected) {
-      this._teardownTimelineTimer();
-      return;
+  // Re-aimed after every update from the alerts that update rendered. No
+  // alerts, nothing time-driven on screen: no timer at all.
+  private _armClock(): void {
+    this._teardownClock();
+    if (!this.isConnected || document.hidden || this._alerts.length === 0) return;
+    const nowTs = Date.now() / 1000;
+    let timeline: { spanS: number; lanePx: number } | undefined;
+    if (this._isTimeline) {
+      const win = computeTimelineWindow(this._alerts, this._config?.timelineHorizon, nowTs);
+      timeline = { spanS: win.endTs - win.startTs, lanePx: this._timelineLanePx };
     }
-    if (this._timelineTimer !== null) return;
-    this._timelineTimer = setInterval(this._onTimelineTick, WeatherAlertsCard.TIMELINE_TICK_MS);
+    const delay = nextClockDelayMs(this._alerts, nowTs, {
+      timeZone: this._locale.timeZone,
+      barPx: timeline ? 0 : this._hostPx || CLOCK_UNMEASURED_PX,
+      timeline,
+    });
+    this._clockTimer = setTimeout(this._onClockTick, delay);
   }
 
-  private _teardownTimelineTimer(): void {
-    if (this._timelineTimer === null) return;
-    clearInterval(this._timelineTimer);
-    this._timelineTimer = null;
+  private _teardownClock(): void {
+    if (this._clockTimer === null) return;
+    clearTimeout(this._clockTimer);
+    this._clockTimer = null;
+  }
+
+  private _observeHost(): void {
+    if (this._hostObserver || typeof ResizeObserver === 'undefined') return;
+    this._hostObserver = new ResizeObserver(entries => {
+      this._hostPx = Math.round(entries[entries.length - 1]?.contentRect.width ?? 0);
+    });
+    this._hostObserver.observe(this);
   }
 
   // Watch the axis lane's width so the tick count can follow it. A lane only
@@ -798,7 +855,7 @@ export class WeatherAlertsCard extends LitElement {
   private _pendingDismissals: Map<string, DismissalRecord> | null = null;
   private _dismissalReconcileScheduled = false;
 
-  private _getAlerts(reconcile = true): WeatherAlert[] {
+  private _getAlerts(reconcile = true, nowTs = Date.now() / 1000): WeatherAlert[] {
     if (!this.hass || !this._config) return [];
     const allAlerts: WeatherAlert[] = [];
     const providerPriority: AlertProvider[] = [];
@@ -819,7 +876,7 @@ export class WeatherAlertsCard extends LitElement {
       for (const a of parsed) a.sourceEntityId = entityId;
       allAlerts.push(...parsed);
     }
-    let filtered = this._filterAndSort(allAlerts, { providerPriority, stableIdProviders });
+    let filtered = this._filterAndSort(allAlerts, { providerPriority, stableIdProviders, nowTs });
     if (this._config.allowDismiss && !this._forcePreview && this._dismissals.size > 0) {
       const { visible, updatedMap } = applyDismissals(filtered, this._dismissals);
       // applyDismissals can change the map (un-dismiss on signature shift,
@@ -1055,7 +1112,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _filterAndSort(
     alerts: WeatherAlert[],
-    opts?: { skipZones?: boolean; providerPriority?: AlertProvider[]; stableIdProviders?: Set<AlertProvider> },
+    opts?: { skipZones?: boolean; providerPriority?: AlertProvider[]; stableIdProviders?: Set<AlertProvider>; nowTs?: number },
   ): WeatherAlert[] {
     if (!this._config) return alerts;
     let result = alerts;
@@ -1107,7 +1164,7 @@ export class WeatherAlertsCard extends LitElement {
     }
 
     if (this._config.hideExpired !== false) {
-      const nowTs = Date.now() / 1000;
+      const nowTs = opts?.nowTs ?? Date.now() / 1000;
       result = result.filter(a => a.endsTs === 0 || a.endsTs > nowTs);
     }
 
@@ -1501,7 +1558,7 @@ export class WeatherAlertsCard extends LitElement {
     const behavior = this._config.unavailableBehavior || 'message';
     const signalAvailability = brokenSources.length > 0 && behavior !== 'hide';
 
-    const alerts = this._getAlerts();
+    const alerts = this._alerts;
     const hasAlerts = alerts.length > 0;
 
     // Fully hide the card only when there is genuinely nothing to show and the
@@ -1557,7 +1614,7 @@ export class WeatherAlertsCard extends LitElement {
     const alert = alerts.find(a => a.id === this._detailPopupAlertId);
     if (!alert) return nothing;
 
-    const progress = computeAlertProgress(alert);
+    const progress = computeAlertProgress(alert, this._now);
     const isOngoing = progress.isActive && !progress.hasEndTime;
     // The inner row re-uses .alert-card only for its token block (--color,
     // --wac-fg, --wac-progress-fg); styles.ts strips the row chrome. Mirrors
@@ -1630,7 +1687,7 @@ export class WeatherAlertsCard extends LitElement {
   }
 
   private _renderPreview(): TemplateResult {
-    const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true });
+    const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true, nowTs: this._now });
     const animClass = this._animationsEnabled ? '' : 'no-animations';
     const layoutClass = this._layoutClass;
     const fillClass = this._config?.progressFill === 'background' ? 'fill-mode-background' : '';
@@ -1676,7 +1733,7 @@ export class WeatherAlertsCard extends LitElement {
   // no cross-row geometry is computed. Window and tick math is pure (utils.ts)
   // and takes the clock once per render.
   private _renderTimeline(alerts: WeatherAlert[]): TemplateResult {
-    const nowTs = Date.now() / 1000;
+    const nowTs = this._now;
     const win = computeTimelineWindow(alerts, this._config?.timelineHorizon, nowTs);
     const locale = this._locale;
     // One label's share of the lane, as a percentage: measured when the lane
@@ -1726,7 +1783,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderTimelineRow(alert: WeatherAlert, win: TimelineWindow, dayLines: number[]): TemplateResult {
     const lang = this._lang;
-    const progress = computeAlertProgress(alert);
+    const progress = computeAlertProgress(alert, this._now);
     const bar = timelineBarGeometry(progress, win);
     const isOngoing = progress.isActive && !progress.hasEndTime;
     const action = this._rowAction();
@@ -1753,7 +1810,7 @@ export class WeatherAlertsCard extends LitElement {
     ].filter(Boolean).join(' ');
     const barStyle = `left: ${bar.startPct.toFixed(3)}%; width: ${(bar.endPct - bar.startPct).toFixed(3)}%;`
       + (bar.fadeFromPct !== null ? ` --wac-tl-fade-from: ${bar.fadeFromPct.toFixed(3)}%;` : '');
-    const range = `${formatProgressTimestamp(progress.onsetTs, this._locale, lang)} – ${progress.hasEndTime ? formatProgressTimestamp(progress.endsTs, this._locale, lang) : t('progress.ongoing', lang)}`;
+    const range = `${formatProgressTimestamp(progress.onsetTs, this._locale, lang, this._now)} – ${progress.hasEndTime ? formatProgressTimestamp(progress.endsTs, this._locale, lang, this._now) : t('progress.ongoing', lang)}`;
     // The one-phrase time state sits under the name, so a touch user reads
     // "for 3h" without a hover or a tap. The same phrase names the row for
     // assistive tech; an inert row (tap_action: none) carries no role, and an
@@ -1807,7 +1864,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderAlert(alert: WeatherAlert): TemplateResult {
     const className = `severity-${alert.severity}`;
-    const progress = computeAlertProgress(alert);
+    const progress = computeAlertProgress(alert, this._now);
     const phaseClass = progress.phaseText.toLowerCase();
     const expanded = this._expandedAlerts.get(alert.id) || false;
 
@@ -2363,7 +2420,7 @@ export class WeatherAlertsCard extends LitElement {
         <div class="progress-labels">
           <div class="label-left">
             <span class="label-sub">${isActive ? t('progress.start', lang) : t('progress.now', lang)}</span>
-            <span>${formatProgressTimestamp(isActive ? onsetTs : nowTs, this._locale, lang)}</span>
+            <span>${formatProgressTimestamp(isActive ? onsetTs : nowTs, this._locale, lang, nowTs)}</span>
           </div>
           <div class="label-center">
             ${!hasEndTime
@@ -2376,7 +2433,7 @@ export class WeatherAlertsCard extends LitElement {
           </div>
           <div class="label-right">
             <span class="label-sub">${t('progress.end', lang)}</span>
-            <span>${hasEndTime ? formatProgressTimestamp(endsTs, this._locale, lang) : t('progress.tbd', lang)}</span>
+            <span>${hasEndTime ? formatProgressTimestamp(endsTs, this._locale, lang, nowTs) : t('progress.tbd', lang)}</span>
           </div>
         </div>
         <div class="progress-track">
