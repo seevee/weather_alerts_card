@@ -9,7 +9,7 @@ A standalone custom Home Assistant Lovelace card for displaying weather alerts f
 ## Build Commands
 
 ```bash
-npm run build     # Rolldown bundle → dist/weather-alerts-card.js (single ES module, ~296KB minified, downleveled to ES2019)
+npm run build     # Rolldown bundle → dist/weather-alerts-card.js (single ES module, ~350KB minified, downleveled to ES2019)
 npm run watch     # Rolldown in watch mode
 npm run lint      # TypeScript type-check of src/ and tests/ (tsconfig.eslint.json) + ESLint (type-aware, eslint.config.mjs). tests/ opts out of noUncheckedIndexedAccess there: fixture indexing is not what the flag protects
 npm run test      # Vitest, two projects: pure files on jsdom, every suite that mounts the card or editor in headless Chromium (needs `npx playwright install chromium` once) + coverage floors over both (vitest.config.ts)
@@ -45,7 +45,7 @@ PR pass.
 | `src/translations/` | One file per locale (`en`, `fr`, `es`, `it`, `de`, `nl`, `pl`, `zh-Hans`, `pt-BR`, `sr`, `sr-Latn`), registered in `index.ts`. Split out of `localize.ts` so parity checks can iterate the registry and so a locale change is a self-contained diff. (The split was originally also meant to make `CODEOWNERS` paths expressible; that never worked, since GitHub ignores owners without write access, and the file has since been removed.) |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`, and the distance helpers `haversineKm()` / `extractPoint()` / `kmToDisplay()` / `displayToKm()` / `toLengthUnit()` / `formatDistance()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
-| `rolldown.config.mjs` | Rolldown config, no plugins: built-in TS transform, `transform.target: es2019` (downlevels the whole bundle incl. Lit for old Android WebViews, #194), `transform.define` for `__CARD_VERSION__`, `output.minify` → single `dist/weather-alerts-card.js`. Type errors do not fail the build; `npm run lint` owns type-checking. |
+| `rolldown.config.mjs` | Rolldown config, one plugin (`scripts/strip-css-comments.mjs`, drops comments from `css` templates, which the minifier leaves alone, #394): built-in TS transform, `transform.target: es2019` (downlevels the whole bundle incl. Lit for old Android WebViews, #194), `transform.define` for `__CARD_VERSION__`, `output.minify` → single `dist/weather-alerts-card.js`. Type errors do not fail the build; `npm run lint` owns type-checking. |
 
 ## Key Patterns
 
