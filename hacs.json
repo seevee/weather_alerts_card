@@ -1,5 +1,6 @@
 {
   "name": "Weather Alerts Card",
   "render_readme": true,
-  "filename": "weather-alerts-card.js"
+  "filename": "weather-alerts-card.js",
+  "homeassistant": "2026.7.0"
 }

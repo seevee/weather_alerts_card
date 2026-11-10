@@ -218,6 +218,8 @@ the standard `ll-custom` event `browser_mod` listens for.
 
 ## Installation
 
+Requires Home Assistant 2026.7 or newer. On an older core, HACS offers the last release that still supports it.
+
 ### HACS (recommended)
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=seevee&repository=weather_alerts_card)
