@@ -1,10 +1,14 @@
 import { readFileSync } from 'fs';
 import { defineConfig } from 'rolldown';
+import { stripCssCommentsPlugin } from './scripts/strip-css-comments.mjs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 export default defineConfig({
   input: 'src/weather-alerts-card.ts',
+  // The minifier leaves template text alone, so comments in the css`` blocks
+  // would ship verbatim (~26 KB, #394). Source and tests keep them.
+  plugins: [stripCssCommentsPlugin()],
   transform: {
     // Minify AND downlevel the merged bundle (including Lit's own dist) to a
     // syntax floor old Android WebViews can parse — e.g. Shelly Wall Displays
