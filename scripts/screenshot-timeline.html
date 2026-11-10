@@ -10,7 +10,9 @@
        One card in layout: 'timeline' over the six ALERTS_TIMELINE fixtures, so
        the figure shows every bar form at once: a prep bar (static stripes), two
        active bars, an open-ended bar fading off the right edge, and a long
-       watch whose start is cut by the window's lead. Landscape by nature, so it
+       watch cut by the window at both ends. A fixed 12 h horizon, not auto:
+       auto fits the 2.5-day watch and squeezes the short alerts to slivers.
+       Landscape by nature, so it
        cooks under Discourse's 500 px clamp at the 690 forum width. */
     .theme-light {
       --primary-text-color: #1a1c22;
@@ -159,6 +161,7 @@
       entity: ENTITY,
       title: 'Weather Alerts',
       layout: 'timeline',
+      timelineHorizon: '12h',
       sortOrder: 'onset',
       animations: false,
     });
