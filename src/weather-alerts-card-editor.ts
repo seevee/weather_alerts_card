@@ -94,51 +94,23 @@ export class WeatherAlertsCardEditor extends LitElement {
     return this.hass?.locale?.language || 'en';
   }
 
-  // HA 2026.02 swapped the MWC component system for WebAwesome: `ha-list-item`
-  // became `ha-dropdown-item`, and `selected` moved its payload from the target
-  // element to `ev.detail`. Emitting only the new form leaves every dropdown in
-  // this editor inert on older cores (#239) — the items render as unknown
-  // elements and nothing is selectable — so pick the shape from what is
-  // actually registered rather than parsing a version string.
-  private static _webAwesome?: boolean;
-
-  private get _useWebAwesome(): boolean {
-    if (WeatherAlertsCardEditor._webAwesome !== undefined) {
-      return WeatherAlertsCardEditor._webAwesome;
-    }
-    const wa = !!customElements.get('ha-dropdown-item');
-    const mwc = !!customElements.get('ha-list-item');
-    // Cache only a definite answer. HA lazy-loads components, so on the first
-    // render neither element may be defined yet; caching that guess would pin
-    // the editor to the wrong system for the whole session. While it's still
-    // ambiguous, assume current HA and re-check on the next render — `hass`
-    // updates land continually, so the window is short.
-    if (wa || mwc) {
-      WeatherAlertsCardEditor._webAwesome = wa;
-      return wa;
-    }
-    return true;
-  }
-
-  // MWC fires `selected` with `detail: { index }` — a detail object, but no
-  // `value` — so this reads through to the target rather than testing `detail`
-  // for existence.
+  // Every supported core (floor 2026.7, hacs.json) has WebAwesome's ha-select,
+  // which carries the picked value on `ev.detail`. The MWC fallback for older
+  // cores (#239) went with the floor (#384).
   private _selectValue(ev: Event): string {
-    const detail = (ev as CustomEvent).detail as { value?: string } | undefined;
-    return detail?.value ?? (ev.target as HTMLSelectElement | null)?.value ?? '';
+    return ((ev as CustomEvent).detail as { value?: string } | undefined)?.value ?? '';
   }
 
   private _renderSelectItem(value: string, label: string): TemplateResult {
-    return this._useWebAwesome
-      ? html`<ha-dropdown-item value=${value}>${label}</ha-dropdown-item>`
-      : html`<ha-list-item value=${value}>${label}</ha-list-item>`;
+    return html`<ha-dropdown-item value=${value}>${label}</ha-dropdown-item>`;
   }
 
-  // The same swap took `ha-textfield` away: HA 2026.09 no longer defines it at
-  // all, so on a current core every text field rendered as nothing. `ha-input`
-  // (the WebAwesome wrapper `ha-selector-text` renders) is its replacement.
-  // Detected on its own rather than through `_webAwesome`: the two elements
-  // need not have changed hands in the same release. Same caching rule.
+  // The WebAwesome swap took `ha-textfield` away: HA 2026.09 no longer defines
+  // it at all, so on a current core every text field rendered as nothing.
+  // `ha-input` (the WebAwesome wrapper `ha-selector-text` renders) is its
+  // replacement. Kept while the floor (2026.7) predates it. HA lazy-loads
+  // components, so on the first render neither element may be defined yet:
+  // cache only a definite answer, and assume current HA until then.
   private static _haInput?: boolean;
 
   private get _useHaInput(): boolean {
@@ -808,13 +780,6 @@ export class WeatherAlertsCardEditor extends LitElement {
     this._fireConfigChanged(newConfig);
   }
 
-  // MWC's ha-select renders its menu inside the editor panel's stacking
-  // context, so it needs both attributes to escape; WebAwesome's warns on
-  // them. A false boolean binding removes the attribute outright.
-  private get _legacyMenu(): boolean {
-    return !this._useWebAwesome;
-  }
-
   // Write core for every registry key: one `config-changed` when the config
   // identity changes, none otherwise (see `withKey`).
   private _writeKey(key: SimpleKey, value: SimpleValue): void {
@@ -911,8 +876,6 @@ export class WeatherAlertsCardEditor extends LitElement {
         .label=${t(field.label, lang)}
         .value=${effectiveValue(this._config, key)}
         @selected=${(ev: CustomEvent) => this._writeKey(key, this._selectValue(ev))}
-        ?fixedMenuPosition=${this._legacyMenu}
-        ?naturalMenuWidth=${this._legacyMenu}
       >
         ${field.options.map(o => this._renderSelectItem(o.value, this._optionLabel(o.label, o.value === field.default, lang)))}
       </ha-select>
@@ -1140,7 +1103,6 @@ export class WeatherAlertsCardEditor extends LitElement {
   // Per-phase progress/icon styling: power-user knobs with good defaults, in a
   // nested (not outlined) panel so they cost one row until opened.
   private _renderStylingGroup(lang: string): TemplateResult {
-    const legacyMenu = this._legacyMenu;
     return html`
       <ha-expansion-panel
         .expanded=${false}
@@ -1163,8 +1125,6 @@ export class WeatherAlertsCardEditor extends LitElement {
                 .label=${t('editor.progress_style_' + phase, lang)}
                 .value=${this._config.progressStyle?.[phase] || PROGRESS_DECO_DEFAULTS[phase]}
                 @selected=${(ev: CustomEvent) => this._progressStyleChanged(phase, ev)}
-                ?fixedMenuPosition=${legacyMenu}
-                ?naturalMenuWidth=${legacyMenu}
               >
                 ${(['solid', 'striped', 'shimmer', 'pulse'] as ProgressDecoration[]).map(v =>
                   this._renderSelectItem(v, this._optionLabel('editor.deco_' + v, v === PROGRESS_DECO_DEFAULTS[phase], lang)))}
@@ -1179,8 +1139,6 @@ export class WeatherAlertsCardEditor extends LitElement {
                 .label=${t('editor.progress_style_' + phase, lang)}
                 .value=${this._config.iconBorderStyle?.[phase] || ICON_BORDER_DEFAULTS[phase]}
                 @selected=${(ev: CustomEvent) => this._iconBorderStyleChanged(phase, ev)}
-                ?fixedMenuPosition=${legacyMenu}
-                ?naturalMenuWidth=${legacyMenu}
               >
                 ${(['dashed', 'solid'] as IconBorderStyle[]).map(v =>
                   this._renderSelectItem(v, this._optionLabel('editor.icon_border_' + v, v === ICON_BORDER_DEFAULTS[phase], lang)))}
@@ -1259,15 +1217,12 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _renderTapAction(lang: string): TemplateResult {
-    const legacyMenu = this._legacyMenu;
     const action = this._config.tap_action?.action;
     return this._field(this._config.tap_action !== undefined, html`
       <ha-select
         .label=${t('editor.tap_action', lang)}
         .value=${action ?? 'default'}
         @selected=${this._tapActionChanged}
-        ?fixedMenuPosition=${legacyMenu}
-        ?naturalMenuWidth=${legacyMenu}
       >
         ${this._renderSelectItem('default', t('editor.tap_default', lang))}
         ${this._renderSelectItem('details', t('editor.tap_details', lang))}
