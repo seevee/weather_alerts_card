@@ -629,6 +629,16 @@ describe('sortAlerts', () => {
     expect(sorted[1].id).toBe('late');
   });
 
+  it('sorts by onset time, then by severity', () => {
+    const early_minor = makeAlert({ id: 'early_minor', onsetTs: parseTimestamp('2026-03-06T10:00:00Z'), severity: 'minor' });
+    const early_severe = makeAlert({ id: 'early_severe', onsetTs: parseTimestamp('2026-03-06T10:00:00Z'), severity: 'severe' });
+    const late = makeAlert({ id: 'late', onsetTs: parseTimestamp('2026-03-06T14:00:00Z') });
+    const sorted = sortAlerts([late, early_minor, early_severe], 'onset');
+    expect(sorted[0].id).toBe('early_severe');
+    expect(sorted[1].id).toBe('early_minor');
+    expect(sorted[2].id).toBe('late');
+  });
+
   it('sorts by severity', () => {
     const minor = makeAlert({ id: 'minor', severity: 'minor' });
     const extreme = makeAlert({ id: 'extreme', severity: 'extreme' });
