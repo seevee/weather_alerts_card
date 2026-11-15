@@ -1498,6 +1498,12 @@ export const cardStyles = css`
   .no-animations .timeline-span {
     animation: none !important;
   }
+  /* The timeline being edited stands still. HA's dialog scrim is a
+     full-viewport backdrop-filter, and every running animation under or inside
+     it makes the browser redo that filter each frame (see _animClass). */
+  .editor-still .timeline-span {
+    animation: none !important;
+  }
   .no-animations .progress-fill,
   .no-animations .progress-fill::after,
   .no-animations .alert-card::before,
