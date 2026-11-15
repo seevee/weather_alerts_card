@@ -36,7 +36,8 @@ for you — there is nothing further to register.
 1. Download `weather-alerts-card.js` and `weather-alerts-card-editor.js` from the
    [latest release](https://github.com/seevee/weather_alerts_card/releases/latest).
 2. Copy both to `config/www/`. The second file is the visual editor; without it the card
-   still works and is edited as YAML.
+   still works and is edited as YAML. Releases before 3.10 ship one file with the editor
+   inside it, so there is no second file to copy.
 3. Add it as a resource: **Settings → Dashboards → Resources** →
    URL `/local/weather-alerts-card.js`, Type **JavaScript Module**.
 

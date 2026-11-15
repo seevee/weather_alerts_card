@@ -153,11 +153,14 @@ geometry, so `showGeometry` has nothing to draw on this route.
 ::: info Home Assistant 2026.11 and later
 Core removed the warning text from the NINA binary sensor
 ([core#161882](https://github.com/home-assistant/core/pull/161882)); a slot now carries
-only the warning's `id`. The card asks the integration for the rest through its
-`nina.get_details` action: once per warning, for all your slots in one call, shared by
-every card on the dashboard. Nothing to configure. If that call fails, the slot shows as
-an unavailable source and the card tries again after five minutes, so a live warning
-never reads as "no active alerts".
+only the warning's `id`. From card **3.10** the card asks the integration for the rest
+through its `nina.get_details` action: once per warning, for all your slots in one call,
+shared by every card on the dashboard. Nothing to configure. If that call fails, the slot
+shows as an unavailable source and the card tries again after five minutes, so a live
+warning never reads as "no active alerts".
+
+Card 3.9.2 shows such a slot as an unavailable source and cannot display the warning.
+Earlier versions show "no active alerts", so update.
 :::
 
 ### MeteoSwiss (Switzerland)
