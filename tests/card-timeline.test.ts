@@ -337,6 +337,26 @@ describe('timeline structure', () => {
     }
   });
 
+  it('holds the breathe while the card is being edited, and only then', async () => {
+    // HA's edit dialog dims the page with a full-viewport backdrop-filter, and
+    // any running animation makes the browser redo it every frame: the editor
+    // dropped to ~15 fps with a timeline on screen. So a timeline in edit mode
+    // stands still. `animations: true` rules out reduced motion on the runner.
+    const breathing = (card: CardInternals): string[] =>
+      [...root(card).querySelectorAll('.ongoing .timeline-span')].map(el => getComputedStyle(el).animationName);
+    const config = { ...BASE, animations: true };
+
+    const dashboard = await mountCard(config, phasedHass(), false);
+    expect(breathing(dashboard.card).length).toBeGreaterThan(0);
+    expect(new Set(breathing(dashboard.card))).toEqual(new Set(['ongoing-pulse']));
+    dashboard.cleanup();
+
+    const editing = await mountCard(config, phasedHass(), true);
+    expect(breathing(editing.card).length).toBeGreaterThan(0);
+    expect(new Set(breathing(editing.card))).toEqual(new Set(['none']));
+    editing.cleanup();
+  });
+
   it('renders the timeline in preview mode too', async () => {
     // HA flags the editor's card with `preview`; `_preview` only counts there.
     const { card, cleanup } = await mountCard({ ...BASE, _preview: true }, phasedHass(), true);

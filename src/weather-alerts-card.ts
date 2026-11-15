@@ -1243,6 +1243,26 @@ export class WeatherAlertsCard extends LitElement {
     if (this._config?.animations === false) return false;
     return !this._motionQuery.matches; // undefined → respect OS prefers-reduced-motion
   }
+  // Motion classes for the card root. `editor-still` holds the timeline's
+  // breathe wherever HA says the card is being edited: the edit dialog's
+  // preview and every card on a dashboard in edit mode share that flag.
+  //
+  // The cause is HA's dialog, not the animation. Its scrim is a full-viewport
+  // `dialog::backdrop { backdrop-filter: brightness(...) }`, and while it is up
+  // any running animation on the page, in the preview or on a card behind the
+  // dialog, makes the browser redo that filter over the whole screen every
+  // frame. Measured with the edit dialog open and three pulse rings running:
+  // 16 fps; filter removed, 53; animations stopped, 59. Chromium and Firefox.
+  //
+  // Timeline only, on purpose: it animates one span per ongoing lane, which is
+  // where it was noticed. Other layouts' motion (stripes, shimmer, pulse ring)
+  // pays the same cost under the dialog and is left running so the editor can
+  // preview it. Any other HA dialog over a dashboard (more-info) has the same
+  // scrim, and the card is not told about those.
+  private get _animClass(): string {
+    const off = this._animationsEnabled ? '' : 'no-animations';
+    return this._isTimeline && this._inEditor ? `${off} editor-still` : off;
+  }
   private get _isCompact(): boolean { return this._config?.layout === 'compact'; }
   private get _isTimeline(): boolean { return this._config?.layout === 'timeline'; }
   private get _layoutClass(): string {
@@ -1639,7 +1659,7 @@ export class WeatherAlertsCard extends LitElement {
     }
     this.style.display = '';
 
-    const animClass = this._animationsEnabled ? '' : 'no-animations';
+    const animClass = this._animClass;
     const layoutClass = this._layoutClass;
     const fillClass = this._config.progressFill === 'background' ? 'fill-mode-background' : '';
 
@@ -1757,7 +1777,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderPreview(): TemplateResult {
     const alerts = this._filterAndSort(getPreviewAlerts(), { skipZones: true, nowTs: this._now });
-    const animClass = this._animationsEnabled ? '' : 'no-animations';
+    const animClass = this._animClass;
     const layoutClass = this._layoutClass;
     const fillClass = this._config?.progressFill === 'background' ? 'fill-mode-background' : '';
 
