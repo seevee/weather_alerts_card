@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NinaAdapter } from '../../src/adapters/nina';
+import { NinaAdapter, isStrippedNinaSlot } from '../../src/adapters/nina';
 import { getDisplayHeadline, getWeatherIcon, parseTimestamp } from '../../src/utils';
 
 // Verbatim attributes of an active `binary_sensor` warning slot, contributed by
@@ -71,6 +71,33 @@ describe('NinaAdapter', () => {
         instruction: 'Take shelter',
         area_desc: 'Berlin',
       })).toBe(false);
+    });
+  });
+
+  // HA 2026.11 removed every attribute but `id` (core#161882). The shape below
+  // is the reporter's occupied slot from #403.
+  describe('isStrippedNinaSlot', () => {
+    const STRIPPED = { id: SAMPLE['id'], device_class: 'safety', friendly_name: 'xxxx Warnung 1' };
+
+    it('flags an occupied slot that carries only id', () => {
+      expect(isStrippedNinaSlot('on', STRIPPED)).toBe(true);
+      expect(adapter.parseAlerts(STRIPPED)).toEqual([]);
+    });
+
+    it('leaves an idle slot alone', () => {
+      expect(isStrippedNinaSlot('off', { device_class: 'safety', friendly_name: 'xxxx Warnung 1' })).toBe(false);
+    });
+
+    it('leaves a full pre-2026.11 slot alone', () => {
+      expect(isStrippedNinaSlot('on', SAMPLE)).toBe(false);
+    });
+
+    it('leaves an `on` binary sensor without an id alone', () => {
+      expect(isStrippedNinaSlot('on', { device_class: 'safety', friendly_name: 'Smoke' })).toBe(false);
+    });
+
+    it('leaves a MeteoAlarm binary sensor alone', () => {
+      expect(isStrippedNinaSlot('on', { awareness_level: '3; orange; Severe', awareness_type: '1; Wind', event: 'Wind' })).toBe(false);
     });
   });
 

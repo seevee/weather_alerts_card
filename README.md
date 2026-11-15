@@ -383,7 +383,9 @@ Listing slot entities directly works too. An empty slot reads as "no active aler
 never as an unavailable source, and the per-slot diagnostic sensors the integration also
 creates (`sensor.*_headline_1`, …) are ignored. See
 [Providers](https://seevee.github.io/weather_alerts_card/providers#nina-german-civil-protection)
-for details — including the HA 2026.11 attribute removal that this support depends on.
+for details. **This works through HA 2026.10 only.** Home Assistant 2026.11 removed the
+attributes the card reads, so a live warning there shows as an unavailable source; use
+[CAP Alerts](https://github.com/seevee/cap_alerts) with its BBK provider instead.
 
 **MeteoSwiss (Switzerland)**
 ```yaml
