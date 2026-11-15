@@ -61,6 +61,7 @@ import {
   computeTimelineWindow,
   timelineBarGeometry,
   computeTimelineTicks,
+  labelTimelineTicks,
   formatTimelineTick,
   formatTimelineNow,
   nextClockDelayMs,
@@ -1812,7 +1813,7 @@ export class WeatherAlertsCard extends LitElement {
     // mark there, and a second mark beside it reads as a stray.
     const ticks = computeTimelineTicks(win, locale.timeZone, Math.floor(100 / labelPct))
       .filter(tick => Math.abs(tick.pct - win.nowPct) >= labelPct / 2);
-    const labeled = ticks.filter(tick => !tick.minor);
+    const marks = labelTimelineTicks(ticks, win.nowPct, labelPct, TIMELINE_EDGE_PCT);
     const nowText = formatTimelineNow(nowTs, locale);
     const dayLines = win.endTs - win.startTs >= TIMELINE_DAY_LINES_S
       ? ticks.filter(tick => tick.dayBoundary).map(tick => tick.pct)
@@ -1824,21 +1825,9 @@ export class WeatherAlertsCard extends LitElement {
         <div class="timeline-axis">
           <div class="timeline-gutter" aria-hidden="true"></div>
           <div class="timeline-lane">
-            ${ticks.map(tick => {
-              // A tick near the right edge hangs its label leftward; the
-              // labelled tick before it keeps its mark but drops its text when
-              // the two are closer than two labels' width, so the pair never
-              // overprints. A minor tick (a day mark under a coarser label
-              // step) is mark-only by definition, and so is any tick within a
-              // label of the now head, whose time label wins that space.
-              const edge = !tick.minor && tick.pct > TIMELINE_EDGE_PCT;
-              const next = labeled.find(other => other.pct > tick.pct);
-              const quiet = tick.minor || Math.abs(tick.pct - win.nowPct) < labelPct
-                || (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT && next.pct - tick.pct < 2 * labelPct);
-              return html`
+            ${marks.map(({ tick, edge, quiet }) => html`
               <span class="timeline-tick ${tick.dayBoundary ? 'day' : ''} ${edge ? 'edge' : ''} ${quiet ? 'quiet' : ''} ${tick.minor ? 'minor' : ''}" style="left: ${tick.pct.toFixed(3)}%" aria-hidden="true">${quiet ? nothing : formatTimelineTick(tick, locale)}</span>
-            `;
-            })}
+            `)}
             <span class="timeline-now-head" role="img" aria-label="${t('progress.now', this._lang)} ${nowText}"></span>
             <span class="timeline-now-label" aria-hidden="true">${nowText}</span>
           </div>

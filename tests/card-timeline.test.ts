@@ -328,7 +328,10 @@ describe('timeline structure', () => {
       expect(narrowLabels).toBeGreaterThanOrEqual(1);
       expect(narrowTicks).toBeLessThanOrEqual(4);
       expect(narrowTicks).toBeGreaterThanOrEqual(2);
-      expect(root(wide.card).querySelector('.timeline-tick.minor.quiet')).not.toBeNull();
+      // Mark-only as a rule. For about half an hour a day it is the one mark
+      // clear of the now label and carries the date instead (labelTimelineTicks),
+      // so this does not ask for `.quiet`: that made the test fail by the clock.
+      expect(root(wide.card).querySelector('.timeline-tick.minor')).not.toBeNull();
     } finally {
       wide.cleanup();
     }
