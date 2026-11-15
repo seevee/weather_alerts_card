@@ -358,6 +358,13 @@ device was set up with. "Never marked" in the severity column means the value is
 upstream and the card cannot tell, because CAP Alerts does not yet carry a
 derived-severity flag.
 
+Route says how the alert reaches the card. A **card adapter** reads an integration's
+entities directly, almost always from their attributes. Where the row says **from an
+action**, the integration serves the alert through an action and the card fetches it:
+once per alert, outside render, shared by every card on the dashboard. Until that answer
+arrives, and while a call fails, the entity shows as an unavailable source. **cap_alerts**
+rows arrive through the CAP Alerts integration, one entity per alert.
+
 Geometry is a tier: **polygon** (fetched out of band by `geometry_ref`, with `bbox`
 drawn meanwhile), **point** (a single marker, the origin of `maxDistanceKm`,
 `sortOrder: distance` and the distance row) or **none**. Filters: **Z** `zones`, **E**
@@ -372,7 +379,7 @@ not set it for that source.
 | BoM | card adapter (`bureau_of_meteorology`) | none | — | no | Inferred from title, type and group; always tilde | Absent | S, X. Z with the safepay fork's `area_id` |
 | MeteoAlarm | card adapter | none | — | no | Raw `awareness_level`, else `severity`; tilde only when both are absent | Raw `certainty` | S, X |
 | DWD | card adapter (`dwd_weather_warnings`) | none | — | no | Raw integer `level`; the colour-hex fallback is not marked | Absent | E (numeric DWD id), S, X |
-| NINA, built-in | card adapter (`nina`) | none | NINA publishes no geometry | no | Raw CAP `severity`, never marked (the integration substitutes `Unknown`) | Absent | S. X where the warning carries an expiry |
+| NINA, built-in | card adapter (`nina`), from an action on HA 2026.11+: `nina.get_details`, card 3.10 and later | none | NINA publishes no geometry | no | Raw CAP `severity`, never marked (the integration substitutes `Unknown`) | Absent | S. X where the warning carries an expiry |
 | MeteoSwiss | card adapter (`meteoswiss`) | none | — | no | Raw integer level | Absent | E (the warning type name, e.g. `Wind`, not a code), S, X |
 | ECCC | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
