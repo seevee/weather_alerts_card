@@ -102,7 +102,10 @@ describe('card clock', () => {
     const card = await mount({ layout: 'compact' }, makeHass({ [NWS]: nwsState([nwsAlert('a', 'Wind Advisory', 30.5 * MIN)]) }));
     const label = () => (card.shadowRoot!.querySelector('.compact-time')!.textContent || '').trim();
     expect(label()).toContain('30m');
-    await vi.advanceTimersByTimeAsync(31 * 1000);
+    // The tick lands on the first whole wall-clock second past the boundary plus
+    // the clock's slack, so up to 31.05 s from here. 31 s missed it whenever the
+    // run started in the first 50 ms of a second.
+    await vi.advanceTimersByTimeAsync(32 * 1000);
     await card.updateComplete;
     expect(label()).toContain('29m');
   });
