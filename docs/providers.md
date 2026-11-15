@@ -143,14 +143,18 @@ the row "Extremer Hitze" and keeps the full headline underneath. Headlines from 
 non-DWD senders are free prose and pass through unchanged. NINA publishes no geometry, so
 `showGeometry` has nothing to draw.
 
-::: warning Attribute removal in HA 2026.11
-Everything the card reads apart from `id` is deprecated on the NINA binary sensor and
-scheduled for removal in Home Assistant 2026.11
-([core#161882](https://github.com/home-assistant/core/pull/161882)). The replacement is
-the per-field diagnostic sensors plus a `nina.get_details` action; `description` and
-`recommended_actions` got no sensor at all. Card support as described here is correct
-through HA 2026.10 and will need reworking after that — tracked in
-[#234](https://github.com/seevee/weather_alerts_card/issues/234).
+::: warning This support ends at HA 2026.10
+Home Assistant 2026.11 removed everything the card reads from the NINA binary sensor
+apart from `id` ([core#161882](https://github.com/home-assistant/core/pull/161882)). The
+replacement is the per-field diagnostic sensors plus a `nina.get_details` action, and
+`description` and `recommended_actions` got no sensor at all, so the card cannot rebuild
+a warning from entity state. Everything above is correct through HA 2026.10.
+
+On 2026.11 and later an occupied slot is `on` with nothing to show. The card names it as
+an unavailable source, so a live warning never reads as "no active alerts", but it cannot
+display the warning itself. Use [CAP Alerts](https://github.com/seevee/cap_alerts) with
+its **BBK** provider instead: it reads the same feed the NINA app does, and the card
+picks its alerts up from the device like any other CAP Alerts source.
 :::
 
 ### MeteoSwiss (Switzerland)

@@ -68,6 +68,7 @@ import {
   type TimelineWindow,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
+import { isStrippedNinaSlot } from './adapters/nina';
 import {
   fetchGeometry,
   fetchMapTilesToken,
@@ -1389,8 +1390,12 @@ export class WeatherAlertsCard extends LitElement {
   // parseable alert. CAP per-alert sensors can report state "unknown" while
   // their attributes hold a fully valid alert (e.g. an NWS Beach Hazards
   // Statement) — those must still render, not be dropped as a broken source.
+  //
+  // A NINA slot on HA 2026.11+ is the third case: `on`, so a warning is live,
+  // but core stripped everything the adapter reads (#403). Reading that as an
+  // empty source showed "no active alerts" over a live warning.
   private _isBroken(e: HassEntity): boolean {
-    return (e.state === 'unavailable' || e.state === 'unknown')
+    return (e.state === 'unavailable' || e.state === 'unknown' || isStrippedNinaSlot(e.state, e.attributes))
       && getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length === 0;
   }
 
@@ -1431,6 +1436,7 @@ export class WeatherAlertsCard extends LitElement {
   // dark on every install for days. `unavailable` is the integration's failure
   // signal and still counts on any entity, so a failed poll on a zero-alert
   // device is caught through its count sensor as before.
+  // A stripped NINA slot (see _isBroken) counts as errored the same way.
   private _brokenSources(): BrokenSource[] {
     if (!this.hass) return [];
     const sources: BrokenSource[] = [];
@@ -1462,6 +1468,7 @@ export class WeatherAlertsCard extends LitElement {
         const parses = getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length > 0;
         if (parses) hasParseable = true;
         else if (e.state === 'unavailable') hasErrored = true;
+        else if (isStrippedNinaSlot(e.state, e.attributes)) hasErrored = true;
         else if (e.state === 'unknown' && entry.entity_category !== 'diagnostic') hasErrored = true;
       }
       if (!hasParseable && hasErrored) sources.push({ name: this._deviceName(deviceId) });

@@ -15,7 +15,9 @@ import { httpUrl, normalizeSeverity, parseTimestamp } from '../utils';
 // `recommended_actions`, which got no sensor. Reassembling an alert from that
 // shape needs an 8-entity fan-in plus a service call from the render path, so
 // it is a different adapter, not a tweak to this one. This one is correct for
-// every HA release up to and including 2026.10.
+// every HA release up to and including 2026.10. From 2026.11 an occupied slot
+// is `on` with `id` alone; `isStrippedNinaSlot` below reports that shape so the
+// card names the slot as a dark source instead of showing an all-clear (#403).
 
 // NINA is a Germany-only feed and its message bodies are German, so the
 // synthesised attribution line is labelled in German to match the text it is
@@ -117,6 +119,20 @@ export class NinaAdapter implements AlertAdapter {
       certaintyInferred: false,
     }];
   }
+}
+
+/**
+ * True for an occupied NINA slot on HA 2026.11+: the binary sensor is `on`
+ * (a warning is live) but core publishes only `id`, so nothing here can parse
+ * it. Not an empty source: the card must flag it, never show "no active
+ * alerts". An idle slot is `off` with no attributes and stays quiet.
+ */
+export function isStrippedNinaSlot(state: string, attributes: Record<string, unknown>): boolean {
+  return state === 'on'
+    && attributes['device_class'] === 'safety'
+    && typeof attributes['id'] === 'string' && attributes['id'] !== ''
+    && !('headline' in attributes)
+    && !('affected_areas' in attributes);
 }
 
 function str(v: unknown): string {

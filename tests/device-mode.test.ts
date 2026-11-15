@@ -714,6 +714,30 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
     expect(card._brokenSources()).toEqual([{ name: DEVICE_NAME }]);
   });
 
+  it('_brokenSources flags a NINA device whose occupied slot was stripped to `id` (#403)', () => {
+    const slot = (n: number): string => `binary_sensor.region_warnung_${n}`;
+    const hass = (state: string) => makeHass(
+      [entry(slot(1), DEVICE, { platform: 'nina' }), entry(slot(2), DEVICE, { platform: 'nina' })],
+      {
+        [slot(1)]: {
+          state,
+          attributes: state === 'on'
+            ? { id: 'mow.DE-XX-XX-SE000-20261115-00-000', device_class: 'safety' }
+            : { device_class: 'safety' },
+        },
+        [slot(2)]: { state: 'off', attributes: { device_class: 'safety' } },
+      },
+      { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } },
+    );
+    const card = makeCard();
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE });
+    card.hass = hass('on');
+    expect(card._brokenSources()).toEqual([{ name: DEVICE_NAME }]);
+    // Every slot idle: a quiet region, not a dark one.
+    card.hass = hass('off');
+    expect(card._brokenSources()).toEqual([]);
+  });
+
   it('a dark device stays visible even under hideNoAlerts', async () => {
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', device: DEVICE, hideNoAlerts: true },

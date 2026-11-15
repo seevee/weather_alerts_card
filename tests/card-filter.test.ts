@@ -123,6 +123,39 @@ describe('degraded badge (#201)', () => {
     } as unknown as HomeAssistant;
   }
 
+  // NINA on HA 2026.11+: the slot is `on` with a live warning, but core left
+  // only `id` on it (#403). Must read as a dark source, not an all-clear.
+  function strippedNinaHass(state: string): HomeAssistant {
+    const attributes = state === 'on'
+      ? { id: 'mow.DE-XX-XX-SE000-20261115-00-000', device_class: 'safety', friendly_name: 'xxxx Warnung 1' }
+      : { device_class: 'safety', friendly_name: 'xxxx Warnung 1' };
+    return {
+      states: { 'binary_sensor.region_warnung_1': { state, attributes } },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+  }
+
+  it('an occupied NINA slot stripped to `id` gets the caveat, with or without provider: nina', async () => {
+    for (const provider of [undefined, 'nina'] as const) {
+      const { card, cleanup } = await mountCard(
+        { type: 'custom:weather-alerts-card', entity: 'binary_sensor.region_warnung_1', ...(provider ? { provider } : {}) },
+        strippedNinaHass('on'),
+      );
+      expect(root(card).querySelector('.no-alerts-caveat')?.textContent).toContain('xxxx Warnung 1');
+      cleanup();
+    }
+  });
+
+  it('an idle NINA slot is still a plain all-clear', async () => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'binary_sensor.region_warnung_1' },
+      strippedNinaHass('off'),
+    );
+    expect(root(card).querySelector('.no-alerts')).not.toBeNull();
+    expect(root(card).querySelector('.no-alerts-caveat')).toBeNull();
+    cleanup();
+  });
+
   it('all-broken + default (message), 0 alerts → qualified empty state, no strip/dot', async () => {
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' },
