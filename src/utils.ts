@@ -1119,6 +1119,48 @@ export function computeTimelineTicks(win: TimelineWindow, timeZone?: string, max
   return ticks;
 }
 
+export interface TimelineTickMark {
+  tick: TimelineTick;
+  /** Past `edgePct`: the label hangs leftward so it stays inside the lane. */
+  edge: boolean;
+  /** Mark only, no text. */
+  quiet: boolean;
+}
+
+/**
+ * Which ticks carry their label. `labelPct` is one label's share of the lane.
+ *
+ * A tick near the right edge hangs its label leftward; the labelled tick
+ * before it keeps its mark but drops its text when the two are closer than two
+ * labels' width, so the pair never overprints. A minor tick (a day mark under
+ * a coarser label step) is mark-only by definition, and so is any tick within
+ * a label of the now head, whose time label wins that space.
+ *
+ * Those rules can silence every tick at once. On a phone-width lane with a
+ * two-day label step, the one labelled day drifts under the now label about
+ * half an hour before the next one enters the window, and the axis then
+ * carried no date at all. The first mark clear of the now label takes the
+ * text, minor or not.
+ */
+export function labelTimelineTicks(ticks: TimelineTick[], nowPct: number, labelPct: number, edgePct: number): TimelineTickMark[] {
+  const labeled = ticks.filter(tick => !tick.minor);
+  const marks = ticks.map(tick => {
+    const edge = !tick.minor && tick.pct > edgePct;
+    const next = labeled.find(other => other.pct > tick.pct);
+    const quiet = tick.minor || Math.abs(tick.pct - nowPct) < labelPct
+      || (!edge && next !== undefined && next.pct > edgePct && next.pct - tick.pct < 2 * labelPct);
+    return { tick, edge, quiet };
+  });
+  if (marks.every(mark => mark.quiet)) {
+    const free = marks.find(mark => Math.abs(mark.tick.pct - nowPct) >= labelPct);
+    if (free) {
+      free.quiet = false;
+      free.edge = free.tick.pct > edgePct;
+    }
+  }
+  return marks;
+}
+
 /** The now head's label: the clock time, always with minutes. */
 export function formatTimelineNow(ts: number, locale?: HaLocale): string {
   return formatTime(new Date(ts * 1000), locale, 'numeric');

@@ -61,6 +61,7 @@ import {
   computeTimelineWindow,
   timelineBarGeometry,
   computeTimelineTicks,
+  labelTimelineTicks,
   formatTimelineTick,
   formatTimelineNow,
   nextClockDelayMs,
@@ -1812,32 +1813,7 @@ export class WeatherAlertsCard extends LitElement {
     // mark there, and a second mark beside it reads as a stray.
     const ticks = computeTimelineTicks(win, locale.timeZone, Math.floor(100 / labelPct))
       .filter(tick => Math.abs(tick.pct - win.nowPct) >= labelPct / 2);
-    const labeled = ticks.filter(tick => !tick.minor);
-    // A tick near the right edge hangs its label leftward; the labelled tick
-    // before it keeps its mark but drops its text when the two are closer than
-    // two labels' width, so the pair never overprints. A minor tick (a day
-    // mark under a coarser label step) is mark-only by definition, and so is
-    // any tick within a label of the now head, whose time label wins that
-    // space.
-    const marks = ticks.map(tick => {
-      const edge = !tick.minor && tick.pct > TIMELINE_EDGE_PCT;
-      const next = labeled.find(other => other.pct > tick.pct);
-      const quiet = tick.minor || Math.abs(tick.pct - win.nowPct) < labelPct
-        || (!edge && next !== undefined && next.pct > TIMELINE_EDGE_PCT && next.pct - tick.pct < 2 * labelPct);
-      return { tick, edge, quiet };
-    });
-    // Those rules can silence every tick at once. On a phone-width lane with a
-    // two-day label step, the one labelled day drifts under the now label about
-    // half an hour before the next one enters the window, and the axis then
-    // carried no date at all. The first mark clear of the now label takes the
-    // text, minor or not.
-    if (marks.every(mark => mark.quiet)) {
-      const free = marks.find(mark => Math.abs(mark.tick.pct - win.nowPct) >= labelPct);
-      if (free) {
-        free.quiet = false;
-        free.edge = free.tick.pct > TIMELINE_EDGE_PCT;
-      }
-    }
+    const marks = labelTimelineTicks(ticks, win.nowPct, labelPct, TIMELINE_EDGE_PCT);
     const nowText = formatTimelineNow(nowTs, locale);
     const dayLines = win.endTs - win.startTs >= TIMELINE_DAY_LINES_S
       ? ticks.filter(tick => tick.dayBoundary).map(tick => tick.pct)

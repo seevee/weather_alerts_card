@@ -32,6 +32,7 @@ import {
   computeTimelineWindow,
   timelineBarGeometry,
   computeTimelineTicks,
+  labelTimelineTicks,
   formatTimelineTick,
   TIMELINE_LEAD_FRACTION,
   TIMELINE_AUTO_PAD,
@@ -1502,6 +1503,41 @@ describe('timelineBarGeometry', () => {
     const g = geo({ onsetTs: now + 40 * H, endsTs: 0 });
     expect(g.offAxis).toBe('end');
     expect(g.clipEnd).toBe(false);
+  });
+});
+
+describe('labelTimelineTicks', () => {
+  const tick = (pct: number, minor = false) => ({ ts: 0, pct, dayBoundary: true, minutes: false, minor });
+  const text = (marks: ReturnType<typeof labelTimelineTicks>) => marks.map(m => (m.quiet ? '-' : m.edge ? 'E' : 'L')).join('');
+  // A phone-width lane: 52 px labels on 163 px, now one eighth in.
+  const LABEL = (52 / 163) * 100;
+  const NOW = 12.5;
+  const EDGE = 88;
+
+  it('labels the major tick and leaves the minor one a mark', () => {
+    expect(text(labelTimelineTicks([tick(50), tick(78.5, true)], NOW, LABEL, EDGE))).toBe('L-');
+  });
+
+  it('gives the date to the first free mark when the now label covers the only major tick', () => {
+    // 13:50 on that lane: the labelled day sits within one label of the now
+    // head and the next labelled day is not in the window yet. The axis used
+    // to carry no date at all for about half an hour a day.
+    const marks = labelTimelineTicks([tick(43.4), tick(71.8, true)], NOW, LABEL, EDGE);
+    expect(text(marks)).toBe('-L');
+    expect(marks[1]?.tick.minor).toBe(true);
+  });
+
+  it('hangs a promoted mark leftward when it sits at the right edge', () => {
+    expect(text(labelTimelineTicks([tick(43.4), tick(95, true)], NOW, LABEL, EDGE))).toBe('-E');
+  });
+
+  it('leaves the usual case alone once the next labelled day enters the window', () => {
+    expect(text(labelTimelineTicks([tick(42.9), tick(71.4, true), tick(99.9)], NOW, LABEL, EDGE))).toBe('--E');
+  });
+
+  it('stays silent when no mark is clear of the now label', () => {
+    expect(text(labelTimelineTicks([tick(20)], NOW, LABEL, EDGE))).toBe('-');
+    expect(labelTimelineTicks([], NOW, LABEL, EDGE)).toEqual([]);
   });
 });
 
