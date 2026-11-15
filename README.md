@@ -502,13 +502,13 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
 | NINA | Germany (civil protection) | Built-in [nina](https://www.home-assistant.io/integrations/nina/) — one `binary_sensor` per region per message slot; point the card at the NINA **device** so slots are picked up as warnings land in them. Carries DWD weather, LHP flood and MoWaS/KATWARN/BIWAPP civil-protection messages alike. [seevee/cap_alerts](https://github.com/seevee/cap_alerts) with its BBK provider reads the same feed and adds polygons |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) — point the card at `sensor.weather_warnings_at_<postcode>` |
-| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts), set up with its ECCC provider — the recommended ECCC source; see note below |
+| ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts), set up with its ECCC provider — the recommended ECCC source. The built-in [environment_canada](https://www.home-assistant.io/integrations/environment_canada/) works too; see note below |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; auto-collect the whole feed with `sources: [nsw_rural_fire_service_feed]` |
 | INMET | Brazil | [sigrist/inmet](https://github.com/sigrist/inmet) — one `geo_location.*` entity per active INMET alert; auto-collect the whole feed with `sources: [inmet]` |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
-> **Note on ECCC.** For Environment and Climate Change Canada alerts, use [CAP Alerts](https://github.com/seevee/cap_alerts) with its ECCC provider. It is the only ECCC source this card recommends — neither the bundled HA core `environment_canada` integration nor the HACS `environment_canada` fork is routed to. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below for why.
+> **Note on ECCC.** For Environment and Climate Change Canada alerts, [CAP Alerts](https://github.com/seevee/cap_alerts) with its ECCC provider is the recommended source: it reads the fuller NAAD feed and carries the alert polygons. From card 3.10 the built-in `environment_canada` integration works as well, with no extra setup. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below.
 
 ### Canada: ECCC via CAP Alerts
 
@@ -533,18 +533,30 @@ hand-typing the id. The card detects these entities as CAP Alerts (`cap`), so
 leave `provider:` unset. `provider: eccc` is for the HACS `environment_canada`
 fork; the card ignores it on a CAP Alerts entity.
 
-> **Why not the other ECCC integrations?** Two other ECCC integrations exist,
-> but neither is the right source for this card:
-> - **HA core `environment_canada`** exposes rich alert detail only through a
->   `get_alerts` **action** ([#172393](https://github.com/home-assistant/core/pull/172393),
->   merged in place of the attribute-based [#164481](https://github.com/home-assistant/core/pull/164481)).
->   The card does not call that action today, so core's alerts do not reach it.
-> - The HACS **`environment_canada`** fork does surface alert attributes, but
->   it's a stop-gap its own maintainer would rather not keep running (see
->   [discussion #3130](https://github.com/orgs/home-assistant/discussions/3130)),
->   and it overrides the core integration's domain. Out of respect for that, we
->   don't route ECCC users to it; CAP Alerts is the entity-based path the card
->   author maintains for rich alert data.
+**Built-in `environment_canada`.** From card 3.10 the built-in integration works with
+no extra setup. It publishes five count sensors per location and serves the alerts
+through its `get_alerts` action, which the card calls for you. List the sensors you want
+(not the device, which also holds the weather sensors):
+
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.ottawa_warnings
+entities:
+  - sensor.ottawa_watches
+  - sensor.ottawa_advisories
+  - sensor.ottawa_statements
+colorTheme: eccc
+```
+
+Each sensor shows its own list, so an alert never appears twice. CAP Alerts stays the
+route to prefer where you can install it: the built-in integration reads GeoMet WFS,
+which lags and truncates the NAAD feed, and it has no polygons for the mini-map.
+
+> **The HACS `environment_canada` fork** publishes the alerts as attributes, and the card
+> still reads them. It's a stop-gap its own maintainer would rather not keep running (see
+> [discussion #3130](https://github.com/orgs/home-assistant/discussions/3130)), and it
+> overrides the core integration's domain. Out of respect for that, we don't route ECCC
+> users to it.
 
 > **Heads-up if you also run `environment_canada` for weather.** Its alert list
 > (GeoMet WFS, filtered by a point-in-polygon test against your coordinates)
@@ -570,7 +582,8 @@ Geometry is a tier: **polygon** (fetched out of band by `geometry_ref`, with `bb
 | DWD | card adapter (`dwd_weather_warnings`) | none | — | no | Raw integer `level`; the colour-hex fallback is not marked | Absent | E (numeric DWD id), S, X |
 | NINA, built-in | card adapter (`nina`), from an action on HA 2026.11+: `nina.get_details`, card 3.10 and later | none | NINA publishes no geometry | no | Raw CAP `severity`, never marked (the integration substitutes `Unknown`) | Absent | S. X where the warning carries an expiry |
 | MeteoSwiss | card adapter (`meteoswiss`) | none | — | no | Raw integer level | Absent | E (the warning type name, e.g. `Wind`, not a code), S, X |
-| ECCC | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
+| ECCC, built-in | card adapter (`environment_canada`), from an action: `get_alerts`, card 3.10 and later | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
+| ECCC, HACS fork | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
 | INMET | card adapter (`geo_location`, `inmet`) | bbox | The alert's published affected-area bounds | no | Raw `severity` text; the colour fallback is tilde | Absent | S, X |
 | PirateWeather | card adapter | none | — | no | Raw `severity`; tilde when empty or unknown | Absent | S, X |

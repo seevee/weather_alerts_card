@@ -181,6 +181,65 @@ describe('degraded badge (#201)', () => {
     resetActionDetails();
   });
 
+  // Core `environment_canada`: a count sensor with titles only (#205).
+  function coreEcccHass(answer: 'records' | 'fails'): HomeAssistant {
+    const id = 'sensor.region_advisories';
+    const send = vi.fn().mockImplementation((m: Record<string, unknown>) => {
+      if (m['type'] === 'config/entity_registry/get') return Promise.resolve({ config_entry_id: 'entry1', translation_key: 'advisories' });
+      if (answer === 'fails') return Promise.reject(new Error('not connected'));
+      return Promise.resolve({ response: { advisories: [{
+        title: 'Fog Advisory',
+        date: new Date(Date.now() - 3600_000).toISOString(),
+        alert_colour_level: 'yellow',
+        expiry_time: new Date(Date.now() + 6 * 3600_000).toISOString(),
+        text: 'Near-zero visibility in fog.',
+        area: 'Region near Somewhere',
+        status: 'continued',
+        confidence: 'High',
+        impact: 'Moderate',
+        alert_code: 'FGA',
+      }] } });
+    });
+    return {
+      states: { [id]: { state: '1', attributes: { alert_1: 'Fog Advisory', alert_time_1: 'x', attribution: 'Data provided by Environment Canada', friendly_name: 'Region Advisories' } } },
+      entities: { [id]: { entity_id: id, platform: 'environment_canada' } },
+      connection: { sendMessagePromise: send },
+      locale: { language: 'en' },
+    } as unknown as HomeAssistant;
+  }
+  const afterFetch = async (card: CardInternals): Promise<void> => {
+    for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0));
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+  };
+
+  it('shows a core Environment Canada alert once get_alerts answers', async () => {
+    resetActionDetails();
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.region_advisories' },
+      coreEcccHass('records'),
+    );
+    await afterFetch(card);
+    expect(alertTitles(card)).toEqual(['Fog Advisory']);
+    expect(root(card).querySelector('.no-alerts-caveat')).toBeNull();
+    cleanup();
+    resetActionDetails();
+  });
+
+  it('names the core sensor as unavailable while get_alerts fails, never an all-clear', async () => {
+    resetActionDetails();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'sensor.region_advisories' },
+      coreEcccHass('fails'),
+    );
+    await afterFetch(card);
+    expect(alertTitles(card)).toEqual([]);
+    expect(root(card).querySelector('.no-alerts-caveat')?.textContent).toContain('Region Advisories');
+    cleanup();
+    warn.mockRestore();
+    resetActionDetails();
+  });
+
   it('an idle NINA slot is still a plain all-clear', async () => {
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', entity: 'binary_sensor.region_warnung_1' },

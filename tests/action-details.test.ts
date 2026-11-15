@@ -8,6 +8,7 @@ import {
   subscribeActionDetails,
 } from '../src/action-details';
 import { NinaAdapter } from '../src/adapters/nina';
+import { EcccAdapter } from '../src/adapters/eccc';
 import type { HassEntity, HomeAssistant } from '../src/types';
 
 // NINA on HA 2026.11+: the slot carries `id` alone and the warning comes from
@@ -148,3 +149,130 @@ describe('action details', () => {
     expect(answered()).toBe(false);
   });
 });
+
+// Core `environment_canada`: count sensors with titles only, records behind
+// `get_alerts`. Shapes below are from a live core 2026.11.1 install.
+describe('action details: core Environment Canada', () => {
+  const ADVISORIES = 'sensor.region_advisories';
+  const WARNINGS = 'sensor.region_warnings';
+  const ENTRY = '01M7GKZC1SMATCW96NJKHE5FM9';
+  const ATTRIBUTION = 'Data provided by Environment Canada';
+  const RECORD = {
+    title: 'Fog Advisory',
+    date: '2026-11-15T21:45:35.440Z',
+    alert_colour_level: 'yellow',
+    expiry_time: '2026-11-16T13:45:35.440Z',
+    text: 'Near-zero visibility in fog continues over some areas.',
+    area: 'Region near Somewhere',
+    status: 'continued',
+    confidence: 'High',
+    impact: 'Moderate',
+    alert_code: 'FGA',
+  };
+  const counting = (title = 'Fog Advisory'): HassEntity => ({
+    state: '1',
+    attributes: { location: 'Region', station: 'Region', alert_1: title, alert_time_1: RECORD.date, attribution: ATTRIBUTION },
+  });
+  const quiet = (): HassEntity => ({ state: '0', attributes: { attribution: ATTRIBUTION } });
+
+  type Message = Record<string, unknown>;
+  function makeEccc(states: Record<string, HassEntity>, response: unknown): { hass: HomeAssistant; send: ReturnType<typeof vi.fn<(m: Message) => Promise<unknown>>> } {
+    const send = vi.fn<(m: Message) => Promise<unknown>>().mockImplementation((m) => {
+      if (m['type'] === 'config/entity_registry/get') {
+        const id = String(m['entity_id']);
+        return Promise.resolve({ config_entry_id: ENTRY, translation_key: id.split('_').pop() });
+      }
+      return Promise.resolve({ response });
+    });
+    const entities = Object.fromEntries(Object.keys(states).map(id => [id, { entity_id: id, platform: 'environment_canada' }]));
+    return { hass: { states, entities, connection: { sendMessagePromise: send } } as unknown as HomeAssistant, send };
+  }
+  const calls = (send: { mock: { calls: Message[][] } }, type: string): Message[] =>
+    send.mock.calls.map(c => c[0]).filter(m => m['type'] === type);
+
+  beforeEach(() => resetActionDetails());
+
+  it('keys a count sensor on its titles and leaves a quiet one and the fork alone', () => {
+    expect(actionDetailKey(counting())).toBe(`eccc:Fog Advisory@${RECORD.date}`);
+    expect(actionDetailKey(counting('Snowfall Warning'))).not.toBe(actionDetailKey(counting()));
+    expect(actionDetailKey(quiet())).toBeNull();
+    // The HACS fork publishes the records on the entity: nothing to fetch.
+    expect(actionDetailKey({ state: '1', attributes: { alerts: [RECORD], attribution: ATTRIBUTION } })).toBeNull();
+  });
+
+  it('fetches by config entry and hands each sensor its own list', async () => {
+    const states = { [ADVISORIES]: counting(), [WARNINGS]: counting('Snowfall Warning') };
+    const { hass, send } = makeEccc(states, {
+      warnings: [{ ...RECORD, title: 'Snowfall Warning', alert_colour_level: 'orange' }],
+      watches: [],
+      advisories: [RECORD],
+      statements: [],
+      endings: [],
+    });
+    requestActionDetails(hass, [ADVISORIES, WARNINGS]);
+    await settle();
+    await settle();
+
+    // Two registry lookups, one action call for the one config entry.
+    expect(calls(send, 'config/entity_registry/get')).toHaveLength(2);
+    expect(calls(send, 'call_service')).toEqual([{
+      type: 'call_service',
+      domain: 'environment_canada',
+      service: 'get_alerts',
+      service_data: { config_entry_id: ENTRY },
+      return_response: true,
+    }]);
+
+    const adapter = new EcccAdapter();
+    const [advisory] = adapter.parseAlerts(actionAttributes(ADVISORIES, states[ADVISORIES]));
+    expect(advisory?.event).toBe('Fog Advisory');
+    expect(advisory?.description).toContain('Near-zero visibility');
+    expect(advisory?.areaDesc).toBe('Region near Somewhere');
+    expect(advisory?.endsTs).toBe(Date.parse(RECORD.expiry_time) / 1000);
+    const warnings = adapter.parseAlerts(actionAttributes(WARNINGS, states[WARNINGS]));
+    expect(warnings.map(a => a.event)).toEqual(['Snowfall Warning']);
+
+    requestActionDetails(hass, [ADVISORIES, WARNINGS]); // answered: nothing more is sent
+    expect(send).toHaveBeenCalledTimes(3);
+  });
+
+  it('asks again when the titles change', async () => {
+    const { hass, send } = makeEccc({ [ADVISORIES]: counting() }, { advisories: [RECORD] });
+    requestActionDetails(hass, [ADVISORIES]);
+    await settle();
+    await settle();
+    const next = counting('Freezing Rain Advisory');
+    expect(actionAttributes(ADVISORIES, next)).toBe(next.attributes);
+    requestActionDetails({ ...hass, states: { [ADVISORIES]: next } }, [ADVISORIES]);
+    await settle();
+    await settle();
+    expect(calls(send, 'call_service')).toHaveLength(2);
+  });
+
+  it('counts a failed action as a failure and leaves the sensor unparsed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { hass, send } = makeEccc({ [ADVISORIES]: counting() }, null);
+    send.mockImplementation((m) => (m['type'] === 'config/entity_registry/get'
+      ? Promise.resolve({ config_entry_id: ENTRY, translation_key: 'advisories' })
+      : Promise.reject(new Error('not connected'))));
+    requestActionDetails(hass, [ADVISORIES]);
+    await settle();
+    await settle();
+    expect('alerts' in actionAttributes(ADVISORIES, counting())).toBe(false);
+    // Inside the retry window: not asked again.
+    requestActionDetails(hass, [ADVISORIES]);
+    expect(calls(send, 'call_service')).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it('skips a sensor the registry cannot place', async () => {
+    const { hass, send } = makeEccc({ [ADVISORIES]: counting() }, { advisories: [RECORD] });
+    send.mockImplementation(() => Promise.resolve({ config_entry_id: null, translation_key: 'advisories' }));
+    requestActionDetails(hass, [ADVISORIES]);
+    await settle();
+    await settle();
+    expect(calls(send, 'call_service')).toHaveLength(0);
+    expect('alerts' in actionAttributes(ADVISORIES, counting())).toBe(false);
+  });
+});
+
