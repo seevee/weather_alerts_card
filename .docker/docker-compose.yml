@@ -14,6 +14,7 @@ services:
     volumes:
       - ../config:/config
       - ../dist/weather-alerts-card.js:/config/www/weather-alerts-card.js:ro
+      - ../dist/weather-alerts-card-editor.js:/config/www/weather-alerts-card-editor.js:ro
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=UTC

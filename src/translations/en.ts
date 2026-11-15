@@ -15,6 +15,7 @@ export const en: TranslationMap = {
   'card.dismissed_toast': 'Dismissed: {event}',
   'card.dismissed_toast_undo': 'Undo',
   'card.close': 'Close',
+  'card.editor_missing': 'The visual editor did not load. Copy {file} next to the card file, or edit this card as YAML.',
 
   // Detail labels
   'detail.issued': 'Issued',

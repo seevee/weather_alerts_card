@@ -26,10 +26,26 @@ export const ACTION_RETRY_MS = 5 * 60 * 1000;
 
 interface Entry { key: string; attributes: Record<string, unknown> }
 
-const cache = new Map<string, Entry>();
-const failures = new Map<string, { key: string; at: number }>();
-const inFlight = new Map<string, string>();
-const listeners = new Set<() => void>();
+interface Store {
+  cache: Map<string, Entry>;
+  failures: Map<string, { key: string; at: number }>;
+  inFlight: Map<string, string>;
+  listeners: Set<() => void>;
+}
+
+// The card and the editor are separate files, each with its own copy of this
+// module (#394). The state hangs off `window` so both read the same answers:
+// with a copy each, the editor would see a NINA device's live slots as
+// unrecognised and say the device has no alerts.
+const STORE_KEY = '__weatherAlertsCardActionDetails';
+const scope = window as unknown as Record<string, Store | undefined>;
+const store: Store = scope[STORE_KEY] ?? (scope[STORE_KEY] = {
+  cache: new Map(),
+  failures: new Map(),
+  inFlight: new Map(),
+  listeners: new Set(),
+});
+const { cache, failures, inFlight, listeners } = store;
 
 /**
  * The warning an action-backed entity holds now, or null when the entity's

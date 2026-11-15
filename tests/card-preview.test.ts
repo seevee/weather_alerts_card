@@ -157,3 +157,12 @@ describe('the card picker', () => {
     cleanup();
   });
 });
+
+// The editor is a second file the card imports on demand (#394).
+describe('getConfigElement', () => {
+  it('loads the editor and returns its element', async () => {
+    const el = await WeatherAlertsCard.getConfigElement();
+    expect(el.localName).toBe('weather-alerts-card-editor');
+    expect(customElements.get('weather-alerts-card-editor')).toBeDefined();
+  });
+});
