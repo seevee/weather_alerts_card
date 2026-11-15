@@ -231,7 +231,7 @@ Then click the Download button, and click Reload when prompted.
 ### Manual
 
 1. Download `weather-alerts-card.js` and `weather-alerts-card-editor.js` from the [latest release](../../releases/latest)
-2. Copy both to `config/www/`. The second file is the visual editor; without it the card still works and is edited as YAML
+2. Copy both to `config/www/`. The second file is the visual editor; without it the card still works and is edited as YAML. Releases before 3.10 ship one file with the editor inside it, so there is no second file to copy
 3. Add as resource: **Settings → Dashboards → Resources** → URL: `/local/weather-alerts-card.js`, Type: JavaScript Module
 
 ## Configuration
@@ -380,7 +380,7 @@ device: 8f2c1e04a9b7d3651fa0c8e29d47b5a3
 Pick it from the editor's **Alert devices** selector, which lists NINA devices beside CAP
 Alerts ones; two regions are two devices, so list the second under `devices:`.
 Listing slot entities directly works too. On Home Assistant 2026.11 and later the card
-fetches each warning's text through the integration's `nina.get_details` action, with
+(from 3.10) fetches each warning's text through the integration's `nina.get_details` action, with
 nothing to configure. [CAP Alerts](https://github.com/seevee/cap_alerts) with its BBK
 provider reads the same feed and adds the warning polygon. See
 [Providers](https://seevee.github.io/weather_alerts_card/providers#nina-german-civil-protection)
