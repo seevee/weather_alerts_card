@@ -9,15 +9,14 @@ import { httpUrl, normalizeSeverity, parseTimestamp } from '../utils';
 // severity, …) are single-value diagnostics with no alert attributes of their
 // own, so device-mode collection skips them for the same reason.
 //
-// DEPRECATION: home-assistant/core#161882 marked every attribute below except
-// `id` for removal in HA 2026.11, with the per-field diagnostic sensors as the
-// replacement and `nina.get_details` (core#166125) covering `description` and
-// `recommended_actions`, which got no sensor. Reassembling an alert from that
-// shape needs an 8-entity fan-in plus a service call from the render path, so
-// it is a different adapter, not a tweak to this one. This one is correct for
-// every HA release up to and including 2026.10. From 2026.11 an occupied slot
-// is `on` with `id` alone; `isStrippedNinaSlot` below reports that shape so the
-// card names the slot as a dark source instead of showing an all-clear (#403).
+// HA 2026.11: home-assistant/core#161882 removed every attribute below except
+// `id`. An occupied slot is now `on` with `id` alone (`isStrippedNinaSlot`),
+// and the warning itself comes from the `nina.get_details` action
+// (core#166125), whose response uses these same attribute names. The card
+// fetches it outside render and lays it over the slot's attributes
+// (`src/action-details.ts`), so this adapter parses both shapes unchanged.
+// Until the answer arrives, and while the call fails, the slot is a dark
+// source, never an all-clear (#403).
 
 // NINA is a Germany-only feed and its message bodies are German, so the
 // synthesised attribution line is labelled in German to match the text it is
