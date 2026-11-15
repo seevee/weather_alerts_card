@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.9.2 (2026-11-15)
+
+### Fixed
+- Flag a NINA slot that HA 2026.11 stripped instead of showing an all-clear (#405) (closes #403)
+
 ## 3.9.1 (2026-11-15)
 
 ### Fixed
