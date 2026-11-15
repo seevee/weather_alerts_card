@@ -128,15 +128,80 @@ function fallbackUrl(attribution: unknown): string {
   return isFrench(attribution) ? ECCC_OVERVIEW_FR : ECCC_OVERVIEW_EN;
 }
 
+function isEnvironmentCanada(attribution: unknown): boolean {
+  if (typeof attribution !== 'string') return false;
+  const lower = attribution.toLowerCase();
+  return lower.includes(ENGLISH_ATTRIBUTION_FRAGMENT) || lower.includes(FRENCH_ATTRIBUTION_FRAGMENT);
+}
+
+// --- Home Assistant core `environment_canada` ------------------------------
+//
+// Core publishes no alert detail on its entities. It has five count sensors
+// (warnings, watches, advisories, statements, endings) that carry only
+// `alert_N` / `alert_time_N` titles while alerts are active, and a
+// `get_alerts` action that returns the full records, one list per sensor.
+// Those records are the WFS fields the HACS fork puts in `attributes.alerts`
+// under other names, so `fromCoreEcccAlert` renames them and this adapter
+// parses them as it always has. The fetch lives in `action-details.ts`.
+
+/** The action's list names, and the lifecycle `type` each stands for. */
+export const ECCC_CORE_LISTS: Record<string, string> = {
+  warnings: 'warning',
+  watches: 'watch',
+  advisories: 'advisory',
+  statements: 'statement',
+  endings: 'ending',
+};
+
+/**
+ * The alerts a core ECCC count sensor holds now, as one string that changes
+ * when they do, or null when the entity is not such a sensor or holds none.
+ * The HACS fork's sensor has `alerts` on it and never matches.
+ */
+export function coreEcccAlertsKey(attributes: Record<string, unknown>): string | null {
+  if (!isEnvironmentCanada(attributes['attribution']) || 'alerts' in attributes) return null;
+  const parts: string[] = [];
+  for (let n = 1; ; n++) {
+    const title = attributes[`alert_${n}`];
+    if (typeof title !== 'string') break;
+    const time = attributes[`alert_time_${n}`];
+    parts.push(`${title}@${typeof time === 'string' ? time : ''}`);
+  }
+  return parts.length > 0 ? parts.join('|') : null;
+}
+
+// `get_alerts` field → the name `parseAlerts` reads.
+const CORE_FIELDS: [keyof EcccAlert, string][] = [
+  ['title', 'title'],
+  ['issued', 'date'],
+  ['expiry', 'expiry_time'],
+  ['color', 'alert_colour_level'],
+  ['text', 'text'],
+  ['area', 'area'],
+  ['status', 'status'],
+  ['confidence', 'confidence'],
+  ['impact', 'impact'],
+  ['alert_code', 'alert_code'],
+  ['url', 'url'],
+];
+
+/** One `get_alerts` record, in the shape `parseAlerts` reads. */
+export function fromCoreEcccAlert(item: Record<string, unknown>, list: string): EcccAlert {
+  const alert: EcccAlert = {};
+  for (const [field, key] of CORE_FIELDS) {
+    const value = item[key];
+    if (typeof value === 'string' && value !== '') alert[field] = value;
+  }
+  const type = ECCC_CORE_LISTS[list];
+  if (type) alert.type = type;
+  return alert;
+}
+
 export class EcccAdapter implements AlertAdapter {
   provider: AlertProvider = 'eccc';
 
   canHandle(attributes: Record<string, unknown>): boolean {
-    const attribution = attributes['attribution'];
-    if (typeof attribution !== 'string') return false;
-    const lower = attribution.toLowerCase();
-    return lower.includes(ENGLISH_ATTRIBUTION_FRAGMENT)
-      || lower.includes(FRENCH_ATTRIBUTION_FRAGMENT);
+    return isEnvironmentCanada(attributes['attribution']);
   }
 
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[] {
