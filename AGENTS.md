@@ -9,7 +9,7 @@ A standalone custom Home Assistant Lovelace card for displaying weather alerts f
 ## Build Commands
 
 ```bash
-npm run build     # Rolldown bundle → dist/weather-alerts-card.js (single ES module, ~350KB minified, downleveled to ES2019)
+npm run build     # Rolldown → dist/weather-alerts-card.js (~210KB, what a dashboard loads) + dist/weather-alerts-card-editor.js (~240KB, loaded on first edit); both minified, downleveled to ES2019
 npm run watch     # Rolldown in watch mode
 npm run lint      # TypeScript type-check of src/ and tests/ (tsconfig.eslint.json) + ESLint (type-aware, eslint.config.mjs). tests/ opts out of noUncheckedIndexedAccess there: fixture indexing is not what the flag protects
 npm run test      # Vitest, two projects: pure files on jsdom, every suite that mounts the card or editor in headless Chromium (needs `npx playwright install chromium` once) + coverage floors over both (vitest.config.ts)
@@ -27,7 +27,7 @@ PR pass.
 | File | Purpose |
 |------|---------|
 | `src/weather-alerts-card.ts` | Main LitElement card class. Implements HA card contract: `setConfig()`, `hass` property, `getCardSize()`, `getStubConfig()`, `window.customCards` registration. Wraps output in `<ha-card>`. Consumes normalized `WeatherAlert` objects. |
-| `src/weather-alerts-card-editor.ts` | Visual configuration editor. |
+| `src/weather-alerts-card-editor.ts` | Visual configuration editor. Built as its own file; the card's async `getConfigElement()` imports it on first edit and returns a plain message element if the file is missing (#394). |
 | `src/editor-fields.ts` | The editor's field registry: the single place a *simple* config key (switch or dropdown, scalar value, delete-on-default) is declared — default, label key, panel, options. `withKey()` is the pure write core the editor's `_writeKey` fires from; `PANELS` maps every key (registry and bespoke) to its panel. |
 | `src/types.ts` | TypeScript interfaces: `WeatherAlert` (normalized, provider-agnostic), `WeatherAlertsCardConfig`, `AlertAdapter`, `NwsAlert` (raw NWS shape), `BomWarning` (raw BoM shape), `NswRfsIncident` (raw NSW RFS geo_location shape), `InmetAlert` (raw INMET geo_location shape), `AlertProgress`. |
 | `src/adapters/index.ts` | Adapter registry with auto-detection. Exports `getAdapter(provider, attributes)`, `knownFeedSources()`, `pointCapableProviders()`. |
@@ -47,7 +47,7 @@ PR pass.
 | `src/translations/` | One file per locale (`en`, `fr`, `es`, `it`, `de`, `nl`, `pl`, `zh-Hans`, `pt-BR`, `sr`, `sr-Latn`), registered in `index.ts`. Split out of `localize.ts` so parity checks can iterate the registry and so a locale change is a self-contained diff. (The split was originally also meant to make `CODEOWNERS` paths expressible; that never worked, since GitHub ignores owners without write access, and the file has since been removed.) |
 | `src/utils.ts` | Pure functions: icon mapping, timestamp parsing, `computeAlertProgress()`, severity normalization, zone filtering, alert sorting, `reflowAlertText()`, and the distance helpers `haversineKm()` / `extractPoint()` / `kmToDisplay()` / `displayToKm()` / `toLengthUnit()` / `formatDistance()`. Operates on `WeatherAlert`. |
 | `src/styles.ts` | All CSS as a Lit `css` tagged template. Severity color mappings, keyframe animations, progress bar, custom details toggle styles. |
-| `rolldown.config.mjs` | Rolldown config, one plugin (`scripts/strip-css-comments.mjs`, drops comments from `css` templates, which the minifier leaves alone, #394): built-in TS transform, `transform.target: es2019` (downlevels the whole bundle incl. Lit for old Android WebViews, #194), `transform.define` for `__CARD_VERSION__`, `output.minify` → single `dist/weather-alerts-card.js`. Type errors do not fail the build; `npm run lint` owns type-checking. |
+| `rolldown.config.mjs` | Rolldown config, two builds (#394): the card → `dist/weather-alerts-card.js` and the editor → `dist/weather-alerts-card-editor.js`. Each is self-contained, no shared chunk: HA loads the card under a cache-tagged URL, so a chunk importing back from the card file would evaluate it twice and fail on the duplicate element registration. Plugins: `scripts/strip-css-comments.mjs` (both builds, drops comments from `css` templates, which the minifier leaves alone), `scripts/drop-editor-keys.mjs` (card build only, drops every `editor.*` translation entry; the editor file keeps all keys; `tests/editor-split.test.ts` fails if a card-side module uses an `editor.*` key) and an inline plugin that turns the card's `import('./weather-alerts-card-editor')` into a runtime import of the second file with a `?v=<version>` cache-buster. Built-in TS transform, `transform.target: es2019` (downlevels each bundle incl. Lit for old Android WebViews, #194), `transform.define` for `__CARD_VERSION__`, `output.minify`. Type errors do not fail the build; `npm run lint` owns type-checking. |
 
 ## Key Patterns
 
@@ -127,7 +127,7 @@ npm run build
 docker compose -f .docker/docker-compose.yml up
 ```
 
-Home Assistant runs at http://localhost:8123. The built JS is volume-mounted read-only at `/config/www/weather-alerts-card.js`. Rebuild on the host and hard-refresh the browser to see changes.
+Home Assistant runs at http://localhost:8123. The two built files are volume-mounted read-only at `/config/www/weather-alerts-card.js` and `/config/www/weather-alerts-card-editor.js`. Rebuild on the host and hard-refresh the browser to see changes.
 
 ### First-time dev container setup
 
@@ -270,7 +270,7 @@ These rules apply to any autonomous agent working in this repository.
 ## HACS Distribution
 
 - `hacs.json` — HACS manifest (name, filename).
-- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` to the release.
+- `.github/workflows/release.yml` — on GitHub Release publish: builds and attaches `dist/weather-alerts-card.js` and `dist/weather-alerts-card-editor.js` to the release.
 - To release, run `scripts/release.sh` (steps 1-3) and, after the PR merges, `scripts/publish.sh X.Y.Z` (steps 4-5). What they do:
   1. Create `release/vX.Y.Z` branch from `main`.
   2. Bump the version in `package.json` and regenerate `CHANGELOG.md` with

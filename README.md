@@ -230,8 +230,8 @@ Then click the Download button, and click Reload when prompted.
 
 ### Manual
 
-1. Download `weather-alerts-card.js` from the [latest release](../../releases/latest)
-2. Copy to `config/www/weather-alerts-card.js`
+1. Download `weather-alerts-card.js` and `weather-alerts-card-editor.js` from the [latest release](../../releases/latest)
+2. Copy both to `config/www/`. The second file is the visual editor; without it the card still works and is edited as YAML
 3. Add as resource: **Settings → Dashboards → Resources** → URL: `/local/weather-alerts-card.js`, Type: JavaScript Module
 
 ## Configuration
@@ -584,7 +584,7 @@ Geometry is a tier: **polygon** (fetched out of band by `geometry_ref`, with `bb
 
 ```bash
 npm install
-npm run build     # bundle → dist/weather-alerts-card.js
+npm run build     # bundle → dist/weather-alerts-card.js + dist/weather-alerts-card-editor.js
 npm run watch     # bundle with file watching
 npm run lint      # TypeScript type-check
 ```

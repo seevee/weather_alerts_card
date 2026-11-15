@@ -88,7 +88,6 @@ import {
 import { handleTapAction, hasTapAction } from './actions';
 import { t } from './localize';
 import { cardStyles } from './styles';
-import './weather-alerts-card-editor';
 
 // Geometry miss retry policy (#258). A miss is a 404 from cap_alerts' in-memory
 // polygon store: evicted under load, or empty after an HA restart until the
@@ -96,6 +95,20 @@ import './weather-alerts-card-editor';
 // storm; ten attempts cover the restart window and then give up on a dead ref.
 export const GEOMETRY_MISS_COOLDOWN_MS = 60_000;
 export const GEOMETRY_MISS_MAX_ATTEMPTS = 10;
+
+// Stands in for the editor when its file is missing, which is a manual
+// install that copied only the card. The dashboard is unaffected, and Home
+// Assistant's code editor still works from this dialog. A plain element: HA
+// only needs `setConfig` and somewhere to assign `hass`.
+function missingEditorElement(): HTMLElement {
+  const el = document.createElement('div') as HTMLDivElement & { setConfig(config: unknown): void };
+  el.setConfig = () => undefined;
+  el.style.padding = '16px';
+  el.textContent = t('card.editor_missing', document.documentElement.lang || 'en', {
+    file: 'weather-alerts-card-editor.js',
+  });
+  return el;
+}
 
 declare const __CARD_VERSION__: string;
 const CARD_VERSION = __CARD_VERSION__;
@@ -768,7 +781,16 @@ export class WeatherAlertsCard extends LitElement {
     return Math.max(1, alerts.length * perAlert);
   }
 
-  public static getConfigElement(): HTMLElement {
+  // The editor is a second file, loaded the first time a card is edited
+  // (#394). Home Assistant awaits this. The build turns the import into a
+  // runtime import of `weather-alerts-card-editor.js` beside the card.
+  public static async getConfigElement(): Promise<HTMLElement> {
+    try {
+      await import('./weather-alerts-card-editor');
+    } catch (err) {
+      console.error('weather-alerts-card: the editor file did not load', err);
+      return missingEditorElement();
+    }
     return document.createElement('weather-alerts-card-editor');
   }
 

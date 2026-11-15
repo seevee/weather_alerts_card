@@ -23,3 +23,4 @@ jobs:
         with:
           files: |
             dist/weather-alerts-card.js
+            dist/weather-alerts-card-editor.js

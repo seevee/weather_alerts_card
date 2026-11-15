@@ -7,7 +7,7 @@ framework, no build server — clone, `npm install`, and build.
 
 ```bash
 npm install
-npm run build      # Rolldown bundle → dist/weather-alerts-card.js
+npm run build      # Rolldown → dist/weather-alerts-card.js + dist/weather-alerts-card-editor.js
 npm run watch      # Rolldown in watch mode
 npm run lint       # TypeScript type-check (tsc --noEmit)
 npm run test       # Vitest, two projects: pure files on jsdom, every suite that mounts the card or editor in headless Chromium (run `npx playwright install chromium` once)
