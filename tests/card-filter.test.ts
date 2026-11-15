@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import '../src/weather-alerts-card';
+import { resetActionDetails } from '../src/action-details';
 import type { HomeAssistant, WeatherAlertsCardConfig } from '../src/types';
 
 interface CardInternals extends HTMLElement {
@@ -144,6 +145,40 @@ describe('degraded badge (#201)', () => {
       expect(root(card).querySelector('.no-alerts-caveat')?.textContent).toContain('xxxx Warnung 1');
       cleanup();
     }
+  });
+
+  it('shows the warning once nina.get_details answers', async () => {
+    resetActionDetails();
+    const hass = strippedNinaHass('on');
+    const send = vi.fn().mockResolvedValue({
+      response: {
+        'binary_sensor.region_warnung_1': {
+          headline: 'Schaden an der Trinkwasserversorgung',
+          description: 'Bitte kochen Sie das Leitungswasser ab.',
+          sender: 'Leitstelle',
+          severity: 'Minor',
+          recommended_actions: 'Wasser abkochen.',
+          affected_areas: 'Stadt xxxx',
+          web: '',
+          id: 'mow.DE-XX-XX-SE000-20261115-00-000',
+          sent: new Date(Date.now() - 3600_000).toISOString(),
+          start: '',
+          expires: '',
+        },
+      },
+    });
+    (hass as unknown as { connection: unknown }).connection = { sendMessagePromise: send };
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity: 'binary_sensor.region_warnung_1' },
+      hass,
+    );
+    await new Promise((r) => setTimeout(r, 0));
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+    expect(alertTitles(card)).toEqual(['Schaden an der Trinkwasserversorgung']);
+    expect(root(card).querySelector('.no-alerts-caveat')).toBeNull();
+    expect(send).toHaveBeenCalledTimes(1);
+    cleanup();
+    resetActionDetails();
   });
 
   it('an idle NINA slot is still a plain all-clear', async () => {

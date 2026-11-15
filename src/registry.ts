@@ -1,6 +1,7 @@
 import type { Connection } from 'home-assistant-js-websocket';
 import { HomeAssistant, EntityRegistryDisplayEntry } from './types';
 import { canHandleAny } from './adapters';
+import { actionAttributes } from './action-details';
 
 /**
  * The device ids a card collects from: `device` first, then `devices`, with
@@ -48,7 +49,7 @@ export function resolveDeviceAlertEntities(
     const id = entry.entity_id;
     if (!id) continue;
     const state = hass.states[id];
-    if (!state || !canHandleAny(state.attributes)) continue;
+    if (!state || !canHandleAny(actionAttributes(id, state))) continue;
     result.push(id);
   }
   return result;

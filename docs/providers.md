@@ -10,7 +10,7 @@ below lists the ones that are actually tested.
 | BoM | Australia | [bremor/bureau_of_meteorology](https://github.com/bremor/bureau_of_meteorology), [safepay/ha_bom_australia](https://github.com/safepay/ha_bom_australia) |
 | MeteoAlarm | Europe | Built-in [meteoalarm](https://www.home-assistant.io/integrations/meteoalarm/) |
 | DWD | Germany | Built-in [dwd_weather_warnings](https://www.home-assistant.io/integrations/dwd_weather_warnings/) |
-| NINA | Germany (civil protection) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts), set up with its BBK provider. Built-in [nina](https://www.home-assistant.io/integrations/nina/) through HA 2026.10 only — see [below](#nina-german-civil-protection) |
+| NINA | Germany (civil protection) | Built-in [nina](https://www.home-assistant.io/integrations/nina/), or [seevee/cap_alerts](https://github.com/seevee/cap_alerts) with its BBK provider for polygons and CAP detail — see [below](#nina-german-civil-protection) |
 | MeteoSwiss | Switzerland | [izacus/hass-swissweather](https://github.com/izacus/hass-swissweather) |
 | ECCC | Canada | [seevee/cap_alerts](https://github.com/seevee/cap_alerts), set up with its ECCC provider — see [below](#canada-eccc-via-cap-alerts) |
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) |
@@ -107,36 +107,12 @@ NINA is the BBK's national warning app. It carries far more than weather: DWD st
 heat warnings, LHP flood warnings, and MoWaS / KATWARN / BIWAPP civil-protection messages
 (evacuations, hazmat, utility outages) all arrive on the same feed.
 
-For NINA warnings, [CAP Alerts](https://github.com/seevee/cap_alerts), set up with its
-**BBK** provider, is the source to use. It reads the same feed the NINA app does and
-creates one sensor per active warning under a device. Scope it to a district, a GPS
-point or a `device_tracker`, then point the card at the device:
+Two routes work. The built-in `nina` integration is the one most people already have.
+[CAP Alerts](https://github.com/seevee/cap_alerts) with its **BBK** provider reads the
+same feed and adds the warning polygon for the mini-map plus raw CAP certainty and
+urgency; set it up like any other [CAP Alerts](#cap-alerts-multi-region) device.
 
-```yaml
-type: custom:weather-alerts-card
-device: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
-showGeometry: true    # the warning's own polygon
-```
-
-The card detects these entities as CAP Alerts (`cap`), so leave `provider:` unset. This
-route carries raw CAP severity, certainty and urgency, and the warning polygon for the
-mini-map. DWD weather warnings come through from level 3 up.
-
-#### Built-in `nina` integration (HA 2026.10 and older)
-
-::: warning Stops working on HA 2026.11
-Home Assistant 2026.11 removed everything the card reads from the NINA binary sensor
-apart from `id` ([core#161882](https://github.com/home-assistant/core/pull/161882)). The
-replacement is the per-field diagnostic sensors plus a `nina.get_details` action, and
-`description` and `recommended_actions` got no sensor at all, so the card cannot rebuild
-a warning from entity state.
-
-On 2026.11 and later an occupied slot is `on` with nothing to show. The card names it as
-an unavailable source, so a live warning never reads as "no active alerts", but it cannot
-display the warning itself. Move to the CAP Alerts route above.
-:::
-
-The rest of this section describes the built-in integration on HA 2026.10 and older.
+#### Built-in `nina` integration
 
 The integration creates one `binary_sensor` per region **per message slot**, and the slots
 are pre-created empty. Point the card at the NINA **device** rather than hand-listing
@@ -173,6 +149,16 @@ lifted out of the DWD headline template — "Amtliche WARNUNG vor extremer HITZE
 the row "Extremer Hitze" and keeps the full headline underneath. Headlines from the
 non-DWD senders are free prose and pass through unchanged. The integration publishes no
 geometry, so `showGeometry` has nothing to draw on this route.
+
+::: info Home Assistant 2026.11 and later
+Core removed the warning text from the NINA binary sensor
+([core#161882](https://github.com/home-assistant/core/pull/161882)); a slot now carries
+only the warning's `id`. The card asks the integration for the rest through its
+`nina.get_details` action: once per warning, for all your slots in one call, shared by
+every card on the dashboard. Nothing to configure. If that call fails, the slot shows as
+an unavailable source and the card tries again after five minutes, so a live warning
+never reads as "no active alerts".
+:::
 
 ### MeteoSwiss (Switzerland)
 
@@ -337,8 +323,9 @@ Two others exist, and neither is the right source for this card.
 - **HA core `environment_canada`** exposes rich alert detail only through a `get_alerts`
   **action** ([#172393](https://github.com/home-assistant/core/pull/172393), merged in
   place of the attribute-based [#164481](https://github.com/home-assistant/core/pull/164481)).
-  A Lovelace card reads state and attributes during render and cannot consume an action
-  response, so core simply cannot drive this card.
+  The card does not call that action today, so core's alerts do not reach it. (It can
+  be done: the card already fetches NINA's text through an action. For Canada the CAP
+  Alerts feed is also the fuller one, which is why this has not been built.)
 - The HACS **`environment_canada`** fork does surface alert attributes, but it is a
   stop-gap its own maintainer would rather not keep running (see
   [discussion #3130](https://github.com/orgs/home-assistant/discussions/3130)), and it
@@ -382,7 +369,7 @@ not set it for that source.
 | BoM | card adapter (`bureau_of_meteorology`) | none | — | no | Inferred from title, type and group; always tilde | Absent | S, X. Z with the safepay fork's `area_id` |
 | MeteoAlarm | card adapter | none | — | no | Raw `awareness_level`, else `severity`; tilde only when both are absent | Raw `certainty` | S, X |
 | DWD | card adapter (`dwd_weather_warnings`) | none | — | no | Raw integer `level`; the colour-hex fallback is not marked | Absent | E (numeric DWD id), S, X |
-| NINA, built-in (HA 2026.10 and older) | card adapter (`nina`) | none | NINA publishes no geometry | no | Raw CAP `severity`, never marked (the integration substitutes `Unknown`) | Absent | S. X where the warning carries an expiry |
+| NINA, built-in | card adapter (`nina`) | none | NINA publishes no geometry | no | Raw CAP `severity`, never marked (the integration substitutes `Unknown`) | Absent | S. X where the warning carries an expiry |
 | MeteoSwiss | card adapter (`meteoswiss`) | none | — | no | Raw integer level | Absent | E (the warning type name, e.g. `Wind`, not a code), S, X |
 | ECCC | card adapter (`environment_canada` fork) | none | — | no | Derived, the highest of `color`, `type`, `impact`; tilde only when all three are absent | Mapped from `confidence`; no badge when it is missing | E (`alert_code`), S, X |
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |

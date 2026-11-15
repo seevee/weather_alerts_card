@@ -738,6 +738,32 @@ describe('WeatherAlertsCard degraded signal in device mode (#201 device gap)', (
     expect(card._brokenSources()).toEqual([]);
   });
 
+  it('an idle NINA device is quiet even though its per-field sensors read unavailable', () => {
+    // Core 2026.11: an empty slot's headline/severity/... sensors are all
+    // `unavailable`. Seen on a live install; that is a resting state.
+    const hass = makeHass(
+      [
+        entry('binary_sensor.region_warnung_1', DEVICE, { platform: 'nina' }),
+        entry('sensor.region_headline_1', DEVICE, { platform: 'nina' }),
+        entry('sensor.region_severity_1', DEVICE, { platform: 'nina' }),
+      ],
+      {
+        'binary_sensor.region_warnung_1': { state: 'off', attributes: { device_class: 'safety' } },
+        'sensor.region_headline_1': { state: 'unavailable', attributes: {} },
+        'sensor.region_severity_1': { state: 'unavailable', attributes: {} },
+      },
+      { [DEVICE]: { id: DEVICE, name: DEVICE_NAME } },
+    );
+    const card = makeCard();
+    card.setConfig({ type: 'custom:weather-alerts-card', device: DEVICE });
+    card.hass = hass;
+    expect(card._brokenSources()).toEqual([]);
+    // The integration failing takes the slot itself down, and that still counts.
+    hass.states['binary_sensor.region_warnung_1'] = { state: 'unavailable', attributes: {} };
+    card.hass = { ...hass };
+    expect(card._brokenSources()).toEqual([{ name: DEVICE_NAME }]);
+  });
+
   it('a dark device stays visible even under hideNoAlerts', async () => {
     const { card, cleanup } = await mountCard(
       { type: 'custom:weather-alerts-card', device: DEVICE, hideNoAlerts: true },

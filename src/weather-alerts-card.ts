@@ -68,7 +68,7 @@ import {
   type TimelineWindow,
 } from './utils';
 import { getAdapter, ENTITY_NAME_PATTERNS, canHandleAny } from './adapters';
-import { isStrippedNinaSlot } from './adapters/nina';
+import { actionAttributes, actionDetailKey, requestActionDetails, subscribeActionDetails } from './action-details';
 import {
   fetchGeometry,
   fetchMapTilesToken,
@@ -350,6 +350,8 @@ export class WeatherAlertsCard extends LitElement {
   private _motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   private _onMotionChange = () => this.requestUpdate();
 
+  private _unsubscribeActionDetails: (() => void) | undefined;
+
   connectedCallback() {
     super.connectedCallback();
     this._motionQuery.addEventListener('change', this._onMotionChange);
@@ -361,6 +363,7 @@ export class WeatherAlertsCard extends LitElement {
     this._maybeSubscribeRegistry();
     this._maybeAcquireMapTilesToken();
     document.addEventListener('visibilitychange', this._onVisibilityChange);
+    this._unsubscribeActionDetails = subscribeActionDetails(() => this.requestUpdate());
     this._observeHost();
     // A reconnect re-renders: time has passed while detached, and the update
     // re-arms the clock. The first mount already has one pending.
@@ -379,6 +382,8 @@ export class WeatherAlertsCard extends LitElement {
     this._teardownRegistrySubscription();
     this._teardownMapTilesToken();
     document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    this._unsubscribeActionDetails?.();
+    this._unsubscribeActionDetails = undefined;
     this._teardownClock();
     this._hostObserver?.disconnect();
     this._hostObserver = null;
@@ -420,7 +425,10 @@ export class WeatherAlertsCard extends LitElement {
     // Every update, not only hass pushes: a miss retry (60 s cooldown) must
     // not stall on a quiet feed, and the clock's 60 s cap guarantees an
     // update to carry it.
-    if (this.isConnected) this._maybeFetchGeometry();
+    if (this.isConnected) {
+      this._maybeFetchGeometry();
+      this._maybeFetchActionDetails();
+    }
     this._armClock();
     this._maybeObserveTimelineLane();
     // The detail pop-up is reconciled after render, never during it, so
@@ -543,6 +551,26 @@ export class WeatherAlertsCard extends LitElement {
         if (conn === this._geometryConn) this._geometryInFlight.delete(ref);
       });
     }
+  }
+
+  // Alert text that sits behind an action (NINA on HA 2026.11+, #403). Asks
+  // for every configured entity that needs it: the listed ones, plus every
+  // entity under a configured device, unfiltered, because a slot without its
+  // details is not yet something an adapter recognises. The module dedups
+  // across cards and holds the retry window, so calling this on every update
+  // costs a map lookup per entity. Runs from updated(), never from render.
+  private _maybeFetchActionDetails(): void {
+    if (!this.hass || !this._config) return;
+    const ids = new Set<string>();
+    for (const id of [this._config.entity, ...(this._config.entities || [])]) {
+      if (id) ids.add(id);
+    }
+    for (const deviceId of configuredDevices(this._config)) {
+      for (const entry of deviceRegistryEntries(this.hass, deviceId, this._registryEntries)) {
+        ids.add(entry.entity_id);
+      }
+    }
+    requestActionDetails(this.hass, ids);
   }
 
   // Basemap token lifecycle (#259). Gated on the map style with no user tile
@@ -867,13 +895,14 @@ export class WeatherAlertsCard extends LitElement {
     for (const entityId of this._getAllEntities()) {
       const entity = this.hass.states[entityId];
       if (!entity) continue;
-      const adapter = getAdapter(this._config.provider, entity.attributes);
+      const attributes = actionAttributes(entityId, entity);
+      const adapter = getAdapter(this._config.provider, attributes);
       if (!seenProviders.has(adapter.provider)) {
         seenProviders.add(adapter.provider);
         providerPriority.push(adapter.provider);
         if (adapter.stableIds) stableIdProviders.add(adapter.provider);
       }
-      const parsed = adapter.parseAlerts(entity.attributes);
+      const parsed = adapter.parseAlerts(attributes);
       for (const a of parsed) a.sourceEntityId = entityId;
       allAlerts.push(...parsed);
     }
@@ -1391,12 +1420,16 @@ export class WeatherAlertsCard extends LitElement {
   // their attributes hold a fully valid alert (e.g. an NWS Beach Hazards
   // Statement) — those must still render, not be dropped as a broken source.
   //
-  // A NINA slot on HA 2026.11+ is the third case: `on`, so a warning is live,
-  // but core stripped everything the adapter reads (#403). Reading that as an
-  // empty source showed "no active alerts" over a live warning.
-  private _isBroken(e: HassEntity): boolean {
-    return (e.state === 'unavailable' || e.state === 'unknown' || isStrippedNinaSlot(e.state, e.attributes))
-      && getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length === 0;
+  //
+  // An action-backed entity is the third case (a NINA slot on HA 2026.11+,
+  // #403): `on`, so a warning is live, but its text comes from an action. Until
+  // that answer is in hand, and for as long as the call keeps failing, the
+  // entity is a dark source. Reading it as an empty one showed "no active
+  // alerts" over a live warning.
+  private _isBroken(id: string, e: HassEntity): boolean {
+    const attributes = actionAttributes(id, e);
+    return (e.state === 'unavailable' || e.state === 'unknown' || actionDetailKey(e) !== null)
+      && getAdapter(this._config?.provider, attributes).parseAlerts(attributes).length === 0;
   }
 
   private _friendlyName(id: string): string {
@@ -1436,7 +1469,8 @@ export class WeatherAlertsCard extends LitElement {
   // dark on every install for days. `unavailable` is the integration's failure
   // signal and still counts on any entity, so a failed poll on a zero-alert
   // device is caught through its count sensor as before.
-  // A stripped NINA slot (see _isBroken) counts as errored the same way.
+  // An action-backed entity without its details (see _isBroken) counts as
+  // errored the same way.
   private _brokenSources(): BrokenSource[] {
     if (!this.hass) return [];
     const sources: BrokenSource[] = [];
@@ -1448,7 +1482,7 @@ export class WeatherAlertsCard extends LitElement {
       const e = this.hass.states[id];
       // An id HA does not know (a typo, a removed integration, one not loaded
       // yet) is a dark source, not an empty one.
-      if (!e || this._isBroken(e)) sources.push({ name: this._friendlyName(id) });
+      if (!e || this._isBroken(id, e)) sources.push({ name: this._friendlyName(id) });
     }
 
     const registry = this.hass.devices;
@@ -1463,12 +1497,17 @@ export class WeatherAlertsCard extends LitElement {
       for (const entry of deviceRegistryEntries(this.hass, deviceId, this._registryEntries)) {
         const id = entry.entity_id;
         if (COMMAND_DOMAINS.has(id.split('.', 1)[0] ?? '')) continue;
+        // NINA's per-field sensors go `unavailable` whenever their slot is
+        // empty, so on them it means "no warning", not a fault. The slots
+        // themselves go `unavailable` when the integration fails.
+        if (entry.platform === 'nina' && id.startsWith('sensor.')) continue;
         const e = this.hass.states[id];
         if (!e) continue;
-        const parses = getAdapter(this._config?.provider, e.attributes).parseAlerts(e.attributes).length > 0;
+        const attributes = actionAttributes(id, e);
+        const parses = getAdapter(this._config?.provider, attributes).parseAlerts(attributes).length > 0;
         if (parses) hasParseable = true;
         else if (e.state === 'unavailable') hasErrored = true;
-        else if (isStrippedNinaSlot(e.state, e.attributes)) hasErrored = true;
+        else if (actionDetailKey(e) !== null) hasErrored = true;
         else if (e.state === 'unknown' && entry.entity_category !== 'diagnostic') hasErrored = true;
       }
       if (!hasParseable && hasErrored) sources.push({ name: this._deviceName(deviceId) });
