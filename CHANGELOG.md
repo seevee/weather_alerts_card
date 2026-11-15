@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.9.1 (2026-11-15)
+
+### Fixed
+- Neutral register, clearer feed sentences, reworded blind-source warning (#397)
+- Keep countdowns, progress and expiry moving on a quiet house (#400)
+
+### Documentation
+- Move the timeline and pop-up sections out of the card-mod fold (#398)
+
 ## 3.9.0 (2026-11-10)
 
 ### Added
