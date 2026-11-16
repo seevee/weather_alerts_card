@@ -91,7 +91,10 @@ describe('card clock', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
     const card = await mount({}, makeHass({ [NWS]: nwsState([nwsAlert('a', 'Wind Advisory', HOUR), nwsAlert('b', 'Brief Warning', 90 * 1000)]) }));
     expect(titles(card)).toEqual(['Wind Advisory', 'Brief Warning']);
-    await vi.advanceTimersByTimeAsync(91 * 1000);
+    // The tick that drops it lands on the first whole wall-clock second past
+    // the end plus the clock's slack, so up to 91.05 s from here. 91 s missed
+    // it whenever the run started in the first 50 ms of a second.
+    await vi.advanceTimersByTimeAsync(92 * 1000);
     await card.updateComplete;
     expect(titles(card)).toEqual(['Wind Advisory']);
   });
