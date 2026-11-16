@@ -993,19 +993,30 @@ export function deduplicateAlerts(
       }
 
       const dropped = new Set<WeatherAlert>();
-      const filled = new Map<WeatherAlert, WeatherAlert>();
+      const replaced = new Map<WeatherAlert, WeatherAlert>();
       for (const group of groups.values()) {
         const best = group.reduce((a, b) => (cost(b.provider) < cost(a.provider) ? b : a)).provider;
         const kept = group.filter(a => a.provider === best);
         const others = group.filter(a => a.provider !== best);
+        if (others.length === 0) continue;
         for (const alert of others) dropped.add(alert);
-        // With two kept rows there is no telling which dropped copy belongs
-        // to which (a heat warning repeats word for word from day to day), so
-        // only a lone survivor is filled.
-        const [only, second] = kept;
-        if (only && !second && others.length > 0) filled.set(only, fillFromDropped(only, others));
+        for (const alert of kept) {
+          // With two kept rows there is no telling which dropped copy belongs
+          // to which (a heat warning repeats word for word from day to day),
+          // so only a lone survivor is filled. Every kept row still names the
+          // providers it now stands for, including ones an earlier pass
+          // folded into a copy dropped here.
+          const next = kept.length === 1 ? fillFromDropped(alert, others) : { ...alert };
+          const alsoFrom = new Set([
+            ...(alert.alsoFrom ?? []),
+            ...others.flatMap(o => [o.provider, ...(o.alsoFrom ?? [])]),
+          ]);
+          alsoFrom.delete(alert.provider);
+          next.alsoFrom = [...alsoFrom];
+          replaced.set(alert, next);
+        }
       }
-      result = result.filter(alert => !dropped.has(alert)).map(alert => filled.get(alert) ?? alert);
+      result = result.filter(alert => !dropped.has(alert)).map(alert => replaced.get(alert) ?? alert);
     };
 
     // Phase 2: same event name and same expiry (e.g., NWS + PirateWeather).

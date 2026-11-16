@@ -1273,6 +1273,28 @@ describe('deduplicateAlerts cross-provider: who is kept, and what the dropped co
     expect(alerts[0].zones).toEqual([]);
   });
 
+  it('names the dropped provider on the kept row', () => {
+    const [kept] = dedup(pair({ provider: 'nws' }, { provider: 'cap' }), ['nws', 'cap']);
+    expect(kept.alsoFrom).toEqual(['cap']);
+  });
+
+  it('names every dropped provider once, across both passes', () => {
+    // NWS and CAP share event + end; Pirate Weather shares only the text.
+    const alerts = [
+      makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 5000, headline: 'H', description: 'Same body' }),
+      makeAlert({ id: 'b', provider: 'cap', event: 'Flood Warning', endsTs: 5000, headline: 'H', description: 'Same body' }),
+      makeAlert({ id: 'c', provider: 'pirateweather', event: 'Flood', endsTs: 7000, headline: 'H', description: 'Same body' }),
+    ];
+    const result = dedup(alerts, ['nws', 'cap', 'pirateweather']);
+    expect(result).toHaveLength(1);
+    expect(result[0].alsoFrom).toEqual(['cap', 'pirateweather']);
+  });
+
+  it('leaves alsoFrom unset on a row nothing was folded into', () => {
+    const result = dedup(pair({ provider: 'nws' }, { provider: 'cap', endsTs: 6000 }), ['nws', 'cap']);
+    expect(result.map(a => a.alsoFrom)).toEqual([undefined, undefined]);
+  });
+
   it('fills nothing when two rows are kept, since the pairing is unknown', () => {
     const alerts = [
       makeAlert({ id: 'd1', provider: 'dwd', headline: 'H', description: 'Same body', endsTs: 5000, url: '' }),
@@ -1281,6 +1303,8 @@ describe('deduplicateAlerts cross-provider: who is kept, and what the dropped co
     ];
     const result = dedup(alerts, ['dwd', 'nina']);
     expect(result.map(a => `${a.id}:${a.url}`)).toEqual(['d1:', 'd2:']);
+    // Both still say a NINA copy stood behind them.
+    expect(result.map(a => a.alsoFrom)).toEqual([['nina'], ['nina']]);
   });
 });
 

@@ -233,6 +233,7 @@ export interface WeatherAlert {
   certaintyInferred: boolean; // true if certainty was synthesized/inferred, not raw from provider
   iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
   providerIcon?: string;   // Raw MDI icon from provider (e.g. 'mdi:weather-tornado'); bypasses dictionary when present
+  alsoFrom?: AlertProvider[]; // Other providers whose copy of this alert cross-provider dedup dropped in favor of this row, in the order met. The provider label lists them after `provider` ("DWD + NINA")
   matchText?: string;      // The upstream body text, set only when the adapter added lines of its own to `description` (NINA's sender line). The cross-provider text match compares this, not `description` (see deduplicateAlerts phase 3)
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
   dismissAliases?: string[]; // Other ids a dismissal of this alert may be stored under: a lone alert's `merged:` group id, a merged alert's member ids. Same group key by construction (see deduplicateAlerts)

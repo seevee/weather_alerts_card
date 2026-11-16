@@ -265,7 +265,7 @@ Then click the Download button, and click Reload when prompted.
 | `iconBorderStyle` | see below | Per-phase icon-ring border style. An object with optional `preparation` / `active` / `ongoing` keys, each `'dashed'` \| `'solid'`. Defaults reproduce the current look: `preparation: dashed`, `active: solid`, `ongoing: solid` (`expired` is a fixed dimmed solid ring and is not configurable). |
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
-| `showProvider` | `false` | Show provider label (e.g., NWS) above event title |
+| `showProvider` | `false` | Show provider label (e.g., NWS) above event title. An alert that two providers carried lists both, the kept one first: `DWD + NINA` |
 | `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel. Point-incident alerts (NSW RFS, CAP Alerts point feeds) also get a distance row (from HA home, or `myLocationEntity`), in km or miles per your unit system |
 | `showDescription` | `true` | Show description text in detail panel |
 | `showInstructions` | `true` | Show instructions text in detail panel |

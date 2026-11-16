@@ -2148,7 +2148,11 @@ export class WeatherAlertsCard extends LitElement {
 
   private _renderProviderHint(alert: WeatherAlert): TemplateResult | typeof nothing {
     if (this._config?.showProvider !== true) return nothing;
-    const code = PROVIDER_SHORT[alert.provider] || alert.provider.toUpperCase();
+    // The kept provider first, then every provider whose copy of this alert
+    // dedup dropped. '+', because the hint already ends in a '·' separator.
+    const code = [alert.provider, ...(alert.alsoFrom ?? [])]
+      .map(p => PROVIDER_SHORT[p] || p.toUpperCase())
+      .join(' + ');
     return html`<span class="provider-hint">${code}</span>`;
   }
 

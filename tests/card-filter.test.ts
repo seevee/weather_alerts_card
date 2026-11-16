@@ -447,3 +447,60 @@ describe('degraded badge (#201)', () => {
     cleanup();
   });
 });
+
+describe('provider label on a cross-provider duplicate (#234)', () => {
+  const BODY = 'Es treten Sturmböen mit Geschwindigkeiten bis 80 km/h aus südwestlicher Richtung auf.';
+  const iso = (hours: number): string => new Date(Date.now() + hours * 3600 * 1000).toISOString();
+  const states = {
+    'sensor.dwd_current': {
+      state: '2',
+      attributes: {
+        warning_count: 1,
+        region_name: 'Märkischer Kreis',
+        warning_1: {
+          start_time: iso(5), end_time: iso(17), event: 'STURMBÖEN', event_code: 52,
+          headline: 'Amtliche WARNUNG vor STURMBÖEN', description: BODY, instruction: '', level: 2, color: '#fb8c00',
+        },
+      },
+    },
+    'binary_sensor.nina_warning_1': {
+      state: 'on',
+      attributes: {
+        id: 'dwd.relay.1', headline: 'Amtliche WARNUNG vor STURMBÖEN', description: BODY,
+        sender: 'Deutscher Wetterdienst', severity: 'Moderate', recommended_actions: '',
+        affected_areas: 'Stadt Medebach', web: '', sent: iso(-7), start: iso(-7), expires: iso(18),
+      },
+    },
+  };
+  const hass = { states, locale: { language: 'en' } } as unknown as HomeAssistant;
+  const hints = (card: CardInternals): string[] => {
+    const root = (card as unknown as { shadowRoot: ShadowRoot | null }).shadowRoot;
+    if (!root) throw new Error('no shadowRoot');
+    return [...root.querySelectorAll('.provider-hint')].map(el => (el.textContent || '').trim());
+  };
+
+  it.each([
+    ['DWD listed first', 'sensor.dwd_current', 'binary_sensor.nina_warning_1'],
+    ['NINA listed first', 'binary_sensor.nina_warning_1', 'sensor.dwd_current'],
+  ])('shows one DWD row labeled with both providers, %s', async (_name, entity, extra) => {
+    const { card, cleanup } = await mountCard(
+      { type: 'custom:weather-alerts-card', entity, entities: [extra], showProvider: true },
+      hass,
+    );
+    expect(alertTitles(card)).toEqual(['STURMBÖEN']);
+    expect(hints(card)).toEqual(['DWD + NINA']);
+    cleanup();
+  });
+
+  it('shows both rows, each with its own label, when deduplicate is off', async () => {
+    const { card, cleanup } = await mountCard(
+      {
+        type: 'custom:weather-alerts-card', entity: 'sensor.dwd_current',
+        entities: ['binary_sensor.nina_warning_1'], showProvider: true, deduplicate: false,
+      },
+      hass,
+    );
+    expect(hints(card)).toEqual(['DWD', 'NINA']);
+    cleanup();
+  });
+});
