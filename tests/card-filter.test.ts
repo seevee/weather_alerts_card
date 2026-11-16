@@ -459,7 +459,8 @@ describe('provider label on a cross-provider duplicate (#234)', () => {
         region_name: 'Märkischer Kreis',
         warning_1: {
           start_time: iso(5), end_time: iso(17), event: 'STURMBÖEN', event_code: 52,
-          headline: 'Amtliche WARNUNG vor STURMBÖEN', description: BODY, instruction: '', level: 2, color: '#fb8c00',
+          headline: 'Amtliche WARNUNG vor STURMBÖEN', description: BODY, instruction: '',
+          level: 2, color: '#fb8c00',
         },
       },
     },

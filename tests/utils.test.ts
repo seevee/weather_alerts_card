@@ -1075,7 +1075,8 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
   // The pair the dev HA held on 2026-11-15: one DWD warning for Märkischer
   // Kreis and NINA's relay of it. Same words, different title case, and a
   // NINA start that is the message time, not the hazard's onset.
-  const DESCRIPTION = 'Es treten oberhalb 600 m Sturmböen mit Geschwindigkeiten zwischen 65 km/h (18 m/s, 35 kn, Bft 8) und 80 km/h (22 m/s, 44 kn, Bft 9) aus südwestlicher Richtung auf.';
+  const DESCRIPTION = 'Es treten oberhalb 600 m Sturmböen mit Geschwindigkeiten zwischen 65 km/h '
+    + '(18 m/s, 35 kn, Bft 8) und 80 km/h (22 m/s, 44 kn, Bft 9) aus südwestlicher Richtung auf.';
   const dwdAttrs = (warning: Record<string, unknown> = {}) => ({
     warning_count: 1,
     region_name: 'Märkischer Kreis',
@@ -1106,8 +1107,10 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
     expires: '2026-11-16T18:00:00+01:00',
     ...overrides,
   });
-  const dwd = (warning?: Record<string, unknown>) => new DwdAdapter().parseAlerts(dwdAttrs(warning));
-  const nina = (overrides?: Record<string, unknown>) => new NinaAdapter().parseAlerts(ninaAttrs(overrides));
+  const dwd = (warning?: Record<string, unknown>) =>
+    new DwdAdapter().parseAlerts(dwdAttrs(warning));
+  const nina = (overrides?: Record<string, unknown>) =>
+    new NinaAdapter().parseAlerts(ninaAttrs(overrides));
 
   it('collapses the live pair, which shares neither title nor start', () => {
     const pair = [...dwd(), ...nina()];
@@ -1131,7 +1134,8 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
   });
 
   it('keeps DWD over the NINA relay even with NINA listed first', () => {
-    const result = deduplicateAlerts([...nina(), ...dwd()], ['nina', 'dwd'], undefined, new Set(['nina']));
+    const result = deduplicateAlerts(
+      [...nina(), ...dwd()], ['nina', 'dwd'], undefined, new Set(['nina']));
     expect(result).toHaveLength(1);
     expect(result[0].provider).toBe('dwd');
     // The start that survives is the hazard's onset, not NINA's message time.
@@ -1142,7 +1146,8 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
 
   it('ignores markup, case and spacing in the body', () => {
     const noisy = `<p>${DESCRIPTION.toUpperCase().replace(/ /g, '\n ')}</p>`;
-    expect(deduplicateAlerts([...dwd(), ...nina({ description: noisy })], ['dwd', 'nina'])).toHaveLength(1);
+    const result = deduplicateAlerts([...dwd(), ...nina({ description: noisy })], ['dwd', 'nina']);
+    expect(result).toHaveLength(1);
   });
 
   it('keeps both when the body differs', () => {
@@ -1164,7 +1169,9 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
   it('keeps two same-text warnings of the winning provider and drops the relay of each', () => {
     // A heat warning repeats word for word from one day to the next.
     const today = dwd();
-    const tomorrow = dwd({ start_time: '2026-11-17T05:00:00+00:00', end_time: '2026-11-17T17:00:00+00:00' });
+    const tomorrow = dwd({
+      start_time: '2026-11-17T05:00:00+00:00', end_time: '2026-11-17T17:00:00+00:00',
+    });
     const relays = [...nina(), ...nina({ id: 'dwd.second', expires: '2026-11-17T18:00:00+01:00' })];
     const result = deduplicateAlerts([...today, ...tomorrow, ...relays], ['dwd', 'nina']);
     expect(result.map(a => a.provider)).toEqual(['dwd', 'dwd']);
@@ -1174,7 +1181,8 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
     const civil = nina({
       id: 'mow.DE-NW-MK-SE095-20261115-95-001',
       headline: 'Geruchsbelästigung durch Rauchgase - Iserlohner Heide',
-      description: 'Durch ein Brandereignis kommt es im Bereich Iserlohner Heide zu einer Geruchsbelästigung!',
+      description: 'Durch ein Brandereignis kommt es im Bereich Iserlohner Heide zu einer '
+        + 'Geruchsbelästigung!',
       sender: '',
     });
     expect(deduplicateAlerts([...dwd(), ...civil], ['dwd', 'nina'])).toHaveLength(2);
@@ -1185,34 +1193,41 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
   });
 });
 
-describe('deduplicateAlerts cross-provider: who is kept, and what the dropped copy leaves behind', () => {
+describe('deduplicateAlerts cross-provider: who is kept, what is filled', () => {
   const relays = new Set<AlertProvider>(['pirateweather', 'nina']);
+  const FLOOD = { event: 'Flood Warning', endsTs: 5000 };
+  const SAME_TEXT = { headline: 'H', description: 'Same body' };
   const pair = (first: Partial<WeatherAlert>, second: Partial<WeatherAlert>): WeatherAlert[] => [
-    makeAlert({ id: 'first', event: 'Flood Warning', endsTs: 5000, description: 'Body one', ...first }),
-    makeAlert({ id: 'second', event: 'Flood Warning', endsTs: 5000, description: 'Body two', ...second }),
+    makeAlert({ id: 'first', ...FLOOD, description: 'Body one', ...first }),
+    makeAlert({ id: 'second', ...FLOOD, description: 'Body two', ...second }),
   ];
   const dedup = (alerts: WeatherAlert[], priority: AlertProvider[]) =>
     deduplicateAlerts(alerts, priority, undefined, relays);
 
   it('drops a relay listed first in favor of the issuer', () => {
-    const result = dedup(pair({ provider: 'pirateweather' }, { provider: 'nws' }), ['pirateweather', 'nws']);
+    const result = dedup(
+      pair({ provider: 'pirateweather' }, { provider: 'nws' }), ['pirateweather', 'nws']);
     expect(result.map(a => a.provider)).toEqual(['nws']);
   });
 
   it('falls back to collection order between two issuers, and between two relays', () => {
-    expect(dedup(pair({ provider: 'nws' }, { provider: 'cap' }), ['nws', 'cap'])[0].provider).toBe('nws');
-    expect(dedup(pair({ provider: 'pirateweather' }, { provider: 'nina' }), ['pirateweather', 'nina'])[0].provider)
-      .toBe('pirateweather');
+    const issuers = dedup(pair({ provider: 'nws' }, { provider: 'cap' }), ['nws', 'cap']);
+    expect(issuers[0].provider).toBe('nws');
+    const relayPair = dedup(
+      pair({ provider: 'pirateweather' }, { provider: 'nina' }), ['pirateweather', 'nina']);
+    expect(relayPair[0].provider).toBe('pirateweather');
   });
 
   it('does not let geometry decide who is kept', () => {
-    const result = dedup(pair({ provider: 'nws' }, { provider: 'cap', geometryRef: 'abc' }), ['nws', 'cap']);
+    const result = dedup(
+      pair({ provider: 'nws' }, { provider: 'cap', geometryRef: 'abc' }), ['nws', 'cap']);
     expect(result.map(a => a.provider)).toEqual(['nws']);
   });
 
   it('leaves an unmatched relay row alone', () => {
     const result = dedup(
-      pair({ provider: 'pirateweather' }, { provider: 'nws', endsTs: 6000 }), ['pirateweather', 'nws']);
+      pair({ provider: 'pirateweather' }, { provider: 'nws', endsTs: 6000 }),
+      ['pirateweather', 'nws']);
     expect(result).toHaveLength(2);
   });
 
@@ -1247,9 +1262,14 @@ describe('deduplicateAlerts cross-provider: who is kept, and what the dropped co
   it('never takes title, text, severity, area or times from the dropped copy', () => {
     const [kept] = dedup(pair(
       { provider: 'nws', headline: '', areaDesc: '', onsetTs: 0, sentTs: 0 },
-      { provider: 'cap', headline: 'Other headline', areaDesc: 'Other area', onsetTs: 1000, sentTs: 900, severity: 'extreme' },
+      {
+        provider: 'cap', headline: 'Other headline', areaDesc: 'Other area',
+        onsetTs: 1000, sentTs: 900, severity: 'extreme',
+      },
     ), ['nws', 'cap']);
-    expect(kept).toMatchObject({ headline: '', areaDesc: '', onsetTs: 0, sentTs: 0, severity: 'moderate', description: 'Body one' });
+    expect(kept).toMatchObject({
+      headline: '', areaDesc: '', onsetTs: 0, sentTs: 0, severity: 'moderate', description: 'Body one',
+    });
   });
 
   it('keeps the geometry the kept copy has, whole, even when the dropped one has more', () => {
@@ -1263,7 +1283,8 @@ describe('deduplicateAlerts cross-provider: who is kept, and what the dropped co
   });
 
   it('makes the zone filter see the dropped copy\'s codes', () => {
-    const [kept] = dedup(pair({ provider: 'nws', zones: [] }, { provider: 'cap', zones: ['COC059'] }), ['nws', 'cap']);
+    const [kept] = dedup(
+      pair({ provider: 'nws', zones: [] }, { provider: 'cap', zones: ['COC059'] }), ['nws', 'cap']);
     expect(alertMatchesZones(kept, new Set(['COC059']))).toBe(true);
   });
 
@@ -1281,9 +1302,9 @@ describe('deduplicateAlerts cross-provider: who is kept, and what the dropped co
   it('names every dropped provider once, across both passes', () => {
     // NWS and CAP share event + end; Pirate Weather shares only the text.
     const alerts = [
-      makeAlert({ id: 'a', provider: 'nws', event: 'Flood Warning', endsTs: 5000, headline: 'H', description: 'Same body' }),
-      makeAlert({ id: 'b', provider: 'cap', event: 'Flood Warning', endsTs: 5000, headline: 'H', description: 'Same body' }),
-      makeAlert({ id: 'c', provider: 'pirateweather', event: 'Flood', endsTs: 7000, headline: 'H', description: 'Same body' }),
+      makeAlert({ id: 'a', provider: 'nws', ...FLOOD, ...SAME_TEXT }),
+      makeAlert({ id: 'b', provider: 'cap', ...FLOOD, ...SAME_TEXT }),
+      makeAlert({ id: 'c', provider: 'pirateweather', event: 'Flood', endsTs: 7000, ...SAME_TEXT }),
     ];
     const result = dedup(alerts, ['nws', 'cap', 'pirateweather']);
     expect(result).toHaveLength(1);
@@ -1291,15 +1312,16 @@ describe('deduplicateAlerts cross-provider: who is kept, and what the dropped co
   });
 
   it('leaves alsoFrom unset on a row nothing was folded into', () => {
-    const result = dedup(pair({ provider: 'nws' }, { provider: 'cap', endsTs: 6000 }), ['nws', 'cap']);
+    const result = dedup(
+      pair({ provider: 'nws' }, { provider: 'cap', endsTs: 6000 }), ['nws', 'cap']);
     expect(result.map(a => a.alsoFrom)).toEqual([undefined, undefined]);
   });
 
   it('fills nothing when two rows are kept, since the pairing is unknown', () => {
     const alerts = [
-      makeAlert({ id: 'd1', provider: 'dwd', headline: 'H', description: 'Same body', endsTs: 5000, url: '' }),
-      makeAlert({ id: 'd2', provider: 'dwd', headline: 'H', description: 'Same body', endsTs: 9000, url: '', onsetTs: 7000 }),
-      makeAlert({ id: 'n1', provider: 'nina', headline: 'H', description: 'Same body', endsTs: 5100, url: 'https://example.org/n1' }),
+      makeAlert({ id: 'd1', provider: 'dwd', ...SAME_TEXT, endsTs: 5000, url: '' }),
+      makeAlert({ id: 'd2', provider: 'dwd', ...SAME_TEXT, endsTs: 9000, url: '', onsetTs: 7000 }),
+      makeAlert({ id: 'n1', provider: 'nina', ...SAME_TEXT, endsTs: 5100, url: 'https://example.org/n1' }),
     ];
     const result = dedup(alerts, ['dwd', 'nina']);
     expect(result.map(a => `${a.id}:${a.url}`)).toEqual(['d1:', 'd2:']);
