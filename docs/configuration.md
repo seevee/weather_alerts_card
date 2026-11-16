@@ -54,7 +54,7 @@ checkbox, which appears only when a matching integration is installed.
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |
-| `deduplicate` | `true` | Collapse matching alerts across zones and providers. When two providers carry the same alert, the row that carries more is kept: see [Duplicates across providers](#duplicates-across-providers) |
+| `deduplicate` | `true` | Collapse matching alerts across zones and providers. When two providers carry the same alert, one row is kept and takes what only the other had: see [Duplicates across providers](#duplicates-across-providers) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that merely repeat the event name |
 
 ::: warning `zones` hides everything on providers that carry no zone codes
@@ -102,13 +102,28 @@ count as the same alert when either is true:
   because a relay can restamp them: NINA starts a DWD warning at the time the message was
   sent, not when the weather begins.
 
-The row that carries more is the one kept, decided in this order:
+One row is kept. Its title, text, severity, area and times are shown as they are, so the
+choice is about which copy to trust:
 
-| Order | Rule | Example |
-|---|---|---|
-| 1 | The issuer's own copy beats a relay's. NINA and Pirate Weather are relays | DWD beats NINA, NWS Alerts beats Pirate Weather |
-| 2 | A copy with geometry (polygon, bounding box or point) beats one without | CAP Alerts beats NWS Alerts when it has a shape for that alert |
-| 3 | Otherwise, the provider the card reads first: `entity`, then `entities`, then `device` / `devices`, then `sources` | Two text-only integrations: the one listed first |
+1. **The issuer's own copy beats a relay's.** NINA and Pirate Weather are relays, so DWD
+   beats NINA and NWS Alerts beats Pirate Weather, whichever is listed first.
+2. **Otherwise, the provider the card reads first:** `entity`, then `entities`, then
+   `device` / `devices`, then `sources`.
+
+What only the dropped copy had is not lost. Where the kept row has nothing, it takes the
+other copy's:
+
+| Field | What it feeds |
+|---|---|
+| Geometry (polygon, bounding box or point) | The mini-map, so NWS Alerts beside CAP Alerts still gets CAP's polygon |
+| Zone codes | The `zones` filter |
+| Event code | `eventCodes` and `excludeEventCodes` |
+| Certainty, urgency, instructions, source link | The detail panel |
+
+A field the kept row already has is never replaced, and the issued time is never borrowed.
+When a match leaves two rows of the kept provider (a heat warning that repeats word for
+word from one day to the next), nothing is filled, because the card cannot tell which copy
+belongs to which.
 
 Only the duplicate is dropped. A NINA civil-protection message that DWD never issued stays,
 and so does every alert of the provider that won. Two alerts from the *same* provider are

@@ -1136,6 +1136,8 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
     expect(result[0].provider).toBe('dwd');
     // The start that survives is the hazard's onset, not NINA's message time.
     expect(result[0].onsetTs).toBe(parseTimestamp('2026-11-16T05:00:00+00:00'));
+    // Nor is NINA's issued time borrowed: it would change the dismissal signature.
+    expect(result[0].sentTs).toBe(0);
   });
 
   it('ignores markup, case and spacing in the body', () => {
@@ -1183,66 +1185,102 @@ describe('deduplicateAlerts cross-provider text match (DWD + NINA, #234)', () =>
   });
 });
 
-describe('deduplicateAlerts cross-provider: the row that carries more wins', () => {
+describe('deduplicateAlerts cross-provider: who is kept, and what the dropped copy leaves behind', () => {
   const relays = new Set<AlertProvider>(['pirateweather', 'nina']);
   const pair = (first: Partial<WeatherAlert>, second: Partial<WeatherAlert>): WeatherAlert[] => [
     makeAlert({ id: 'first', event: 'Flood Warning', endsTs: 5000, description: 'Body one', ...first }),
     makeAlert({ id: 'second', event: 'Flood Warning', endsTs: 5000, description: 'Body two', ...second }),
   ];
+  const dedup = (alerts: WeatherAlert[], priority: AlertProvider[]) =>
+    deduplicateAlerts(alerts, priority, undefined, relays);
 
   it('drops a relay listed first in favor of the issuer', () => {
-    const result = deduplicateAlerts(
-      pair({ provider: 'pirateweather' }, { provider: 'nws' }), ['pirateweather', 'nws'], undefined, relays);
+    const result = dedup(pair({ provider: 'pirateweather' }, { provider: 'nws' }), ['pirateweather', 'nws']);
     expect(result.map(a => a.provider)).toEqual(['nws']);
   });
 
-  it('keeps the copy with geometry over a text-only copy listed first', () => {
-    const result = deduplicateAlerts(
-      pair({ provider: 'nws' }, { provider: 'cap', geometryRef: 'abc' }), ['nws', 'cap'], undefined, relays);
-    expect(result.map(a => a.provider)).toEqual(['cap']);
+  it('falls back to collection order between two issuers, and between two relays', () => {
+    expect(dedup(pair({ provider: 'nws' }, { provider: 'cap' }), ['nws', 'cap'])[0].provider).toBe('nws');
+    expect(dedup(pair({ provider: 'pirateweather' }, { provider: 'nina' }), ['pirateweather', 'nina'])[0].provider)
+      .toBe('pirateweather');
   });
 
-  it.each([
-    ['bbox', { bbox: [1, 2, 3, 4] as [number, number, number, number] }],
-    ['point', { point: [1, 2] as [number, number] }],
-  ])('counts a %s as geometry', (_name, geometry) => {
-    const result = deduplicateAlerts(
-      pair({ provider: 'nws' }, { provider: 'cap', ...geometry }), ['nws', 'cap']);
-    expect(result.map(a => a.provider)).toEqual(['cap']);
-  });
-
-  it('puts the issuer ahead of geometry: a relay with a map still loses', () => {
-    const result = deduplicateAlerts(
-      pair({ provider: 'pirateweather', point: [1, 2] }, { provider: 'nws' }),
-      ['pirateweather', 'nws'], undefined, relays);
+  it('does not let geometry decide who is kept', () => {
+    const result = dedup(pair({ provider: 'nws' }, { provider: 'cap', geometryRef: 'abc' }), ['nws', 'cap']);
     expect(result.map(a => a.provider)).toEqual(['nws']);
-  });
-
-  it('falls back to collection order when both carry the same', () => {
-    const both = { geometryRef: 'abc' };
-    expect(deduplicateAlerts(
-      pair({ provider: 'nws', ...both }, { provider: 'cap', ...both }), ['nws', 'cap'], undefined, relays,
-    ).map(a => a.provider)).toEqual(['nws']);
-    expect(deduplicateAlerts(
-      pair({ provider: 'pirateweather' }, { provider: 'nina' }), ['pirateweather', 'nina'], undefined, relays,
-    ).map(a => a.provider)).toEqual(['pirateweather']);
-  });
-
-  it('judges geometry per group, not per provider', () => {
-    // CAP has a polygon for the flood only. The wind pair carries the same
-    // on both sides, so collection order still picks NWS there.
-    const flood = pair({ provider: 'nws' }, { provider: 'cap', geometryRef: 'abc' });
-    const wind = pair(
-      { id: 'w1', provider: 'nws', event: 'Wind Advisory', description: 'Body three' },
-      { id: 'w2', provider: 'cap', event: 'Wind Advisory', description: 'Body four' });
-    const result = deduplicateAlerts([...flood, ...wind], ['nws', 'cap']);
-    expect(result.map(a => `${a.provider}:${a.event}`)).toEqual(['cap:Flood Warning', 'nws:Wind Advisory']);
   });
 
   it('leaves an unmatched relay row alone', () => {
-    const result = deduplicateAlerts(
-      pair({ provider: 'pirateweather' }, { provider: 'nws', endsTs: 6000 }), ['pirateweather', 'nws'], undefined, relays);
+    const result = dedup(
+      pair({ provider: 'pirateweather' }, { provider: 'nws', endsTs: 6000 }), ['pirateweather', 'nws']);
     expect(result).toHaveLength(2);
+  });
+
+  it('fills every field the kept copy lacks from the dropped one', () => {
+    const [kept] = dedup(pair(
+      {
+        provider: 'nws', zones: [], eventCode: '', certainty: '', certaintyInferred: false,
+        urgency: '', instruction: '', url: '',
+      },
+      {
+        provider: 'cap', zones: ['COC059'], eventCode: 'FLW', certainty: 'Observed',
+        certaintyInferred: true, urgency: 'Expected', instruction: 'Move to higher ground.',
+        url: 'https://example.org/alert', geometryRef: 'abc', bbox: [1, 2, 3, 4], point: [1, 2],
+      },
+    ), ['nws', 'cap']);
+    expect(kept).toMatchObject({
+      id: 'first', provider: 'nws', description: 'Body one',
+      zones: ['COC059'], eventCode: 'FLW', certainty: 'Observed', certaintyInferred: true,
+      urgency: 'Expected', instruction: 'Move to higher ground.', url: 'https://example.org/alert',
+      geometryRef: 'abc', bbox: [1, 2, 3, 4], point: [1, 2],
+    });
+  });
+
+  it('never overwrites a field the kept copy has', () => {
+    const [kept] = dedup(pair(
+      { provider: 'nws', zones: ['COZ039'], eventCode: 'FFW', instruction: 'Stay put.' },
+      { provider: 'cap', zones: ['COC059'], eventCode: 'FLW', instruction: 'Move.' },
+    ), ['nws', 'cap']);
+    expect(kept).toMatchObject({ zones: ['COZ039'], eventCode: 'FFW', instruction: 'Stay put.' });
+  });
+
+  it('never takes title, text, severity, area or times from the dropped copy', () => {
+    const [kept] = dedup(pair(
+      { provider: 'nws', headline: '', areaDesc: '', onsetTs: 0, sentTs: 0 },
+      { provider: 'cap', headline: 'Other headline', areaDesc: 'Other area', onsetTs: 1000, sentTs: 900, severity: 'extreme' },
+    ), ['nws', 'cap']);
+    expect(kept).toMatchObject({ headline: '', areaDesc: '', onsetTs: 0, sentTs: 0, severity: 'moderate', description: 'Body one' });
+  });
+
+  it('keeps the geometry the kept copy has, whole, even when the dropped one has more', () => {
+    const [kept] = dedup(pair(
+      { provider: 'nws', point: [5, 6] },
+      { provider: 'cap', geometryRef: 'abc', bbox: [1, 2, 3, 4] },
+    ), ['nws', 'cap']);
+    expect(kept.point).toEqual([5, 6]);
+    expect(kept.geometryRef).toBeUndefined();
+    expect(kept.bbox).toBeUndefined();
+  });
+
+  it('makes the zone filter see the dropped copy\'s codes', () => {
+    const [kept] = dedup(pair({ provider: 'nws', zones: [] }, { provider: 'cap', zones: ['COC059'] }), ['nws', 'cap']);
+    expect(alertMatchesZones(kept, new Set(['COC059']))).toBe(true);
+  });
+
+  it('does not mutate the alerts it was given', () => {
+    const alerts = pair({ provider: 'nws', zones: [] }, { provider: 'cap', zones: ['COC059'] });
+    dedup(alerts, ['nws', 'cap']);
+    expect(alerts[0].zones).toEqual([]);
+  });
+
+  it('fills nothing when two rows are kept, since the pairing is unknown', () => {
+    const alerts = [
+      makeAlert({ id: 'd1', provider: 'dwd', headline: 'H', description: 'Same body', endsTs: 5000, url: '' }),
+      makeAlert({ id: 'd2', provider: 'dwd', headline: 'H', description: 'Same body', endsTs: 9000, url: '', onsetTs: 7000 }),
+      makeAlert({ id: 'n1', provider: 'nina', headline: 'H', description: 'Same body', endsTs: 5100, url: 'https://example.org/n1' }),
+    ];
+    const result = dedup(alerts, ['dwd', 'nina']);
+    expect(result.map(a => `${a.id}:${a.url}`)).toEqual(['d1:', 'd2:']);
   });
 });
 

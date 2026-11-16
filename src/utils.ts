@@ -833,6 +833,43 @@ function carriesGeometry(alert: WeatherAlert): boolean {
 }
 
 /**
+ * The surviving copy of a cross-provider duplicate, with the fields it lacks
+ * taken from the dropped copies: zone and event codes, certainty, urgency,
+ * instructions, link and geometry. Only an empty field is filled. Where both
+ * copies have a value they may disagree, and the survivor was chosen as the
+ * one to believe, so title, text, severity, area, onset and end are never
+ * touched. Geometry moves as a set from one copy, never a bbox from one and a
+ * point from another.
+ *
+ * The issued time is left alone too, empty or not: it is part of the
+ * dismissal signature, and a DWD row taking NINA's would resurface a
+ * dismissed warning whenever the relay arrived, left or was re-sent.
+ *
+ * The zone and event-code filters run after dedup, so this also keeps a
+ * `zones` card from hiding an alert because the copy it kept had no codes.
+ */
+function fillFromDropped(kept: WeatherAlert, dropped: WeatherAlert[]): WeatherAlert {
+  const out = { ...kept };
+  for (const d of dropped) {
+    if (out.zones.length === 0 && d.zones.length > 0) out.zones = d.zones;
+    if (!out.eventCode && d.eventCode) out.eventCode = d.eventCode;
+    if (!out.certainty && d.certainty) {
+      out.certainty = d.certainty;
+      out.certaintyInferred = d.certaintyInferred;
+    }
+    if (!out.urgency && d.urgency) out.urgency = d.urgency;
+    if (!out.instruction && d.instruction) out.instruction = d.instruction;
+    if (!out.url && d.url) out.url = d.url;
+    if (!carriesGeometry(out) && carriesGeometry(d)) {
+      if (d.bbox) out.bbox = d.bbox;
+      if (d.geometryRef) out.geometryRef = d.geometryRef;
+      if (d.point) out.point = d.point;
+    }
+  }
+  return out;
+}
+
+/**
  * What the cross-provider text match compares: headline plus body, with
  * markup, case and whitespace taken out. Empty when the alert has no body,
  * which keeps it out of the match: a headline alone ("Amtliche WARNUNG vor
@@ -936,43 +973,39 @@ export function deduplicateAlerts(
       if (!rank.has(provider)) rank.set(provider, i);
     }
 
-    // Which provider's rows survive a group. The row that carries more wins:
-    //   1. the issuer's own copy over a relay's (NINA starts a DWD warning at
-    //      the message time, PirateWeather flattens NWS text),
-    //   2. a copy with geometry over one without (CAP Alerts' polygon beside
-    //      the same NWS alert from a text-only integration),
-    //   3. the provider the card collected first.
-    // Geometry is judged per group, so a provider only wins on it where it
-    // actually has some.
+    // Which provider's rows survive a group: the issuer's own copy over a
+    // relay's (NINA starts a DWD warning at the message time, PirateWeather
+    // flattens NWS text), then the provider the card collected first. That is
+    // a question of whose title, text and times to trust. What the dropped
+    // copy alone carried is not lost: see fillFromDropped.
+    const cost = (provider: AlertProvider): number =>
+      (relayProviders?.has(provider) ? providerPriority.length + 1 : 0)
+      + (rank.get(provider) ?? providerPriority.length);
+
     const keepBestProvider = (keyOf: (alert: WeatherAlert) => string): void => {
-      // key → provider → does one of its rows in this group carry geometry
-      const groups = new Map<string, Map<AlertProvider, boolean>>();
+      const groups = new Map<string, [WeatherAlert, ...WeatherAlert[]]>();
       for (const alert of result) {
         const key = keyOf(alert);
         if (!key) continue;
-        let providers = groups.get(key);
-        if (!providers) groups.set(key, providers = new Map<AlertProvider, boolean>());
-        providers.set(alert.provider, !!providers.get(alert.provider) || carriesGeometry(alert));
+        const group = groups.get(key);
+        if (group) group.push(alert);
+        else groups.set(key, [alert]);
       }
 
-      // The three rules as one number, lowest wins: relay and geometry in
-      // the high digits, collection order in the low ones.
-      const base = providerPriority.length + 1;
-      const cost = (provider: AlertProvider, hasGeometry: boolean): number =>
-        ((relayProviders?.has(provider) ? 2 : 0) + (hasGeometry ? 0 : 1)) * base
-        + (rank.get(provider) ?? providerPriority.length);
-
-      const bestProvider = new Map<string, AlertProvider>();
-      for (const [key, providers] of groups) {
-        const [first, ...rest] = providers;
-        if (!first) continue;
-        const best = rest.reduce((a, b) => (cost(...b) < cost(...a) ? b : a), first);
-        bestProvider.set(key, best[0]);
+      const dropped = new Set<WeatherAlert>();
+      const filled = new Map<WeatherAlert, WeatherAlert>();
+      for (const group of groups.values()) {
+        const best = group.reduce((a, b) => (cost(b.provider) < cost(a.provider) ? b : a)).provider;
+        const kept = group.filter(a => a.provider === best);
+        const others = group.filter(a => a.provider !== best);
+        for (const alert of others) dropped.add(alert);
+        // With two kept rows there is no telling which dropped copy belongs
+        // to which (a heat warning repeats word for word from day to day), so
+        // only a lone survivor is filled.
+        const [only, second] = kept;
+        if (only && !second && others.length > 0) filled.set(only, fillFromDropped(only, others));
       }
-      result = result.filter(alert => {
-        const key = keyOf(alert);
-        return !key || alert.provider === bestProvider.get(key);
-      });
+      result = result.filter(alert => !dropped.has(alert)).map(alert => filled.get(alert) ?? alert);
     };
 
     // Phase 2: same event name and same expiry (e.g., NWS + PirateWeather).
