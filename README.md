@@ -551,7 +551,9 @@ colorTheme: eccc
 
 Each sensor shows its own list, so an alert never appears twice. CAP Alerts stays the
 route to prefer where you can install it: the built-in integration reads GeoMet WFS,
-which lags and truncates the NAAD feed, and it has no polygons for the mini-map.
+which lags and truncates the NAAD feed, and it has no polygons for the mini-map. An alert
+starts at the time it was published, not at the hazard's onset, and it carries no
+instruction text.
 
 > **The HACS `environment_canada` fork** publishes the alerts as attributes, and the card
 > still reads them. It's a stop-gap its own maintainer would rather not keep running (see

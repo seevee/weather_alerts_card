@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  ACTION_REFRESH_MS,
   ACTION_RETRY_MS,
   actionAttributes,
   actionDetailKey,
@@ -95,6 +96,51 @@ describe('action details', () => {
     requestActionDetails(makeHass(next, send), [SLOT]);
     await settle();
     expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks again once the answer is a refresh window old, and shows the revision', async () => {
+    const revised = { ...DETAILS, expires: '2026-11-15T18:00:00+01:00' };
+    const send = vi.fn<Send>()
+      .mockResolvedValueOnce({ response: { [SLOT]: DETAILS } })
+      .mockResolvedValueOnce({ response: { [SLOT]: revised } });
+    const hass = makeHass(stripped(), send);
+
+    requestActionDetails(hass, [SLOT]);
+    await settle();
+    requestActionDetails(hass, [SLOT], Date.now() + ACTION_REFRESH_MS - 1000);
+    expect(send).toHaveBeenCalledTimes(1);
+
+    requestActionDetails(hass, [SLOT], Date.now() + ACTION_REFRESH_MS + 1000);
+    expect(send).toHaveBeenCalledTimes(2);
+    // The old answer serves while the new one is in flight.
+    expect(actionAttributes(SLOT, stripped())['expires']).toBe('');
+    await settle();
+    expect(actionAttributes(SLOT, stripped())['expires']).toBe(revised.expires);
+  });
+
+  it('keeps the old answer when a refresh fails, and retries on the failure window', async () => {
+    const send = vi.fn<Send>()
+      .mockResolvedValueOnce({ response: { [SLOT]: DETAILS } })
+      .mockRejectedValue(new Error('nope'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const hass = makeHass(stripped(), send);
+
+    requestActionDetails(hass, [SLOT]);
+    await settle();
+    const later = Date.now() + ACTION_REFRESH_MS + 1000;
+    // The failure is stamped from the real clock: move it to `later` too.
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(later);
+    requestActionDetails(hass, [SLOT], later);
+    await settle();
+    clock.mockRestore();
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(answered()).toBe(true);
+
+    requestActionDetails(hass, [SLOT], later + 1000);
+    expect(send).toHaveBeenCalledTimes(2);
+    requestActionDetails(hass, [SLOT], later + ACTION_RETRY_MS + 5000);
+    expect(send).toHaveBeenCalledTimes(3);
+    warn.mockRestore();
   });
 
   it('holds a failure for the retry window, then asks again', async () => {
