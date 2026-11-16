@@ -259,13 +259,13 @@ Then click the Download button, and click Reload when prompted.
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `timezone` | `'server'` | `'server'` or `'browser'` (client's local time) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that repeat the event name |
-| `deduplicate` | `true` | Collapse matching alerts across zones and providers |
+| `deduplicate` | `true` | Collapse matching alerts across zones and providers. When two providers carry the same alert, one row is kept and takes what only the other had. See [Duplicates across providers](https://seevee.github.io/weather_alerts_card/configuration#duplicates-across-providers) |
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion`. Gates *motion* only; `progressStyle` picks the pattern |
 | `progressStyle` | see below | Per-phase progress-bar decoration. An object with optional `preparation` / `active` / `ongoing` keys, each `'solid'` \| `'striped'` \| `'shimmer'` \| `'pulse'`. Defaults reproduce the current look: `preparation: striped`, `active: shimmer`, `ongoing: pulse` (`expired` is always a fixed dimmed solid bar and is not configurable). Flow direction is intrinsic to each phase — a texture keeps the phase's direction wherever it is placed (e.g. `active: striped` marches with the bar). **`ongoing: solid` caveat:** a static full-width ongoing bar no longer signals "indeterminate / no known end" and can read like a nearly-expired alert; the default stays `pulse`. **Has no effect when `progressFill: background`** — the thin track it decorates is hidden, and the low-opacity wash renders the texture invisible, so the wash is always solid. |
 | `iconBorderStyle` | see below | Per-phase icon-ring border style. An object with optional `preparation` / `active` / `ongoing` keys, each `'dashed'` \| `'solid'`. Defaults reproduce the current look: `preparation: dashed`, `active: solid`, `ongoing: solid` (`expired` is a fixed dimmed solid ring and is not configurable). |
 | `showDetails` | `true` | Show the expandable detail panel (hides entire "Read Details" section when `false`) |
 | `expandDetails` | `false` | Always show details inline without a toggle (ideal for wall-mounted displays) |
-| `showProvider` | `false` | Show provider label (e.g., NWS) above event title |
+| `showProvider` | `false` | Show provider label (e.g., NWS) above event title. An alert that two providers carried lists both, the kept one first: `DWD + NINA` (`DWD +1` in the timeline layout) |
 | `showMetadata` | `true` | Show issued/onset/expires/area grid in detail panel. Point-incident alerts (NSW RFS, CAP Alerts point feeds) also get a distance row (from HA home, or `myLocationEntity`), in km or miles per your unit system |
 | `showDescription` | `true` | Show description text in detail panel |
 | `showInstructions` | `true` | Show instructions text in detail panel |
@@ -382,7 +382,8 @@ Alerts ones; two regions are two devices, so list the second under `devices:`.
 Listing slot entities directly works too. On Home Assistant 2026.11 and later the card
 (from 3.10) fetches each warning's text through the integration's `nina.get_details` action, with
 nothing to configure. [CAP Alerts](https://github.com/seevee/cap_alerts) with its BBK
-provider reads the same feed and adds the warning polygon. See
+provider reads the same feed and adds the warning polygon. A DWD weather warning that
+NINA relays shows once on a card that also reads DWD, as the DWD row. See
 [Providers](https://seevee.github.io/weather_alerts_card/providers#nina-german-civil-protection)
 for details.
 

@@ -233,6 +233,8 @@ export interface WeatherAlert {
   certaintyInferred: boolean; // true if certainty was synthesized/inferred, not raw from provider
   iconHint?: string;       // English keyword for icon lookup when event may be localized (e.g. MeteoAlarm)
   providerIcon?: string;   // Raw MDI icon from provider (e.g. 'mdi:weather-tornado'); bypasses dictionary when present
+  alsoFrom?: AlertProvider[]; // Other providers whose copy of this alert cross-provider dedup dropped in favor of this row, in the order met. The provider label lists them after `provider` ("DWD + NINA")
+  matchText?: string;      // The upstream body text, set only when the adapter added lines of its own to `description` (NINA's sender line). The cross-provider text match compares this, not `description` (see deduplicateAlerts phase 3)
   mergedCount?: number;    // Number of alerts collapsed by dedup (set only when > 1)
   dismissAliases?: string[]; // Other ids a dismissal of this alert may be stored under: a lone alert's `merged:` group id, a merged alert's member ids. Same group key by construction (see deduplicateAlerts)
   colorHint?: string;      // The color the issuing agency published for this alert, as a `#rrggbb` hex the adapter resolved (ECCC's red/orange/yellow/grey tag, MeteoAlarm's awareness token, INMET's literal hex); painted by getProviderColor when providerColors is on. Absent = the ladder paints it
@@ -263,6 +265,11 @@ export interface AlertAdapter {
   // one). Leave unset for adapters that synthesise ids from event + onset:
   // those collide across regions and belong to phase 1's zone merge instead.
   stableIds?: boolean;
+  // This provider republishes another issuer's alerts and loses something on
+  // the way (NINA: the hazard's onset; PirateWeather: line breaks and distinct
+  // alerts). When dedup finds the same alert from the issuer's own provider,
+  // the relay's copy is the one dropped, whatever the config order.
+  relay?: boolean;
 }
 
 // Raw NWS alert shape from the nws_alerts integration (v6.1+)

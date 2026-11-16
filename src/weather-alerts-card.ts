@@ -915,6 +915,9 @@ export class WeatherAlertsCard extends LitElement {
     // Providers whose ids are upstream identifiers — dedup collapses the same
     // alert seen through two of their sources (see deduplicateAlerts phase 0).
     const stableIdProviders = new Set<AlertProvider>();
+    // Providers that republish another issuer's alerts: their copy loses a
+    // cross-provider match to the issuer's own (deduplicateAlerts phases 2-3).
+    const relayProviders = new Set<AlertProvider>();
     for (const entityId of this._getAllEntities()) {
       const entity = this.hass.states[entityId];
       if (!entity) continue;
@@ -924,12 +927,13 @@ export class WeatherAlertsCard extends LitElement {
         seenProviders.add(adapter.provider);
         providerPriority.push(adapter.provider);
         if (adapter.stableIds) stableIdProviders.add(adapter.provider);
+        if (adapter.relay) relayProviders.add(adapter.provider);
       }
       const parsed = adapter.parseAlerts(attributes);
       for (const a of parsed) a.sourceEntityId = entityId;
       allAlerts.push(...parsed);
     }
-    let filtered = this._filterAndSort(allAlerts, { providerPriority, stableIdProviders, nowTs });
+    let filtered = this._filterAndSort(allAlerts, { providerPriority, stableIdProviders, relayProviders, nowTs });
     if (this._config.allowDismiss && !this._forcePreview && this._dismissals.size > 0) {
       const { visible, updatedMap } = applyDismissals(filtered, this._dismissals);
       // applyDismissals can change the map (un-dismiss on signature shift,
@@ -1165,7 +1169,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _filterAndSort(
     alerts: WeatherAlert[],
-    opts?: { skipZones?: boolean; providerPriority?: AlertProvider[]; stableIdProviders?: Set<AlertProvider>; nowTs?: number },
+    opts?: { skipZones?: boolean; providerPriority?: AlertProvider[]; stableIdProviders?: Set<AlertProvider>; relayProviders?: Set<AlertProvider>; nowTs?: number },
   ): WeatherAlert[] {
     if (!this._config) return alerts;
     let result = alerts;
@@ -1186,7 +1190,7 @@ export class WeatherAlertsCard extends LitElement {
     }
 
     if (this._config.deduplicate !== false) {
-      result = deduplicateAlerts(result, opts?.providerPriority, opts?.stableIdProviders);
+      result = deduplicateAlerts(result, opts?.providerPriority, opts?.stableIdProviders, opts?.relayProviders);
     }
 
     if (!opts?.skipZones && this._config.zones && this._config.zones.length > 0) {
@@ -1910,7 +1914,7 @@ export class WeatherAlertsCard extends LitElement {
             <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
           </div>
           <div class="timeline-gutter-text">
-            <span class="alert-title">${this._renderProviderHint(alert)}${alert.event}</span>
+            <span class="alert-title">${this._renderProviderHint(alert, true)}${alert.event}</span>
             <span class="timeline-time">${timeLabel}</span>
           </div>
         </div>
@@ -2142,10 +2146,20 @@ export class WeatherAlertsCard extends LitElement {
     `;
   }
 
-  private _renderProviderHint(alert: WeatherAlert): TemplateResult | typeof nothing {
+  private _renderProviderHint(alert: WeatherAlert, counted = false): TemplateResult | typeof nothing {
     if (this._config?.showProvider !== true) return nothing;
-    const code = PROVIDER_SHORT[alert.provider] || alert.provider.toUpperCase();
-    return html`<span class="provider-hint">${code}</span>`;
+    // The kept provider first, then every provider whose copy of this alert
+    // dedup dropped. '+', because the hint already ends in a '·' separator.
+    const codes = [alert.provider, ...(alert.alsoFrom ?? [])]
+      .map(p => PROVIDER_SHORT[p] || p.toUpperCase());
+    const full = codes.join(' + ');
+    // The timeline gutter is too narrow for the list ("DWD + NINA" left one
+    // letter of the title), so it counts the others: "DWD +1". The full list
+    // is the tooltip, and the detail pop-up a row tap opens spells it out.
+    if (counted && codes.length > 1) {
+      return html`<span class="provider-hint" title=${full}>${codes[0]} +${codes.length - 1}</span>`;
+    }
+    return html`<span class="provider-hint">${full}</span>`;
   }
 
   private _renderHeadline(alert: WeatherAlert): TemplateResult | typeof nothing {

@@ -150,6 +150,13 @@ the row "Extremer Hitze" and keeps the full headline underneath. Headlines from 
 non-DWD senders are free prose and pass through unchanged. The integration publishes no
 geometry, so `showGeometry` has nothing to draw on this route.
 
+NINA relays DWD's weather warnings word for word, so a card that reads both DWD and NINA
+would show those twice. The card matches the pair on headline and description text and
+keeps the DWD row, whichever is listed first: NINA starts a relayed warning at the time
+the message was sent, where DWD gives the time the weather begins. NINA's own messages
+(civil protection, floods) are untouched. See
+[Duplicates across providers](/configuration#duplicates-across-providers).
+
 ::: info Home Assistant 2026.11 and later
 Core removed the warning text from the NINA binary sensor
 ([core#161882](https://github.com/home-assistant/core/pull/161882)); a slot now carries

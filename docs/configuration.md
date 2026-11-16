@@ -54,7 +54,7 @@ checkbox, which appears only when a matching integration is installed.
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |
-| `deduplicate` | `true` | Collapse matching alerts across zones and providers |
+| `deduplicate` | `true` | Collapse matching alerts across zones and providers. When two providers carry the same alert, one row is kept and takes what only the other had: see [Duplicates across providers](#duplicates-across-providers) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that merely repeat the event name |
 
 ::: warning `zones` hides everything on providers that carry no zone codes
@@ -90,6 +90,51 @@ options live in its config, which the card cannot see. If you configured the fee
 other than HA home, point `myLocationEntity` at a zone with the same coordinates so the
 card's distances and radius agree with the integration's.
 
+### Duplicates across providers
+
+A card that reads two providers for one place often gets the same alert twice: DWD and
+NINA, NWS Alerts and Pirate Weather, an integration and CAP Alerts on the same feed. With
+`deduplicate` on (the default) the card shows it once. Two alerts from different providers
+count as the same alert when either is true:
+
+- they have the same event name and the same end time, or
+- they have the same headline and the same description text. Times are not compared here,
+  because a relay can restamp them: NINA starts a DWD warning at the time the message was
+  sent, not when the weather begins.
+
+One row is kept. Its title, text, severity, area and times are shown as they are, so the
+choice is about which copy to trust:
+
+1. **The issuer's own copy beats a relay's.** NINA and Pirate Weather are relays, so DWD
+   beats NINA and NWS Alerts beats Pirate Weather, whichever is listed first.
+2. **Otherwise, the provider the card reads first:** `entity`, then `entities`, then
+   `device` / `devices`, then `sources`.
+
+What only the dropped copy had is not lost. Where the kept row has nothing, it takes the
+other copy's:
+
+| Field | What it feeds |
+|---|---|
+| Geometry (polygon, bounding box or point) | The mini-map, so NWS Alerts beside CAP Alerts still gets CAP's polygon |
+| Zone codes | The `zones` filter |
+| Event code | `eventCodes` and `excludeEventCodes` |
+| Certainty, urgency, instructions, source link | The detail panel |
+
+A field the kept row already has is never replaced, and the issued time is never borrowed.
+When a match leaves two rows of the kept provider (a heat warning that repeats word for
+word from one day to the next), nothing is filled, because the card cannot tell which copy
+belongs to which.
+
+With `showProvider` on, the label names every provider that carried the alert, the kept
+one first: `DWD + NINA`. The first name is whose title, text and times you are reading.
+The timeline layout has less room and counts the others: `DWD +1`.
+
+Only the duplicate is dropped. A NINA civil-protection message that DWD never issued stays,
+and so does every alert of the provider that won. Two alerts from the *same* provider are
+never matched this way; those merge only when they are one alert split across zones.
+
+Set `deduplicate: false` to see every row from every provider.
+
 ## Presentation
 
 | Option | Default | Description |
@@ -105,7 +150,7 @@ card's distances and radius agree with the integration's.
 | `progressStyle` | see below | Per-phase progress-bar decoration |
 | `iconBorderStyle` | see below | Per-phase icon-ring border style |
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion`. Gates *motion* only |
-| `showProvider` | `false` | Show a provider label (e.g. NWS) above the event title |
+| `showProvider` | `false` | Show a provider label (e.g. NWS) above the event title. An alert that two providers carried lists both, the kept one first: `DWD + NINA`, or `DWD +1` in the timeline layout (see [Duplicates across providers](#duplicates-across-providers)) |
 | `timezone` | `'server'` | `'server'` or `'browser'` (the client's local time) |
 
 `colorTheme` picks the palette, `providerColors` lets a published color win. `'nws'`

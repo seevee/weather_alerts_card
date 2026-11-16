@@ -63,6 +63,10 @@ export class NinaAdapter implements AlertAdapter {
   // deprecation above keeps — shared across regions carrying the same message.
   stableIds = true;
 
+  // NINA relays DWD's weather warnings beside its own senders' messages, and
+  // pynina starts them at the message time, not the hazard's onset.
+  relay = true;
+
   canHandle(attributes: Record<string, unknown>): boolean {
     // `recommended_actions` + `affected_areas` collide with no other adapter's
     // signature, and both keys are written unconditionally for an occupied slot
@@ -101,6 +105,9 @@ export class NinaAdapter implements AlertAdapter {
       onsetTs,
       endsTs,
       description: buildDescription(str(attributes['description']), str(attributes['sender'])),
+      // The body as BBK sent it, without the sender line added above: this is
+      // what a DWD copy of the same warning is matched on.
+      matchText: str(attributes['description']),
       instruction: str(attributes['recommended_actions']),
       url: httpUrl(str(attributes['web'])),
       headline,

@@ -827,10 +827,66 @@ export function alertMatchesZones(alert: WeatherAlert, zones: Set<string>): bool
   return alert.zones.some(z => zones.has(z.toUpperCase()));
 }
 
+/** True when the alert has something the mini-map can draw. */
+function carriesGeometry(alert: WeatherAlert): boolean {
+  return !!(alert.bbox || alert.geometryRef || alert.point);
+}
+
+/**
+ * The surviving copy of a cross-provider duplicate, with the fields it lacks
+ * taken from the dropped copies: zone and event codes, certainty, urgency,
+ * instructions, link and geometry. Only an empty field is filled. Where both
+ * copies have a value they may disagree, and the survivor was chosen as the
+ * one to believe, so title, text, severity, area, onset and end are never
+ * touched. Geometry moves as a set from one copy, never a bbox from one and a
+ * point from another.
+ *
+ * The issued time is left alone too, empty or not: it is part of the
+ * dismissal signature, and a DWD row taking NINA's would resurface a
+ * dismissed warning whenever the relay arrived, left or was re-sent.
+ *
+ * The zone and event-code filters run after dedup, so this also keeps a
+ * `zones` card from hiding an alert because the copy it kept had no codes.
+ */
+function fillFromDropped(kept: WeatherAlert, dropped: WeatherAlert[]): WeatherAlert {
+  const out = { ...kept };
+  for (const d of dropped) {
+    if (out.zones.length === 0 && d.zones.length > 0) out.zones = d.zones;
+    if (!out.eventCode && d.eventCode) out.eventCode = d.eventCode;
+    if (!out.certainty && d.certainty) {
+      out.certainty = d.certainty;
+      out.certaintyInferred = d.certaintyInferred;
+    }
+    if (!out.urgency && d.urgency) out.urgency = d.urgency;
+    if (!out.instruction && d.instruction) out.instruction = d.instruction;
+    if (!out.url && d.url) out.url = d.url;
+    if (!carriesGeometry(out) && carriesGeometry(d)) {
+      if (d.bbox) out.bbox = d.bbox;
+      if (d.geometryRef) out.geometryRef = d.geometryRef;
+      if (d.point) out.point = d.point;
+    }
+  }
+  return out;
+}
+
+/**
+ * What the cross-provider text match compares: headline plus body, with
+ * markup, case and whitespace taken out. Empty when the alert has no body,
+ * which keeps it out of the match: a headline alone ("Amtliche WARNUNG vor
+ * WINDBÖEN") is shared by every wind warning in the country.
+ */
+function alertTextKey(alert: WeatherAlert): string {
+  const flat = (text: string): string =>
+    text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const body = flat(alert.matchText ?? alert.description);
+  return body ? `${flat(alert.headline)}\0${body}` : '';
+}
+
 export function deduplicateAlerts(
   alerts: WeatherAlert[],
   providerPriority?: AlertProvider[],
   stableIdProviders?: Set<AlertProvider>,
+  relayProviders?: Set<AlertProvider>,
 ): WeatherAlert[] {
   // Phase 0: collapse the same alert observed through more than one source —
   // two cap_alerts devices whose scopes overlap (home zone + GPS tracker), or
@@ -908,29 +964,71 @@ export function deduplicateAlerts(
     return representative;
   });
 
-  // Phase 2: collapse duplicates across providers (e.g., NWS + PirateWeather).
-  // Alerts with endsTs === 0 are excluded — can't match without an expiry.
+  // Phases 2 and 3: collapse duplicates across providers. Each pass groups the
+  // alerts by a key and keeps only the rows of one provider in a group, so
+  // two same-provider alerts that share a key both survive.
   if (providerPriority && providerPriority.length > 1) {
     const rank = new Map<AlertProvider, number>();
     for (const [i, provider] of providerPriority.entries()) {
       if (!rank.has(provider)) rank.set(provider, i);
     }
 
-    const bestProvider = new Map<string, AlertProvider>();
-    for (const alert of result) {
-      if (alert.endsTs === 0) continue;
-      const key = `${alert.event}\0${alert.endsTs}`;
-      const current = bestProvider.get(key);
-      if (!current || (rank.get(alert.provider) ?? Infinity) < (rank.get(current) ?? Infinity)) {
-        bestProvider.set(key, alert.provider);
-      }
-    }
+    // Which provider's rows survive a group: the issuer's own copy over a
+    // relay's (NINA starts a DWD warning at the message time, PirateWeather
+    // flattens NWS text), then the provider the card collected first. That is
+    // a question of whose title, text and times to trust. What the dropped
+    // copy alone carried is not lost: see fillFromDropped.
+    const cost = (provider: AlertProvider): number =>
+      (relayProviders?.has(provider) ? providerPriority.length + 1 : 0)
+      + (rank.get(provider) ?? providerPriority.length);
 
-    result = result.filter(alert => {
-      if (alert.endsTs === 0) return true;
-      const key = `${alert.event}\0${alert.endsTs}`;
-      return alert.provider === bestProvider.get(key);
-    });
+    const keepBestProvider = (keyOf: (alert: WeatherAlert) => string): void => {
+      const groups = new Map<string, [WeatherAlert, ...WeatherAlert[]]>();
+      for (const alert of result) {
+        const key = keyOf(alert);
+        if (!key) continue;
+        const group = groups.get(key);
+        if (group) group.push(alert);
+        else groups.set(key, [alert]);
+      }
+
+      const dropped = new Set<WeatherAlert>();
+      const replaced = new Map<WeatherAlert, WeatherAlert>();
+      for (const group of groups.values()) {
+        const best = group.reduce((a, b) => (cost(b.provider) < cost(a.provider) ? b : a)).provider;
+        const kept = group.filter(a => a.provider === best);
+        const others = group.filter(a => a.provider !== best);
+        if (others.length === 0) continue;
+        for (const alert of others) dropped.add(alert);
+        for (const alert of kept) {
+          // With two kept rows there is no telling which dropped copy belongs
+          // to which (a heat warning repeats word for word from day to day),
+          // so only a lone survivor is filled. Every kept row still names the
+          // providers it now stands for, including ones an earlier pass
+          // folded into a copy dropped here.
+          const next = kept.length === 1 ? fillFromDropped(alert, others) : { ...alert };
+          const alsoFrom = new Set([
+            ...(alert.alsoFrom ?? []),
+            ...others.flatMap(o => [o.provider, ...(o.alsoFrom ?? [])]),
+          ]);
+          alsoFrom.delete(alert.provider);
+          next.alsoFrom = [...alsoFrom];
+          replaced.set(alert, next);
+        }
+      }
+      result = result.filter(alert => !dropped.has(alert)).map(alert => replaced.get(alert) ?? alert);
+    };
+
+    // Phase 2: same event name and same expiry (e.g., NWS + PirateWeather).
+    // Alerts with endsTs === 0 are excluded — can't match without an expiry.
+    keepBestProvider(alert => (alert.endsTs === 0 ? '' : `${alert.event}\0${alert.endsTs}`));
+
+    // Phase 3: same headline and same body text (DWD + NINA, #234). NINA
+    // relays DWD's warnings word for word but titles them differently
+    // ("Sturmböen" / "STURMBÖEN"), starts them at the message time, not the
+    // hazard's onset, and ends about half of them at a different minute, so
+    // phase 2 never sees the pair. Times are deliberately not compared.
+    keepBestProvider(alertTextKey);
   }
 
   return result;
