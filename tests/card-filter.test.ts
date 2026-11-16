@@ -493,6 +493,21 @@ describe('provider label on a cross-provider duplicate (#234)', () => {
     cleanup();
   });
 
+  it('counts the other providers in the narrow timeline gutter, with the list as tooltip', async () => {
+    const { card, cleanup } = await mountCard(
+      {
+        type: 'custom:weather-alerts-card', entity: 'binary_sensor.nina_warning_1',
+        entities: ['sensor.dwd_current'], showProvider: true, layout: 'timeline',
+      },
+      hass,
+    );
+    const root = (card as unknown as { shadowRoot: ShadowRoot }).shadowRoot;
+    const hint = root.querySelector('.timeline-row .provider-hint');
+    expect((hint?.textContent || '').trim()).toBe('DWD +1');
+    expect(hint?.getAttribute('title')).toBe('DWD + NINA');
+    cleanup();
+  });
+
   it('shows both rows, each with its own label, when deduplicate is off', async () => {
     const { card, cleanup } = await mountCard(
       {

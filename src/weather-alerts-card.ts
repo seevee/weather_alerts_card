@@ -1914,7 +1914,7 @@ export class WeatherAlertsCard extends LitElement {
             <ha-icon icon=${alert.providerIcon ?? getWeatherIcon(alert.iconHint || alert.event)}></ha-icon>
           </div>
           <div class="timeline-gutter-text">
-            <span class="alert-title">${this._renderProviderHint(alert)}${alert.event}</span>
+            <span class="alert-title">${this._renderProviderHint(alert, true)}${alert.event}</span>
             <span class="timeline-time">${timeLabel}</span>
           </div>
         </div>
@@ -2146,14 +2146,20 @@ export class WeatherAlertsCard extends LitElement {
     `;
   }
 
-  private _renderProviderHint(alert: WeatherAlert): TemplateResult | typeof nothing {
+  private _renderProviderHint(alert: WeatherAlert, counted = false): TemplateResult | typeof nothing {
     if (this._config?.showProvider !== true) return nothing;
     // The kept provider first, then every provider whose copy of this alert
     // dedup dropped. '+', because the hint already ends in a '·' separator.
-    const code = [alert.provider, ...(alert.alsoFrom ?? [])]
-      .map(p => PROVIDER_SHORT[p] || p.toUpperCase())
-      .join(' + ');
-    return html`<span class="provider-hint">${code}</span>`;
+    const codes = [alert.provider, ...(alert.alsoFrom ?? [])]
+      .map(p => PROVIDER_SHORT[p] || p.toUpperCase());
+    const full = codes.join(' + ');
+    // The timeline gutter is too narrow for the list ("DWD + NINA" left one
+    // letter of the title), so it counts the others: "DWD +1". The full list
+    // is the tooltip, and the detail pop-up a row tap opens spells it out.
+    if (counted && codes.length > 1) {
+      return html`<span class="provider-hint" title=${full}>${codes[0]} +${codes.length - 1}</span>`;
+    }
+    return html`<span class="provider-hint">${full}</span>`;
   }
 
   private _renderHeadline(alert: WeatherAlert): TemplateResult | typeof nothing {

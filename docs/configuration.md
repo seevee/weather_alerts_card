@@ -127,6 +127,7 @@ belongs to which.
 
 With `showProvider` on, the label names every provider that carried the alert, the kept
 one first: `DWD + NINA`. The first name is whose title, text and times you are reading.
+The timeline layout has less room and counts the others: `DWD +1`.
 
 Only the duplicate is dropped. A NINA civil-protection message that DWD never issued stays,
 and so does every alert of the provider that won. Two alerts from the *same* provider are
@@ -149,7 +150,7 @@ Set `deduplicate: false` to see every row from every provider.
 | `progressStyle` | see below | Per-phase progress-bar decoration |
 | `iconBorderStyle` | see below | Per-phase icon-ring border style |
 | `animations` | system | `true`, `false`, or respect `prefers-reduced-motion`. Gates *motion* only |
-| `showProvider` | `false` | Show a provider label (e.g. NWS) above the event title. An alert that two providers carried lists both, the kept one first: `DWD + NINA` (see [Duplicates across providers](#duplicates-across-providers)) |
+| `showProvider` | `false` | Show a provider label (e.g. NWS) above the event title. An alert that two providers carried lists both, the kept one first: `DWD + NINA`, or `DWD +1` in the timeline layout (see [Duplicates across providers](#duplicates-across-providers)) |
 | `timezone` | `'server'` | `'server'` or `'browser'` (the client's local time) |
 
 `colorTheme` picks the palette, `providerColors` lets a published color win. `'nws'`
