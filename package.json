@@ -46,7 +46,7 @@
     "jsdom": "^31.0.0",
     "playwright": "^1.65.0",
     "roboto-fontface": "^0.10.0",
-    "rolldown": "^1.3.0",
+    "rolldown": "^1.3.2",
     "semver": "^7.8.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
