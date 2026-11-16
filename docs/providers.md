@@ -162,7 +162,8 @@ Core removed the warning text from the NINA binary sensor
 ([core#161882](https://github.com/home-assistant/core/pull/161882)); a slot now carries
 only the warning's `id`. From card **3.10** the card asks the integration for the rest
 through its `nina.get_details` action: once per warning, for all your slots in one call,
-shared by every card on the dashboard. Nothing to configure. If that call fails, the slot
+shared by every card on the dashboard, then again every 15 minutes while the warning
+stands. Nothing to configure. If that call fails, the slot
 shows as an unavailable source and the card tries again after five minutes, so a live
 warning never reads as "no active alerts".
 
@@ -345,9 +346,9 @@ colorTheme: eccc      # ECCC's official red/orange/yellow/grey palette
 
 Each sensor shows its own list, so listing all of them never shows an alert twice.
 `sensor.*_endings` holds alerts that have ended; leave it out unless you want those. The
-card asks once each time a sensor's alerts change, and every card on the dashboard shares
-the answer. If the call fails, the sensor shows as an unavailable source and the card
-tries again after five minutes.
+card asks each time a sensor's alerts change and every 15 minutes while they stand, and
+every card on the dashboard shares the answer. If the call fails, the sensor shows as an
+unavailable source and the card tries again after five minutes.
 
 List the sensors, not the device. The integration's device also holds its weather
 sensors, and the card would read a resting one as a fault.
@@ -359,6 +360,8 @@ CAP Alerts is still the route to prefer where you can install it:
 | Feed | NAAD, the national CAP firehose | GeoMet WFS, which lags and truncates it |
 | Map | The alert's own polygons | None |
 | Severity and certainty | Raw CAP values | Derived from colour, type and impact |
+| Start time | The CAP onset, where the message has one | The time the alert was published, so there is no "starts in" phase |
+| Instructions | The CAP instruction text, where the message has one | None |
 | Entities | One per alert, for automations and `tap_action: more-info` | Five counters |
 
 ### The HACS `environment_canada` fork

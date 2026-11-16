@@ -24,13 +24,26 @@ import { ECCC_CORE_LISTS, coreEcccAlertsKey, fromCoreEcccAlert } from './adapter
 //   - `actionAttributes` is pure and safe in render. It never fetches.
 //   - `requestActionDetails` is the only thing that fetches. Call it from
 //     `updated()`, never from render (render purity).
-//   - An entity is asked once per alert set. A failure is retried after
+//   - An entity is asked once per alert set, then again every
+//     ACTION_REFRESH_MS while that set stands. A failure is retried after
 //     ACTION_RETRY_MS, never on the next state push.
 
 /** How long a failed call stands before the slot is asked again. */
 export const ACTION_RETRY_MS = 5 * 60 * 1000;
 
-interface Entry { key: string; attributes: Record<string, unknown> }
+/**
+ * How long an answer stands before it is asked for again. The key only moves
+ * when the entity shows a change (a new warning id, a new title or publication
+ * time), so a wrong answer under an unchanged key would otherwise stay on a
+ * kiosk until its page reloads. Seen with core ECCC: for a second or so in
+ * every poll `get_alerts` returns records with no text and no parseable times
+ * (michaeldavie/env_canada#182). The actions read what the integration
+ * already holds, so a re-ask costs no upstream request. The old answer serves
+ * until the new one lands, and keeps serving if the call fails.
+ */
+export const ACTION_REFRESH_MS = 15 * 60 * 1000;
+
+interface Entry { key: string; attributes: Record<string, unknown>; at: number }
 
 interface Store {
   cache: Map<string, Entry>;
@@ -139,7 +152,9 @@ export function requestActionDetails(hass: HomeAssistant, entityIds: Iterable<st
       continue;
     }
     const { source, key } = found;
-    if (cache.get(entityId)?.key === key || inFlight.get(entityId) === key) continue;
+    if (inFlight.get(entityId) === key) continue;
+    const entry = cache.get(entityId);
+    if (entry?.key === key && now - entry.at < ACTION_REFRESH_MS) continue;
     const failure = failures.get(entityId);
     if (failure?.key === key && now - failure.at < ACTION_RETRY_MS) continue;
     // A shape can match another integration's entity, and an action rejects
@@ -162,7 +177,7 @@ export function requestActionDetails(hass: HomeAssistant, entityIds: Iterable<st
         inFlight.delete(entityId);
         const attributes = overlay[entityId];
         if (attributes) {
-          cache.set(entityId, { key, attributes });
+          cache.set(entityId, { key, attributes, at });
           failures.delete(entityId);
         } else {
           failures.set(entityId, { key, at });
