@@ -72,7 +72,7 @@ only have to point the card at an entity — the provider is auto-detected.
   `timeline` that draws every alert as a bar on one shared time axis.
 - **Dismissal** — optional per-alert dismiss by button or swipe, with undo and a
   restore-all control, stored browser-locally.
-- **Deduplication** — collapse the same alert repeated across zones and providers.
+- **Deduplication** — collapse the same alert repeated across zones and providers, keeping the row that carries more.
 
 ## Support
 

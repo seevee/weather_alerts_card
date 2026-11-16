@@ -4,6 +4,10 @@ import { normalizeSeverity, parseTimestamp } from '../utils';
 export class PirateWeatherAdapter implements AlertAdapter {
   provider: AlertProvider = 'pirateweather';
 
+  // Pirate Weather republishes NWS (and other national) alerts with the line
+  // breaks stripped and no onset of its own.
+  relay = true;
+
   canHandle(attributes: Record<string, unknown>): boolean {
     return typeof attributes['attribution'] === 'string'
       && (attributes['attribution']).toLowerCase().includes('pirate weather');

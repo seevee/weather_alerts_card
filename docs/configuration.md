@@ -54,7 +54,7 @@ checkbox, which appears only when a matching integration is installed.
 | `excludeEventCodes` | — | Event codes to exclude, e.g. `['SCY']` (NWS) or `['22']` (DWD) |
 | `hideExpired` | `true` | Hide expired alerts (set `false` to show them dimmed) |
 | `hideNoAlerts` | `false` | Hide the "No active alerts" banner when there are no alerts |
-| `deduplicate` | `true` | Collapse matching alerts across zones and providers |
+| `deduplicate` | `true` | Collapse matching alerts across zones and providers. When two providers carry the same alert, the row that carries more is kept: see [Duplicates across providers](#duplicates-across-providers) |
 | `deduplicateHeadlines` | `true` | Suppress headlines that merely repeat the event name |
 
 ::: warning `zones` hides everything on providers that carry no zone codes
@@ -89,6 +89,32 @@ The integration's own origin can also differ from the card's: its `latitude`/`lo
 options live in its config, which the card cannot see. If you configured the feed somewhere
 other than HA home, point `myLocationEntity` at a zone with the same coordinates so the
 card's distances and radius agree with the integration's.
+
+### Duplicates across providers
+
+A card that reads two providers for one place often gets the same alert twice: DWD and
+NINA, NWS Alerts and Pirate Weather, an integration and CAP Alerts on the same feed. With
+`deduplicate` on (the default) the card shows it once. Two alerts from different providers
+count as the same alert when either is true:
+
+- they have the same event name and the same end time, or
+- they have the same headline and the same description text. Times are not compared here,
+  because a relay can restamp them: NINA starts a DWD warning at the time the message was
+  sent, not when the weather begins.
+
+The row that carries more is the one kept, decided in this order:
+
+| Order | Rule | Example |
+|---|---|---|
+| 1 | The issuer's own copy beats a relay's. NINA and Pirate Weather are relays | DWD beats NINA, NWS Alerts beats Pirate Weather |
+| 2 | A copy with geometry (polygon, bounding box or point) beats one without | CAP Alerts beats NWS Alerts when it has a shape for that alert |
+| 3 | Otherwise, the provider the card reads first: `entity`, then `entities`, then `device` / `devices`, then `sources` | Two text-only integrations: the one listed first |
+
+Only the duplicate is dropped. A NINA civil-protection message that DWD never issued stays,
+and so does every alert of the provider that won. Two alerts from the *same* provider are
+never matched this way; those merge only when they are one alert split across zones.
+
+Set `deduplicate: false` to see every row from every provider.
 
 ## Presentation
 

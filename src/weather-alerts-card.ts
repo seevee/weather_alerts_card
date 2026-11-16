@@ -915,6 +915,9 @@ export class WeatherAlertsCard extends LitElement {
     // Providers whose ids are upstream identifiers — dedup collapses the same
     // alert seen through two of their sources (see deduplicateAlerts phase 0).
     const stableIdProviders = new Set<AlertProvider>();
+    // Providers that republish another issuer's alerts: their copy loses a
+    // cross-provider match to the issuer's own (deduplicateAlerts phases 2-3).
+    const relayProviders = new Set<AlertProvider>();
     for (const entityId of this._getAllEntities()) {
       const entity = this.hass.states[entityId];
       if (!entity) continue;
@@ -924,12 +927,13 @@ export class WeatherAlertsCard extends LitElement {
         seenProviders.add(adapter.provider);
         providerPriority.push(adapter.provider);
         if (adapter.stableIds) stableIdProviders.add(adapter.provider);
+        if (adapter.relay) relayProviders.add(adapter.provider);
       }
       const parsed = adapter.parseAlerts(attributes);
       for (const a of parsed) a.sourceEntityId = entityId;
       allAlerts.push(...parsed);
     }
-    let filtered = this._filterAndSort(allAlerts, { providerPriority, stableIdProviders, nowTs });
+    let filtered = this._filterAndSort(allAlerts, { providerPriority, stableIdProviders, relayProviders, nowTs });
     if (this._config.allowDismiss && !this._forcePreview && this._dismissals.size > 0) {
       const { visible, updatedMap } = applyDismissals(filtered, this._dismissals);
       // applyDismissals can change the map (un-dismiss on signature shift,
@@ -1165,7 +1169,7 @@ export class WeatherAlertsCard extends LitElement {
 
   private _filterAndSort(
     alerts: WeatherAlert[],
-    opts?: { skipZones?: boolean; providerPriority?: AlertProvider[]; stableIdProviders?: Set<AlertProvider>; nowTs?: number },
+    opts?: { skipZones?: boolean; providerPriority?: AlertProvider[]; stableIdProviders?: Set<AlertProvider>; relayProviders?: Set<AlertProvider>; nowTs?: number },
   ): WeatherAlert[] {
     if (!this._config) return alerts;
     let result = alerts;
@@ -1186,7 +1190,7 @@ export class WeatherAlertsCard extends LitElement {
     }
 
     if (this._config.deduplicate !== false) {
-      result = deduplicateAlerts(result, opts?.providerPriority, opts?.stableIdProviders);
+      result = deduplicateAlerts(result, opts?.providerPriority, opts?.stableIdProviders, opts?.relayProviders);
     }
 
     if (!opts?.skipZones && this._config.zones && this._config.zones.length > 0) {
