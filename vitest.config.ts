@@ -33,6 +33,14 @@ export default defineConfig({
   },
   test: {
     setupFiles: ['./tests/setup.ts'],
+    // Two banners print once per test file and say nothing about the run:
+    // Lit's dev-build notice (the dev build is wanted here, its checks are
+    // the point) and the card's own version line. Every other console line
+    // still shows, Lit's real warnings included.
+    onConsoleLog(log) {
+      if (log.includes('Lit is in dev mode') || log.includes('WEATHER-ALERTS-CARD')) return false;
+      return undefined;
+    },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],

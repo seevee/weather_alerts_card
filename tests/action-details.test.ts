@@ -140,6 +140,7 @@ describe('action details', () => {
     expect(send).toHaveBeenCalledTimes(2);
     requestActionDetails(hass, [SLOT], later + ACTION_RETRY_MS + 5000);
     expect(send).toHaveBeenCalledTimes(3);
+    await settle(); // the last call fails too: let its warning land on the spy
     warn.mockRestore();
   });
 
@@ -157,6 +158,7 @@ describe('action details', () => {
     expect(send).toHaveBeenCalledTimes(1);
     requestActionDetails(hass, [SLOT], Date.now() + ACTION_RETRY_MS + 1000);
     expect(send).toHaveBeenCalledTimes(2);
+    await settle(); // as above
     warn.mockRestore();
   });
 
