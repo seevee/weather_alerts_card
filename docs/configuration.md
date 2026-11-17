@@ -46,7 +46,7 @@ checkbox, which appears only when a matching integration is installed.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list |
-| `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'`, `'distance'` (nearest the reference point first; area warnings sort ahead of every point incident, then severity and onset break ties; no reference point behaves as `'default'`) |
+| `sortOrder` | `'default'` | `'default'`, `'onset'` (severity breaks ties), `'severity'` (onset breaks ties), `'distance'` (nearest the reference point first; area warnings sort ahead of every point incident, then severity and onset break ties; no reference point behaves as `'default'`) |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
 | `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident alerts only (NSW RFS, and CAP Alerts entities that carry a single `points` marker, such as the Australian state feeds) |
 | `myLocationEntity` | — | `device_tracker` / `person` / `zone` whose coordinates replace HA home as the reference point, for `maxDistanceKm`, `sortOrder: distance`, the distance row and `showMyLocation` |

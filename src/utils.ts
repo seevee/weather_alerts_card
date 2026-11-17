@@ -788,9 +788,12 @@ const bySeverityThenOnset = (a: WeatherAlert, b: WeatherAlert): number => {
 };
 
 const byOnsetThenSeverity = (a: WeatherAlert, b: WeatherAlert): number => {
-  const diff = (a.onsetTs || Infinity)
-             - (b.onsetTs || Infinity);
-  if (diff !== 0) return diff;
+  // Two alerts without an onset might cause `Infinity - Infinity = NaN`, so the
+  // comparison between potential Infinities must happen before their difference
+  // is computed.
+  const aOnset = a.onsetTs || Infinity;
+  const bOnset = b.onsetTs || Infinity;
+  if (aOnset !== bOnset) return aOnset - bOnset;
   return (SEVERITY_RANK[a.severity] ?? 4) - (SEVERITY_RANK[b.severity] ?? 4);
 };
 
