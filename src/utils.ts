@@ -366,6 +366,26 @@ export function parseTimestamp(raw: string | undefined | null): number {
   return isNaN(d.getTime()) ? 0 : d.getTime() / 1000;
 }
 
+/**
+ * When an alert ends, for a feed that gives two times: the hazard's forecast
+ * end and the moment the bulletin itself lapses. Pass 0 for one it lacks.
+ *
+ * The later one wins. The hazard end is a forecast and agencies keep a
+ * bulletin up past it (ECCC: a blizzard warning ending 11:00Z, published until
+ * 13:05Z), so the earlier one shows a live warning as expired.
+ *
+ * A bulletin can also lapse before the hazard it announces begins (ECCC: a
+ * statement lapsing 13:30Z for snow from 18:00Z). With no hazard end beside
+ * it, that lapse is not an end: the result is 0, open-ended, and the feed
+ * clears the alert. A lapse at or before `sentTs` is left alone. That is a
+ * message issued already dead (ECCC's `transitioned_out` documents), which
+ * must stay expired.
+ */
+export function alertEndTs(sentTs: number, onsetTs: number, hazardEndTs: number, lapseTs: number): number {
+  const last = Math.max(hazardEndTs, lapseTs);
+  return last > sentTs && last <= onsetTs ? 0 : last;
+}
+
 // Great-circle distance in km on a sphere (R = 6371). Lon-first parameter order
 // so a `point` tuple destructures straight into it. Spherical, not WGS84: the
 // error is under ~0.5%, immaterial for a user-set "within N km" threshold.

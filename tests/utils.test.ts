@@ -18,6 +18,7 @@ import {
   deduplicateAlerts,
   formatRelativeTime,
   parseTimestamp,
+  alertEndTs,
   getDisplayHeadline,
   reflowAlertText,
   summarizeAreaDesc,
@@ -707,6 +708,30 @@ describe('alertMatchesZones', () => {
   it('returns false for empty zones', () => {
     const alert = makeAlert({ zones: [] });
     expect(alertMatchesZones(alert, new Set(['COZ039']))).toBe(false);
+  });
+});
+
+describe('alertEndTs', () => {
+  const SENT = 1000, ONSET = 5000;
+
+  it('takes the later of the hazard end and the lapse', () => {
+    expect(alertEndTs(SENT, ONSET, 9000, 7000)).toBe(9000);
+    expect(alertEndTs(SENT, ONSET, 7000, 9000)).toBe(9000);
+    expect(alertEndTs(SENT, ONSET, 0, 7000)).toBe(7000);
+    expect(alertEndTs(SENT, ONSET, 7000, 0)).toBe(7000);
+  });
+
+  it('is open-ended when neither is known, or the lapse falls between sent and onset', () => {
+    expect(alertEndTs(SENT, ONSET, 0, 0)).toBe(0);
+    expect(alertEndTs(SENT, ONSET, 0, 3000)).toBe(0);
+    expect(alertEndTs(SENT, ONSET, 0, ONSET)).toBe(0);
+    // A hazard end past the onset settles it, whatever the lapse says.
+    expect(alertEndTs(SENT, ONSET, 9000, 3000)).toBe(9000);
+  });
+
+  it('leaves a message that was dead when sent as expired', () => {
+    expect(alertEndTs(SENT, SENT, 0, SENT)).toBe(SENT);
+    expect(alertEndTs(SENT, ONSET, 0, 900)).toBe(900);
   });
 });
 
