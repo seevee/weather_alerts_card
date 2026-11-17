@@ -137,26 +137,16 @@ describe('CapAdapter', () => {
       expect(adapter.parseAlerts(attrs)[0].endsTs).toBe(Date.parse('2026-04-25T11:00:00+00:00') / 1000);
     });
 
-    // ECCC through CAP Alerts, 2026-11-16: a statement lapsing before the
-    // snow it announces begins, and no `ends` beside it.
-    it('leaves the end open when the message lapses before the onset', () => {
+    // A lapse before the onset is passed through as it came. MeteoAlarm
+    // Switzerland sends a superseded message this way (sent 11:06, expires
+    // 11:15, onset 20:00), and it has to stay expired.
+    it('does not reinterpret an expires that falls before the onset', () => {
       const attrs = makeCapAttributes({
-        sent: '2026-11-16T21:30:28+00:00',
-        onset: '2026-11-17T18:00:00+00:00',
-        expires: '2026-11-17T13:30:28+00:00',
+        sent: '2026-11-16T10:06:50+00:00',
+        onset: '2026-11-16T20:00:00+00:00',
+        expires: '2026-11-16T10:15:30+00:00',
       });
-      const [alert] = adapter.parseAlerts(attrs);
-      expect(alert.onsetTs).toBe(Date.parse('2026-11-17T18:00:00Z') / 1000);
-      expect(alert.endsTs).toBe(0);
-    });
-
-    it('keeps a message issued already expired as expired', () => {
-      const attrs = makeCapAttributes({
-        sent: '2026-04-25T10:00:00+00:00',
-        onset: '2026-04-25T10:05:00+00:00',
-        expires: '2026-04-25T10:00:00+00:00',
-      });
-      expect(adapter.parseAlerts(attrs)[0].endsTs).toBe(Date.parse('2026-04-25T10:00:00Z') / 1000);
+      expect(adapter.parseAlerts(attrs)[0].endsTs).toBe(Date.parse('2026-11-16T10:15:30Z') / 1000);
     });
 
     it('falls back to effective when sent is absent', () => {

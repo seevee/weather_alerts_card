@@ -369,6 +369,9 @@ export function parseTimestamp(raw: string | undefined | null): number {
 /**
  * When an alert ends, for a feed that gives two times: the hazard's forecast
  * end and the moment the bulletin itself lapses. Pass 0 for one it lacks.
+ * Written for ECCC's GeoMet feed (the built-in `environment_canada` route),
+ * where the open-end rule below is known to hold; do not reach for it on a
+ * feed whose lapses have not been looked at.
  *
  * The later one wins. The hazard end is a forecast and agencies keep a
  * bulletin up past it (ECCC: a blizzard warning ending 11:00Z, published until

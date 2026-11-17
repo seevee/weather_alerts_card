@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
-import { alertEndTs, extractPoint, httpUrl, meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '../utils';
+import { extractPoint, httpUrl, meteoalarmAwarenessColorHex, normalizeSeverity, parseTimestamp } from '../utils';
 
 // CAP Alerts integration sets one entity per active alert. Each entity's
 // extra_state_attributes is a flat dict of CAP 1.2 fields plus an
@@ -42,8 +42,12 @@ export class CapAdapter implements AlertAdapter {
 
     const sentTs = parseTimestamp(str(attributes['sent']) || str(attributes['effective']));
     const onsetTs = parseTimestamp(str(attributes['onset'])) || sentTs;
-    // `ends` is the hazard's end, `expires` the message's own lapse.
-    const endsTs = alertEndTs(sentTs, onsetTs, parseTimestamp(str(attributes['ends'])), parseTimestamp(str(attributes['expires'])));
+    // `ends` is the hazard's end, `expires` the message's own lapse. The later
+    // one wins: agencies keep a message up past its forecast end. Nothing more
+    // is read into the pair here. What a lapse before the onset means differs
+    // by source (ECCC: the hazard is still coming; MeteoAlarm Switzerland: the
+    // message was superseded), and only the integration knows the source.
+    const endsTs = Math.max(parseTimestamp(str(attributes['ends'])), parseTimestamp(str(attributes['expires'])));
 
     const rawIcon = str(attributes['icon']);
     const providerIcon = rawIcon.startsWith('mdi:') ? rawIcon : undefined;
