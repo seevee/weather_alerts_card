@@ -60,20 +60,23 @@ const CONFIDENCE_CERTAINTY: Record<string, string> = {
   faible: 'Unlikely',
 };
 
+// The phase of a record that closes an alert.
+const ENDED_PHASE = 'Final';
+
 const PHASE_LABELS: Record<string, string> = {
   new: 'New',
   issued: 'New',
   continued: 'Continued',
   updated: 'Updated',
   extended: 'Updated',
-  expired: 'Final',
-  ended: 'Final',
+  expired: ENDED_PHASE,
+  ended: ENDED_PHASE,
   'émis': 'New',
   maintenu: 'Continued',
   'mis à jour': 'Updated',
   'prolongé': 'Updated',
-  'terminé': 'Final',
-  'annulé': 'Final',
+  'terminé': ENDED_PHASE,
+  'annulé': ENDED_PHASE,
 };
 
 function sevFromColor(color: string | undefined): AlertSeverity {
@@ -227,8 +230,16 @@ export class EcccAdapter implements AlertAdapter {
     // the library carries from env-canada 0.20.7 (env_canada#184). A statement
     // can lapse before the weather it announces begins, so the hazard start
     // wins over the publication time.
-    const onsetTs = parseTimestamp(a.validity_time) || issuedTs;
-    const endsTs = alertEndTs(issuedTs, onsetTs, parseTimestamp(a.event_end_time), parseTimestamp(a.expiry));
+    //
+    // An ending notice still carries the hazard times of the alert it closes
+    // (seen live: a statement marked ended, hazard start and end both days
+    // ahead). Those would draw it as an upcoming alert, so it runs over its
+    // own bulletin instead.
+    const phase = phaseLabel(a.status);
+    const ended = phase === ENDED_PHASE;
+    const lapseTs = parseTimestamp(a.expiry);
+    const onsetTs = (!ended && parseTimestamp(a.validity_time)) || issuedTs;
+    const endsTs = ended ? lapseTs : alertEndTs(issuedTs, onsetTs, parseTimestamp(a.event_end_time), lapseTs);
     const severity = maxSeverity(
       sevFromColor(a.color),
       sevFromType(a.type),
@@ -266,7 +277,7 @@ export class EcccAdapter implements AlertAdapter {
       zones: [],
       eventCode,
       provider: 'eccc',
-      phase: phaseLabel(a.status),
+      phase,
       severityInferred: !a.color && !a.type && !a.impact,
       certaintyInferred: !a.confidence,
       colorHint,
