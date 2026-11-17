@@ -158,7 +158,10 @@ describe('metadata-grid seam', () => {
     cleanup();
   });
 
-  it('renders both Issued and Expires rows with timestamps for full-timing alerts', async () => {
+  // NWS publishes the hazard's end (`Ends`) beside the message's lapse
+  // (`Expires`), and the card runs the alert to the hazard end, so the row
+  // names that: a watch can expire hours before the wind it is about begins.
+  it('renders both Issued and End rows with timestamps for full-timing alerts', async () => {
     const { card, cleanup } = await mountCard(
       baseConfig('sensor.nws_alerts'),
       nwsFullTimingHass(),
@@ -167,9 +170,10 @@ describe('metadata-grid seam', () => {
     expect(grid).toHaveProperty('Issued');
     expect(grid['Issued']).not.toBe('');
     // The End row carries a real timestamp, not the open-ended placeholders.
-    expect(grid['Expires']).not.toBe('Ongoing');
-    expect(grid['Expires']).not.toBe('TBD');
-    expect(grid['Expires']).not.toBe('');
+    expect(grid).not.toHaveProperty('Expires');
+    expect(grid['End']).toBeTruthy();
+    expect(grid['End']).not.toBe('Ongoing');
+    expect(grid['End']).not.toBe('TBD');
     cleanup();
   });
 });

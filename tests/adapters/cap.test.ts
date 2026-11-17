@@ -134,7 +134,22 @@ describe('CapAdapter', () => {
         ends: '2026-04-25T10:40:00+00:00',
         expires: '2026-04-25T11:00:00+00:00',
       });
-      expect(adapter.parseAlerts(attrs)[0].endsTs).toBe(Date.parse('2026-04-25T11:00:00+00:00') / 1000);
+      const alert = adapter.parseAlerts(attrs)[0];
+      expect(alert.endsTs).toBe(Date.parse('2026-04-25T11:00:00+00:00') / 1000);
+      // The end shown is the message's lapse here, so it keeps that name.
+      expect(alert.endsAtHazardEnd).toBe(false);
+    });
+
+    it('marks the end as the hazard end when ends is the later time', () => {
+      const attrs = makeCapAttributes({
+        ends: '2026-04-26T10:40:00+00:00',
+        expires: '2026-04-25T11:00:00+00:00',
+      });
+      const alert = adapter.parseAlerts(attrs)[0];
+      expect(alert.endsTs).toBe(Date.parse('2026-04-26T10:40:00+00:00') / 1000);
+      expect(alert.endsAtHazardEnd).toBe(true);
+      const noEnds = adapter.parseAlerts(makeCapAttributes({ expires: '2026-04-25T11:00:00+00:00' }))[0];
+      expect(noEnds.endsAtHazardEnd).toBe(false);
     });
 
     // A lapse before the onset is passed through as it came. MeteoAlarm
