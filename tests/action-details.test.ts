@@ -323,6 +323,15 @@ describe('action details: core Environment Canada', () => {
     const noStart = await parse({ ...statement, validity_time: null });
     expect(noStart?.onsetTs).toBe(ts(statement.date));
     expect(noStart?.endsTs).toBe(ts(statement.event_end_time));
+
+    // An ending notice keeps the hazard times of the alert it closes (the same
+    // statement the next morning, marked ended with both still ahead). It runs
+    // over its own bulletin, not over weather it no longer announces.
+    for (const status of ['ended', 'terminé']) {
+      const closed = await parse({ ...statement, status });
+      expect(closed?.onsetTs).toBe(ts(statement.date));
+      expect(closed?.endsTs).toBe(ts(statement.expiry_time));
+    }
   });
 
   it('asks again when the titles change', async () => {
