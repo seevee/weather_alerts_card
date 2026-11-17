@@ -145,6 +145,17 @@ describe('NwsAdapter', () => {
       }]);
       const alerts = adapter.parseAlerts(attrs);
       expect(alerts[0].endsTs).toBeGreaterThan(0);
+      expect(alerts[0].endsAtHazardEnd).toBe(false);
+    });
+
+    it('marks an end taken from Ends as the hazard end', () => {
+      const attrs = makeNwsAttributes([{
+        Ends: '2026-03-06T18:00:00Z',
+        Expires: '2026-03-06T14:00:00Z',
+      }]);
+      const alert = adapter.parseAlerts(attrs)[0];
+      expect(alert.endsTs).toBe(Date.parse('2026-03-06T18:00:00Z') / 1000);
+      expect(alert.endsAtHazardEnd).toBe(true);
     });
 
     it('returns empty array for missing Alerts attribute', () => {

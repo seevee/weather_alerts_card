@@ -239,7 +239,8 @@ export class EcccAdapter implements AlertAdapter {
     const ended = phase === ENDED_PHASE;
     const lapseTs = parseTimestamp(a.expiry);
     const onsetTs = (!ended && parseTimestamp(a.validity_time)) || issuedTs;
-    const endsTs = ended ? lapseTs : alertEndTs(issuedTs, onsetTs, parseTimestamp(a.event_end_time), lapseTs);
+    const hazardEndTs = parseTimestamp(a.event_end_time);
+    const endsTs = ended ? lapseTs : alertEndTs(issuedTs, onsetTs, hazardEndTs, lapseTs);
     const severity = maxSeverity(
       sevFromColor(a.color),
       sevFromType(a.type),
@@ -269,6 +270,7 @@ export class EcccAdapter implements AlertAdapter {
       sentTs: issuedTs,
       onsetTs,
       endsTs,
+      endsAtHazardEnd: !ended && hazardEndTs > 0 && endsTs === hazardEndTs,
       description: str(a.text),
       instruction: '',
       url: str(a.url) || fallbackUrlValue,

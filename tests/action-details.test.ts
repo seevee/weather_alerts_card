@@ -308,6 +308,7 @@ describe('action details: core Environment Canada', () => {
     expect(full?.sentTs).toBe(ts(statement.date));
     expect(full?.onsetTs).toBe(ts(statement.validity_time));
     expect(full?.endsTs).toBe(ts(statement.event_end_time));
+    expect(full?.endsAtHazardEnd).toBe(true);
 
     // The service leaves either one out as null: each falls back on its own.
     const noEnd = await parse({ ...statement, event_end_time: null });
@@ -320,6 +321,7 @@ describe('action details: core Environment Canada', () => {
     // hazard end (ECCC's blizzard warning that night) stays up until it lapses.
     const outlives = await parse({ ...statement, validity_time: '2026-11-17T01:22:00.000Z', event_end_time: '2026-11-17T11:00:00.000Z' });
     expect(outlives?.endsTs).toBe(ts(statement.expiry_time));
+    expect(outlives?.endsAtHazardEnd).toBe(false);
     const noStart = await parse({ ...statement, validity_time: null });
     expect(noStart?.onsetTs).toBe(ts(statement.date));
     expect(noStart?.endsTs).toBe(ts(statement.event_end_time));
@@ -331,6 +333,7 @@ describe('action details: core Environment Canada', () => {
       const closed = await parse({ ...statement, status });
       expect(closed?.onsetTs).toBe(ts(statement.date));
       expect(closed?.endsTs).toBe(ts(statement.expiry_time));
+      expect(closed?.endsAtHazardEnd).toBe(false);
     }
   });
 

@@ -47,7 +47,8 @@ export class CapAdapter implements AlertAdapter {
     // is read into the pair here. What a lapse before the onset means differs
     // by source (ECCC: the hazard is still coming; MeteoAlarm Switzerland: the
     // message was superseded), and only the integration knows the source.
-    const endsTs = Math.max(parseTimestamp(str(attributes['ends'])), parseTimestamp(str(attributes['expires'])));
+    const hazardEndTs = parseTimestamp(str(attributes['ends']));
+    const endsTs = Math.max(hazardEndTs, parseTimestamp(str(attributes['expires'])));
 
     const rawIcon = str(attributes['icon']);
     const providerIcon = rawIcon.startsWith('mdi:') ? rawIcon : undefined;
@@ -90,6 +91,7 @@ export class CapAdapter implements AlertAdapter {
       sentTs,
       onsetTs,
       endsTs,
+      endsAtHazardEnd: hazardEndTs > 0 && endsTs === hazardEndTs,
       description: str(attributes['description']),
       instruction: str(attributes['instruction']),
       url: httpUrl(str(attributes['url'])) || httpUrl(str(attributes['web'])),

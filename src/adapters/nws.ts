@@ -53,6 +53,7 @@ export class NwsAdapter implements AlertAdapter {
 
   private _normalize(a: NwsAlert): WeatherAlert {
     const severity = normalizeSeverity(a.Severity) as AlertSeverity;
+    const hazardEndTs = parseTimestamp(a.Ends);
     return {
       id: a.ID,
       event: a.Event || 'Unknown',
@@ -64,7 +65,8 @@ export class NwsAdapter implements AlertAdapter {
       urgency: a.Urgency || '',
       sentTs: parseTimestamp(a.Sent),
       onsetTs: parseTimestamp(a.Onset),
-      endsTs: parseTimestamp(a.Ends) || parseTimestamp(a.Expires),
+      endsTs: hazardEndTs || parseTimestamp(a.Expires),
+      endsAtHazardEnd: hazardEndTs > 0,
       description: a.Description || '',
       instruction: a.Instruction || '',
       url: a.URL || '',

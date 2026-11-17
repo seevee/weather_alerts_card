@@ -220,6 +220,13 @@ export interface WeatherAlert {
   sentTs: number;          // Unix seconds — when alert was issued (0 if unknown)
   onsetTs: number;         // Unix seconds — when alert becomes active (0 if unknown)
   endsTs: number;          // Unix seconds — when alert expires (0 if unknown)
+  /**
+   * True when `endsTs` is the hazard's own forecast end, on a provider that
+   * publishes the message's lapse as a separate time (NWS `Ends`, CAP `ends`,
+   * ECCC's event end). The detail grid then labels it "End", not "Expires":
+   * the message may expire hours earlier.
+   */
+  endsAtHazardEnd?: boolean;
   description: string;     // Full text (may be empty for providers without detail data)
   instruction: string;     // Actionable advice (may be empty)
   url: string;             // Link to official source (may be empty)

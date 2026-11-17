@@ -2259,7 +2259,7 @@ export class WeatherAlertsCard extends LitElement {
             <span class="meta-relative">${formatRelativeTime(progress.onsetTs, progress.nowTs, lang)}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">${progress.isExpired ? t('progress.expired_label', lang) : t('detail.expires', lang)}</span>
+            <span class="meta-label">${progress.isExpired ? t('progress.expired_label', lang) : t(alert.endsAtHazardEnd ? 'progress.end' : 'detail.expires', lang)}</span>
             ${progress.hasEndTime
           ? html`<span class="meta-value">${formatLocalTimestamp(progress.endsTs, this._locale, lang)}</span>
             <span class="meta-relative">${formatRelativeTime(progress.endsTs, progress.nowTs, lang)}</span>`
