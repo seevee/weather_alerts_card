@@ -329,6 +329,8 @@ export interface EcccAlert {
   alert_code?: string;   // EC short code, e.g. 'RFW'
   type?: string;         // 'warning' | 'watch' | 'advisory' | 'statement' | 'ending'
   url?: string;          // optional — only present when upstream sets it
+  validity_time?: string;  // hazard start, ISO 8601 (env-canada 0.20.7+, core route only)
+  event_end_time?: string; // hazard end, ISO 8601 (same)
 }
 
 // Raw DWD warning shape from the dwd_weather_warnings integration (nested object at warning_N keys)

@@ -129,6 +129,26 @@ describe('CapAdapter', () => {
       expect(alerts[0].endsTs).toBeGreaterThan(expiresTs);
     });
 
+    it('takes the later of ends and expires, since a message can outlive its forecast end', () => {
+      const attrs = makeCapAttributes({
+        ends: '2026-04-25T10:40:00+00:00',
+        expires: '2026-04-25T11:00:00+00:00',
+      });
+      expect(adapter.parseAlerts(attrs)[0].endsTs).toBe(Date.parse('2026-04-25T11:00:00+00:00') / 1000);
+    });
+
+    // A lapse before the onset is passed through as it came. MeteoAlarm
+    // Switzerland sends a superseded message this way (sent 11:06, expires
+    // 11:15, onset 20:00), and it has to stay expired.
+    it('does not reinterpret an expires that falls before the onset', () => {
+      const attrs = makeCapAttributes({
+        sent: '2026-11-16T10:06:50+00:00',
+        onset: '2026-11-16T20:00:00+00:00',
+        expires: '2026-11-16T10:15:30+00:00',
+      });
+      expect(adapter.parseAlerts(attrs)[0].endsTs).toBe(Date.parse('2026-11-16T10:15:30Z') / 1000);
+    });
+
     it('falls back to effective when sent is absent', () => {
       const attrs = makeCapAttributes({ effective: '2026-04-25T09:30:00+00:00' });
       delete attrs.sent;

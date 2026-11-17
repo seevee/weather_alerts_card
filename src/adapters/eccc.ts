@@ -1,5 +1,5 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, EcccAlert, WeatherAlert } from '../types';
-import { ECCC_COLOR_PALETTE, ecccTierHex, parseTimestamp, SEVERITY_RANK } from '../utils';
+import { alertEndTs, ECCC_COLOR_PALETTE, ecccTierHex, parseTimestamp, SEVERITY_RANK } from '../utils';
 
 // Locale-aware fallback URLs for the ECCC weather entry point.
 // Used when the per-alert `url` field is absent (the WFS-fed path of the
@@ -183,6 +183,8 @@ const CORE_FIELDS: [keyof EcccAlert, string][] = [
   ['impact', 'impact'],
   ['alert_code', 'alert_code'],
   ['url', 'url'],
+  ['validity_time', 'validity_time'],
+  ['event_end_time', 'event_end_time'],
 ];
 
 /** One `get_alerts` record, in the shape `parseAlerts` reads. */
@@ -220,7 +222,13 @@ export class EcccAdapter implements AlertAdapter {
 
   private _normalize(a: EcccAlert, fallbackUrlValue: string): WeatherAlert {
     const issuedTs = parseTimestamp(a.issued);
-    const expiryTs = parseTimestamp(a.expiry);
+    // `issued` and `expiry` are the bulletin's own times: when it was published
+    // and when it lapses. The hazard's start and end are separate fields, which
+    // the library carries from env-canada 0.20.7 (env_canada#184). A statement
+    // can lapse before the weather it announces begins, so the hazard start
+    // wins over the publication time.
+    const onsetTs = parseTimestamp(a.validity_time) || issuedTs;
+    const endsTs = alertEndTs(issuedTs, onsetTs, parseTimestamp(a.event_end_time), parseTimestamp(a.expiry));
     const severity = maxSeverity(
       sevFromColor(a.color),
       sevFromType(a.type),
@@ -248,8 +256,8 @@ export class EcccAdapter implements AlertAdapter {
       certainty,
       urgency: '',
       sentTs: issuedTs,
-      onsetTs: issuedTs,
-      endsTs: expiryTs,
+      onsetTs,
+      endsTs,
       description: str(a.text),
       instruction: '',
       url: str(a.url) || fallbackUrlValue,

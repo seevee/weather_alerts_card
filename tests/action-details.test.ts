@@ -10,7 +10,7 @@ import {
 } from '../src/action-details';
 import { NinaAdapter } from '../src/adapters/nina';
 import { EcccAdapter } from '../src/adapters/eccc';
-import type { HassEntity, HomeAssistant } from '../src/types';
+import type { HassEntity, HomeAssistant, WeatherAlert } from '../src/types';
 
 // NINA on HA 2026.11+: the slot carries `id` alone and the warning comes from
 // `nina.get_details` (#403). The response uses the old attribute names.
@@ -280,6 +280,49 @@ describe('action details: core Environment Canada', () => {
 
     requestActionDetails(hass, [ADVISORIES, WARNINGS]); // answered: nothing more is sent
     expect(send).toHaveBeenCalledTimes(3);
+  });
+
+  // env-canada 0.20.7 adds the hazard's own start and end to each record
+  // (env_canada#184). Times are the Calgary statement that issue was filed on:
+  // the bulletin lapses hours before the snow starts.
+  it('runs an alert over the hazard times when the record carries them', async () => {
+    const statement = {
+      ...RECORD,
+      date: '2026-11-16T21:30:28.233Z',
+      expiry_time: '2026-11-17T13:30:28.233Z',
+      validity_time: '2026-11-17T18:00:00.000Z',
+      event_end_time: '2026-11-19T06:00:00.000Z',
+    };
+    const parse = async (record: Record<string, unknown>): Promise<WeatherAlert | undefined> => {
+      resetActionDetails();
+      const states = { [ADVISORIES]: counting() };
+      const { hass } = makeEccc(states, { advisories: [record] });
+      requestActionDetails(hass, [ADVISORIES]);
+      await settle();
+      await settle();
+      return new EcccAdapter().parseAlerts(actionAttributes(ADVISORIES, states[ADVISORIES]))[0];
+    };
+    const ts = (iso: string): number => Date.parse(iso) / 1000;
+
+    const full = await parse(statement);
+    expect(full?.sentTs).toBe(ts(statement.date));
+    expect(full?.onsetTs).toBe(ts(statement.validity_time));
+    expect(full?.endsTs).toBe(ts(statement.event_end_time));
+
+    // The service leaves either one out as null: each falls back on its own.
+    const noEnd = await parse({ ...statement, event_end_time: null });
+    expect(noEnd?.onsetTs).toBe(ts(statement.validity_time));
+    // Here the bulletin lapses before the hazard starts, which is no end at all.
+    expect(noEnd?.endsTs).toBe(0);
+    const laterLapse = await parse({ ...statement, event_end_time: null, expiry_time: '2026-11-18T13:30:00.000Z' });
+    expect(laterLapse?.endsTs).toBe(ts('2026-11-18T13:30:00.000Z'));
+    // The end is the later of the two: a bulletin that outlives its forecast
+    // hazard end (ECCC's blizzard warning that night) stays up until it lapses.
+    const outlives = await parse({ ...statement, validity_time: '2026-11-17T01:22:00.000Z', event_end_time: '2026-11-17T11:00:00.000Z' });
+    expect(outlives?.endsTs).toBe(ts(statement.expiry_time));
+    const noStart = await parse({ ...statement, validity_time: null });
+    expect(noStart?.onsetTs).toBe(ts(statement.date));
+    expect(noStart?.endsTs).toBe(ts(statement.event_end_time));
   });
 
   it('asks again when the titles change', async () => {

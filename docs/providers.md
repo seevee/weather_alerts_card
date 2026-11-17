@@ -360,7 +360,7 @@ CAP Alerts is still the route to prefer where you can install it:
 | Feed | NAAD, the national CAP firehose | GeoMet WFS, which lags and truncates it |
 | Map | The alert's own polygons | None |
 | Severity and certainty | Raw CAP values | Derived from colour, type and impact |
-| Start time | The CAP onset, where the message has one | The time the alert was published, so there is no "starts in" phase |
+| Start and end time | The CAP onset and end, where the message has them | The hazard's start and end once Home Assistant ships `env-canada` 0.20.7 or later. Before that, the time the alert was published and the time the bulletin lapses, so there is no "starts in" phase |
 | Instructions | The CAP instruction text, where the message has one | None |
 | Entities | One per alert, for automations and `tap_action: more-info` | Five counters |
 
