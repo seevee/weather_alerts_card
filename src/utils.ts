@@ -810,6 +810,16 @@ const bySeverityThenOnset = (a: WeatherAlert, b: WeatherAlert): number => {
   return (a.onsetTs || Infinity) - (b.onsetTs || Infinity);
 };
 
+const byOnsetThenSeverity = (a: WeatherAlert, b: WeatherAlert): number => {
+  // Two alerts without an onset might cause `Infinity - Infinity = NaN`, so the
+  // comparison between potential Infinities must happen before their difference
+  // is computed.
+  const aOnset = a.onsetTs || Infinity;
+  const bOnset = b.onsetTs || Infinity;
+  if (aOnset !== bOnset) return aOnset - bOnset;
+  return (SEVERITY_RANK[a.severity] ?? 4) - (SEVERITY_RANK[b.severity] ?? 4);
+};
+
 /**
  * Order alerts for display. `ref` is the card's resolved reference point
  * (lon-first, from `resolveReferencePoint`) and only `distance` reads it.
@@ -828,7 +838,7 @@ export function sortAlerts(
   ref?: [number, number],
 ): WeatherAlert[] {
   if (order === 'onset') {
-    return [...alerts].sort((a, b) => (a.onsetTs || Infinity) - (b.onsetTs || Infinity));
+    return [...alerts].sort(byOnsetThenSeverity);
   }
   if (order === 'severity') {
     return [...alerts].sort(bySeverityThenOnset);
