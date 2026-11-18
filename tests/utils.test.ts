@@ -642,8 +642,8 @@ describe('sortAlerts', () => {
   it('sorts by onset time, then by severity, also when onset times are missing', () => {
     const early_minor = makeAlert({ id: 'early_minor', onsetTs: parseTimestamp('2026-03-06T10:00:00Z'), severity: 'minor' });
     const early_severe = makeAlert({ id: 'early_severe', onsetTs: parseTimestamp('2026-03-06T10:00:00Z'), severity: 'severe' });
-    const no_onset_extreme = makeAlert({ id: 'no_onset_extreme', severity: 'extreme' });
-    const no_onset_severe = makeAlert({ id: 'no_onset_severe', severity: 'severe' });
+    const no_onset_extreme = makeAlert({ id: 'no_onset_extreme', onsetTs: 0, severity: 'extreme' });
+    const no_onset_severe = makeAlert({ id: 'no_onset_severe', onsetTs: 0, severity: 'severe' });
     const late = makeAlert({ id: 'late', onsetTs: parseTimestamp('2026-03-06T14:00:00Z') });
     const sorted = sortAlerts([no_onset_severe, no_onset_extreme, late, early_minor, early_severe], 'onset');
     expect(sorted[0].id).toBe('early_severe');
