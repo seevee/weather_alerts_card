@@ -21,7 +21,7 @@ const { chromium } = require('playwright');
 const { createServer } = require('http');
 const { readFileSync, mkdirSync, rmSync, renameSync, statSync } = require('fs');
 const { execFileSync } = require('child_process');
-const { extname, resolve, join } = require('path');
+const { extname, resolve, sep } = require('path');
 
 const ROOT = resolve(__dirname, '..');
 const OUT_DIR = resolve(ROOT, 'img');
@@ -111,14 +111,20 @@ function startServer(port) {
   return new Promise((res, rej) => {
     const server = createServer((req, resp) => {
       const urlPath = req.url.split('?')[0];
-      const filePath = join(ROOT, urlPath);
+      const filePath = resolve(ROOT, '.' + urlPath);
+      // Serve only files under the repo root; `..` in the URL must not escape it.
+      if (!filePath.startsWith(ROOT + sep)) {
+        resp.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        resp.end('Forbidden');
+        return;
+      }
       try {
         const data = readFileSync(filePath);
         resp.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
         resp.end(data);
       } catch {
-        resp.writeHead(404);
-        resp.end('Not found: ' + urlPath);
+        resp.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        resp.end('Not found');
       }
     });
     server.listen(port, '127.0.0.1', () => res(server));

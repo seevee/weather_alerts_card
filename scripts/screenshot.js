@@ -11,7 +11,7 @@
 const { chromium } = require('playwright');
 const { createServer } = require('http');
 const { readFileSync } = require('fs');
-const { extname, resolve, join } = require('path');
+const { extname, resolve, sep } = require('path');
 
 const ROOT = resolve(__dirname, '..');
 
@@ -59,22 +59,28 @@ const MIME = {
 };
 
 function startServer(port) {
-  return new Promise((resolve, reject) => {
+  return new Promise((done, fail) => {
     const server = createServer((req, res) => {
       const urlPath = req.url.split('?')[0];
-      const filePath = join(ROOT, urlPath === '/' ? '/scripts/screenshot-harness.html' : urlPath);
+      const filePath = resolve(ROOT, '.' + (urlPath === '/' ? '/scripts/screenshot-harness.html' : urlPath));
+      // Serve only files under the repo root; `..` in the URL must not escape it.
+      if (!filePath.startsWith(ROOT + sep)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Forbidden');
+        return;
+      }
       try {
         const data = readFileSync(filePath);
         const mime = MIME[extname(filePath)] || 'application/octet-stream';
         res.writeHead(200, { 'Content-Type': mime });
         res.end(data);
       } catch {
-        res.writeHead(404);
-        res.end('Not found: ' + urlPath);
+        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Not found');
       }
     });
-    server.listen(port, '127.0.0.1', () => resolve(server));
-    server.on('error', reject);
+    server.listen(port, '127.0.0.1', () => done(server));
+    server.on('error', fail);
   });
 }
 
