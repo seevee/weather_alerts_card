@@ -63,6 +63,12 @@ function startServer(port) {
     const server = createServer((req, res) => {
       const urlPath = req.url.split('?')[0];
       const filePath = resolve(ROOT, '.' + (urlPath === '/' ? '/scripts/screenshot-harness.html' : urlPath));
+      // Reject `..` escapes before touching the filesystem, so 403 vs 404 cannot reveal what exists outside the root.
+      if (!filePath.startsWith(ROOT + sep)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Forbidden');
+        return;
+      }
       try {
         const realFilePath = realpathSync(filePath);
         // Check the canonical path so symlinks cannot escape the repo root.
