@@ -10,10 +10,10 @@
 
 const { chromium } = require('playwright');
 const { createServer } = require('http');
-const { readFileSync } = require('fs');
+const { readFileSync, realpathSync } = require('fs');
 const { extname, resolve, sep } = require('path');
 
-const ROOT = resolve(__dirname, '..');
+const ROOT = realpathSync(resolve(__dirname, '..'));
 
 // ---- MDI icon map (paths injected into the page before load) ----
 const {
@@ -63,15 +63,16 @@ function startServer(port) {
     const server = createServer((req, res) => {
       const urlPath = req.url.split('?')[0];
       const filePath = resolve(ROOT, '.' + (urlPath === '/' ? '/scripts/screenshot-harness.html' : urlPath));
-      // Serve only files under the repo root; `..` in the URL must not escape it.
-      if (!filePath.startsWith(ROOT + sep)) {
-        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('Forbidden');
-        return;
-      }
       try {
-        const data = readFileSync(filePath);
-        const mime = MIME[extname(filePath)] || 'application/octet-stream';
+        const realFilePath = realpathSync(filePath);
+        // Check the canonical path so symlinks cannot escape the repo root.
+        if (!realFilePath.startsWith(ROOT + sep)) {
+          res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('Forbidden');
+          return;
+        }
+        const data = readFileSync(realFilePath);
+        const mime = MIME[extname(realFilePath)] || 'application/octet-stream';
         res.writeHead(200, { 'Content-Type': mime });
         res.end(data);
       } catch {
