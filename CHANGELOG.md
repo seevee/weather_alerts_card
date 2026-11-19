@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.10.0 (2026-11-19)
+
+### Added
+- Show NINA warnings on HA 2026.11 through nina.get_details (#409)
+- Load the editor on demand from its own file (#408)
+- Show alerts from the built-in environment_canada integration (#417)
+- Run built-in ECCC alerts over the hazard's start and end (#426)
+
+### Fixed
+- Always put a date on a phone-width axis (#414)
+- Hold the breathe while the card is being edited (#413)
+- Show a warning once when two providers carry it (#419)
+- Refresh action-backed alert details every 15 minutes (#425)
+- Run an ended built-in ECCC record over its own bulletin (#427)
+- Label the end "End" when it is the hazard's end (#428)
+- When sorting alerts by onset, use severity as the second criterion (#402)
+
+### Documentation
+- Route NINA through CAP Alerts' BBK provider (#407)
+- Say which card version the NINA fetch and the two-file install start at (#412)
+- Add the action route to the capability matrix (#416)
+
+### Internal
+- Give the minute-boundary test room for the tick's slack (#411)
+- Bump rolldown from 1.3.0 to 1.3.2 in the dev-deps group (#422)
+- Bump typescript-eslint (#421)
+- Give the hideExpired removal its full tick window (#424)
+- Quiet the banners and stray warnings in the test output (#430)
+
 ## 3.9.2 (2026-11-15)
 
 ### Fixed
