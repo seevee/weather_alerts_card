@@ -155,7 +155,7 @@ export interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
   excludeEventCodes?: string[]; // NWS event codes to exclude, e.g. ["SCY"] — empty/omitted = none excluded
   minSeverity?: AlertSeverity;
-  hideNwsTestAlerts?: boolean; // true: hide NWS Alerts records with Status: Test
+  hideTestAlerts?: boolean;  // true: hide alerts explicitly marked as tests by supported integrations
   maxDistanceKm?: number;      // kilometres from the card's reference point — the HA home location (hass.config.latitude/longitude) unless myLocationEntity resolves — whatever the install's unit system. Only excludes alerts carrying a `point` (point-incident providers like NSW RFS); area warnings have no distance and are never filtered. Omitted/non-positive/non-numeric = no filtering.
   sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate

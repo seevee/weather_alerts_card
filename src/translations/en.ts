@@ -110,7 +110,7 @@ export const en: TranslationMap = {
   'editor.tz_server': 'Server (Home Assistant)',
   'editor.tz_browser': 'Browser (local device)',
   'editor.min_severity': 'Minimum severity',
-  'editor.hide_nws_test_alerts': 'Hide NWS test alerts',
+  'editor.hide_test_alerts': 'Hide test alerts',
   'editor.severity_all': 'All severities',
   'editor.severity_minor': 'Minor or higher',
   'editor.severity_moderate': 'Moderate or higher',

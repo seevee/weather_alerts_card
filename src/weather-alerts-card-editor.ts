@@ -1025,8 +1025,8 @@ export class WeatherAlertsCardEditor extends LitElement {
     `;
   }
 
-  private _showsNwsTestControl(): boolean {
-    if (this._config.hideNwsTestAlerts !== undefined || this._config.provider === 'nws') return true;
+  private _showsTestAlertsControl(): boolean {
+    if (this._config.hideTestAlerts !== undefined || this._config.provider === 'nws') return true;
     if (this._config.provider) return false;
     return this._getSelectedEntities().some(id => {
       const state = this.hass?.states[id];
@@ -1071,7 +1071,7 @@ export class WeatherAlertsCardEditor extends LitElement {
       })}
 
       ${this._renderSelect('minSeverity')}
-      ${this._showsNwsTestControl() ? this._renderToggle('hideNwsTestAlerts') : nothing}
+      ${this._showsTestAlertsControl() ? this._renderToggle('hideTestAlerts') : nothing}
 
       ${this._showsRadiusControl() ? this._renderTextField({
         type: 'number',

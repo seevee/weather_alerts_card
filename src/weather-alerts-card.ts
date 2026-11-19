@@ -1175,8 +1175,8 @@ export class WeatherAlertsCard extends LitElement {
     let result = alerts;
 
     // Drop tests before dedup so they cannot absorb a real alert.
-    if (this._config.hideNwsTestAlerts === true) {
-      result = result.filter(a => a.provider !== 'nws' || !a.isTest);
+    if (this._config.hideTestAlerts === true) {
+      result = result.filter(a => !a.isTest);
     }
 
     // Radius filter runs before dedup: distance is a per-incident

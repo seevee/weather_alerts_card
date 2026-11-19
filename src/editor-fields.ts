@@ -25,7 +25,7 @@ export type Panel =
 
 export type ToggleKey =
   | 'animations'
-  | 'hideNwsTestAlerts'
+  | 'hideTestAlerts'
   | 'deduplicateHeadlines'
   | 'deduplicate'
   | 'showDetails'
@@ -107,7 +107,7 @@ const opts = (prefix: string, ...values: string[]) =>
   values.map(value => ({ value, label: `${prefix}${value.replace(/-/g, '_')}` }));
 
 export const TOGGLE_FIELDS: readonly ToggleField[] = [
-  bool('hideNwsTestAlerts', 'filtering', false, 'editor.hide_nws_test_alerts'),
+  bool('hideTestAlerts', 'filtering', false, 'editor.hide_test_alerts'),
   bool('showProvider', 'appearance', false, 'editor.show_provider'),
   // Paint each alert in the color its issuer published (ECCC's tag,
   // MeteoAlarm's awareness colour, INMET's hex) over the colorTheme ladder.
@@ -185,7 +185,7 @@ export const FIELDS: Readonly<Record<SimpleKey, Field>> = { ...TOGGLES, ...SELEC
  *  from the default plus the bespoke keys that are present. */
 export const PANELS: Readonly<Record<Panel, readonly (keyof WeatherAlertsCardConfig)[]>> = {
   source: ['entity', 'entities', 'device', 'devices', 'sources', 'title'],
-  filtering: ['zones', 'eventCodes', 'excludeEventCodes', 'minSeverity', 'hideNwsTestAlerts', 'maxDistanceKm', 'myLocationEntity'],
+  filtering: ['zones', 'eventCodes', 'excludeEventCodes', 'minSeverity', 'hideTestAlerts', 'maxDistanceKm', 'myLocationEntity'],
   appearance: ['layout', 'timelineHorizon', 'colorTheme', 'providerColors', 'fontSize', 'animations', 'showProvider', 'progressFill', 'progressStyle', 'iconBorderStyle'],
   details: ['showDetails', 'expandDetails', 'showMetadata', 'showDescription', 'showInstructions', 'showGeometry', 'geometryStyle', 'showMyLocation', 'showSourceLink'],
   behavior: ['tap_action', 'sortOrder', 'hideExpired', 'hideNoAlerts', 'unavailableBehavior'],

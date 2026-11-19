@@ -70,12 +70,12 @@ describe('minSeverity filter', () => {
   });
 });
 
-describe('hideNwsTestAlerts', () => {
+describe('hideTestAlerts', () => {
   const config: WeatherAlertsCardConfig = { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' };
   const test = { ...nwsAlert('Tsunami Warning', 'Extreme'), NWSCode: 'TSW', Status: 'Test' };
 
-  it.each([undefined, false])('keeps test alerts with the setting %s', async hideNwsTestAlerts => {
-    const options = hideNwsTestAlerts === undefined ? config : { ...config, hideNwsTestAlerts };
+  it.each([undefined, false])('keeps test alerts with the setting %s', async hideTestAlerts => {
+    const options = hideTestAlerts === undefined ? config : { ...config, hideTestAlerts };
     const { card, cleanup } = await mountCard(options, makeHass([test]));
     expect(alertTitles(card)).toEqual(['Tsunami Warning']);
     cleanup();
@@ -84,7 +84,7 @@ describe('hideNwsTestAlerts', () => {
   it('hides the card when no qualifying alerts remain and shows it again on a real warning', async () => {
     const minor = nwsAlert('Small Craft Advisory', 'Minor');
     const { card, cleanup } = await mountCard(
-      { ...config, hideNwsTestAlerts: true, minSeverity: 'severe', hideNoAlerts: true },
+      { ...config, hideTestAlerts: true, minSeverity: 'severe', hideNoAlerts: true },
       makeHass([test, minor]),
     );
     expect(card.style.display).toBe('none');
@@ -107,7 +107,7 @@ describe('hideNwsTestAlerts', () => {
       },
     };
     const { card, cleanup } = await mountCard({
-      ...config, entities: ['sensor.cap_alert_tsunami'], showProvider: true, hideNwsTestAlerts: true,
+      ...config, entities: ['sensor.cap_alert_tsunami'], showProvider: true, hideTestAlerts: true,
     }, hass);
     expect(alertTitles(card)).toEqual(['Tsunami Warning']);
     expect(card.shadowRoot?.querySelector('.provider-hint')?.textContent?.trim()).toBe('CAP');
