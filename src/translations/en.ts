@@ -111,6 +111,7 @@ export const en: TranslationMap = {
   'editor.tz_browser': 'Browser (local device)',
   'editor.min_severity': 'Minimum severity',
   'editor.hide_test_alerts': 'Hide test alerts',
+  'editor.hide_test_alerts_helper': 'Only hides alerts the provider explicitly marks as tests. Currently supported by the NWS Alerts integration.',
   'editor.severity_all': 'All severities',
   'editor.severity_minor': 'Minor or higher',
   'editor.severity_moderate': 'Moderate or higher',

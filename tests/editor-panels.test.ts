@@ -116,10 +116,13 @@ describe('panel layout', () => {
     ['unrecognized source', {}, {}, false],
     ['non-NWS override', { provider: 'bom' }, { Alerts: [] }, false],
     ['already configured', { hideTestAlerts: true }, {}, true],
-  ] as const)('shows the test alert toggle when applicable: %s', (_name, extra, attributes, visible) => {
+  ] as const)('shows the test alert toggle and its hint when applicable: %s', (_name, extra, attributes, visible) => {
     const { editor } = makeEditor(base(extra));
     editor.hass.states['sensor.nws_alerts'].attributes = attributes;
-    expect(switchLabels(panels(renderHost(editor)).filtering).includes('Hide test alerts')).toBe(visible);
+    const { filtering } = panels(renderHost(editor));
+    expect(switchLabels(filtering).includes('Hide test alerts')).toBe(visible);
+    expect(filtering.querySelector('.helper-text')?.textContent?.trim())
+      .toBe(visible ? en['editor.hide_test_alerts_helper'] : undefined);
   });
 
   it('nests the styling group inside Appearance as a non-outlined panel', () => {

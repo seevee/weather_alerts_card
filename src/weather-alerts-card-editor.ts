@@ -1071,7 +1071,10 @@ export class WeatherAlertsCardEditor extends LitElement {
       })}
 
       ${this._renderSelect('minSeverity')}
-      ${this._showsTestAlertsControl() ? this._renderToggle('hideTestAlerts') : nothing}
+      ${this._showsTestAlertsControl() ? html`
+        ${this._renderToggle('hideTestAlerts')}
+        <div class="helper-text">${t('editor.hide_test_alerts_helper', lang)}</div>
+      ` : nothing}
 
       ${this._showsRadiusControl() ? this._renderTextField({
         type: 'number',
