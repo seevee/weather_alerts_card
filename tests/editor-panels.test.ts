@@ -109,6 +109,19 @@ describe('panel layout', () => {
     expect(switchLabels(byPanel.appearance)).toContain('Show provider label');
   });
 
+  it.each([
+    ['explicit NWS', { provider: 'nws' }, {}, true],
+    ['auto-detected NWS', {}, { Alerts: [] }, true],
+    ['CAP Alerts', {}, { incident_platform_version: '1.0', id: 'cap1', Alerts: [] }, false],
+    ['unrecognized source', {}, {}, false],
+    ['non-NWS override', { provider: 'bom' }, { Alerts: [] }, false],
+    ['already configured', { hideNwsTestAlerts: true }, {}, true],
+  ] as const)('shows the NWS test toggle when applicable: %s', (_name, extra, attributes, visible) => {
+    const { editor } = makeEditor(base(extra));
+    editor.hass.states['sensor.nws_alerts'].attributes = attributes;
+    expect(switchLabels(panels(renderHost(editor)).filtering).includes(en['editor.hide_nws_test_alerts'])).toBe(visible);
+  });
+
   it('nests the styling group inside Appearance as a non-outlined panel', () => {
     const byPanel = panels(renderHost(makeEditor(base({ progressFill: 'background', progressStyle: { active: 'striped' } })).editor));
     const nested = byPanel.appearance.querySelector('ha-expansion-panel') as PanelEl;

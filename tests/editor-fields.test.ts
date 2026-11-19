@@ -87,8 +87,8 @@ function renderControls(editor: EditorInternals): Control[] {
 }
 
 describe('registry shape', () => {
-  it('holds 17 toggles and 14 selects with unique keys', () => {
-    expect(TOGGLE_FIELDS).toHaveLength(17);
+  it('holds 18 toggles and 14 selects with unique keys', () => {
+    expect(TOGGLE_FIELDS).toHaveLength(18);
     expect(SELECT_FIELDS).toHaveLength(14);
     expect(new Set(ALL.map(f => f.key)).size).toBe(ALL.length);
     expect(Object.keys(FIELDS)).toHaveLength(ALL.length);

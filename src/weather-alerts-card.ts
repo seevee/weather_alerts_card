@@ -1174,7 +1174,12 @@ export class WeatherAlertsCard extends LitElement {
     if (!this._config) return alerts;
     let result = alerts;
 
-    // Radius filter runs FIRST, before dedup: distance is a per-incident
+    // Drop tests before dedup so they cannot absorb a real alert.
+    if (this._config.hideNwsTestAlerts === true) {
+      result = result.filter(a => a.provider !== 'nws' || !a.isTest);
+    }
+
+    // Radius filter runs before dedup: distance is a per-incident
     // property, and dedup's representative keeps only group[0]'s point, so a
     // merged group would otherwise be judged by one arbitrary member's
     // location. Alerts with no point always pass — an area warning either

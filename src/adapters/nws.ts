@@ -75,6 +75,7 @@ export class NwsAdapter implements AlertAdapter {
       zones: collectZones(a),
       eventCode: a.NWSCode || '',
       provider: 'nws',
+      isTest: a.Status === 'Test',
       phase: '',
       severityInferred: !a.Severity || normalizeSeverity(a.Severity) === 'unknown',
       certaintyInferred: false,

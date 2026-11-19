@@ -163,6 +163,14 @@ describe('NwsAdapter', () => {
     });
 
     describe('nws_alerts integration compatibility (optional fields)', () => {
+      it('marks only the exact CAP Test status as a test bulletin', () => {
+        const attrs = makeNwsAttributes([
+          { Status: 'Test' }, { Status: 'Actual' }, { Status: 'Exercise' },
+          { Status: 'test' }, { Status: ' Test ' }, {},
+        ]);
+        expect(adapter.parseAlerts(attrs).map(a => a.isTest)).toEqual([true, false, false, false, false, false]);
+      });
+
       it('falls back to AreasAffected when AreaDesc is absent', () => {
         const attrs = makeNwsAttributes([{
           AreaDesc: undefined,

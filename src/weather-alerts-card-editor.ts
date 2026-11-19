@@ -5,6 +5,7 @@ import type { Connection } from 'home-assistant-js-websocket';
 import { HomeAssistant, WeatherAlertsCardConfig, EntityRegistryDisplayEntry, DecoPhase, ProgressDecoration, IconBorderStyle, ProgressStyleConfig, IconBorderStyleConfig, ActionConfig, PROGRESS_DECO_DEFAULTS, ICON_BORDER_DEFAULTS } from './types';
 import { BESPOKE_LABELS, DETAIL_SECTIONS, FIELDS, PANELS, PANEL_LABELS, Panel, SELECTS, STYLING_KEYS, TOGGLES, SelectKey, SimpleKey, SimpleValue, ToggleKey, changedKeys, effectiveValue, isChanged, isOn, shortLabel, withKey } from './editor-fields';
 import { canHandleAny, ENTITY_NAME_PATTERNS, getAdapter, knownFeedSources, pointCapableProviders } from './adapters';
+import { actionAttributes } from './action-details';
 import { LengthUnit, displayToKm, kmToDisplay, normalizeColorConfig, toLengthUnit } from './utils';
 import { configuredDevices, deviceEntityIds, resolveDeviceAlertEntities, subscribeEntityRegistry } from './registry';
 import { t } from './localize';
@@ -1024,6 +1025,19 @@ export class WeatherAlertsCardEditor extends LitElement {
     `;
   }
 
+  private _showsNwsTestControl(): boolean {
+    if (this._config.hideNwsTestAlerts !== undefined || this._config.provider === 'nws') return true;
+    if (this._config.provider) return false;
+    return this._getSelectedEntities().some(id => {
+      const state = this.hass?.states[id];
+      if (!state) return false;
+      const attrs = actionAttributes(id, state);
+      const adapter = getAdapter(undefined, attrs);
+      // NWS is also the fallback for unrecognized attributes.
+      return adapter.provider === 'nws' && adapter.canHandle(attrs);
+    });
+  }
+
   private _renderFilteringSection(lang: string): TemplateResult {
     const unit = this._lengthUnit();
     const zonesStr = this._config.zones ? this._config.zones.join(', ') : '';
@@ -1057,6 +1071,7 @@ export class WeatherAlertsCardEditor extends LitElement {
       })}
 
       ${this._renderSelect('minSeverity')}
+      ${this._showsNwsTestControl() ? this._renderToggle('hideNwsTestAlerts') : nothing}
 
       ${this._showsRadiusControl() ? this._renderTextField({
         type: 'number',
