@@ -10,7 +10,7 @@ interface CardInternals extends HTMLElement {
   remove(): void;
 }
 
-function nwsAlert(event: string, severity: string): Record<string, unknown> {
+function nwsAlert(event: string, severity: string) {
   const now = Date.now();
   return {
     ID: `${event}-${severity}`,
@@ -66,6 +66,84 @@ describe('minSeverity filter', () => {
     expect(titles).toContain('Tornado Warning');
     expect(titles).toContain('Mystery Alert');
     expect(titles).not.toContain('Small Craft Advisory');
+    cleanup();
+  });
+});
+
+describe('hideTestAlerts', () => {
+  const config: WeatherAlertsCardConfig = { type: 'custom:weather-alerts-card', entity: 'sensor.nws_alerts' };
+  const test = { ...nwsAlert('Tsunami Warning', 'Extreme'), NWSCode: 'TSW', Status: 'Test' };
+
+  it.each([undefined, true])('hides test alerts with the setting %s', async hideTestAlerts => {
+    const options = hideTestAlerts === undefined ? config : { ...config, hideTestAlerts };
+    const { card, cleanup } = await mountCard(options, makeHass([test]));
+    expect(alertTitles(card)).toEqual([]);
+    cleanup();
+  });
+
+  it('keeps test alerts when the setting is false', async () => {
+    const { card, cleanup } = await mountCard({ ...config, hideTestAlerts: false }, makeHass([test]));
+    expect(alertTitles(card)).toEqual(['Tsunami Warning']);
+    cleanup();
+  });
+
+  it('hides the card when no qualifying alerts remain and shows it again on a real warning', async () => {
+    const minor = nwsAlert('Small Craft Advisory', 'Minor');
+    const { card, cleanup } = await mountCard(
+      { ...config, minSeverity: 'severe', hideNoAlerts: true },
+      makeHass([test, minor]),
+    );
+    expect(card.style.display).toBe('none');
+    expect(alertTitles(card)).toEqual([]);
+
+    card.hass = makeHass([test, minor, { ...nwsAlert('Tornado Warning', 'Severe'), Status: 'Actual' }]);
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+    expect(card.style.display).toBe('');
+    expect(alertTitles(card)).toEqual(['Tornado Warning']);
+    cleanup();
+  });
+
+  it('filters CAP test alerts by default, but shows them when opted out', async () => {
+    const hass = makeHass([]);
+    hass.states['sensor.cap_alert_tsunami'] = {
+      state: 'on',
+      attributes: {
+        incident_platform_version: '1.0', id: 'cap-tsunami', event: test.Event,
+        severity: 'Extreme', ends: test.Ends, status: 'Test',
+      },
+    };
+    const capConfig = { type: 'custom:weather-alerts-card', entity: 'sensor.cap_alert_tsunami', hideNoAlerts: true };
+    const { card, cleanup } = await mountCard(capConfig, hass);
+    expect(card.style.display).toBe('none');
+    expect(alertTitles(card)).toEqual([]);
+    card.setConfig({ ...capConfig, hideTestAlerts: false });
+    await (card as unknown as { updateComplete: Promise<void> }).updateComplete;
+    expect(card.style.display).toBe('');
+    expect(alertTitles(card)).toEqual(['Tsunami Warning']);
+    cleanup();
+  });
+
+  it('removes both NWS and CAP tests before dedup without hiding a matching actual CAP alert', async () => {
+    const hass = makeHass([test]);
+    hass.states['sensor.cap_alert_tsunami'] = {
+      state: 'on',
+      attributes: {
+        incident_platform_version: '1.0', id: 'cap-tsunami', event: test.Event,
+        severity: 'Extreme', ends: test.Ends, status: 'Test',
+      },
+    };
+    hass.states['sensor.cap_alert_actual'] = {
+      state: 'on',
+      attributes: {
+        incident_platform_version: '1.0', id: 'cap-actual', event: test.Event,
+        severity: 'Extreme', ends: test.Ends, status: 'Actual',
+      },
+    };
+    const { card, cleanup } = await mountCard({
+      ...config, entities: ['sensor.cap_alert_tsunami', 'sensor.cap_alert_actual'], showProvider: true,
+    }, hass);
+    expect(alertTitles(card)).toEqual(['Tsunami Warning']);
+    expect(card.shadowRoot?.querySelector('.provider-hint')?.textContent?.trim()).toBe('CAP');
     cleanup();
   });
 });

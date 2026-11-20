@@ -155,6 +155,7 @@ export interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // NWS event codes to include, e.g. ["SVR","TOR"] — empty/omitted = all
   excludeEventCodes?: string[]; // NWS event codes to exclude, e.g. ["SCY"] — empty/omitted = none excluded
   minSeverity?: AlertSeverity;
+  hideTestAlerts?: boolean;  // undefined/true: hide alerts explicitly marked as tests by supported integrations; false: show them
   maxDistanceKm?: number;      // kilometres from the card's reference point — the HA home location (hass.config.latitude/longitude) unless myLocationEntity resolves — whatever the install's unit system. Only excludes alerts carrying a `point` (point-incident providers like NSW RFS); area warnings have no distance and are never filtered. Omitted/non-positive/non-numeric = no filtering.
   sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
   animations?: boolean;  // undefined: respects prefers-reduced-motion; true: always animate; false: never animate
@@ -235,6 +236,7 @@ export interface WeatherAlert {
   zones: string[];         // Normalized zone codes for filtering (uppercase)
   eventCode: string;       // Standardized event code, e.g. "SVR", "TOR" (empty if unavailable)
   provider: AlertProvider;
+  isTest?: boolean;        // Provider explicitly identifies this bulletin as a test
   phase: string;           // Lifecycle phase, e.g. "New", "Update", "Final" (empty if N/A)
   severityInferred: boolean;  // true if severity was synthesized/inferred, not raw from provider
   certaintyInferred: boolean; // true if certainty was synthesized/inferred, not raw from provider
@@ -286,6 +288,7 @@ export interface NwsAlert {
   ID: string;
   Event: string;
   Severity: string;
+  Status?: string;
   Certainty?: string;
   Urgency?: string;
   NWSCode?: string;          // NWS PPS event code, e.g. "TOW", "SVW" (v6.6+)

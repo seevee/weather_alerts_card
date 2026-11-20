@@ -109,6 +109,36 @@ describe('panel layout', () => {
     expect(switchLabels(byPanel.appearance)).toContain('Show provider label');
   });
 
+  it.each([
+    ['explicit NWS', { provider: 'nws' }, {}, true],
+    ['auto-detected NWS', {}, { Alerts: [] }, true],
+    ['explicit CAP', { provider: 'cap' }, {}, true],
+    ['CAP Alerts', {}, { incident_platform_version: '1.0', id: 'cap1', Alerts: [] }, true],
+    ['CAP overrides other provider', { provider: 'bom' }, { incident_platform_version: '1.0', id: 'cap1' }, true],
+    ['device', { device: 'device1' }, {}, true],
+    ['additional device', { devices: ['device1'] as string[] }, {}, true],
+    ['unrecognized source', {}, {}, false],
+    ['non-NWS override', { provider: 'bom' }, { Alerts: [] }, false],
+    ['already configured', { hideTestAlerts: false }, {}, true],
+  ] as const)('shows the test alert toggle and its hint when applicable: %s', (_name, extra, attributes, visible) => {
+    const { editor } = makeEditor(base(extra));
+    editor.hass.states['sensor.nws_alerts'].attributes = attributes;
+    const { filtering } = panels(renderHost(editor));
+    expect(switchLabels(filtering).includes('Hide test alerts')).toBe(visible);
+    expect(filtering.querySelector('.helper-text')?.textContent?.trim())
+      .toBe(visible ? en['editor.hide_test_alerts_helper'] : undefined);
+  });
+
+  it('starts with test filtering enabled and saves an explicit opt-out', () => {
+    const { editor, events } = makeEditor(base());
+    const sw = [...panels(renderHost(editor)).filtering.querySelectorAll('ha-switch')]
+      .find(el => labelOf(el) === 'Hide test alerts')! as HTMLElement & { checked: boolean };
+    expect(sw.checked).toBe(true);
+    sw.checked = false;
+    sw.dispatchEvent(new Event('change'));
+    expect(events).toEqual([base({ hideTestAlerts: false })]);
+  });
+
   it('nests the styling group inside Appearance as a non-outlined panel', () => {
     const byPanel = panels(renderHost(makeEditor(base({ progressFill: 'background', progressStyle: { active: 'striped' } })).editor));
     const nested = byPanel.appearance.querySelector('ha-expansion-panel') as PanelEl;

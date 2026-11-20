@@ -100,6 +100,7 @@ export class CapAdapter implements AlertAdapter {
       zones: collectZones(attributes),
       eventCode: eventCodeOf(attributes, params),
       provider: 'cap',
+      isTest: attributes['status'] === 'Test',
       phase: phaseLabel(str(attributes['phase'])),
       severityInferred: !rawSeverity && !normalizedSev,
       certaintyInferred: false,

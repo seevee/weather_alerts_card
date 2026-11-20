@@ -48,6 +48,7 @@ checkbox, which appears only when a matching integration is installed.
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list |
 | `sortOrder` | `'default'` | `'default'`, `'onset'` (severity breaks ties), `'severity'` (onset breaks ties), `'distance'` (nearest the reference point first; area warnings sort ahead of every point incident, then severity and onset break ties; no reference point behaves as `'default'`) |
 | `minSeverity` | `'all'` | `'all'`, `'minor'`, `'moderate'`, `'severe'`, `'extreme'` |
+| `hideTestAlerts` | `true` | Hide alerts explicitly marked as tests, regardless of severity; set `false` to show them. Supports NWS Alerts (`Status: Test`) and CAP Alerts (`status: Test`); other integrations are unaffected. |
 | `maxDistanceKm` | — | Hide point incidents further than this many kilometres from the reference point (HA home, or `myLocationEntity`). Point-incident alerts only (NSW RFS, and CAP Alerts entities that carry a single `points` marker, such as the Australian state feeds) |
 | `myLocationEntity` | — | `device_tracker` / `person` / `zone` whose coordinates replace HA home as the reference point, for `maxDistanceKm`, `sortOrder: distance`, the distance row and `showMyLocation` |
 | `eventCodes` | — | Event codes to include, e.g. `['SVR', 'TOR']` (NWS) or `['31', '95']` (DWD) |
@@ -515,6 +516,7 @@ interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // event codes to include — empty/omitted = all
   excludeEventCodes?: string[]; // event codes to exclude — empty/omitted = none
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
+  hideTestAlerts?: boolean;
   maxDistanceKm?: number;      // km from the reference point (HA home, or myLocationEntity); alerts carrying a point only
   myLocationEntity?: string;   // device_tracker / person / zone that replaces HA home as the reference point
   sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
