@@ -1175,7 +1175,7 @@ export class WeatherAlertsCard extends LitElement {
     let result = alerts;
 
     // Drop tests before dedup so they cannot absorb a real alert.
-    if (this._config.hideTestAlerts === true) {
+    if (this._config.hideTestAlerts !== false) {
       result = result.filter(a => !a.isTest);
     }
 

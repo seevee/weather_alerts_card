@@ -107,7 +107,7 @@ const opts = (prefix: string, ...values: string[]) =>
   values.map(value => ({ value, label: `${prefix}${value.replace(/-/g, '_')}` }));
 
 export const TOGGLE_FIELDS: readonly ToggleField[] = [
-  bool('hideTestAlerts', 'filtering', false, 'editor.hide_test_alerts'),
+  bool('hideTestAlerts', 'filtering', true, 'editor.hide_test_alerts'),
   bool('showProvider', 'appearance', false, 'editor.show_provider'),
   // Paint each alert in the color its issuer published (ECCC's tag,
   // MeteoAlarm's awareness colour, INMET's hex) over the colorTheme ladder.

@@ -115,7 +115,7 @@ describe('panel layout', () => {
     ['CAP Alerts', {}, { incident_platform_version: '1.0', id: 'cap1', Alerts: [] }, false],
     ['unrecognized source', {}, {}, false],
     ['non-NWS override', { provider: 'bom' }, { Alerts: [] }, false],
-    ['already configured', { hideTestAlerts: true }, {}, true],
+    ['already configured', { hideTestAlerts: false }, {}, true],
   ] as const)('shows the test alert toggle and its hint when applicable: %s', (_name, extra, attributes, visible) => {
     const { editor } = makeEditor(base(extra));
     editor.hass.states['sensor.nws_alerts'].attributes = attributes;
@@ -123,6 +123,16 @@ describe('panel layout', () => {
     expect(switchLabels(filtering).includes('Hide test alerts')).toBe(visible);
     expect(filtering.querySelector('.helper-text')?.textContent?.trim())
       .toBe(visible ? en['editor.hide_test_alerts_helper'] : undefined);
+  });
+
+  it('starts with test filtering enabled and saves an explicit opt-out', () => {
+    const { editor, events } = makeEditor(base());
+    const sw = [...panels(renderHost(editor)).filtering.querySelectorAll('ha-switch')]
+      .find(el => labelOf(el) === 'Hide test alerts')! as HTMLElement & { checked: boolean };
+    expect(sw.checked).toBe(true);
+    sw.checked = false;
+    sw.dispatchEvent(new Event('change'));
+    expect(events).toEqual([base({ hideTestAlerts: false })]);
   });
 
   it('nests the styling group inside Appearance as a non-outlined panel', () => {
