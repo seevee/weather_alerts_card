@@ -62,6 +62,15 @@ describe('CapAdapter', () => {
   });
 
   describe('parseAlerts', () => {
+    it('marks only exact Test status as a test bulletin', () => {
+      for (const [status, isTest] of [
+        ['Test', true], ['Actual', false], ['Exercise', false], ['test', false],
+        [' Test ', false], [undefined, false], [null, false],
+      ] as const) {
+        expect(adapter.parseAlerts(makeCapAttributes({ status }))[0].isTest).toBe(isTest);
+      }
+    });
+
     it('returns a single normalised WeatherAlert', () => {
       const alerts = adapter.parseAlerts(makeCapAttributes());
       expect(alerts).toHaveLength(1);

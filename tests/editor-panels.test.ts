@@ -112,7 +112,11 @@ describe('panel layout', () => {
   it.each([
     ['explicit NWS', { provider: 'nws' }, {}, true],
     ['auto-detected NWS', {}, { Alerts: [] }, true],
-    ['CAP Alerts', {}, { incident_platform_version: '1.0', id: 'cap1', Alerts: [] }, false],
+    ['explicit CAP', { provider: 'cap' }, {}, true],
+    ['CAP Alerts', {}, { incident_platform_version: '1.0', id: 'cap1', Alerts: [] }, true],
+    ['CAP overrides other provider', { provider: 'bom' }, { incident_platform_version: '1.0', id: 'cap1' }, true],
+    ['device', { device: 'device1' }, {}, true],
+    ['additional device', { devices: ['device1'] as string[] }, {}, true],
     ['unrecognized source', {}, {}, false],
     ['non-NWS override', { provider: 'bom' }, { Alerts: [] }, false],
     ['already configured', { hideTestAlerts: false }, {}, true],

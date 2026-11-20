@@ -1026,15 +1026,15 @@ export class WeatherAlertsCardEditor extends LitElement {
   }
 
   private _showsTestAlertsControl(): boolean {
-    if (this._config.hideTestAlerts !== undefined || this._config.provider === 'nws') return true;
-    if (this._config.provider) return false;
+    if (this._config.hideTestAlerts !== undefined || this._config.provider === 'nws' || this._config.provider === 'cap') return true;
+    if (this._config.device || this._config.devices?.length) return true;
     return this._getSelectedEntities().some(id => {
       const state = this.hass?.states[id];
       if (!state) return false;
       const attrs = actionAttributes(id, state);
-      const adapter = getAdapter(undefined, attrs);
+      const adapter = getAdapter(this._config.provider, attrs);
       // NWS is also the fallback for unrecognized attributes.
-      return adapter.provider === 'nws' && adapter.canHandle(attrs);
+      return (adapter.provider === 'nws' || adapter.provider === 'cap') && adapter.canHandle(attrs);
     });
   }
 
