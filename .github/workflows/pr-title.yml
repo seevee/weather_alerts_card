@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
+# Reads the title from the event payload. No checkout, no API calls.
+permissions: {}
+
 # One run per PR (or per branch for pushes). A new push to a PR cancels the
 # run it supersedes; pushes to main are never cancelled, so every merge commit
 # keeps its own result.
