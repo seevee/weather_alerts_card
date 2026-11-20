@@ -86,6 +86,7 @@ interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // event codes to include (provider-specific) — empty/omitted = all
   excludeEventCodes?: string[]; // event codes to exclude (provider-specific) — empty/omitted = none excluded
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
+  hideTestAlerts?: boolean;    // undefined/true: hide alerts the adapter flags `isTest` (NWS `Status`, CAP `status` === 'Test'), before dedup; false: show them
   maxDistanceKm?: number;      // km from the reference point (hass.config home, or myLocationEntity); filters only alerts carrying `point` (point-incident providers) — area warnings never
   myLocationEntity?: string;   // device_tracker / person / zone whose lat/lon replace hass.config as the reference point (filter origin, distance row, my-location marker); unresolvable → falls back to home
   sortOrder?: 'default' | 'onset' | 'severity' | 'distance';

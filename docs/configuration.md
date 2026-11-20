@@ -516,7 +516,7 @@ interface WeatherAlertsCardConfig {
   eventCodes?: string[];       // event codes to include — empty/omitted = all
   excludeEventCodes?: string[]; // event codes to exclude — empty/omitted = none
   minSeverity?: AlertSeverity; // 'all' | 'minor' | 'moderate' | 'severe' | 'extreme'
-  hideTestAlerts?: boolean;
+  hideTestAlerts?: boolean;    // undefined/true: hide alerts marked Status/status: Test (NWS Alerts, CAP Alerts); false: show them
   maxDistanceKm?: number;      // km from the reference point (HA home, or myLocationEntity); alerts carrying a point only
   myLocationEntity?: string;   // device_tracker / person / zone that replaces HA home as the reference point
   sortOrder?: 'default' | 'onset' | 'severity' | 'distance';
