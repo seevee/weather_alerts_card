@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.11.0 (2026-11-20)
+
+### Added
+- Hide test alerts by default (#433)
+
+### Fixed
+- Confine dev file servers to repo root and stop reflecting paths (#434)
+
+### Documentation
+- Describe hideTestAlerts in the config schemas (#436)
+
 ## 3.10.0 (2026-11-19)
 
 ### Added
