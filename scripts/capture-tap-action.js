@@ -19,11 +19,11 @@
 
 const { chromium } = require('playwright');
 const { createServer } = require('http');
-const { readFileSync, mkdirSync, rmSync, renameSync, statSync } = require('fs');
+const { readFileSync, realpathSync, mkdirSync, rmSync, renameSync, statSync } = require('fs');
 const { execFileSync } = require('child_process');
-const { extname, resolve, join } = require('path');
+const { extname, resolve, sep } = require('path');
 
-const ROOT = resolve(__dirname, '..');
+const ROOT = realpathSync(resolve(__dirname, '..'));
 const OUT_DIR = resolve(ROOT, 'img');
 const PORT = 3743; // distinct from screenshot.js (3742) so both can run
 
@@ -111,14 +111,27 @@ function startServer(port) {
   return new Promise((res, rej) => {
     const server = createServer((req, resp) => {
       const urlPath = req.url.split('?')[0];
-      const filePath = join(ROOT, urlPath);
+      const filePath = resolve(ROOT, '.' + urlPath);
+      // Reject `..` escapes before touching the filesystem, so 403 vs 404 cannot reveal what exists outside the root.
+      if (!filePath.startsWith(ROOT + sep)) {
+        resp.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        resp.end('Forbidden');
+        return;
+      }
       try {
-        const data = readFileSync(filePath);
-        resp.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
+        const realFilePath = realpathSync(filePath);
+        // Check the canonical path so symlinks cannot escape the repo root.
+        if (!realFilePath.startsWith(ROOT + sep)) {
+          resp.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+          resp.end('Forbidden');
+          return;
+        }
+        const data = readFileSync(realFilePath);
+        resp.writeHead(200, { 'Content-Type': MIME[extname(realFilePath)] || 'application/octet-stream' });
         resp.end(data);
       } catch {
-        resp.writeHead(404);
-        resp.end('Not found: ' + urlPath);
+        resp.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        resp.end('Not found');
       }
     });
     server.listen(port, '127.0.0.1', () => res(server));
