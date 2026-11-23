@@ -100,11 +100,12 @@ export class MsnAdapter implements AlertAdapter {
     return alerts;
   }
   private _rawAlerts(attributes: Record<string, unknown>): unknown[] | undefined {
-    const allAlerts = attributes['all_alerts'];
-    if (Array.isArray(allAlerts)) return allAlerts;
-    const alerts = attributes['alerts'];
-    return Array.isArray(alerts) ? alerts : undefined;
-  }
+  const allAlerts: unknown = attributes['all_alerts'];
+  if (Array.isArray(allAlerts)) return allAlerts as unknown[];
+
+  const alerts: unknown = attributes['alerts'];
+  return Array.isArray(alerts) ? alerts as unknown[] : undefined;
+}
 
 }
 
