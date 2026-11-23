@@ -86,6 +86,7 @@ export const en: TranslationMap = {
   'editor.provider_eccc': 'ECCC (Canada)',
   'editor.provider_nsw_rfs': 'NSW RFS (Australia)',
   'editor.provider_inmet': 'INMET (Brazil)',
+  'editor.provider_msn': 'MSN Weather (Microsoft)',
   'editor.provider_cap': 'CAP Alerts (multi-region)',
   'editor.devices': 'Alert devices (optional)',
   'editor.devices_helper': 'Pulls in every active alert sensor under the selected devices automatically (CAP Alerts, NINA). Add more devices to combine locations or providers.',

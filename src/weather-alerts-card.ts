@@ -131,6 +131,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   nsw_rfs: 'NSW RFS',
   inmet: 'INMET',
   nina: 'NINA',
+  msn: 'MSN Weather',
 };
 
 const PROVIDER_SHORT: Record<string, string> = {
@@ -145,6 +146,7 @@ const PROVIDER_SHORT: Record<string, string> = {
   nsw_rfs: 'RFS',
   inmet: 'INMET',
   nina: 'NINA',
+  msn: 'MSN',
 };
 
 // Domains whose entities issue a command rather than report data, so they are

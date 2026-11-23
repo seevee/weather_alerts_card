@@ -10,6 +10,7 @@ import { EcccAdapter } from './eccc';
 import { NswRfsAdapter } from './nsw_rfs';
 import { NinaAdapter } from './nina';
 import { InmetAdapter } from './inmet';
+import { MsnAdapter } from './msn';
 
 // CAP comes first so its `incident_platform_version` marker wins detection
 // over any upstream-shaped attributes that the integration may surface.
@@ -17,7 +18,7 @@ import { InmetAdapter } from './inmet';
 // rather than found in the registry when falling back.
 const nwsAdapter = new NwsAdapter();
 const capAdapter = new CapAdapter();
-const adapters: AlertAdapter[] = [capAdapter, nwsAdapter, new BomAdapter(), new NswRfsAdapter(), new InmetAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter()];
+const adapters: AlertAdapter[] = [capAdapter, nwsAdapter, new BomAdapter(), new NswRfsAdapter(), new InmetAdapter(), new NinaAdapter(), new DwdAdapter(), new MeteoSwissAdapter(), new MeteoAlarmAdapter(), new EcccAdapter(), new PirateWeatherAdapter(), new MsnAdapter()];
 
 /** Name-based heuristic patterns for likely alert entities. */
 export const ENTITY_NAME_PATTERNS: RegExp[] = [
