@@ -128,12 +128,38 @@ describe('MsnAdapter', () => {
     expect(adapter.parseAlerts({ ...SINGLE, alerts: [] })).toEqual([]);
   });
 
+  const withFields = (fields: Record<string, unknown>) =>
+    adapter.parseAlerts({ ...SINGLE, alerts: [{ ...SINGLE.alerts[0], ...fields }] })[0];
+
+  it.each([
+    ['R', 'extreme'], ['O', 'severe'], ['Y', 'moderate'], ['B', 'minor'],
+    ['W', 'severe'], ['A', 'moderate'], ['S', 'minor'],
+  ])('maps significance %s to %s', (significance, severity) => {
+    // Text no English ladder knows: what a non-English setup publishes.
+    const a = withFields({ significance, severity: 'Orange', level: 'Warnung' });
+    expect(a.severity).toBe(severity);
+    expect(a.severityInferred).toBe(false);
+    expect(a.severityLabel).toBe('Orange');
+  });
+
+  it('trusts significance over the display text', () => {
+    expect(withFields({ significance: 'R', severity: 'Moderate' }).severity).toBe('extreme');
+  });
+
+  it('falls back to the severity text when significance is missing or unknown', () => {
+    expect(withFields({ significance: null, severity: 'Severe' }).severity).toBe('severe');
+    expect(withFields({ significance: 'Z', severity: 'Severe' }).severity).toBe('severe');
+  });
+
   it('falls back to level when severity is absent', () => {
-    const alerts = adapter.parseAlerts({
-      ...SINGLE,
-      alerts: [{ ...SINGLE.alerts[0], severity: '', level: 'Minor' }],
-    });
-    expect(alerts[0].severity).toBe('minor');
-    expect(alerts[0].severityInferred).toBe(false);
+    const a = withFields({ significance: null, severity: '', level: 'Minor' });
+    expect(a.severity).toBe('minor');
+    expect(a.severityInferred).toBe(false);
+  });
+
+  it('marks the severity inferred when nothing is recognised', () => {
+    const a = withFields({ significance: null, severity: 'Gelb', level: 'Gelb' });
+    expect(a.severity).toBe('unknown');
+    expect(a.severityInferred).toBe(true);
   });
 });

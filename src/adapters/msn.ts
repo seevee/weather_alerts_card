@@ -7,6 +7,17 @@ import { normalizeSeverity, parseTimestamp } from '../utils';
 // survives reflowAlertText.
 const SOURCE_LABEL = 'Source';
 
+// `severity` and `level` are MSN's display text, in the language the
+// integration is set to, so they only normalise on an English setup.
+// `significance` is the code underneath: MSN maps every national service onto
+// R / O / Y / B (red, orange, yellow, blue). W / A / S (warning, watch,
+// statement) are the older NWS-style codes, ranked as the NWS adapter ranks
+// them: a warning is severe, not extreme.
+const SIGNIFICANCE_SEVERITY: Record<string, AlertSeverity> = {
+  R: 'extreme', O: 'severe', Y: 'moderate', B: 'minor',
+  W: 'severe', A: 'moderate', S: 'minor',
+};
+
 function buildDescription(description: string, source: string): string {
   if (!source) return description;
   const attribution = `${SOURCE_LABEL}: ${source}`;
@@ -55,7 +66,8 @@ export class MsnAdapter implements AlertAdapter {
       if (!title) return;
 
       const rawSeverity = str(alert['severity']) || str(alert['level']);
-      const severity = normalizeSeverity(rawSeverity) as AlertSeverity;
+      const severity = SIGNIFICANCE_SEVERITY[str(alert['significance']).toUpperCase()]
+        ?? normalizeSeverity(rawSeverity) as AlertSeverity;
       const severityLabel = rawSeverity
         ? rawSeverity.charAt(0).toUpperCase() + rawSeverity.slice(1).toLowerCase()
         : severity.charAt(0).toUpperCase() + severity.slice(1);
@@ -100,7 +112,7 @@ export class MsnAdapter implements AlertAdapter {
         // dismissal signature, so carrying it would bring a dismissed alert
         // back the moment it starts.
         phase: '',
-        severityInferred: !rawSeverity || severity === 'unknown',
+        severityInferred: severity === 'unknown',
         certaintyInferred: false,
       });
     });

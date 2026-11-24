@@ -267,12 +267,14 @@ entity: sensor.pirateweather_alerts
 
 ```yaml
 type: custom:weather-alerts-card
-entity: sensor.msn_weather_alerts
+entity: sensor.upper_east_side_alerts
 ```
 
-The [MSN Weather integration](https://github.com/42bios/ha-msn-weather) lists its alerts
-on two entities, the alerts count sensor and the "alert active" binary sensor. Either
-works. MSN republishes the national services' alerts, so on a card that also reads the
+The [MSN Weather integration](https://github.com/42bios/ha-msn-weather) names its entities
+after the location, so yours will differ from the example. It lists its alerts on two
+entities, the alerts count sensor and the "alert active" binary sensor. Either works.
+Severity comes from MSN's `significance` code (red, orange, yellow, blue), so it holds in
+any language the integration is set to. MSN republishes the national services' alerts, so on a card that also reads the
 issuing service the issuer's copy is the one kept. The issuing agency is shown as a
 `Source:` line under the alert text.
 
@@ -437,7 +439,7 @@ not set it for that source.
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
 | INMET | card adapter (`geo_location`, `inmet`) | bbox | The alert's published affected-area bounds | no | Raw `severity` text; the colour fallback is tilde | Absent | S, X |
 | PirateWeather | card adapter | none | — | no | Raw `severity`; tilde when empty or unknown | Absent | S, X |
-| MSN Weather | card adapter (`msn_weather`) | none | — | no | Raw `severity`, else `level`; tilde when empty or unknown | Absent | S, X |
+| MSN Weather | card adapter (`msn_weather`) | none | — | no | Raw `significance` code (R, O, Y, B), else the `severity` or `level` text; tilde when neither is recognised | Absent | S, X |
 | CAP Alerts: NWS | cap_alerts (zone, GPS, tracker) | polygon or none | The warning's own polygon on storm-based warnings; zone-based alerts carry no shape, only `geocodes.UGC` | no | VTEC significance (warning severe, watch moderate, advisory minor; tornado and extreme-wind warnings extreme), else CAP; never marked | Raw CAP | Z (UGC, SAME), E (`parameters.NationalWeatherService`, `parameters.SAME`; the 1.x `event_code_*` keys still read), S, X |
 | CAP Alerts: ECCC | cap_alerts (province, GPS, tracker) | polygon | Severe thunderstorm and tornado warnings: the forecaster-drawn threat area; everything else the union of the zone polygons | rare (zero-radius circles) | Raw CAP; never marked | Raw CAP | Z (CLC, SGC), S, X. E hides everything: the CAP-CP event code lives in `parameters` |
 | CAP Alerts: MeteoAlarm | cap_alerts (country, region, GPS, tracker) | none in practice | Feeds publish EMMA region codes, not polygons (0 across ~5,900 areas sampled) | no | Awareness colour (yellow moderate, orange severe, red extreme), else CAP; never marked. The colour also drives the `meteoalarm` palette | Raw CAP | Z (EMMA_ID, NUTS), S, X. E hides everything |
