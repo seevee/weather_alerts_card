@@ -20,7 +20,7 @@ Where the card gets its alerts. At least one of `entity`, `device`, `devices` or
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device, and re-discovers as alerts come and go. CAP Alerts and NINA both produce this shape |
 | `devices` | — | Additional device ids, the same shape `entities` gives `entity`. An alert both devices carry is shown once; each device that goes dark is named on its own |
 | `sources` | — | Feed `source` attribute values to auto-collect, e.g. `['nsw_rural_fire_service_feed']` or `['inmet']` |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'inmet'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'inmet'`, `'pirateweather'`, `'msn'`, `'cap'` |
 
 ### Collecting a whole feed with `sources`
 
@@ -74,7 +74,7 @@ location (Settings → System → General) unless `myLocationEntity` names a `de
 `person` or `zone` entity, whose `latitude`/`longitude` then take over. It applies **only to
 alerts that carry a per-incident point**: NSW RFS, and CAP Alerts entities whose `points`
 attribute names exactly one marker (the Australian state feeds publish one per incident). Area warnings (NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC,
-PirateWeather, INMET, and CAP Alerts entities with no marker) either cover your home point or they don't, so a radius has no meaning for
+PirateWeather, MSN Weather, INMET, and CAP Alerts entities with no marker) either cover your home point or they don't, so a radius has no meaning for
 them and they are never filtered, even on a mixed card. If no reference point resolves, the filter is skipped rather than hiding everything; an entity that is missing or momentarily
 has no coordinates (a router-based tracker, a phone with GPS off) falls back to HA home
 rather than switching the filter off. The YAML value is always kilometres,
@@ -106,8 +106,8 @@ count as the same alert when either is true:
 One row is kept. Its title, text, severity, area and times are shown as they are, so the
 choice is about which copy to trust:
 
-1. **The issuer's own copy beats a relay's.** NINA and Pirate Weather are relays, so DWD
-   beats NINA and NWS Alerts beats Pirate Weather, whichever is listed first.
+1. **The issuer's own copy beats a relay's.** NINA, Pirate Weather and MSN Weather are
+   relays, so DWD beats NINA and NWS Alerts beats Pirate Weather, whichever is listed first.
 2. **Otherwise, the provider the card reads first:** `entity`, then `entities`, then
    `device` / `devices`, then `sources`.
 
@@ -293,7 +293,7 @@ The grid's area row collapses a list of more than four names to the first one pl
 | bbox only | INMET, CAP Alerts with polygon unavailable | the bounding-box frame |
 | point only | NSW RFS, CAP Alerts with a marker and no polygon (the Australian state feeds) | a severity-colored marker at the incident inside a ~20 km frame — town scale on the `map` style |
 | polygon + point | CAP Alerts (an Australian fire with a fire-ground polygon and a location marker) | the polygon in its own frame; the marker still drives `maxDistanceKm` and the distance row |
-| nothing | NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, NINA, PirateWeather | no mini-map |
+| nothing | NWS, BoM, DWD, MeteoAlarm, MeteoSwiss, ECCC, NINA, PirateWeather, MSN Weather | no mini-map |
 
 A polygon can be a single storm-based shape, as above, or a few hundred rings. ECCC
 issues its watches per forecast region, so one alert arrives as a MultiPolygon of every

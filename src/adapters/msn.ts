@@ -1,53 +1,54 @@
 import { AlertAdapter, AlertProvider, AlertSeverity, WeatherAlert } from '../types';
 import { normalizeSeverity, parseTimestamp } from '../utils';
 
+// The integration passes MSN's `credit` through as `source`: the agency that
+// issued the alert. WeatherAlert has no field for an issuer, so it is appended
+// to the description the way NINA's sender line is. Double-newline separation
+// survives reflowAlertText.
+const SOURCE_LABEL = 'Source';
+
+function buildDescription(description: string, source: string): string {
+  if (!source) return description;
+  const attribution = `${SOURCE_LABEL}: ${source}`;
+  return description ? `${description}\n\n${attribution}` : attribution;
+}
+
 /**
- * Adapter for the Home Assistant MSN Weather alert sensor.
+ * Adapter for the MSN Weather integration (42bios/ha-msn-weather).
  *
- * Expected attributes:
+ * Two entities carry the same alert list under different keys: the alerts
+ * count sensor as `alerts`, the "alert active" binary sensor as `all_alerts`.
+ *
  *   attribution: "Data provided by MSN Weather (Microsoft)"
- *   all_alerts: [
+ *   alerts | all_alerts: [
  *     {
  *       title, event, level, significance, severity, status,
  *       start, end, description, safety_guide, source
  *     },
  *     ...
  *   ]
- *
- * MSN exposes the complete alert list as one array. Depending on the MSN
- * Weather integration/version, that array is exposed as `all_alerts` or
- * `alerts`, so both spellings are accepted.
  */
 export class MsnAdapter implements AlertAdapter {
   provider: AlertProvider = 'msn';
 
+  // MSN republishes the national services' alerts, so in a dedup group the
+  // issuer's own copy is the one kept.
+  relay = true;
+
+  // Every MSN Weather entity carries the attribution (temperature, pollen...),
+  // so it only counts beside the alert list. The list alone is not enough
+  // either: the ECCC fork also uses a lowercase `alerts` key.
   canHandle(attributes: Record<string, unknown>): boolean {
-    // Attribution is the strongest signal. This is important because the
-    // lowercase `alerts` key is also used by other integrations.
-    const attribution = str(attributes['attribution']).toLowerCase();
-    if (attribution.includes('msn weather')) return true;
-
-    const raw = this._rawAlerts(attributes);
-    if (!Array.isArray(raw) || raw.length === 0) return false;
-
-    // Without attribution, require the characteristic MSN record shape rather
-    // than merely accepting any `alerts` array (ECCC also uses that key).
-    return raw.some(value => {
-      if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-      const alert = value as Record<string, unknown>;
-      return typeof alert['title'] === 'string'
-        && (typeof alert['event'] === 'string' || typeof alert['level'] === 'string'
-          || typeof alert['severity'] === 'string')
-        && (typeof alert['start'] === 'string' || typeof alert['end'] === 'string');
-    });
+    return str(attributes['attribution']).toLowerCase().includes('msn weather')
+      && this._rawAlerts(attributes) !== undefined;
   }
 
   parseAlerts(attributes: Record<string, unknown>): WeatherAlert[] {
     const raw = this._rawAlerts(attributes);
-    if (!Array.isArray(raw)) return [];
+    if (!raw) return [];
 
     const alerts: WeatherAlert[] = [];
-    raw.forEach((value, index) => {
+    raw.forEach(value => {
       if (!value || typeof value !== 'object' || Array.isArray(value)) return;
       const alert = value as Record<string, unknown>;
       const title = str(alert['title']) || str(alert['event']);
@@ -61,16 +62,16 @@ export class MsnAdapter implements AlertAdapter {
 
       const onsetTs = parseTimestamp(str(alert['start']));
       const endsTs = parseTimestamp(str(alert['end']));
-      const status = str(alert['status']);
+      const description = str(alert['description']);
+      const source = str(alert['source']);
 
-      // MSN does not expose an issuance timestamp in the supplied schema.
-      // Keep sentTs at zero rather than pretending that start is the issue time.
+      // No array index in the id: it shifts when an earlier alert clears, and
+      // the id keys the expanded state and the dismissal list.
       const idBase = [
         str(alert['event']),
         str(alert['start']),
         str(alert['end']),
         str(alert['title']),
-        String(index),
       ].join('|');
 
       alerts.push({
@@ -80,18 +81,25 @@ export class MsnAdapter implements AlertAdapter {
         severityLabel,
         certainty: '',
         urgency: '',
+        // MSN publishes no issue time, and `start` is not one.
         sentTs: 0,
         onsetTs,
         endsTs,
-        description: str(alert['description']),
+        description: buildDescription(description, source),
+        // The body as MSN sent it, without the source line added above, so the
+        // cross-provider text match still finds the issuer's copy.
+        matchText: description,
         instruction: str(alert['safety_guide']),
         url: '',
         headline: title,
-        areaDesc: str(alert['source']),
+        areaDesc: '',
         zones: [],
         eventCode: '',
         provider: 'msn',
-        phase: status,
+        // `status` ("Upcoming", "Ongoing") is not a CAP phase. `phase` is in the
+        // dismissal signature, so carrying it would bring a dismissed alert
+        // back the moment it starts.
+        phase: '',
         severityInferred: !rawSeverity || severity === 'unknown',
         certaintyInferred: false,
       });
@@ -99,14 +107,14 @@ export class MsnAdapter implements AlertAdapter {
 
     return alerts;
   }
+
   private _rawAlerts(attributes: Record<string, unknown>): unknown[] | undefined {
-  const allAlerts: unknown = attributes['all_alerts'];
-  if (Array.isArray(allAlerts)) return allAlerts as unknown[];
+    const allAlerts: unknown = attributes['all_alerts'];
+    if (Array.isArray(allAlerts)) return allAlerts as unknown[];
 
-  const alerts: unknown = attributes['alerts'];
-  return Array.isArray(alerts) ? alerts as unknown[] : undefined;
-}
-
+    const alerts: unknown = attributes['alerts'];
+    return Array.isArray(alerts) ? alerts as unknown[] : undefined;
+  }
 }
 
 function str(value: unknown): string {

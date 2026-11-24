@@ -71,6 +71,19 @@ describe('getAdapter', () => {
     expect(adapter.provider).toBe('pirateweather');
   });
 
+  it('returns MSN adapter for explicit msn provider', () => {
+    const adapter = getAdapter('msn', {});
+    expect(adapter.provider).toBe('msn');
+  });
+
+  it('auto-detects MSN Weather from attribution + alerts list', () => {
+    const adapter = getAdapter(undefined, {
+      attribution: 'Data provided by MSN Weather (Microsoft)',
+      alerts: [],
+    });
+    expect(adapter.provider).toBe('msn');
+  });
+
   it('returns DWD adapter for explicit dwd provider', () => {
     const adapter = getAdapter('dwd', {});
     expect(adapter.provider).toBe('dwd');
@@ -225,6 +238,19 @@ describe('canHandleAny', () => {
 
   it('returns true for PirateWeather attributes', () => {
     expect(canHandleAny({ attribution: 'Data provided by Pirate Weather' })).toBe(true);
+  });
+
+  it('returns true for MSN Weather alert entities', () => {
+    const attribution = 'Data provided by MSN Weather (Microsoft)';
+    expect(canHandleAny({ attribution, alerts: [] })).toBe(true);
+    expect(canHandleAny({ attribution, all_alerts: [] })).toBe(true);
+  });
+
+  it('returns false for MSN Weather entities that carry no alert list', () => {
+    expect(canHandleAny({
+      attribution: 'Data provided by MSN Weather (Microsoft)',
+      device_class: 'temperature',
+    })).toBe(false);
   });
 
   it('returns true for CAP Alerts attributes', () => {
