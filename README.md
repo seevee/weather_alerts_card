@@ -1,6 +1,6 @@
 # Weather Alerts Card
 
-One card for weather and hazard alerts from eleven Home Assistant integrations. It detects the provider behind each sensor and renders every alert the same way: a severity color, a progress bar from onset to expiry, the agency's own text, and a map of the affected area where the feed carries one. Sources: NWS (US), ECCC (Canada), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), BoM (Australia), PirateWeather, and CAP Alerts (multi-region).
+One card for weather and hazard alerts from twelve Home Assistant integrations. It detects the provider behind each sensor and renders every alert the same way: a severity color, a progress bar from onset to expiry, the agency's own text, and a map of the affected area where the feed carries one. Sources: NWS (US), ECCC (Canada), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), BoM (Australia), PirateWeather, and CAP Alerts (multi-region).
 
 [![Weather Alerts Card](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-adaptive.svg)](https://raw.githubusercontent.com/seevee/weather_alerts_card/main/img/hero-light.webp)
 
@@ -15,7 +15,7 @@ is the same material with more room to breathe, plus per-provider setup detail.
 
 ## Features
 
-- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), PirateWeather, and CAP Alerts (multi-region) with auto-detection
+- **Multi-provider** — NWS (US), BoM (Australia), MeteoAlarm (Europe), DWD (Germany), MeteoSwiss (Switzerland), ECCC (Canada), NINA (German civil protection), NSW RFS (Australian bushfire), INMET (Brazil), PirateWeather, MSN Weather, and CAP Alerts (multi-region) with auto-detection
 - **Color themes** — severity-based (default), NWS official event colors, MeteoAlarm awareness level colors, or ECCC public-alert colors, plus an opt-in override that paints each alert in the color its issuing agency published (ECCC, MeteoAlarm, INMET)
 - **Time progress bars** — elapsed/remaining time with relative and absolute timestamps
 - **Alert headlines** — contextual subtitle from provider data, with optional redundancy filtering
@@ -245,7 +245,7 @@ Then click the Download button, and click Reload when prompted.
 | `device` | — | HA `device_id` — auto-discovers all per-alert sensors under that device and re-discovers as alerts come and go. CAP Alerts and NINA both produce this shape. Can be combined with `entity`/`entities` or used on its own. |
 | `devices` | — | Additional device ids, the same shape `entities` gives `entity`. Every CAP Alerts entry is one provider × one scope, so a home zone plus a GPS tracker, or NWS plus GDACS, is two devices. The same alert seen through two devices is shown once; each device that goes dark is named on its own. |
 | `sources` | — | Feed `source` attribute values to auto-collect (e.g. `['nsw_rural_fire_service_feed']`). Harvests **every** entity whose `source` attribute matches, re-scanning each render so per-incident entities appear and vanish with the live feed — no volatile `geo_location.*` ids to hand-list. Independent of `provider` (each collected entity still auto-detects its adapter). Can be used on its own or combined with `entity`/`entities`/`device`. |
-| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'inmet'`, `'pirateweather'`, `'cap'` |
+| `provider` | auto-detect | `'nws'`, `'bom'`, `'meteoalarm'`, `'dwd'`, `'nina'`, `'meteoswiss'`, `'eccc'`, `'nsw_rfs'`, `'inmet'`, `'pirateweather'`, `'msn'`, `'cap'` |
 | `title` | — | Card header title |
 | `zones` | — | Restrict to specific zone codes, matched against each alert's zone list. Populated by CAP Alerts (UGC/SAME/EMMA_ID/NUTS and any other geocode scheme) and BoM (`area_id`, e.g. `NSW_FL049`; fork-dependent — the `safepay/ha_bom_australia` fork emits it). The recommended NWS integration doesn't emit zone codes, so this doesn't apply to it. **Alerts with no matching zone are hidden**, so setting `zones` on a provider that carries none hides everything |
 | `sortOrder` | `'default'` | `'default'`, `'onset'`, `'severity'`, `'distance'`. The `'distance'` option lists incidents nearest your reference point first (HA home, or `myLocationEntity`); area warnings have no distance and sort ahead of every point incident, since they already cover the reference point, then severity and onset break ties; with no reference point it behaves as `'default'`. The `'onset'` option uses the severity of an event to break ties between events with the same onset timestamp. |
@@ -458,6 +458,12 @@ type: custom:weather-alerts-card
 entity: sensor.pirateweather_alerts
 ```
 
+**MSN Weather alerts** (the integration names its entities after the location)
+```yaml
+type: custom:weather-alerts-card
+entity: sensor.upper_east_side_alerts
+```
+
 **CAP Alerts — auto-discover all per-alert sensors under a device**
 
 The [CAP Alerts integration](https://github.com/seevee/cap_alerts) creates one
@@ -508,6 +514,7 @@ The card auto-detects the provider from entity attributes. Any integration that 
 | NSW RFS | Australia (NSW) | Built-in [nsw_rural_fire_service_feed](https://www.home-assistant.io/integrations/nsw_rural_fire_service_feed/) — one `geo_location.*` entity per bushfire/grass-fire/hazard-reduction incident; auto-collect the whole feed with `sources: [nsw_rural_fire_service_feed]` |
 | INMET | Brazil | [sigrist/inmet](https://github.com/sigrist/inmet) — one `geo_location.*` entity per active INMET alert; auto-collect the whole feed with `sources: [inmet]` |
 | PirateWeather | Global | [Pirate-Weather/pirate-weather-ha](https://github.com/Pirate-Weather/pirate-weather-ha) |
+| MSN Weather | Global | [42bios/ha-msn-weather](https://github.com/42bios/ha-msn-weather) |
 | CAP Alerts | Multi-region (NWS, ECCC, MeteoAlarm, WMO) | [seevee/cap_alerts](https://github.com/seevee/cap_alerts) — one sensor per active alert; pair with `device:` for auto-discovery. Ingests any CAP 1.2 feed, including the WMO Severe Weather Information Centre firehose for countries without a dedicated integration |
 
 > **Note on ECCC.** For Environment and Climate Change Canada alerts, [CAP Alerts](https://github.com/seevee/cap_alerts) with its ECCC provider is the recommended source: it reads the fuller NAAD feed and carries the alert polygons. From card 3.10 the built-in `environment_canada` integration works as well, with no extra setup. See [Canada: ECCC via CAP Alerts](#canada-eccc-via-cap-alerts) below.
@@ -592,6 +599,7 @@ Geometry is a tier: **polygon** (fetched out of band by `geometry_ref`, with `bb
 | NSW RFS | card adapter (`geo_location`, `nsw_rural_fire_service_feed`) | point | The incident's location marker; the integration discards the fire-ground polygon | yes | Raw `category` (Australian Warning System); tilde on an empty or unrecognised value | Absent | D, S. X never acts (no expiry). The integration's own radius, 20 km by default, applies first |
 | INMET | card adapter (`geo_location`, `inmet`) | bbox | The alert's published affected-area bounds | no | Raw `severity` text; the colour fallback is tilde | Absent | S, X |
 | PirateWeather | card adapter | none | — | no | Raw `severity`; tilde when empty or unknown | Absent | S, X |
+| MSN Weather | card adapter (`msn_weather`) | none | — | no | Raw `significance` code (R, O, Y, B), else the `severity` or `level` text; tilde when neither is recognised | Absent | S, X |
 | CAP Alerts: NWS | cap_alerts (zone, GPS, tracker) | polygon or none | The warning's own polygon on storm-based warnings; zone-based alerts carry no shape, only `geocodes.UGC` | no | VTEC significance (warning severe, watch moderate, advisory minor; tornado and extreme-wind warnings extreme), else CAP; never marked | Raw CAP | Z (UGC, SAME), E (`parameters.NationalWeatherService`, `parameters.SAME`; the 1.x `event_code_*` keys still read), S, X |
 | CAP Alerts: ECCC | cap_alerts (province, GPS, tracker) | polygon | Severe thunderstorm and tornado warnings: the forecaster-drawn threat area; everything else the union of the zone polygons | rare (zero-radius circles) | Raw CAP; never marked | Raw CAP | Z (CLC, SGC), S, X. E hides everything: the CAP-CP event code lives in `parameters` |
 | CAP Alerts: MeteoAlarm | cap_alerts (country, region, GPS, tracker) | none in practice | Feeds publish EMMA region codes, not polygons (0 across ~5,900 areas sampled) | no | Awareness colour (yellow moderate, orange severe, red extreme), else CAP; never marked. The colour also drives the `meteoalarm` palette | Raw CAP | Z (EMMA_ID, NUTS), S, X. E hides everything |
