@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.12.0 (2026-11-27)
+
+### Added
+- Add MSN Weather adapter (#442)
+
+### Documentation
+- Name Home Assistant 2026.12 for hazard start and end times (#444)
+
+### Internal
+- Bump the vitest group with 3 updates (#438)
+- Bump the eslint group across 1 directory with 2 updates (#439)
+- Bump the dev-deps group across 1 directory with 4 updates (#440)
+- Bump dompurify from 3.4.17 to 3.4.18 (#441)
+
 ## 3.11.0 (2026-11-20)
 
 ### Added
